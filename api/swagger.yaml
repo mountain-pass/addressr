@@ -1,0 +1,357 @@
+swagger: "2.0"
+info:
+  description: |
+    Free Australian Address Validation, Search and Autocomplete
+  version: "1.0.0"
+  title: "Addressr by Mountain Pass"
+basePath: "/"
+tags:
+  - name: address
+schemes:
+- "https"
+produces:
+  - "application/json"
+paths:
+  /:
+    get:
+      summary: API Root
+      operationId: getApiRoot
+      description: |
+        returns a list of available APIs within the `Link` headers
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: "#/definitions/Root"
+          headers:
+            Link:
+              description: rfc5988 Link
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+  /addresses/:
+    get:
+      summary: Get List of Addresses
+      operationId: getAddresses
+      description: |
+        returns a list of addresses matching the search string
+      tags:
+        - address
+      parameters: 
+        - name: q
+          in: query
+          description: search string
+          type: string
+        - name: p
+          in: query
+          description: page number
+          type: integer
+      responses:
+        200:
+          description: successful query
+          schema:
+            type: array
+            description: |
+              The list of addresses matching the search string. The list may be paginated.
+              A the `Link` header with a `rel` of `next` will be provied if there are addional results.
+            items:
+              type: object
+              title: Flattened Address
+              properties:
+                sla:
+                  $ref:  "#/definitions/SingleLineAddress"
+                score:
+                  type: number
+                  description: strength of the match relative to the other matches
+                links:
+                  type: object
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+                          title: Link
+                          description: |
+                            The URL for the address, where additional information can be retrieved
+            example: 
+              - sla: Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000
+                score: 1
+                links:
+                  self: 
+                    href: /address/GANT_718592778
+              - sla: 109 Kirribilli Ave, Kirribilli NSW 2061
+                score: 0.985051936618461
+                links:
+                  self: 
+                    href: /address/GANT_718592782
+          headers:
+            Link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+  /addresses/{addressId}:
+    get:
+      summary: Get Address
+      operationId: getAddress
+      description: |
+        returns detailed information about a specific address
+      tags:
+        - address
+      parameters: 
+        - name: addressId
+          in: path
+          description: ID of the address.
+          type: string
+          required: true
+      responses:
+        200:
+          description: successful query
+          schema:
+            $ref: "#/definitions/Address"
+          headers:
+            Link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+definitions:
+  Root:
+    type: object
+  Address:
+    type: object
+    title: Physical Australian Address
+    description: |
+      A physical Australian address in structured and unstructured formats
+    properties:
+      pid:
+        type: string
+        description: The Persistent Identifier is unique to the real world feature this record represents.
+        example: GANT_718592778
+      structured:
+        $ref: "#/definitions/StructuredAddress"
+      sla:
+        $ref: "#/definitions/SingleLineAddress"
+      fla:
+        $ref: "#/definitions/FourLineAddress"
+      geo:
+        $ref: "#/definitions/AddressGeocoding"
+  AddressGeocoding:
+    type: object
+    description: Geocoding information about the address
+    properties:
+      level:
+        type: object
+        properties:
+          code:
+            type: integer
+            maxLength: 2
+            description: |
+              Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
+            example: 7
+          name:
+            type: string
+            maxLength: 50
+            description: |
+              Name of the geocode level type code.
+            example: LOCALITY,STREET, ADDRESS
+      reliability:
+        type: object
+        properties:
+          code:
+            type: integer
+            maxLength: 1
+            description: |
+              Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
+            example: 2
+          name:
+            type: string
+            maxLength: 50
+            description: |
+              Name of the geocode reliability code.
+            example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
+      latitude:
+        type: number
+        example: -33.85351875
+      longitude:
+        type: number
+        example: 150.8947369
+  SingleLineAddress:
+    type: string
+    title: Single Line Address
+    description: |
+      The full address flattened to a single line. The primary use is for search results and for autocomplete.
+    example: Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000
+  FourLineAddress:
+    type: array
+    items:
+      type: string
+    minItems: 3
+    maxItems: 4
+    title: Four Line Address
+    description: |
+      The full address flattened to at most four lines. The primary use is for address labels
+    example: 
+      - Tower 3
+      - Level 25
+      - 300 Barangaroo Avenue
+      - Sydney NSW 2000
+  StructuredAddress:
+    type: object
+    properties:
+      buildingName:
+        type: string
+        maxLength: 200
+        example: Vickery Lodge
+        description: |
+          Combines both building/property name fields. (AS4590:2006 5.7).
+      lotNumber:
+        type: object
+        properties:
+          prefix:
+            type: string
+            example: A
+            maxLength: 2
+          number:
+            type: string
+            example: CP
+            maxLength: 5
+          suffix:
+            type: string
+            example: B
+            maxLength: 2
+      flat:
+        type: object
+        properties:
+          type:
+            type: string
+            example: Tower
+            maxLength: 50
+          code:
+            type: string
+            example: Twr
+            maxLength: 7
+          prefix:
+            type: string
+            example: CT
+            maxLength: 2
+          number:
+            type: string
+            example: "20114"
+            maxLength: 5
+          suffix:
+            type: string
+            example: AG
+            maxLength: 2
+      level:
+        type: object
+        properties:
+          type:
+            type: string
+            example: Observation Deck
+            maxLength: 50
+          code:
+            type: string
+            example: OD
+            maxLength: 4
+          prefix:
+            type: string
+            example: A
+            maxLength: 2
+          number:
+            type: integer
+            example: "64"
+            maxLength: 5
+          suffix:
+            type: string
+            example: QG
+            maxLength: 2
+      number:
+        type: object
+        properties:
+          prefix:
+            type: string
+            example: RMB
+            maxLength: 3
+          number:
+            type: integer
+            example: "20114"
+            maxLength: 6
+          suffix:
+            type: string
+            example: "AA"
+            maxLength: 2
+          second:
+            type: object
+            properties:
+              prefix:
+                type: string
+                example: RMB
+                maxLength: 3
+              number:
+                type: string
+                example: "20114"
+                maxLength: 6
+              suffix:
+                type: string
+                example: "C"
+                maxLength: 2
+      street:
+        type: object
+        properties:
+          name:
+            type: string
+            example: Barangaroo
+            maxLength: 100
+          type:
+            type: string
+            example: Av
+            maxLength: 15
+          code:
+            type: string
+            example: Avenue
+            maxLength: 50
+          suffix:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Deviation
+                maxLength: 50
+              code:
+                type: string
+                example: De
+                maxLength: 15
+      locality:
+        type: object
+        properties:
+          name:
+            type: string
+            example: Sydney
+            maxLength: 100
+      state:
+        type: object
+        properties:
+          name:
+            type: string
+            example: New South Wales
+            maxLength: 50
+          abbreviation:
+            type: string
+            example: NSW
+            maxLength: 3
+      postcode:
+        type: string
+        example: "2000"
+        maxLength: 4
+      confidence:
+        type: integer
+        description: |
+          Reflects how many contributor databases this N N - - CONFIDENCE address appears in (0 = 1 database, 1 = 2 database etc.).

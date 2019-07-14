@@ -1,0 +1,41 @@
+{
+  "env": { "es6": true },
+  "parser": "babel-eslint",
+  "extends": [
+    "eslint:recommended",
+    "prettier",
+    "plugin:prettier/recommended",
+    "prettier/flowtype",
+    "prettier/standard",
+    "plugin:import/errors",
+    "plugin:import/warnings"
+  ],
+  "plugins": ["prettier"],
+  "globals": {
+    "document": true,
+    "window": true,
+    "Image": true,
+    "localStorage": true,
+    "fetch": true,
+    "exports": true,
+    "process": true,
+    "console": true,
+    "__dirname": true
+  },
+  "settings": {
+    "import/core-modules": []
+  },
+  "rules": {
+    "strict": 2,
+    "prettier/prettier": "error",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": ["**/*"],
+        "optionalDependencies": false,
+        "peerDependencies": true
+      }
+    ],
+    "no-console": 0
+  }
+}

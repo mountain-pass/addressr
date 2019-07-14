@@ -1,0 +1,24 @@
+{
+  "editor.formatOnSave": true,
+  "prettier.eslintIntegration": true,
+  "eslint.autoFixOnSave": true,
+  "npm.enableScriptExplorer": true,
+  "eslint.alwaysShowStatus": true,
+  "eslint.provideLintTask": true,
+  "eslint.validate": ["javascript", "javascriptreact"],
+  "[javascript]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "editor.formatOnSave": false
+  },
+  "[javascriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "editor.formatOnSave": false
+  },
+  "spellright.addToSystemDictionary": true,
+  "spellright.language": ["en"],
+  "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"]
+}
