@@ -13,8 +13,8 @@
   "scripts": {
     "requirements-check": "./scripts/check-version.js",
     "postinstall": "npm run requirements-check",
-    "start": "DEBUG=error,api,xplanBody,express:* PORT=$npm_package_config_localport babel-node index.js",
-    "watch:start": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x DEBUG=error,api,xplanBody,express:* PORT=$npm_package_config_localport babel-node index.js",
+    "start": "DEBUG=error,api,xplanBody,express:*,swagger-tools* PORT=$npm_package_config_localport babel-node index.js",
+    "watch:start": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start",
     "npm-check": "npm-check  --skip-unused",
     "npm-check:interactive": "npm-check --skip-unused -u ",
     "npm-check-unused": "npm-check",
@@ -52,6 +52,7 @@
     "husky": "^3.0.0",
     "imagemin-lint-staged": "^0.4.0",
     "lint-staged": "^9.2.0",
+    "ngrok": "^3.2.2",
     "nodemon": "^1.19.1",
     "npm-check": "^5.9.0",
     "prettier": "^1.18.2",

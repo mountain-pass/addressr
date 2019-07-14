@@ -16,6 +16,7 @@ paths:
     get:
       summary: API Root
       operationId: getApiRoot
+      x-swagger-router-controller: Default
       description: |
         returns a list of available APIs within the `Link` headers
       responses:
@@ -39,6 +40,7 @@ paths:
         returns a list of addresses matching the search string
       tags:
         - address
+      x-swagger-router-controller: Addresses
       parameters: 
         - name: q
           in: query
@@ -103,6 +105,7 @@ paths:
         returns detailed information about a specific address
       tags:
         - address
+      x-swagger-router-controller: Addresses
       parameters: 
         - name: addressId
           in: path

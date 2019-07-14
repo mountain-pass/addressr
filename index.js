@@ -3,8 +3,10 @@ import debug from 'debug';
 import { readFileSync } from 'fs';
 import { createServer } from 'http';
 import { safeLoad } from 'js-yaml';
+import ngrok from 'ngrok';
 import { join } from 'path';
 import { initializeMiddleware } from 'swagger-tools';
+
 var logger = debug('api');
 var error = debug('error');
 var app = connect();
@@ -47,5 +49,11 @@ initializeMiddleware(swaggerDoc, function(middleware) {
       '📑  Swagger-ui is available on http://localhost:%d/docs',
       serverPort,
     );
+    if (process.env.NODE_ENV !== 'PRODUCTION') {
+      ngrok.connect(serverPort).then(url => {
+        logger('📡  Addressr is listening at %s', url);
+        logger('📑  Swagger-ui is available on %s/docs', url);
+      });
+    }
   });
 });
