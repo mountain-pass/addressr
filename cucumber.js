@@ -20,7 +20,7 @@ function generateConfig(profile) {
   const REQUIRE_GLOB = 'test/js/**/*.js';
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
     FORMAT_OPTIONS,
-  )}' ${MODULES} --require ${REQUIRE_GLOB} --no-strict --format rerun:${RERUN} --format json:test-results/${profile}/results.xml ${FAIL_FAST}`;
+  )}' ${MODULES} --require ${REQUIRE_GLOB} --no-strict --format rerun:${RERUN} --format json:test-results/${profile}/results.json ${FAIL_FAST}`;
   if (profile === 'system') {
     return `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest',
