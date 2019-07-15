@@ -31,3 +31,17 @@ Then('the response will contain the following links:', async function(
   logger('actualLinks', this.root.link.refs);
   expect(this.root.link.refs).to.have.deep.members(expectedLinks.refs);
 });
+
+When('the {string} link is followed for {string}', async function(rel, type) {
+  expect(this.root.link).to.not.be.undefined;
+  const link = this.root.link.get('rel', rel).find(l => l.type === type);
+  logger('link', link);
+  this.followed = await this.driver.follow(link);
+});
+
+Then('the html docs will be returned', async function() {
+  expect(this.followed.headers['content-type']).to.equal(
+    'text/html; charset=UTF-8',
+  );
+  expect(this.followed.body).to.have.string('<title>Swagger UI</title>');
+});

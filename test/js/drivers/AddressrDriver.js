@@ -4,4 +4,8 @@ export class AddressrDriver {
   async getApiRoot() {
     throw new PendingError();
   }
+
+  async follow(/*link*/) {
+    throw new PendingError();
+  }
 }

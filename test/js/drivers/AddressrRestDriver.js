@@ -16,4 +16,9 @@ export class AddressrRestDriver extends AddressrDriver {
     logger('body', resp.body);
     return { link: LinkHeader.parse(resp.headers.link), body: resp.body };
   }
+
+  async follow(link) {
+    const resp = await this.requester.get(link.uri);
+    return resp;
+  }
 }
