@@ -4,7 +4,7 @@
   "description": "Free Australian Address Validation, Search and Autocomplete ",
   "author": "Mountain Pass <addressr@mountain-pass.com.au>",
   "engines": {
-    "node": ">=11.14.0"
+    "node": ">=10.16.0"
   },
   "config": {
     "localport": "8080"
