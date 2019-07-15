@@ -13,7 +13,7 @@ jobs:
       - run:
           command: |
             npm install
-            npm run test
+            FAIL_FAST=" " npm run test
       - save_cache:
           paths:
             - node_modules
@@ -22,7 +22,8 @@ jobs:
           root: .
           paths:
             - '*'
-
+      - store_test_results:
+          path: test-results
 
 workflows:
   version: 2

@@ -1,0 +1,93 @@
+[
+  {
+    "keyword": "Feature",
+    "name": "Root API",
+    "line": 1,
+    "id": "root-api",
+    "tags": [],
+    "uri": "test/resources/features/root.feature",
+    "elements": [
+      {
+        "id": "root-api;root-api",
+        "keyword": "Scenario",
+        "line": 4,
+        "name": "Root API",
+        "tags": [],
+        "type": "scenario",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 5,
+            "name": "the root api is requested",
+            "match": {
+              "location": "test/js/steps.js:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2000000
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "rel",
+                      "uri",
+                      "title",
+                      "type"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "describedby",
+                      "/docs/",
+                      "API Docs",
+                      "text/html"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "describedby",
+                      "/api-docs",
+                      "API Docs",
+                      "application/json"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "self",
+                      "/",
+                      "API Root",
+                      ""
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "https://addressr.mountain-pass.com.au/rels/address-search",
+                      "/addresses/",
+                      "Get List of Addresses",
+                      ""
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 6,
+            "name": "the response will contain the following links:",
+            "match": {
+              "location": "test/js/steps.js:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4000000
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

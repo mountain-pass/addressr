@@ -1,6 +1,10 @@
 const fs = require('fs');
 
+const FAIL_FAST = process.env.FAIL_FAST || '--fail-fast';
+
 function generateConfig(profile) {
+  fs.mkdirSync(`test-results/${profile}`, { recursive: true });
+
   const RERUN = `@cucumber-${profile}.rerun`;
   const FEATURE_GLOB =
     fs.existsSync(RERUN) && fs.statSync(RERUN).size !== 0
@@ -16,7 +20,7 @@ function generateConfig(profile) {
   const REQUIRE_GLOB = 'test/js/**/*.js';
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
     FORMAT_OPTIONS,
-  )}' ${MODULES} --require ${REQUIRE_GLOB} --no-strict --format rerun:${RERUN} --fail-fast`;
+  )}' ${MODULES} --require ${REQUIRE_GLOB} --no-strict --format rerun:${RERUN} --format json:test-results/${profile}/results.xml ${FAIL_FAST}`;
   if (profile === 'system') {
     return `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest',
