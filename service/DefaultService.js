@@ -9,7 +9,7 @@ import LinkHeader from 'http-link-header';
 
 // var logger = debug('api');
 
-export function getApiRoot() {
+export async function getApiRoot() {
   const paths = Object.keys(global.swaggerDoc.paths).filter(
     p =>
       global.swaggerDoc.paths[p].get !== undefined &&
@@ -33,5 +33,5 @@ export function getApiRoot() {
     title: 'API Docs',
     type: 'application/json',
   });
-  return { links: link, body: {} };
+  return { link: link, body: {} };
 }

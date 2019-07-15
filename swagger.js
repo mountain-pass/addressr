@@ -1,11 +1,17 @@
 import connect from 'connect';
-// import debug from 'debug';
+import debug from 'debug';
 import { readFileSync } from 'fs';
+import { createServer } from 'http';
 import { safeLoad } from 'js-yaml';
 import { join } from 'path';
 import { initializeMiddleware } from 'swagger-tools';
-// var logger = debug('api');
+
 var app = connect();
+
+var serverPort = process.env.PORT || 8080;
+var logger = debug('api');
+var error = debug('error');
+error.log = console.error.bind(console); // eslint-disable-line no-console
 
 // swaggerRouter configuration
 var options = {
@@ -46,4 +52,39 @@ export function swaggerInit() {
       resolve({ app, middleware });
     });
   });
+}
+
+let server = undefined;
+
+export function startServer() {
+  return swaggerInit().then(({ app, middleware }) => {
+    logger(app);
+    logger(middleware);
+
+    server = createServer(app);
+    server.listen(serverPort, function() {
+      logger(
+        '📡  Addressr is listening on port %d (http://localhost:%d) ',
+        serverPort,
+        serverPort,
+      );
+      logger(
+        '📑  Swagger-ui is available on http://localhost:%d/docs',
+        serverPort,
+      );
+      if (process.env.NODE_ENV !== 'PRODUCTION') {
+        // ngrok.connect(serverPort).then(url => {
+        //   logger('📡  Addressr is listening at %s', url);
+        //   logger('📑  Swagger-ui is available on %s/docs/', url);
+        // });
+      }
+    });
+    return `http://localhost:${serverPort}`;
+  });
+}
+
+export function stopServer() {
+  if (server !== undefined) {
+    server.close();
+  }
 }

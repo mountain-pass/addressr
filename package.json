@@ -21,9 +21,9 @@
     "lint": "node_modules/.bin/eslint controllers/*.js --fix",
     "test": "npm-run-all --serial test:*",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
-    "test:component": "DEBUG=error,api,express:*,swagger-tools*,test cucumber-js -p default -- --harmony_async_iteration",
+    "test:component": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
-    "test:system": "DEBUG=error,api,express:*,swagger-tools*,test cucumber-js -p system -- --harmony_async_iteration",
+    "test:system": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system"
   },
   "keywords": [
@@ -37,6 +37,7 @@
     "connect": "^3.2.0",
     "debug": "^4.1.1",
     "js-yaml": "^3.3.0",
+    "npm-run-all": "^4.1.5",
     "swagger-tools": "^0.10.4"
   },
   "devDependencies": {
@@ -58,6 +59,7 @@
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
+    "got": "^9.6.0",
     "http-link-header": "^1.0.2",
     "husky": "^3.0.0",
     "imagemin-lint-staged": "^0.4.0",

@@ -8,12 +8,15 @@ import chai from 'chai';
 import {
   // eslint-disable-next-line indent
   //   AfterAll, Before,
+  AfterAll,
   BeforeAll,
   setDefinitionFunctionWrapper,
   setWorldConstructor,
 } from 'cucumber';
 import debug from 'debug';
-import { swaggerDoc, swaggerInit } from '../../swagger';
+import { startServer, stopServer, swaggerDoc } from '../../swagger';
+import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
+import { AddressrRestDriver } from './drivers/AddressrRestDriver';
 var logger = debug('test');
 
 // import Docker from 'dockerode';
@@ -36,10 +39,20 @@ var logger = debug('test');
 global.expect = chai.expect;
 global.PendingError = PendingError;
 
+const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
+
 // const DB_IMAGE = 'mysql:5.7.26';
 
 BeforeAll({ timeout: 60000 }, async function() {
-  await swaggerInit();
+  logger('BEFORE ALL');
+  switch (TEST_PROFILE) {
+    case 'system':
+      global.driver = new AddressrRestDriver(await startServer());
+      break;
+    default:
+      global.driver = new AddressrEmbeddedDriver();
+      break;
+  }
   logger(swaggerDoc);
 });
 //   this.containers = {};
@@ -74,7 +87,9 @@ BeforeAll({ timeout: 60000 }, async function() {
 //   global.serverUrl = await global.fastifyServer.listen(3000);
 // });
 
-// AfterAll({ timeout: 30000 }, async function () {
+AfterAll({ timeout: 30000 }, async function() {
+  stopServer();
+});
 //   await new Promise((resolve, reject) => {
 //     global.mysqlTestConn.end((err) => {
 //       if (err) {
@@ -91,16 +106,10 @@ BeforeAll({ timeout: 60000 }, async function() {
 // });
 
 function world({ attach, parameters }) {
+  logger('IN WORLD');
   this.attach = attach;
   this.parameters = parameters;
-  //   switch (parameters.client) {
-  //     case 'rest':
-  //       this.driver = new AddressrRestDriver();
-  //       break;
-  //     default:
-  //       this.driver = new AddressrEmbeddedDriver();
-  //       break;
-  //   }
+  this.driver = global.driver;
 }
 
 setWorldConstructor(world);

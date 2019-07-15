@@ -27,5 +27,5 @@ function generateConfig(profile) {
 
 module.exports = {
   default: generateConfig('component'),
-  systemTest: generateConfig('system'),
+  system: generateConfig('system'),
 };
