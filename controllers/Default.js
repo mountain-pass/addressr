@@ -1,15 +1,11 @@
-import debug from 'debug';
+// import debug from 'debug';
 import { getApiRoot as _getApiRoot } from '../service/DefaultService';
 import { writeJson } from '../utils/writer.js';
-var logger = debug('api');
+// var logger = debug('api');
 
 export function getApiRoot(req, res) {
   _getApiRoot()
     .then(function(response) {
-      logger('RESP', response);
-      logger('res', res);
-      logger('res', Object.keys(res));
-
       res.setHeader('link', response.link.toString());
       writeJson(res, response.body);
     })
