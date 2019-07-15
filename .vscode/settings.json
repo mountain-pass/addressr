@@ -20,5 +20,7 @@
   },
   "spellright.addToSystemDictionary": true,
   "spellright.language": ["en"],
-  "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"]
+  "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"],
+  "cucumberautocomplete.onTypeFormat": true,
+  "cucumberautocomplete.steps": ["test/js/*.js"]
 }

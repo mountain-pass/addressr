@@ -91,7 +91,7 @@ exports.getAddress = function(/*addressId*/) {
  * p Integer page number (optional)
  * returns List
  **/
-exports.getAddresses = function(/*q, p*/) {
+export function getAddresses(/*q, p*/) {
   return new Promise(function(resolve /*reject*/) {
     var examples = {};
     examples['application/json'] = [
@@ -120,4 +120,4 @@ exports.getAddresses = function(/*q, p*/) {
       resolve();
     }
   });
-};
+}

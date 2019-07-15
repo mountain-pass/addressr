@@ -20,7 +20,11 @@
     "exports": true,
     "process": true,
     "console": true,
-    "__dirname": true
+    "__dirname": true,
+    "global": true,
+    "expect": true,
+    "require": true,
+    "module": true
   },
   "settings": {
     "import/core-modules": []

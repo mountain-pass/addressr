@@ -17,6 +17,7 @@ paths:
       summary: API Root
       operationId: getApiRoot
       x-swagger-router-controller: Default
+      x-root-rel: self
       description: |
         returns a list of available APIs within the `Link` headers
       responses:
@@ -36,11 +37,12 @@ paths:
     get:
       summary: Get List of Addresses
       operationId: getAddresses
+      x-swagger-router-controller: Addresses
+      x-root-rel: https://addressr.mountain-pass.com.au/rels/address-search
       description: |
         returns a list of addresses matching the search string
       tags:
         - address
-      x-swagger-router-controller: Addresses
       parameters: 
         - name: q
           in: query
@@ -101,11 +103,11 @@ paths:
     get:
       summary: Get Address
       operationId: getAddress
+      x-swagger-router-controller: Addresses
       description: |
         returns detailed information about a specific address
       tags:
         - address
-      x-swagger-router-controller: Addresses
       parameters: 
         - name: addressId
           in: path
