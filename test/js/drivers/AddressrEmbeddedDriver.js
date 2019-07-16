@@ -8,12 +8,16 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
   }
 
   async follow(link) {
+    console.log('FOLLOWING', link);
     switch (link.uri) {
       case '/api-docs':
         return {
           json: swaggerDoc,
           headers: { 'content-type': 'application/json' },
         };
+      case '/':
+        return getApiRoot();
+
       default:
         throw new PendingError();
     }

@@ -22,6 +22,7 @@ export class AddressrRestDriver extends AddressrDriver {
     if (link.type === undefined || link.type === 'application/json') {
       resp.json = JSON.parse(resp.body);
     }
+    resp.link = LinkHeader.parse(resp.headers.link || '');
     return resp;
   }
 }
