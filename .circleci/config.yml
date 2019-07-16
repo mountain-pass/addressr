@@ -18,6 +18,7 @@ jobs:
           path: test-results/system
       - store_artifacts:
           path: test-results
+          destination: test-results
       - save_cache:
           paths:
             - node_modules
