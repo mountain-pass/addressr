@@ -1,8 +1,10 @@
+//import debug from 'debug';
 import {
   getAddress as _getAddress,
   getAddresses as _getAddresses,
 } from '../service/AddressService';
 import { writeJson } from '../utils/writer.js';
+//var logger = debug('api');
 
 export function getAddress(req, res) {
   var addressId = req.swagger.params['addressId'].value;
@@ -18,9 +20,10 @@ export function getAddress(req, res) {
 export function getAddresses(req, res) {
   var q = req.swagger.params['q'].value;
   var p = req.swagger.params['p'].value;
-  _getAddresses(q, p)
+  _getAddresses(req.url, req.swagger, q, p)
     .then(function(response) {
-      writeJson(res, response);
+      res.setHeader('link', response.link.toString());
+      writeJson(res, response.json);
     })
     .catch(function(response) {
       writeJson(res, response);

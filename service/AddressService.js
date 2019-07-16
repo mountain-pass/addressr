@@ -1,3 +1,6 @@
+//import debug from 'debug';
+import LinkHeader from 'http-link-header';
+// var logger = debug('api');
 /**
  * Get Addresses
  * returns detailed information about a specific address
@@ -5,7 +8,7 @@
  * addressId String ID of the address.
  * returns Address
  **/
-exports.getAddress = function(/*addressId*/) {
+export function getAddress(/*addressId*/) {
   return new Promise(function(resolve /*, reject*/) {
     var examples = {};
     examples['application/json'] = {
@@ -81,7 +84,7 @@ exports.getAddress = function(/*addressId*/) {
       resolve();
     }
   });
-};
+}
 
 /**
  * Get List of Addresses
@@ -91,33 +94,43 @@ exports.getAddress = function(/*addressId*/) {
  * p Integer page number (optional)
  * returns List
  **/
-export function getAddresses(/*q, p*/) {
-  return new Promise(function(resolve /*reject*/) {
-    var examples = {};
-    examples['application/json'] = [
-      {
-        sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
-        score: 1,
-        links: {
-          self: {
-            href: '/address/GANT_718592778',
-          },
+export async function getAddresses(url, swagger /*q, p*/) {
+  var example = [
+    {
+      sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
+      score: 1,
+      links: {
+        self: {
+          href: '/address/GANT_718592778',
         },
       },
-      {
-        sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
-        score: 0.985051936618461,
-        links: {
-          self: {
-            href: '/address/GANT_718592782',
-          },
+    },
+    {
+      sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
+      score: 0.985051936618461,
+      links: {
+        self: {
+          href: '/address/GANT_718592782',
         },
       },
-    ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    },
+  ];
+  const link = new LinkHeader();
+  link.set({
+    rel: 'self',
+    uri: url,
   });
+  link.set({
+    rel: 'first',
+    uri: url,
+  });
+  link.set({
+    rel: 'describedby',
+    uri: `/docs/#operations-${
+      swagger.path.get['x-swagger-router-controller']
+    }-${swagger.path.get.operationId}`,
+    title: `${swagger.path.get.operationId} API Docs`,
+    type: 'text/html',
+  });
+  return { link: link, json: example };
 }

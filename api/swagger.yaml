@@ -33,7 +33,7 @@ paths:
               items:
                 type: string
                 pattern: "<(.*)>;(.*)"
-  /addresses/:
+  /addresses:
     get:
       summary: Get List of Addresses
       operationId: getAddresses

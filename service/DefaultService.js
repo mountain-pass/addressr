@@ -1,14 +1,13 @@
+import LinkHeader from 'http-link-header';
+// import debug from 'debug';
+// var logger = debug('api');
+
 /**
  * API Root
  * returns a list of available APIs within the `Link` headers
  *
  * returns Root
  **/
-// import debug from 'debug';
-import LinkHeader from 'http-link-header';
-
-// var logger = debug('api');
-
 export async function getApiRoot() {
   const paths = Object.keys(global.swaggerDoc.paths).filter(
     p =>
