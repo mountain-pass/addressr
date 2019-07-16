@@ -45,3 +45,10 @@ Then('the html docs will be returned', async function() {
   );
   expect(this.followed.body).to.have.string('<title>Swagger UI</title>');
 });
+
+Then('the swagger json docs will be returned', async function() {
+  logger(this.followed.json);
+
+  expect(this.followed.headers['content-type']).to.equal('application/json');
+  expect(this.followed.json.info.title).to.equal('Addressr by Mountain Pass');
+});

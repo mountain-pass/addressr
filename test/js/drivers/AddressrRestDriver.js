@@ -19,6 +19,9 @@ export class AddressrRestDriver extends AddressrDriver {
 
   async follow(link) {
     const resp = await this.requester.get(link.uri);
+    if (link.type === undefined || link.type === 'application/json') {
+      resp.json = JSON.parse(resp.body);
+    }
     return resp;
   }
 }
