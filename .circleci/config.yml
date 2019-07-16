@@ -15,7 +15,7 @@ jobs:
             npm install
             FAIL_FAST=" " npm run test
       - store_test_results:
-          path: test-results/system
+          path: test-results
       - store_artifacts:
           path: test-results
           destination: test-results
