@@ -1,6 +1,36 @@
 //import debug from 'debug';
 import LinkHeader from 'http-link-header';
 // var logger = debug('api');
+
+let addresses = [
+  {
+    sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
+    score: 1,
+    links: {
+      self: {
+        href: '/address/GANT_718592778',
+      },
+    },
+  },
+  {
+    sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
+    score: 0.985051936618461,
+    links: {
+      self: {
+        href: '/address/GANT_718592782',
+      },
+    },
+  },
+];
+
+export function clearAddresses() {
+  addresses = [];
+}
+
+export function setAddresses(addr) {
+  addresses = addr;
+}
+
 /**
  * Get Addresses
  * returns detailed information about a specific address
@@ -95,26 +125,6 @@ export function getAddress(/*addressId*/) {
  * returns List
  **/
 export async function getAddresses(url, swagger /*q, p*/) {
-  var example = [
-    {
-      sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
-      score: 1,
-      links: {
-        self: {
-          href: '/address/GANT_718592778',
-        },
-      },
-    },
-    {
-      sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
-      score: 0.985051936618461,
-      links: {
-        self: {
-          href: '/address/GANT_718592782',
-        },
-      },
-    },
-  ];
   const link = new LinkHeader();
   link.set({
     rel: 'self',
@@ -126,11 +136,11 @@ export async function getAddresses(url, swagger /*q, p*/) {
   });
   link.set({
     rel: 'describedby',
-    uri: `/docs/#operations-${
-      swagger.path.get['x-swagger-router-controller']
-    }-${swagger.path.get.operationId}`,
+    uri: `/docs/#operations-${swagger.path.get[
+      'x-swagger-router-controller'
+    ].toLowerCase()}-${swagger.path.get.operationId}`,
     title: `${swagger.path.get.operationId} API Docs`,
     type: 'text/html',
   });
-  return { link: link, json: example };
+  return { link: link, json: addresses };
 }

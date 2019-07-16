@@ -19,7 +19,7 @@
     "npm-check:interactive": "npm-check --skip-unused -u ",
     "npm-check-unused": "npm-check",
     "lint": "node_modules/.bin/eslint controllers/*.js --fix",
-    "test": "npm-run-all --serial test:*",
+    "test": "NO_STRICT=' ' npm-run-all --serial test:component test:system",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
     "test:component": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",

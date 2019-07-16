@@ -1,6 +1,7 @@
 const fs = require('fs');
 
 const FAIL_FAST = process.env.FAIL_FAST || '--fail-fast';
+const NO_STRICT = process.env.NO_STRICT || '--no-strict';
 
 function generateConfig(profile) {
   fs.mkdirSync(`test-results/${profile}`, { recursive: true });
@@ -20,7 +21,7 @@ function generateConfig(profile) {
   const REQUIRE_GLOB = 'test/js/**/*.js';
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
     FORMAT_OPTIONS,
-  )}' ${MODULES} --require ${REQUIRE_GLOB} --no-strict --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
+  )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
   if (profile === 'system') {
     return `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest',

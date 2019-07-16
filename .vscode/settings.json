@@ -22,5 +22,6 @@
   "spellright.language": ["en"],
   "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"],
   "cucumberautocomplete.onTypeFormat": true,
-  "cucumberautocomplete.steps": ["test/js/*.js"]
+  "cucumberautocomplete.steps": ["test/js/*.js"],
+  "cucumberautocomplete.skipDocStringsFormat": true
 }

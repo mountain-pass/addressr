@@ -1,6 +1,7 @@
-import { Then, When } from 'cucumber';
+import { Given, Then, When } from 'cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
+import { clearAddresses, setAddresses } from '../../service/AddressService';
 
 var logger = debug('test');
 
@@ -20,22 +21,26 @@ Then('the response will contain the following links:', async function(
     if (link.type === '') {
       delete link.type;
     }
+    if (link.title === '') {
+      delete link.title;
+    }
     expectedLinks.set(h);
   });
 
   expect(this.current.link).to.not.be.undefined;
-  expect(this.current.link.refs.length).to.equal(hashes.length);
+  //  expect(this.current.link.refs.length).to.equal(hashes.length);
 
   const expected = expectedLinks.refs;
   const actual = this.current.link.refs;
   logger('expectedLinks', expected);
-  logger('actualLinks', typeof actual);
+  logger('actualLinks', actual);
   expect(actual).to.be.an('array');
-  expected.forEach(e => {
-    logger('finding', e.uri);
-    const found = actual.find(l => l.uri == e.uri);
-    expect(found).to.deep.equal(e);
-  });
+  expect(actual).to.have.deep.members(expected);
+  //   expected.forEach(e => {
+  //     logger('finding', e.uri);
+  //     const found = actual.find(l => l.uri == e.uri);
+  //     expect(found).to.deep.equal(e);
+  //   });
 });
 
 When('the {string} link is followed for {string}', async function(rel, type) {
@@ -67,4 +72,23 @@ Then('the swagger json docs will be returned', async function() {
 Then('the an address list will be returned', async function() {
   expect(this.current.json).to.be.an('array').that.is.not.empty;
   expect(this.current.json[0]).to.have.a.property('sla');
+});
+
+Then('the an empty address list will be returned', async function() {
+  expect(this.current.json).to.be.an('array').that.is.empty;
+});
+
+Given('an empty address database', async function() {
+  clearAddresses();
+});
+
+Given('an address database with:', async function(docString) {
+  setAddresses(JSON.parse(docString));
+});
+
+Then('the returned address list will contain:', async function(docString) {
+  const expected = JSON.parse(docString);
+  expect(this.current.json).to.be.an('array').that.is.not.empty;
+  expect(this.current.json[0]).to.have.a.property('sla');
+  expect(this.current.json).to.have.deep.members(expected);
 });
