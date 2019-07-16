@@ -14,12 +14,14 @@ jobs:
           command: |
             npm install
             FAIL_FAST=" " npm run test
+      - store_test_results:
+          path: test-results/system
+      - store_artifacts:
+          path: test-results
       - save_cache:
           paths:
             - node_modules
           key: dependencies-{{ checksum "package.json" }}
-      - store_test_results:
-          path: test-results
 
 workflows:
   version: 2
