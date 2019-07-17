@@ -33,3 +33,10 @@ throwables
 describedby
 rel
 sla
+elasticsearch
+dockerode
+qc
+keyv
+msgpack
+basename
+esclient

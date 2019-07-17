@@ -40,6 +40,7 @@
         "peerDependencies": true
       }
     ],
-    "no-console": 0
+    "no-console": 0,
+    "import/default": 0
   }
 }

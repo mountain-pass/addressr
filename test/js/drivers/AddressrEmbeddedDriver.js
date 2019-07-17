@@ -1,8 +1,10 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables';
+import debug from 'debug';
 import { getAddresses } from '../../../service/AddressService';
 import { getApiRoot } from '../../../service/DefaultService';
 import { swaggerDoc } from '../../../swagger';
 import { AddressrDriver } from './AddressrDriver';
+const logger = debug('api');
 
 function getSwagger(uri) {
   return {
@@ -15,7 +17,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
   }
 
   async follow(link) {
-    console.log('FOLLOWING', link);
+    logger('FOLLOWING', link);
     switch (link.uri) {
       case '/api-docs':
         return {

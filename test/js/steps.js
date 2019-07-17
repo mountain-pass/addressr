@@ -1,7 +1,12 @@
+import { PendingError } from '@windyroad/cucumber-js-throwables';
 import { Given, Then, When } from 'cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
-import { clearAddresses, setAddresses } from '../../service/AddressService';
+import {
+  clearAddresses,
+  loadGnaf,
+  setAddresses,
+} from '../../service/AddressService';
 
 var logger = debug('test');
 
@@ -91,4 +96,20 @@ Then('the returned address list will contain:', async function(docString) {
   expect(this.current.json).to.be.an('array').that.is.not.empty;
   expect(this.current.json[0]).to.have.a.property('sla');
   expect(this.current.json).to.have.deep.members(expected);
+});
+
+const TWENTY_MINUTES = 60 * 20 * 1000;
+
+Given(
+  'an address database is loaded from gnaf',
+  { timeout: TWENTY_MINUTES },
+  async function() {
+    this.dataDir = await loadGnaf();
+    throw new PendingError();
+  },
+);
+
+Then('the returned address list will contain many addresses', async function() {
+  // Write code here that turns the phrase above into concrete actions
+  throw new PendingError();
 });

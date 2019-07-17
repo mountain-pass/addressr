@@ -2,7 +2,7 @@ import {
   PendingError,
   stepDefinitionWrapper,
 } from '@windyroad/cucumber-js-throwables';
-// import qc from '@windyroad/quick-containers-js';
+import qc from '@windyroad/quick-containers-js';
 import chai from 'chai';
 // import chaiIterator from 'chai-iterator';
 import {
@@ -14,12 +14,14 @@ import {
   setWorldConstructor,
 } from 'cucumber';
 import debug from 'debug';
-import { startServer, stopServer, swaggerDoc } from '../../swagger';
+import Docker from 'dockerode';
+import waitport from 'wait-port';
+import esStarter from '../../service/elasticsearch';
+import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
-var logger = debug('test');
+const logger = debug('test');
 
-// import Docker from 'dockerode';
 // import fastify from 'fastify';
 // import mysql from 'mysql';
 // import ShutdownHook from 'shutdown-hook';
@@ -32,18 +34,26 @@ var logger = debug('test');
 
 // const shutdownHook = new ShutdownHook();
 // shutdownHook.register();
-// shutdownHook.on('ShutdownStarted', () => console.log('it has began'));
-// shutdownHook.on('ComponentShutdown', e => console.log('shutting down', e.name));
-// shutdownHook.on('ShutdownEnded', () => console.log('it has ended'));
+// shutdownHook.on('ShutdownStarted', () => logger('it has began'));
+// shutdownHook.on('ComponentShutdown', e => logger('shutting down', e.name));
+// shutdownHook.on('ShutdownEnded', () => logger('it has ended'));
 
 global.expect = chai.expect;
 global.PendingError = PendingError;
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
-// const DB_IMAGE = 'mysql:5.7.26';
+const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch:7.2.0';
 
-BeforeAll({ timeout: 60000 }, async function() {
+const esport = parseInt(process.env.ELASTIC_PORT || '9200');
+const eshost = process.env.ELASTIC_HOST || '127.0.0.1';
+const esnode = process.env.ELASTIC_NODE || 'local';
+const esstart = process.env.ELASTIC_START || 1;
+
+const INDEX_NAME = 'addressr';
+const clearIndex = true;
+
+BeforeAll({ timeout: 240000 }, async function() {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
     case 'system':
@@ -53,12 +63,45 @@ BeforeAll({ timeout: 60000 }, async function() {
       global.driver = new AddressrEmbeddedDriver();
       break;
   }
-  logger(swaggerDoc);
-});
-//   this.containers = {};
+  //   logger(swaggerDoc);
 
-//   const docker = new Docker();
-//   await qc.ensurePulled(docker, DB_IMAGE, console.log);
+  this.containers = {};
+  const docker = new Docker();
+  await qc.ensurePulled(docker, SEARCH_IMAGE, logger);
+  this.containers.es = await qc.ensureStarted(
+    docker,
+    {
+      Image: SEARCH_IMAGE,
+      Tty: false,
+      ExposedPorts: {
+        '9200/tcp': {},
+        '9300/tcp': {},
+      },
+      HostConfig: {
+        PortBindings: {
+          '9200/tcp': [{ HostPort: '9200' }],
+          '9300/tcp': [{ HostPort: '9300' }],
+        },
+      },
+      Env: ['discovery.type=single-node'],
+      name: 'qc-elasticsearch-test',
+    },
+    () =>
+      waitport({
+        port: 9200,
+        timeout: 60000,
+      }),
+  );
+
+  global.esclient = await esStarter(
+    esport,
+    eshost,
+    esnode,
+    esstart,
+    INDEX_NAME,
+    clearIndex,
+  );
+});
 
 //   this.containers.mysql = await qc.ensureMySqlStarted(docker, '5.7.26');
 

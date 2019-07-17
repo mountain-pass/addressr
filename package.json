@@ -36,9 +36,16 @@
   "dependencies": {
     "connect": "^3.2.0",
     "debug": "^4.1.1",
+    "directory-exists": "^2.0.1",
+    "elasticsearch": "^16.3.0",
+    "etag": "^1.8.1",
     "js-yaml": "^3.3.0",
+    "keyv": "^3.1.0",
+    "keyv-file": "^0.1.13",
     "npm-run-all": "^4.1.5",
-    "swagger-tools": "^0.10.4"
+    "papaparse": "^5.0.0",
+    "swagger-tools": "^0.10.4",
+    "unzip-stream": "^0.3.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -46,10 +53,12 @@
     "@babel/node": "^7.5.0",
     "@babel/polyfill": "^7.4.4",
     "@windyroad/cucumber-js-throwables": "^1.0.4",
+    "@windyroad/quick-containers-js": "^1.0.4",
     "babel-eslint": "^10.0.2",
     "babel-preset-env": "^1.7.0",
     "chai": "^4.2.0",
     "cucumber": "^5.1.0",
+    "dockerode": "^2.5.8",
     "eslint": "^6.0.1",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-prettier-standard": "^3.0.1",
@@ -64,12 +73,14 @@
     "husky": "^3.0.0",
     "imagemin-lint-staged": "^0.4.0",
     "lint-staged": "^9.2.0",
+    "mysql": "^2.17.1",
     "ngrok": "^3.2.2",
     "nodemon": "^1.19.1",
     "npm-check": "^5.9.0",
     "prettier": "^1.18.2",
     "prettier-config-standard": "^1.0.1",
-    "semver": "^6.2.0"
+    "semver": "^6.2.0",
+    "wait-port": "^0.2.2"
   },
   "repository": {
     "type": "git",

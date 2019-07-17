@@ -104,3 +104,16 @@ Feature: Address
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
+
+
+    Scenario: Two Entries Address List
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link is followed
+        Then the returned address list will contain many addresses
+        And the response will contain the following links:
+            | rel         | uri                                      | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
+            | self        | /addresses                               |                       |           |
+            | first       | /addresses                               |                       |           |
+            | next        | /addresses?p=2                           |                       |           |
