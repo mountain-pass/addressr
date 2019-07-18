@@ -260,7 +260,132 @@ export async function unzipFile(file) {
   }
 }
 
-async function loadAddressDetails(file, count) {
+// function cleanProperty(p, v) {
+//   v !== '' && {
+//     [p]: v,
+//   };
+// }
+
+function levelTypeCodeToName(code, context) {
+  console.log(context);
+  const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    logger('FOUND', code, found.NAME);
+    return found.NAME;
+  }
+  error(`Unknown Level Type Code: '${code}'`);
+  return undefined;
+}
+
+function mapAddressDetails(d, context) {
+  const rval = {
+    ADDRESS_DETAIL: d,
+    geo: {
+      level: {
+        code: 7,
+        name: 'LOCALITY,STREET, ADDRESS',
+      },
+      reliability: {
+        code: 2,
+        name: 'WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT',
+      },
+      latitude: -33.85351875,
+      longitude: 150.8947369,
+    },
+    structured: {
+      ...(d.BUILDING_NAME !== '' && {
+        buildingName: d.BUILDING_NAME,
+      }),
+      number: {
+        ...(d.NUMBER_FIRST_PREFIX !== '' && {
+          prefix: d.NUMBER_FIRST_PREFIX,
+        }),
+        ...(d.NUMBER_FIRST !== '' && {
+          number: parseInt(d.NUMBER_FIRST),
+        }),
+        ...(d.NUMBER_FIRST_SUFFIX !== '' && {
+          suffix: d.NUMBER_FIRST_SUFFIX,
+        }),
+        ...(d.NUMBER_LAST_PREFIX !== '' &&
+          d.NUMBER_LAST !== '' &&
+          d.NUMBER_LAST_SUFFIX !== '' && {
+            second: {
+              ...(d.NUMBER_LAST_PREFIX !== '' && {
+                prefix: d.NUMBER_LAST_PREFIX,
+              }),
+              ...(d.NUMBER_LAST !== '' && {
+                number: parseInt(d.NUMBER_LAST),
+              }),
+              ...(d.NUMBER_LAST_SUFFIX !== '' && {
+                suffix: d.NUMBER_LAST_SUFFIX,
+              }),
+            },
+          }),
+      },
+      ...(d.LEVEL_TYPE_CODE !== '' &&
+        d.LEVEL_NUMBER_PREFIX !== '' &&
+        d.LEVEL_NUMBER !== '' &&
+        d.LEVEL_NUMBER_SUFFIX !== '' && {
+          level: {
+            ...(d.LEVEL_TYPE_CODE !== '' && {
+              type: {
+                code: d.LEVEL_TYPE_CODE,
+                name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context),
+              },
+            }),
+            ...(d.LEVEL_NUMBER_PREFIX !== '' && {
+              prefix: d.LEVEL_NUMBER_PREFIX,
+            }),
+            ...(d.LEVEL_NUMBER !== '' && {
+              number: parseInt(d.LEVEL_NUMBER),
+            }),
+            ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
+              suffix: d.LEVEL_NUMBER_SUFFIX,
+            }),
+          },
+        }),
+      flat: {
+        number: '20114',
+        code: 'Twr',
+        prefix: 'CT',
+        type: 'Tower',
+        suffix: 'AG',
+      },
+      street: {
+        code: 'Avenue',
+        name: 'Barangaroo',
+        type: 'Av',
+        suffix: {
+          code: 'De',
+          name: 'Deviation',
+        },
+      },
+      confidence: 0,
+      locality: {
+        name: 'Sydney',
+      },
+      postcode: '2000',
+      lotNumber: {
+        number: 'CP',
+        prefix: 'A',
+        suffix: 'B',
+      },
+      state: {
+        name: 'New South Wales',
+        abbreviation: 'NSW',
+      },
+    },
+    sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
+    pid: d.ADDRESS_DETAIL_PID,
+    fla: '',
+  };
+  logger('addr', JSON.stringify(rval, null, 2));
+  return rval;
+}
+
+async function loadAddressDetails(file, count, context) {
   const details = [];
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
@@ -270,7 +395,7 @@ async function loadAddressDetails(file, count) {
         if (row.errors.length > 0) {
           error(`Errors reading '${file}': ${row.errors}`);
         } else {
-          details.push(row.data);
+          details.push(mapAddressDetails(row.data, context));
         }
       },
       complete: function() {
@@ -283,10 +408,9 @@ async function loadAddressDetails(file, count) {
       },
     });
   });
-  logger('addressDetails', details);
   if (details.length != count) {
     error(
-      `Error loading '${file}'. Expected '${details.length}' rows, got '${count}'`,
+      `Error loading '${file}'. Expected '${count}' rows, got '${details.length}'`,
     );
   } else {
     logger(`loaded '${count}' rows from '${file}'`);
@@ -325,7 +449,36 @@ async function loadGnafData(dir) {
   logger('files', files);
   const authCodeFiles = files.filter(f => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
-
+  const context = {};
+  for (let i = 0; i < authCodeFiles.length; i++) {
+    const authFile = authCodeFiles[i];
+    await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
+        delimiter: '|',
+        header: true,
+        complete: function(results) {
+          context[path.basename(authFile, path.extname(authFile))] =
+            results.data;
+          if (results.data.length != filesCounts[authFile]) {
+            error(
+              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
+            );
+            reject(
+              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
+            );
+          } else {
+            logger(`loaded '${results.length}' rows from '${dir}/${authFile}'`);
+            resolve();
+          }
+        },
+        error: (error, file) => {
+          error(`Error loading '${dir}/${authFile}`, error, file);
+          reject([`Error loading '${dir}/${authFile}`, error, file]);
+        },
+      });
+    });
+  }
+  logger('AUTH', context);
   const addressDetailFiles = files.filter(
     f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
   );
@@ -333,6 +486,7 @@ async function loadGnafData(dir) {
   await loadAddressDetails(
     `${dir}/${addressDetailFiles[0]}`,
     filesCounts[addressDetailFiles[0]],
+    context,
   );
   throw new PendingError(dir);
 }
