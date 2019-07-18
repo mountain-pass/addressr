@@ -274,7 +274,6 @@ function levelTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Level Type Code: '${code}'`);
-  process.exit(1);
   return undefined;
 }
 
@@ -286,7 +285,6 @@ function flatTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Flat Type Code: '${code}'`);
-  process.exit(1);
   return undefined;
 }
 
@@ -388,20 +386,35 @@ function mapAddressDetails(d, context) {
           name: 'Deviation',
         },
       },
-      confidence: 0,
+      ...(d.CONFIDENCE !== '' && {
+        confidence: parseInt(d.CONFIDENCE),
+      }),
       locality: {
         name: 'Sydney',
       },
-      postcode: '2000',
-      lotNumber: {
-        number: 'CP',
-        prefix: 'A',
-        suffix: 'B',
-      },
+      ...(d.POSTCODE !== '' && {
+        postcode: d.POSTCODE,
+      }),
+      ...((d.LOT_NUMBER_PREFIX !== '' ||
+        d.LOT_NUMBER !== '' ||
+        d.LOT_NUMBER_SUFFIX !== '') && {
+        lotNumber: {
+          ...(d.LOT_NUMBER_PREFIX !== '' && {
+            prefix: d.LOT_NUMBER_PREFIX,
+          }),
+          ...(d.LOT_NUMBER !== '' && {
+            number: d.LOT_NUMBER,
+          }),
+          ...(d.LOT_NUMBER_SUFFIX !== '' && {
+            suffix: d.LOT_NUMBER_SUFFIX,
+          }),
+        },
+      }),
       state: {
-        name: 'New South Wales',
-        abbreviation: 'NSW',
+        name: context.stateName,
+        abbreviation: context.state,
       },
+      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     },
     sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
     pid: d.ADDRESS_DETAIL_PID,
@@ -443,6 +456,22 @@ async function loadAddressDetails(file, count, context) {
   }
 }
 
+async function getStateName(abbr, file) {
+  return await new Promise((resolve, reject) => {
+    Papa.parse(fs.createReadStream(file), {
+      header: true,
+      delimiter: '|',
+      complete: results => {
+        resolve(results.data[0].STATE_NAME);
+      },
+      error: (error, file) => {
+        console.log(error, file);
+        reject(error);
+      },
+    });
+  });
+}
+
 async function loadGnafData(dir) {
   const filesCounts = {};
   await new Promise((resolve, reject) => {
@@ -475,7 +504,7 @@ async function loadGnafData(dir) {
   logger('files', files);
   const authCodeFiles = files.filter(f => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
-  const context = {};
+  const loadContext = {};
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
     await new Promise((resolve, reject) => {
@@ -483,7 +512,7 @@ async function loadGnafData(dir) {
         delimiter: '|',
         header: true,
         complete: function(results) {
-          context[path.basename(authFile, path.extname(authFile))] =
+          loadContext[path.basename(authFile, path.extname(authFile))] =
             results.data;
           if (results.data.length != filesCounts[authFile]) {
             error(
@@ -504,15 +533,29 @@ async function loadGnafData(dir) {
       });
     });
   }
-  logger('AUTH', context);
+  logger('AUTH', loadContext);
   const addressDetailFiles = files.filter(
     f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
   );
   logger('addressDetailFiles', addressDetailFiles);
+  loadContext.state = path
+    .basename(addressDetailFiles[0], path.extname(addressDetailFiles[0]))
+    .replace(/_.*/, '');
+  const stateFile = files.find(f =>
+    f.match(new RegExp(`${loadContext.state}_STATE_psv`)),
+  );
+  if (stateFile === undefined) {
+    error(`Could not find state file '${loadContext.state}_STATE_psv.psv'`);
+  } else {
+    const name = await getStateName(loadContext.state, `${dir}/${stateFile}`);
+    // eslint-disable-next-line require-atomic-updates
+    loadContext.stateName = name;
+  }
+
   await loadAddressDetails(
     `${dir}/${addressDetailFiles[0]}`,
     filesCounts[addressDetailFiles[0]],
-    context,
+    loadContext,
   );
   throw new PendingError(dir);
 }

@@ -359,4 +359,4 @@ definitions:
       confidence:
         type: integer
         description: |
-          Reflects how many contributor databases this N N - - CONFIDENCE address appears in (0 = 1 database, 1 = 2 database etc.).
+          Reflects how many contributor databases this address appears in (0 = 1 database, 1 = 2 database etc.).
