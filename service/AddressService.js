@@ -267,15 +267,26 @@ export async function unzipFile(file) {
 // }
 
 function levelTypeCodeToName(code, context) {
-  console.log(context);
   const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
     e => e.CODE === code,
   );
   if (found) {
-    logger('FOUND', code, found.NAME);
     return found.NAME;
   }
   error(`Unknown Level Type Code: '${code}'`);
+  process.exit(1);
+  return undefined;
+}
+
+function flatTypeCodeToName(code, context) {
+  const found = context['Authority_Code_FLAT_TYPE_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Flat Type Code: '${code}'`);
+  process.exit(1);
   return undefined;
 }
 
@@ -283,10 +294,10 @@ function mapAddressDetails(d, context) {
   const rval = {
     ADDRESS_DETAIL: d,
     geo: {
-      level: {
-        code: 7,
-        name: 'LOCALITY,STREET, ADDRESS',
-      },
+      // level: {
+      //   code: 7,
+      //   name: 'LOCALITY,STREET, ADDRESS',
+      // },
       reliability: {
         code: 2,
         name: 'WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT',
@@ -324,35 +335,50 @@ function mapAddressDetails(d, context) {
             },
           }),
       },
-      ...(d.LEVEL_TYPE_CODE !== '' &&
-        d.LEVEL_NUMBER_PREFIX !== '' &&
-        d.LEVEL_NUMBER !== '' &&
-        d.LEVEL_NUMBER_SUFFIX !== '' && {
-          level: {
-            ...(d.LEVEL_TYPE_CODE !== '' && {
-              type: {
-                code: d.LEVEL_TYPE_CODE,
-                name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context),
-              },
-            }),
-            ...(d.LEVEL_NUMBER_PREFIX !== '' && {
-              prefix: d.LEVEL_NUMBER_PREFIX,
-            }),
-            ...(d.LEVEL_NUMBER !== '' && {
-              number: parseInt(d.LEVEL_NUMBER),
-            }),
-            ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
-              suffix: d.LEVEL_NUMBER_SUFFIX,
-            }),
-          },
-        }),
-      flat: {
-        number: '20114',
-        code: 'Twr',
-        prefix: 'CT',
-        type: 'Tower',
-        suffix: 'AG',
-      },
+      ...((d.LEVEL_TYPE_CODE !== '' ||
+        d.LEVEL_NUMBER_PREFIX !== '' ||
+        d.LEVEL_NUMBER !== '' ||
+        d.LEVEL_NUMBER_SUFFIX !== '') && {
+        level: {
+          ...(d.LEVEL_TYPE_CODE !== '' && {
+            type: {
+              code: d.LEVEL_TYPE_CODE,
+              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context),
+            },
+          }),
+          ...(d.LEVEL_NUMBER_PREFIX !== '' && {
+            prefix: d.LEVEL_NUMBER_PREFIX,
+          }),
+          ...(d.LEVEL_NUMBER !== '' && {
+            number: parseInt(d.LEVEL_NUMBER),
+          }),
+          ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
+            suffix: d.LEVEL_NUMBER_SUFFIX,
+          }),
+        },
+      }),
+      ...((d.FLAT_TYPE_CODE !== '' ||
+        d.FLAT_NUMBER_PREFIX !== '' ||
+        d.FLAT_NUMBER !== '' ||
+        d.FLAT_NUMBER_SUFFIX !== '') && {
+        flat: {
+          ...(d.FLAT_TYPE_CODE !== '' && {
+            type: {
+              code: d.FLAT_TYPE_CODE,
+              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context),
+            },
+          }),
+          ...(d.FLAT_NUMBER_PREFIX !== '' && {
+            prefix: d.FLAT_NUMBER_PREFIX,
+          }),
+          ...(d.FLAT_NUMBER !== '' && {
+            number: parseInt(d.FLAT_NUMBER),
+          }),
+          ...(d.FLAT_NUMBER_SUFFIX !== '' && {
+            suffix: d.FLAT_NUMBER_SUFFIX,
+          }),
+        },
+      }),
       street: {
         code: 'Avenue',
         name: 'Barangaroo',
