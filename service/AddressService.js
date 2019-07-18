@@ -4,11 +4,15 @@ import directoryExists from 'directory-exists';
 import fs from 'fs';
 import got from 'got';
 import LinkHeader from 'http-link-header';
+import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
 
+const fsp = fs.promises;
+
 var logger = debug('api');
+var error = debug('error');
 
 const Keyv = require('keyv');
 const KeyvFile = require('keyv-file');
@@ -256,9 +260,102 @@ export async function unzipFile(file) {
   }
 }
 
+async function loadAddressDetails(file, count) {
+  const details = [];
+  await new Promise((resolve, reject) => {
+    Papa.parse(fs.createReadStream(file), {
+      header: true,
+      skipEmptyLines: true,
+      step: function(row) {
+        if (row.errors.length > 0) {
+          error(`Errors reading '${file}': ${row.errors}`);
+        } else {
+          details.push(row.data);
+        }
+      },
+      complete: function() {
+        console.log('All done!');
+        resolve();
+      },
+      error: (error, file) => {
+        console.log(error, file);
+        reject();
+      },
+    });
+  });
+  logger('addressDetails', details);
+  if (details.length != count) {
+    error(
+      `Error loading '${file}'. Expected '${details.length}' rows, got '${count}'`,
+    );
+  } else {
+    logger(`loaded '${count}' rows from '${file}'`);
+  }
+}
+
+async function loadGnafData(dir) {
+  const filesCounts = {};
+  await new Promise((resolve, reject) => {
+    Papa.parse(fs.createReadStream(`${dir}/Counts.csv`), {
+      header: true,
+      skipEmptyLines: true,
+      step: function(row) {
+        if (row.errors.length > 0) {
+          error(`Errors reading '${dir}/Counts.csv': ${row.errors}`);
+        } else {
+          const psvFile = row.data.File.replace(/\\/g, '/').replace(
+            /\.zip$/,
+            '.psv',
+          );
+          filesCounts[psvFile] = row.data.Count;
+        }
+      },
+      complete: function() {
+        console.log('All done!');
+        resolve();
+      },
+      error: (error, file) => {
+        console.log(error, file);
+        reject();
+      },
+    });
+  });
+  logger('filesCounts', filesCounts);
+  const files = Object.keys(filesCounts);
+  logger('files', files);
+  const authCodeFiles = files.filter(f => f.match(/Authority Code/));
+  logger('authCodeFiles', authCodeFiles);
+
+  const addressDetailFiles = files.filter(
+    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
+  );
+  logger('addressDetailFiles', addressDetailFiles);
+  await loadAddressDetails(
+    `${dir}/${addressDetailFiles[0]}`,
+    filesCounts[addressDetailFiles[0]],
+  );
+  throw new PendingError(dir);
+}
+
 export async function loadGnaf() {
   const file = await fetchGnafFile();
-  return await unzipFile(file);
+  const unzipped = await unzipFile(file);
+
+  logger('Data dir', unzipped);
+  const contents = await fsp.readdir(unzipped);
+  logger('Data dir contents', contents);
+  if (contents.length == 0) {
+    throw new Error(`Data dir '${unzipped}' is empty`);
+  }
+  if (contents.length > 1) {
+    throw new Error(
+      `Data dir '${unzipped}' has more than one entry: ${contents}`,
+    );
+  }
+  const mainDir = `${unzipped}/${contents[0]}`;
+  logger('Main Data dir', mainDir);
+
+  await loadGnafData(mainDir);
 }
 
 /**
