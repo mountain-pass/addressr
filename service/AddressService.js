@@ -456,6 +456,10 @@ function mapGeo(geos, context) {
   });
 }
 
+function mapToSla(fla) {
+  return fla.join(', ');
+}
+
 function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
@@ -588,16 +592,19 @@ function mapAddressDetails(d, context, i, count) {
     },
     pid: d.ADDRESS_DETAIL_PID,
   };
-  rval.sla = 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000';
+  //  rval.fla = mapToFla(rval.structured);
   rval.fla = [
     'Tower 3',
     'Level 25',
     '300 Barangaroo Avenue',
     'Sydney NSW 2000',
   ];
+  rval.sla = mapToSla(rval.fla);
   // process.stdout.write('.');
-  logger(`${i / count}%`);
-  //  logger('addr', JSON.stringify(rval, null, 2));
+  if (i % 1000 === 0) {
+    logger('addr', JSON.stringify(rval, null, 2));
+    logger(`${(i / count) * 100.0}%`);
+  }
   return rval;
 }
 
