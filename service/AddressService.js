@@ -288,21 +288,200 @@ function flatTypeCodeToName(code, context) {
   return undefined;
 }
 
-function mapAddressDetails(d, context) {
-  const rval = {
-    ADDRESS_DETAIL: d,
-    geo: {
-      // level: {
-      //   code: 7,
-      //   name: 'LOCALITY,STREET, ADDRESS',
-      // },
-      reliability: {
-        code: 2,
-        name: 'WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT',
+function streetTypeCodeToName(code, context) {
+  const found = context['Authority_Code_STREET_TYPE_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Street Type Code: '${code}'`);
+  return undefined;
+}
+
+function streetClassCodeToName(code, context) {
+  const found = context['Authority_Code_STREET_CLASS_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Street Class Code: '${code}'`);
+  return undefined;
+}
+
+function localityClassCodeToName(code, context) {
+  const found = context['Authority_Code_LOCALITY_CLASS_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Locality Class Code: '${code}'`);
+  return undefined;
+}
+
+function streetSuffixCodeToName(code, context) {
+  const found = context['Authority_Code_STREET_SUFFIX_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Street Suffix Code: '${code}'`);
+  return undefined;
+}
+
+function geocodeReliabilityCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODE_RELIABILITY_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Geocode Reliability Code: '${code}'`);
+  return undefined;
+}
+
+function geocodeTypeCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODE_TYPE_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Geocode Type Code: '${code}'`);
+  return undefined;
+}
+
+function levelGeocodedCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'].find(
+    e => e.CODE === code,
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Geocoded Level Type Code: '${code}'`);
+  return undefined;
+}
+
+function mapLocality(l, context) {
+  return {
+    ...(l.LOCALITY_NAME !== '' && {
+      name: l.LOCALITY_NAME,
+    }),
+    ...(l.LOCALITY_CLASS_CODE !== '' && {
+      class: {
+        code: l.LOCALITY_CLASS_CODE,
+        name: localityClassCodeToName(l.LOCALITY_CLASS_CODE, context),
       },
-      latitude: -33.85351875,
-      longitude: 150.8947369,
-    },
+    }),
+  };
+}
+
+function mapStreetLocality(l, context) {
+  return {
+    ...(l.STREET_NAME !== '' && {
+      name: l.STREET_NAME,
+    }),
+    ...(l.STREET_TYPE_CODE !== '' && {
+      type: {
+        code: l.STREET_TYPE_CODE,
+        name: streetTypeCodeToName(l.STREET_TYPE_CODE, context),
+      },
+    }),
+    ...(l.STREET_CLASS_CODE !== '' && {
+      class: {
+        code: l.STREET_CLASS_CODE,
+        name: streetClassCodeToName(l.STREET_CLASS_CODE, context),
+      },
+    }),
+    ...(l.STREET_SUFFIX_CODE !== '' && {
+      suffix: {
+        code: l.STREET_SUFFIX_CODE,
+        name: streetSuffixCodeToName(l.STREET_SUFFIX_CODE, context),
+      },
+    }),
+  };
+}
+
+function mapGeo(geos, context) {
+  return geos.map(geo => {
+    if (geo.BOUNDARY_EXTENT !== '') {
+      console.log('be', geo);
+      process.exit(1);
+    }
+    if (geo.PLANIMETRIC_ACCURACY !== '') {
+      console.log('pa', geo);
+      process.exit(1);
+    }
+    if (geo.ELEVATION !== '') {
+      console.log('e', geo);
+      process.exit(1);
+    }
+    if (geo.GEOCODE_SITE_NAME !== '') {
+      console.log('gsn', geo);
+      process.exit(1);
+    }
+    if (geo.GEOCODE_SITE_DESCRIPTION !== '') {
+      console.log('gsd', geo);
+      process.exit(1);
+    }
+    return {
+      ...(geo.GEOCODE_TYPE_CODE !== '' && {
+        type: {
+          code: geo.GEOCODE_TYPE_CODE,
+          name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context),
+        },
+      }),
+      ...(geo.RELIABILITY_CODE !== '' && {
+        reliability: {
+          code: geo.RELIABILITY_CODE,
+          name: geocodeReliabilityCodeToName(geo.RELIABILITY_CODE, context),
+        },
+      }),
+      ...(geo.LATITUDE !== '' && {
+        latitude: parseFloat(geo.LATITUDE),
+      }),
+      ...(geo.LONGITUDE !== '' && {
+        longitude: parseFloat(geo.LONGITUDE),
+      }),
+      ...(geo.GEOCODE_SITE_NAME !== '' && {
+        name: geo.GEOCODE_SITE_NAME,
+      }),
+      ...(geo.GEOCODE_SITE_DESCRIPTION !== '' && {
+        description: geo.GEOCODE_SITE_DESCRIPTION,
+      }),
+    };
+  });
+}
+
+function mapAddressDetails(d, context, i, count) {
+  const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
+  const locality = context.localityIndexed[d.LOCALITY_PID];
+  const geo = context.geoIndexed[d.ADDRESS_SITE_PID];
+  // if (geo === undefined) {
+  //   logger('NO GEO', geoX, d);
+  //   process.exit(1);
+  // }
+  const rval = {
+    // g: geo,
+
+    // ADDRESS_DETAIL: d,
+    // streetLocality: streetLocality,
+    // locality: locality,
+    ...((d.LEVEL_GEOCODED_CODE != '' || geo.length > 0) && {
+      geocoding: {
+        ...(d.LEVEL_GEOCODED_CODE !== '' && {
+          level: {
+            code: d.LEVEL_GEOCODED_CODE,
+            name: levelGeocodedCodeToName(d.LEVEL_GEOCODED_CODE, context),
+          },
+        }),
+        ...(geo !== undefined &&
+          geo.length > 0 && { geocodes: mapGeo(geo, context) }),
+      },
+    }),
     structured: {
       ...(d.BUILDING_NAME !== '' && {
         buildingName: d.BUILDING_NAME,
@@ -377,21 +556,12 @@ function mapAddressDetails(d, context) {
           }),
         },
       }),
-      street: {
-        code: 'Avenue',
-        name: 'Barangaroo',
-        type: 'Av',
-        suffix: {
-          code: 'De',
-          name: 'Deviation',
-        },
-      },
+      // May need to include street locality aliases here
+      street: mapStreetLocality(streetLocality, context),
       ...(d.CONFIDENCE !== '' && {
         confidence: parseInt(d.CONFIDENCE),
       }),
-      locality: {
-        name: 'Sydney',
-      },
+      locality: mapLocality(locality, context),
       ...(d.POSTCODE !== '' && {
         postcode: d.POSTCODE,
       }),
@@ -416,16 +586,24 @@ function mapAddressDetails(d, context) {
       },
       precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     },
-    sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
     pid: d.ADDRESS_DETAIL_PID,
-    fla: '',
   };
-  logger('addr', JSON.stringify(rval, null, 2));
+  rval.sla = 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000';
+  rval.fla = [
+    'Tower 3',
+    'Level 25',
+    '300 Barangaroo Avenue',
+    'Sydney NSW 2000',
+  ];
+  // process.stdout.write('.');
+  logger(`${i / count}%`);
+  //  logger('addr', JSON.stringify(rval, null, 2));
   return rval;
 }
 
 async function loadAddressDetails(file, count, context) {
   const details = [];
+  let i = 0;
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
       header: true,
@@ -434,7 +612,8 @@ async function loadAddressDetails(file, count, context) {
         if (row.errors.length > 0) {
           error(`Errors reading '${file}': ${row.errors}`);
         } else {
-          details.push(mapAddressDetails(row.data, context));
+          details.push(mapAddressDetails(row.data, context, i, count));
+          i += 1;
         }
       },
       complete: function() {
@@ -502,9 +681,142 @@ async function loadGnafData(dir) {
   logger('filesCounts', filesCounts);
   const files = Object.keys(filesCounts);
   logger('files', files);
+  const loadContext = {};
+  await loadAuthFiles(files, dir, loadContext, filesCounts);
+  const addressDetailFiles = files.filter(
+    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
+  );
+  logger('addressDetailFiles', addressDetailFiles);
+  const detailFile = addressDetailFiles[0];
+  const state = path
+    .basename(detailFile, path.extname(detailFile))
+    .replace(/_.*/, '');
+  loadContext.state = state;
+  loadContext.stateName = await loadState(files, dir, state);
+
+  loadContext.streetLocality = await loadStreetLocality(files, dir, state);
+  loadContext.streetLocalityIndexed = {};
+  for (let index = 0; index < loadContext.streetLocality.length; index++) {
+    const sl = loadContext.streetLocality[index];
+    loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
+  }
+
+  loadContext.locality = await loadLocality(files, dir, state);
+  loadContext.localityIndexed = {};
+  for (let index = 0; index < loadContext.locality.length; index++) {
+    const l = loadContext.locality[index];
+    loadContext.localityIndexed[l.LOCALITY_PID] = l;
+  }
+
+  loadContext.geo = await loadGeo(files, dir, state);
+  loadContext.geoIndexed = {};
+  for (let index = 0; index < loadContext.geo.length; index++) {
+    const g = loadContext.geo[index];
+    if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
+      loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
+    } else {
+      loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
+    }
+  }
+
+  await loadAddressDetails(
+    `${dir}/${detailFile}`,
+    filesCounts[detailFile],
+    loadContext,
+  );
+  throw new PendingError(dir);
+}
+
+async function loadState(files, dir, state) {
+  const stateFile = files.find(f => f.match(new RegExp(`${state}_STATE_psv`)));
+  if (stateFile === undefined) {
+    error(`Could not find state file '${state}_STATE_psv.psv'`);
+    return undefined;
+  } else {
+    const name = await getStateName(state, `${dir}/${stateFile}`);
+    return name;
+  }
+}
+
+async function loadStreetLocality(files, dir, state) {
+  const localityFile = files.find(f =>
+    f.match(new RegExp(`${state}_STREET_LOCALITY_psv`)),
+  );
+  if (localityFile === undefined) {
+    error(
+      `Could not find street locality file '${state}_STREET_LOCALITY_psv.psv'`,
+    );
+    return [];
+  } else {
+    return await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
+        header: true,
+        delimiter: '|',
+        complete: results => {
+          resolve(results.data);
+        },
+        error: (error, file) => {
+          console.log(error, file);
+          reject(error);
+        },
+      });
+    });
+  }
+}
+
+async function loadLocality(files, dir, state) {
+  const localityFile = files.find(f =>
+    f.match(new RegExp(`${state}_LOCALITY_psv`)),
+  );
+  if (localityFile === undefined) {
+    error(`Could not find locality file '${state}_LOCALITY_psv.psv'`);
+    return [];
+  } else {
+    return await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
+        header: true,
+        delimiter: '|',
+        complete: results => {
+          resolve(results.data);
+        },
+        error: (error, file) => {
+          console.log(error, file);
+          reject(error);
+        },
+      });
+    });
+  }
+}
+
+async function loadGeo(files, dir, state) {
+  const geoFile = files.find(f =>
+    f.match(new RegExp(`${state}_ADDRESS_SITE_GEOCODE_psv`)),
+  );
+  if (geoFile === undefined) {
+    error(
+      `Could not find address site geocode file '${state}_ADDRESS_SITE_GEOCODE_psv.psv'`,
+    );
+    return [];
+  } else {
+    return await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
+        header: true,
+        delimiter: '|',
+        complete: results => {
+          resolve(results.data);
+        },
+        error: (error, file) => {
+          console.log(error, file);
+          reject(error);
+        },
+      });
+    });
+  }
+}
+
+async function loadAuthFiles(files, dir, loadContext, filesCounts) {
   const authCodeFiles = files.filter(f => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
-  const loadContext = {};
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
     await new Promise((resolve, reject) => {
@@ -534,30 +846,6 @@ async function loadGnafData(dir) {
     });
   }
   logger('AUTH', loadContext);
-  const addressDetailFiles = files.filter(
-    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
-  );
-  logger('addressDetailFiles', addressDetailFiles);
-  loadContext.state = path
-    .basename(addressDetailFiles[0], path.extname(addressDetailFiles[0]))
-    .replace(/_.*/, '');
-  const stateFile = files.find(f =>
-    f.match(new RegExp(`${loadContext.state}_STATE_psv`)),
-  );
-  if (stateFile === undefined) {
-    error(`Could not find state file '${loadContext.state}_STATE_psv.psv'`);
-  } else {
-    const name = await getStateName(loadContext.state, `${dir}/${stateFile}`);
-    // eslint-disable-next-line require-atomic-updates
-    loadContext.stateName = name;
-  }
-
-  await loadAddressDetails(
-    `${dir}/${addressDetailFiles[0]}`,
-    filesCounts[addressDetailFiles[0]],
-    loadContext,
-  );
-  throw new PendingError(dir);
 }
 
 export async function loadGnaf() {
