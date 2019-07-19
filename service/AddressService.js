@@ -460,6 +460,57 @@ function mapToSla(fla) {
   return fla.join(', ');
 }
 
+function mapToFla(s) {
+  const fla = [];
+  if (s.flat) {
+    fla.push(
+      `${s.flat.type.name || ''} ${s.flat.prefix || ''}${s.flat.number || ''}${s
+        .flat.suffix || ''}`,
+    );
+  }
+  if (s.level) {
+    fla.push(
+      `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
+        ''}${s.level.suffix || ''}`,
+    );
+  }
+
+  if (s.buildingName) {
+    fla.push(s.buildingName);
+  }
+
+  if (fla.length === 3) {
+    fla[1] = `${fla[0]}, ${fla[1]}`;
+    fla.shift();
+  }
+
+  let number = '';
+  if (s.lotNumber) {
+    number = `${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
+      .lotNumber.suffix || ''}`;
+  } else {
+    number = `${s.number.prefix || ''}${s.number.number || ''}${s.number
+      .suffix || ''}`;
+    if (s.number.last) {
+      number`${number}-${s.number.last.prefix || ''}${s.number.last.number ||
+        ''}${s.number.last.suffix || ''}`;
+    }
+  }
+
+  const streetType = s.street.type ? ` ${s.street.type.name}` : '';
+  const street = `${s.street.name}${streetType}`;
+
+  fla.push(`${number} ${street}`);
+
+  fla.push(`${s.locality.name} ${s.state.abbreviation} ${s.postcode}`);
+
+  if (fla.length > 4) {
+    logger('FLA TOO LONG', fla, s);
+    process.exit(1);
+  }
+  return fla;
+}
+
 function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
@@ -503,7 +554,7 @@ function mapAddressDetails(d, context, i, count) {
         ...(d.NUMBER_LAST_PREFIX !== '' &&
           d.NUMBER_LAST !== '' &&
           d.NUMBER_LAST_SUFFIX !== '' && {
-            second: {
+            last: {
               ...(d.NUMBER_LAST_PREFIX !== '' && {
                 prefix: d.NUMBER_LAST_PREFIX,
               }),
@@ -588,17 +639,11 @@ function mapAddressDetails(d, context, i, count) {
         name: context.stateName,
         abbreviation: context.state,
       },
-      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     },
+    precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     pid: d.ADDRESS_DETAIL_PID,
   };
-  //  rval.fla = mapToFla(rval.structured);
-  rval.fla = [
-    'Tower 3',
-    'Level 25',
-    '300 Barangaroo Avenue',
-    'Sydney NSW 2000',
-  ];
+  rval.fla = mapToFla(rval.structured);
   rval.sla = mapToSla(rval.fla);
   // process.stdout.write('.');
   if (i % 1000 === 0) {
@@ -905,7 +950,7 @@ export function getAddress(/*addressId*/) {
           number: 20114,
           prefix: 'RMB',
           suffix: 'AA',
-          second: {
+          last: {
             number: '20114',
             prefix: 'RMB',
             suffix: 'C',
