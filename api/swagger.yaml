@@ -144,68 +144,68 @@ definitions:
         $ref: "#/definitions/StructuredAddress"
       sla:
         $ref: "#/definitions/SingleLineAddress"
-      fla:
-        $ref: "#/definitions/FourLineAddress"
-      geo:
-        $ref: "#/definitions/AddressGeocoding"
-  AddressGeocoding:
-    type: object
-    description: Geocoding information about the address
-    properties:
-      level:
-        type: object
-        properties:
-          code:
-            type: integer
-            maxLength: 2
-            description: |
-              Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
-            example: 7
-          name:
-            type: string
-            maxLength: 50
-            description: |
-              Name of the geocode level type code.
-            example: LOCALITY,STREET, ADDRESS
-      reliability:
-        type: object
-        properties:
-          code:
-            type: integer
-            maxLength: 1
-            description: |
-              Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
-            example: 2
-          name:
-            type: string
-            maxLength: 50
-            description: |
-              Name of the geocode reliability code.
-            example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
-      latitude:
-        type: number
-        example: -33.85351875
-      longitude:
-        type: number
-        example: 150.8947369
+      mla:
+        $ref: "#/definitions/MultiLineAddress"
+      # geo:
+      #   $ref: "#/definitions/AddressGeocoding"
+  # AddressGeocoding:
+  #   type: object
+  #   description: Geocoding information about the address
+  #   properties:
+  #     level:
+  #       type: object
+  #       properties:
+  #         code:
+  #           type: integer
+  #           maxLength: 2
+  #           description: |
+  #             Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
+  #           example: 7
+  #         name:
+  #           type: string
+  #           maxLength: 50
+  #           description: |
+  #             Name of the geocode level type code.
+  #           example: LOCALITY,STREET, ADDRESS
+  #     reliability:
+  #       type: object
+  #       properties:
+  #         code:
+  #           type: integer
+  #           maxLength: 1
+  #           description: |
+  #             Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
+  #           example: 2
+  #         name:
+  #           type: string
+  #           maxLength: 50
+  #           description: |
+  #             Name of the geocode reliability code.
+  #           example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
+  #     latitude:
+  #       type: number
+  #       example: -33.85351875
+  #     longitude:
+  #       type: number
+  #       example: 150.8947369
   SingleLineAddress:
     type: string
     title: Single Line Address
     description: |
       The full address flattened to a single line. The primary use is for search results and for autocomplete.
     example: Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000
-  FourLineAddress:
+  MultiLineAddress:
     type: array
     items:
       type: string
-    minItems: 3
+    minItems: 2
     maxItems: 4
-    title: Four Line Address
+    title: Multi Line Address
     description: |
       The full address flattened to at most four lines. The primary use is for address labels
     example: 
-      - Tower 3
-      - Level 25
+      - LEVEL 25
+      - TOWER 3
       - 300 Barangaroo Avenue
       - Sydney NSW 2000
   StructuredAddress:
@@ -236,13 +236,16 @@ definitions:
         type: object
         properties:
           type:
-            type: string
-            example: Tower
-            maxLength: 50
-          code:
-            type: string
-            example: Twr
-            maxLength: 7
+            type: object
+            properties:
+              name:
+                type: string
+                example: Tower
+                maxLength: 50
+              code:
+                type: string
+                example: Twr
+                maxLength: 7
           prefix:
             type: string
             example: CT
@@ -259,13 +262,16 @@ definitions:
         type: object
         properties:
           type:
-            type: string
-            example: Observation Deck
-            maxLength: 50
-          code:
-            type: string
-            example: OD
-            maxLength: 4
+            type: object
+            properties:
+              na,e:
+                type: string
+                example: Observation Deck
+                maxLength: 50
+              code:
+                type: string
+                example: OD
+                maxLength: 4
           prefix:
             type: string
             example: A
@@ -293,7 +299,7 @@ definitions:
             type: string
             example: "AA"
             maxLength: 2
-          second:
+          last:
             type: object
             properties:
               prefix:
@@ -316,13 +322,16 @@ definitions:
             example: Barangaroo
             maxLength: 100
           type:
-            type: string
-            example: Av
-            maxLength: 15
-          code:
-            type: string
-            example: Avenue
-            maxLength: 50
+            type: object
+            properties:
+              name:
+                type: string
+                example: Av
+                maxLength: 15
+              code:
+                type: string
+                example: Avenue
+                maxLength: 50
           suffix:
             type: object
             properties:
@@ -341,6 +350,17 @@ definitions:
             type: string
             example: Sydney
             maxLength: 100
+          class:
+            type: object
+            properties:
+              name:
+                type: string
+                example: G
+                maxLength: 1
+              code:
+                type: string
+                example: GAZETTED LOCALITY
+                maxLength: 50
       state:
         type: object
         properties:

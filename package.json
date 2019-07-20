@@ -21,7 +21,7 @@
     "lint": "node_modules/.bin/eslint controllers/*.js --fix",
     "test": "NO_STRICT=' ' npm-run-all --serial test:component test:system",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
-    "test:component": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
+    "test:component": "NODE_OPTIONS=--max-old-space-size=8192 DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
     "test:system": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system"
