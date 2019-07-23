@@ -512,6 +512,46 @@ function mapToMla(s) {
   return fla;
 }
 
+function mapToShortMla(s) {
+  const fla = [];
+  if (s.level) {
+    fla.push(
+      `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
+        ''}${s.level.suffix || ''}`,
+    );
+  }
+
+  let number = '';
+  if (s.lotNumber) {
+    number = `${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
+      .lotNumber.suffix || ''}`;
+  } else {
+    if (s.flat) {
+      number = `${s.flat.prefix || ''}${s.flat.number || ''}${s.flat.suffix ||
+        ''}/`;
+    }
+    number = `${number}${s.number.prefix || ''}${s.number.number || ''}${s
+      .number.suffix || ''}`;
+    if (s.number.last) {
+      number = `${number}-${s.number.last.prefix || ''}${s.number.last.number ||
+        ''}${s.number.last.suffix || ''}`;
+    }
+  }
+
+  const streetType = s.street.type ? ` ${s.street.type.name}` : '';
+  const street = `${s.street.name}${streetType}`;
+
+  fla.push(`${number} ${street}`);
+
+  fla.push(`${s.locality.name} ${s.state.abbreviation} ${s.postcode}`);
+
+  if (fla.length > 4) {
+    logger('FLA TOO LONG', fla, s);
+    process.exit(1);
+  }
+  return fla;
+}
+
 function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
@@ -639,6 +679,10 @@ function mapAddressDetails(d, context, i, count) {
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
+  if (rval.structured.flat != undefined) {
+    rval.smla = mapToShortMla(rval.structured);
+    rval.ssla = mapToSla(rval.smla);
+  }
   // process.stdout.write('.');
   if (i % Math.ceil(count / 100) === 0) {
     logger('addr', JSON.stringify(rval, null, 2));
@@ -695,7 +739,11 @@ async function loadAddressDetails(file, count, context) {
           _id: item.pid,
         },
       });
-      indexingBody.push({ sla: item.sla });
+      indexingBody.push({
+        sla: item.sla,
+        ...(item.ssla != undefined && { ssla: item.ssla }),
+        // ssla: '2/25 TOTTERDELL ST, BELCONNEN ACT 2617',
+      });
     }
     const resp = await global.esClient.bulk({
       // here we are forcing an index refresh,
@@ -710,22 +758,29 @@ async function loadAddressDetails(file, count, context) {
       error(resp.items[0].index);
     }
   }
-  const searchString = 'UNT 2, BELCONNEN';
+  const searchString = '2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
     index: 'addressr',
     body: {
       query: {
-        match: {
-          sla: {
-            query: searchString,
-            fuzziness: 'AUTO',
-            auto_generate_synonyms_phrase_query: true,
-          },
+        // match: {
+        //   sla: {
+        //     query: searchString,
+        //     fuzziness: 'AUTO',
+        //     auto_generate_synonyms_phrase_query: true,
+        //   },
+        // },
+        multi_match: {
+          fields: ['sla', 'ssla'],
+          query: searchString,
+          fuzziness: 'AUTO',
+          auto_generate_synonyms_phrase_query: true,
         },
       },
       highlight: {
         fields: {
           sla: {},
+          ssla: {},
         },
       },
     },

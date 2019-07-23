@@ -100,6 +100,11 @@ async function initIndex(esClient, index, clear) {
               type: 'text',
               analyzer: 'my_analyzer',
             },
+            ssla: {
+              // search_analyzer: 'keyword_analyzer',
+              type: 'text',
+              analyzer: 'my_analyzer',
+            },
           },
         },
       },
