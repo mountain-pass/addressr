@@ -679,6 +679,62 @@ async function loadAddressDetails(file, count, context) {
   } else {
     logger(`loaded '${count}' rows from '${file}'`);
   }
+
+  const BATCH_SIZE = 4096;
+  const batches = Math.ceil(details.length / BATCH_SIZE);
+  for (let j = 0; j < batches; j++) {
+    logger(`INDEXING... batch ${j} of ${batches}`);
+    const offset = j * BATCH_SIZE;
+    const indexingBody = [];
+    const sizeOfBatch = Math.min(BATCH_SIZE, details.length - offset);
+    for (let i = 0; i < sizeOfBatch; i++) {
+      const item = details[offset + i];
+      indexingBody.push({
+        index: {
+          _index: 'addressr',
+          _id: item.pid,
+        },
+      });
+      indexingBody.push({ sla: item.sla });
+    }
+    const resp = await global.esClient.bulk({
+      // here we are forcing an index refresh,
+      // otherwise we will not get any result
+      // in the consequent search
+      refresh: true,
+      body: indexingBody,
+    });
+    logger('resp', resp);
+    if (resp.errors) {
+      error(resp);
+      error(resp.items[0].index);
+    }
+  }
+  const searchString = 'UNT 2, BELCONNEN';
+  const searchResp = await global.esClient.search({
+    index: 'addressr',
+    body: {
+      query: {
+        match: {
+          sla: {
+            query: searchString,
+            fuzziness: 'AUTO',
+            auto_generate_synonyms_phrase_query: true,
+          },
+        },
+      },
+      highlight: {
+        fields: {
+          sla: {},
+        },
+      },
+    },
+  });
+
+  console.log(searchResp);
+  logger('hits', JSON.stringify(searchResp.hits, null, 2));
+  //logger('suggest', JSON.stringify(searchResp.suggest, null, 2));
+  process.exit(1);
 }
 
 async function getStateName(abbr, file) {

@@ -43,7 +43,7 @@ global.PendingError = PendingError;
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
-const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch:7.2.0';
+const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 
 const esport = parseInt(process.env.ELASTIC_PORT || '9200');
 const eshost = process.env.ELASTIC_HOST || '127.0.0.1';
@@ -93,7 +93,7 @@ BeforeAll({ timeout: 240000 }, async function() {
       }),
   );
 
-  global.esclient = await esStarter(
+  global.esClient = await esStarter(
     esport,
     eshost,
     esnode,
