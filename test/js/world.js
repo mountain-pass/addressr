@@ -1,3 +1,4 @@
+//const logWhy = require('why-is-node-running');
 import {
   PendingError,
   stepDefinitionWrapper,
@@ -15,20 +16,18 @@ import {
 } from 'cucumber';
 import debug from 'debug';
 import Docker from 'dockerode';
+import fs from 'fs';
 import waitport from 'wait-port';
-import esStarter from '../../service/elasticsearch';
 import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
-const logger = debug('test');
+const fsp = fs.promises;
+const elasticsearch = require('elasticsearch');
 
-// import fastify from 'fastify';
-// import mysql from 'mysql';
+const logger = debug('test');
+const esLogger = debug('es');
+
 // import ShutdownHook from 'shutdown-hook';
-// import { RyvrApp } from '../../main/js/model/RyvrApp';
-// import routes from '../../main/js/routes';
-// import RyvrEmbeddedDriver from './drivers/RyvrEmbeddedDriver';
-// import RyvrRestDriver from './drivers/RyvrRestDriver';
 
 // chai.use(chaiIterator);
 
@@ -47,11 +46,82 @@ const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 
 const esport = parseInt(process.env.ELASTIC_PORT || '9200');
 const eshost = process.env.ELASTIC_HOST || '127.0.0.1';
-const esnode = process.env.ELASTIC_NODE || 'local';
-const esstart = process.env.ELASTIC_START || 1;
+// const esnode = process.env.ELASTIC_NODE || 'local';
+// const esstart = process.env.ELASTIC_START || 1;
 
 const INDEX_NAME = 'addressr';
-const clearIndex = true;
+// const clearIndex = true;
+
+async function initIndex(esClient, index, clear) {
+  if (await esClient.indices.exists({ index })) {
+    if (clear) {
+      await esClient.indices.delete({ index });
+    }
+  }
+  logger('checking if index exists');
+  const exists = await esClient.indices.exists({ index });
+  logger('index exists:', exists);
+
+  if (!exists) {
+    await esClient.indices.create({
+      index,
+      body: {
+        settings: {
+          index: {
+            analysis: {
+              analyzer: {
+                default: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'asciifolding'],
+                },
+                synonym: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'synonym'],
+                },
+                my_analyzer: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'asciifolding'],
+                },
+              },
+              tokenizer: {
+                my_tokenizer: {
+                  type: 'edge_ngram',
+                  min_gram: 3,
+                  max_gram: 15,
+                  //token_chars: ['letter', 'digit'],
+                },
+              },
+              filter: {
+                synonym: {
+                  type: 'synonym',
+                  lenient: true,
+                  synonyms: [
+                    'SUPER, super, superannuation',
+                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
+                  ],
+                },
+              },
+            },
+          },
+        },
+        aliases: {},
+        mappings: {
+          properties: {
+            sla: {
+              type: 'text',
+              analyzer: 'my_analyzer',
+            },
+            ssla: {
+              type: 'text',
+              analyzer: 'my_analyzer',
+            },
+          },
+        },
+      },
+    });
+  }
+  await esClient.indices.get({ index, includeDefaults: true });
+}
 
 BeforeAll({ timeout: 240000 }, async function() {
   logger('BEFORE ALL');
@@ -63,8 +133,10 @@ BeforeAll({ timeout: 240000 }, async function() {
       global.driver = new AddressrEmbeddedDriver();
       break;
   }
-  //   logger(swaggerDoc);
 
+  await fsp.mkdir('./target/Elasticsearch/data', { recursive: true });
+  const cwd = process.cwd();
+  logger(`cwd`, cwd);
   this.containers = {};
   const docker = new Docker();
   await qc.ensurePulled(docker, SEARCH_IMAGE, logger);
@@ -82,8 +154,14 @@ BeforeAll({ timeout: 240000 }, async function() {
           '9200/tcp': [{ HostPort: '9200' }],
           '9300/tcp': [{ HostPort: '9300' }],
         },
+        Binds: [
+          // When we used the local file system, ES freaked out about the lack of space 🤷‍♂️
+          // `${cwd}/target/Elasticsearch/data:/var/data/elasticsearch`,
+          // `${cwd}/target/Elasticsearch/log:/var/log/elasticsearch`,
+          // `${cwd}/test/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml`,
+        ],
       },
-      Env: ['discovery.type=single-node'],
+      Env: ['discovery.type=single-node', 'ES_JAVA_OPTS=-Xms1g -Xmx1g'],
       name: 'qc-elasticsearch-test',
     },
     () =>
@@ -93,60 +171,33 @@ BeforeAll({ timeout: 240000 }, async function() {
       }),
   );
 
-  global.esClient = await esStarter(
-    esport,
-    eshost,
-    esnode,
-    esstart,
-    INDEX_NAME,
-    clearIndex,
-  );
+  const cont = docker.getContainer('qc-elasticsearch-test');
+  this.logStream = await cont.logs({
+    stdout: true,
+    stderr: true,
+    follow: true,
+    tail: 50,
+  });
+
+  this.logStream.setEncoding('utf8');
+  this.logStream.on('data', function(data) {
+    esLogger(data);
+  });
+
+  // try {
+  global.esClient = new elasticsearch.Client({
+    host: `${eshost}:${esport}`,
+    log: 'info',
+  });
+
+  await initIndex(global.esClient, INDEX_NAME, true);
 });
-
-//   this.containers.mysql = await qc.ensureMySqlStarted(docker, '5.7.26');
-
-//   global.mysqlTestConn = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: 'my-secret-pw',
-//     port: 3306,
-//   });
-
-//   await new Promise((resolve, reject) => {
-//     global.mysqlTestConn.connect((err) => {
-//       if (err) {
-//         reject(err);
-//       } else {
-//         resolve();
-//       }
-//     });
-//   });
-
-//   global.fastifyServer = fastify({
-//     logger: false,
-//   });
-//   global.ryvrApp = new RyvrApp();
-//   global.fastifyServer.register(routes, { ryvrApp: global.ryvrApp });
-//   global.serverUrl = await global.fastifyServer.listen(3000);
-// });
 
 AfterAll({ timeout: 30000 }, async function() {
   stopServer();
+  //delete global.esClient;
+  this.logStream.destroy();
 });
-//   await new Promise((resolve, reject) => {
-//     global.mysqlTestConn.end((err) => {
-//       if (err) {
-//         reject(err);
-//       } else {
-//         resolve();
-//       }
-//     });
-//   });
-
-//   if (global.fastifyServer) {
-//     await global.fastifyServer.close();
-//   }
-// });
 
 function world({ attach, parameters }) {
   logger('IN WORLD');

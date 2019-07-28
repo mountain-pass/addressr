@@ -21,9 +21,9 @@
     "lint": "node_modules/.bin/eslint controllers/*.js --fix",
     "test": "NO_STRICT=' ' npm-run-all --serial test:component test:system",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
-    "test:component": "NODE_OPTIONS=--max-old-space-size=8192 DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
+    "test:component": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
-    "test:system": "DEBUG=error,api,express:*,swagger-tools*,test TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
+    "test:system": "DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system"
   },
   "keywords": [
@@ -80,7 +80,9 @@
     "prettier": "^1.18.2",
     "prettier-config-standard": "^1.0.1",
     "semver": "^6.2.0",
-    "wait-port": "^0.2.2"
+    "wait-port": "^0.2.2",
+    "why-is-node-running": "^2.1.0",
+    "wtfnode": "^0.8.0"
   },
   "repository": {
     "type": "git",

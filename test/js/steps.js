@@ -1,4 +1,3 @@
-import { PendingError } from '@windyroad/cucumber-js-throwables';
 import { Given, Then, When } from 'cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
@@ -84,11 +83,11 @@ Then('the an empty address list will be returned', async function() {
 });
 
 Given('an empty address database', async function() {
-  clearAddresses();
+  return clearAddresses();
 });
 
 Given('an address database with:', async function(docString) {
-  setAddresses(JSON.parse(docString));
+  return setAddresses(JSON.parse(docString));
 });
 
 Then('the returned address list will contain:', async function(docString) {
@@ -98,18 +97,19 @@ Then('the returned address list will contain:', async function(docString) {
   expect(this.current.json).to.have.deep.members(expected);
 });
 
-const TWENTY_MINUTES = 60 * 20 * 1000;
+//const TWENTY_MINUTES = 60 * 60 * 1000;
+const ONE_HOUR = 60 * 60 * 1000;
 
 Given(
   'an address database is loaded from gnaf',
-  { timeout: TWENTY_MINUTES },
+  { timeout: ONE_HOUR },
   async function() {
     this.dataDir = await loadGnaf();
-    throw new PendingError();
   },
 );
 
 Then('the returned address list will contain many addresses', async function() {
-  // Write code here that turns the phrase above into concrete actions
-  throw new PendingError();
+  logger('CURRENT', this.current);
+  expect(this.current.json).to.be.an('array').that.is.not.empty;
+  expect(this.current.json.length).to.be.greaterThan(50);
 });

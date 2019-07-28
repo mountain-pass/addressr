@@ -1,4 +1,3 @@
-import { PendingError } from '@windyroad/cucumber-js-throwables/lib/pending-error';
 import debug from 'debug';
 import directoryExists from 'directory-exists';
 import fs from 'fs';
@@ -21,38 +20,146 @@ const cache = new Keyv({
   store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
 });
 
+const PAGE_SIZE = 64;
+
+function getCoveredStates() {
+  const covered = process.env.COVERED_STATES || '';
+  if (covered == '') {
+    return [];
+  } else {
+    return covered.split(',');
+  }
+}
+
+const COVERED_STATES = getCoveredStates();
+
 const ONE_DAY_S = 60 /*sec*/ * 60 /*min*/ * 24; /*hours*/
 
 const ONE_DAY_MS = 1000 * ONE_DAY_S;
 const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 
-let addresses = [
-  {
-    sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
-    score: 1,
-    links: {
-      self: {
-        href: '/address/GANT_718592778',
-      },
-    },
-  },
-  {
-    sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
-    score: 0.985051936618461,
-    links: {
-      self: {
-        href: '/address/GANT_718592782',
-      },
-    },
-  },
-];
+// let addresses = [
+//   {
+//     sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
+//     score: 1,
+//     links: {
+//       self: {
+//         href: '/address/GANT_718592778',
+//       },
+//     },
+//   },
+//   {
+//     sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
+//     score: 0.985051936618461,
+//     links: {
+//       self: {
+//         href: '/address/GANT_718592782',
+//       },
+//     },
+//   },
+// ];
 
-export function clearAddresses() {
-  addresses = [];
+async function initIndex(esClient, index, clear) {
+  if (await esClient.indices.exists({ index })) {
+    if (clear) {
+      await esClient.indices.delete({ index });
+    }
+  }
+  logger('checking if index exists');
+  const exists = await esClient.indices.exists({ index });
+  logger('index exists:', exists);
+
+  if (!exists) {
+    await esClient.indices.create({
+      index,
+      body: {
+        settings: {
+          index: {
+            analysis: {
+              analyzer: {
+                default: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'asciifolding'],
+                },
+                synonym: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'synonym'],
+                },
+                my_analyzer: {
+                  tokenizer: 'my_tokenizer',
+                  filter: ['lowercase', 'asciifolding'],
+                },
+              },
+              tokenizer: {
+                my_tokenizer: {
+                  type: 'edge_ngram',
+                  min_gram: 3,
+                  max_gram: 15,
+                  //token_chars: ['letter', 'digit'],
+                },
+              },
+              filter: {
+                synonym: {
+                  type: 'synonym',
+                  lenient: true,
+                  synonyms: [
+                    'SUPER, super, superannuation',
+                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
+                  ],
+                },
+              },
+            },
+          },
+        },
+        aliases: {},
+        mappings: {
+          properties: {
+            sla: {
+              type: 'text',
+              analyzer: 'my_analyzer',
+            },
+            ssla: {
+              type: 'text',
+              analyzer: 'my_analyzer',
+            },
+          },
+        },
+      },
+    });
+    logger('Index created');
+  }
+  await esClient.indices.get({ index, includeDefaults: true });
 }
 
-export function setAddresses(addr) {
-  addresses = addr;
+export async function clearAddresses() {
+  await initIndex(global.esClient, 'addressr', true);
+}
+
+export async function setAddresses(addr) {
+  await clearAddresses();
+
+  const indexingBody = [];
+  addr.forEach(row => {
+    indexingBody.push({
+      index: {
+        _index: 'addressr',
+        _id: row.links.self.href,
+      },
+    });
+    indexingBody.push({
+      sla: row.sla,
+      ...(row.ssla != undefined && { ssla: row.ssla }),
+    });
+  });
+
+  if (indexingBody.length > 0) {
+    await sendIndexRequest(indexingBody);
+  }
+  //  addresses = addr;
+  // empty index
+  // then index the provided addresses
+
+  logger(await searchForAddress('657 The Entrance Road')); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
 // need to try proxying this to modify the headers if we want to use got's cache implementation
@@ -486,8 +593,8 @@ function mapToMla(s) {
   }
 
   let number = '';
-  if (s.lotNumber) {
-    number = `${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
+  if (s.lotNumber && s.number === undefined) {
+    number = `LOT ${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
       .lotNumber.suffix || ''}`;
   } else {
     number = `${s.number.prefix || ''}${s.number.number || ''}${s.number
@@ -522,14 +629,14 @@ function mapToShortMla(s) {
   }
 
   let number = '';
-  if (s.lotNumber) {
-    number = `${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
+  if (s.flat) {
+    number = `${s.flat.prefix || ''}${s.flat.number || ''}${s.flat.suffix ||
+      ''}/`;
+  }
+  if (s.lotNumber && s.number === undefined) {
+    number = `${number}${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
       .lotNumber.suffix || ''}`;
   } else {
-    if (s.flat) {
-      number = `${s.flat.prefix || ''}${s.flat.number || ''}${s.flat.suffix ||
-        ''}/`;
-    }
     number = `${number}${s.number.prefix || ''}${s.number.number || ''}${s
       .number.suffix || ''}`;
     if (s.number.last) {
@@ -691,24 +798,79 @@ function mapAddressDetails(d, context, i, count) {
   return rval;
 }
 
-async function loadAddressDetails(file, count, context) {
-  const details = [];
-  let i = 0;
+async function loadAddressDetails(file, expectedCount, context) {
+  let actualCount = 0;
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
       header: true,
       skipEmptyLines: true,
-      step: function(row) {
-        if (row.errors.length > 0) {
-          error(`Errors reading '${file}': ${row.errors}`);
+      chunk: function(chunk, parser) {
+        parser.pause();
+        if (chunk.errors.length > 0) {
+          error(`Errors reading '${file}': ${chunk.errors}`);
         } else {
-          details.push(mapAddressDetails(row.data, context, i, count));
-          i += 1;
+          const indexingBody = [];
+          chunk.data.forEach(row => {
+            const item = mapAddressDetails(
+              row,
+              context,
+              actualCount,
+              expectedCount,
+            );
+            //            details.push(item);
+            actualCount += 1;
+            indexingBody.push({
+              index: {
+                _index: 'addressr',
+                _id: item.pid,
+              },
+            });
+            indexingBody.push({
+              sla: item.sla,
+              ...(item.ssla != undefined && { ssla: item.ssla }),
+            });
+          });
+          if (indexingBody.length > 0) {
+            sendIndexRequest(indexingBody)
+              .then(() => {
+                parser.resume();
+              })
+              .catch(err => {
+                error('error sending index request', err);
+                throw err;
+              });
+          } else {
+            parser.resume();
+          }
         }
       },
+      // step: function(row) {
+      //   if (row.errors.length > 0) {
+      //     error(`Errors reading '${file}': ${row.errors}`);
+      //   } else {
+      //     details.push(mapAddressDetails(row.data, context, i, count));
+      //     i += 1;
+      //   }
+      // },
       complete: function() {
         console.log('All done!');
         resolve();
+        // global.esClient.indices
+        //   .refresh({
+        //     index: ['addressr'],
+        //   })
+        //   .then(resp => {
+        //     logger('resp', resp);
+        //     if (resp.errors) {
+        //       error(resp);
+        //       error(resp.items[0].index);
+        //       reject();
+        //     }
+        //     resolve();
+        //   })
+        //   .catch(err => {
+        //     error('refresh error', err);
+        //   });
       },
       error: (error, file) => {
         console.log(error, file);
@@ -716,65 +878,78 @@ async function loadAddressDetails(file, count, context) {
       },
     });
   });
-  if (details.length != count) {
+  if (actualCount != expectedCount) {
     error(
-      `Error loading '${file}'. Expected '${count}' rows, got '${details.length}'`,
+      `Error loading '${file}'. Expected '${expectedCount}' rows, got '${actualCount}'`,
     );
   } else {
-    logger(`loaded '${count}' rows from '${file}'`);
+    logger(`loaded '${actualCount}' rows from '${file}'`);
   }
 
-  const BATCH_SIZE = 4096;
-  const batches = Math.ceil(details.length / BATCH_SIZE);
-  for (let j = 0; j < batches; j++) {
-    logger(`INDEXING... batch ${j} of ${batches}`);
-    const offset = j * BATCH_SIZE;
-    const indexingBody = [];
-    const sizeOfBatch = Math.min(BATCH_SIZE, details.length - offset);
-    for (let i = 0; i < sizeOfBatch; i++) {
-      const item = details[offset + i];
-      indexingBody.push({
-        index: {
-          _index: 'addressr',
-          _id: item.pid,
-        },
-      });
-      indexingBody.push({
-        sla: item.sla,
-        ...(item.ssla != undefined && { ssla: item.ssla }),
-        // ssla: '2/25 TOTTERDELL ST, BELCONNEN ACT 2617',
-      });
-    }
-    const resp = await global.esClient.bulk({
-      // here we are forcing an index refresh,
-      // otherwise we will not get any result
-      // in the consequent search
-      refresh: true,
-      body: indexingBody,
-    });
-    logger('resp', resp);
-    if (resp.errors) {
-      error(resp);
-      error(resp.items[0].index);
-    }
-  }
-  const searchString = '2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
+  // const BATCH_SIZE = 4096;
+  // const batches = Math.ceil(details.length / BATCH_SIZE);
+  // for (let j = 0; j < batches; j++) {
+  //   logger(`INDEXING... batch ${j} of ${batches}`);
+  //   const offset = j * BATCH_SIZE;
+  //   const indexingBody = [];
+  //   const sizeOfBatch = Math.min(BATCH_SIZE, details.length - offset);
+  //   for (let i = 0; i < sizeOfBatch; i++) {
+  //     const item = details[offset + i];
+  //     indexingBody.push({
+  //       index: {
+  //         _index: 'addressr',
+  //         _id: item.pid,
+  //       },
+  //     });
+  //     indexingBody.push({
+  //       sla: item.sla,
+  //       ...(item.ssla != undefined && { ssla: item.ssla }),
+  //     });
+  //   }
+  //   const resp = await global.esClient.bulk({
+  //     // here we are forcing an index refresh,
+  //     // otherwise we will not get any result
+  //     // in the consequent search
+  //     refresh: true,
+  //     body: indexingBody,
+  //   });
+  //   logger('resp', resp);
+  //   if (resp.errors) {
+  //     error(resp);
+  //     error(resp.items[0].index);
+  //   }
+  // }
+  await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
+}
+
+async function searchForAddress(searchString) {
+  //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
     index: 'addressr',
     body: {
+      from: 0,
+      size: PAGE_SIZE,
       query: {
-        // match: {
-        //   sla: {
-        //     query: searchString,
-        //     fuzziness: 'AUTO',
-        //     auto_generate_synonyms_phrase_query: true,
-        //   },
-        // },
-        multi_match: {
-          fields: ['sla', 'ssla'],
-          query: searchString,
-          fuzziness: 'AUTO',
-          auto_generate_synonyms_phrase_query: true,
+        bool: {
+          must: [
+            {
+              exists: {
+                field: 'sla',
+              },
+            },
+          ],
+          ...(searchString && {
+            should: [
+              {
+                multi_match: {
+                  fields: ['sla', 'ssla'],
+                  query: searchString,
+                  fuzziness: 'AUTO',
+                  auto_generate_synonyms_phrase_query: true,
+                },
+              },
+            ],
+          }),
         },
       },
       highlight: {
@@ -785,11 +960,56 @@ async function loadAddressDetails(file, count, context) {
       },
     },
   });
-
-  console.log(searchResp);
   logger('hits', JSON.stringify(searchResp.hits, null, 2));
-  //logger('suggest', JSON.stringify(searchResp.suggest, null, 2));
-  process.exit(1);
+  return searchResp;
+}
+
+async function sendIndexRequest(indexingBody, initialBackoff = 1000) {
+  let backoff = initialBackoff;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let nextBackoff = Math.min(10000, backoff + 1000);
+    try {
+      const resp = await global.esClient.bulk({
+        refresh: true,
+        body: indexingBody,
+      });
+
+      if (resp.errors) {
+        throw resp.errors;
+        // // error(resp);
+        // // error(resp.items[0].index);
+        // error(`backing off for ${backoff}ms`);
+        // // parser.pause();
+        // // paused = true;
+        // await new Promise(resolve => {
+        //   // eslint-disable-next-line no-undef
+        //   setTimeout(() => {
+        //     resolve();
+        //   }, backoff);
+        // });
+        // backoff = Math.max(10000, backoff * 2);
+        // continue;
+      }
+      // if (paused) {
+      //   error(`resuming`);
+      //   parser.resume();
+      // }
+      return;
+    } catch (err) {
+      error('Indexing error', err);
+      error(`backing off for ${backoff}ms`);
+      // parser.pause();
+      // paused = true;
+      const backoff = await new Promise(resolve => {
+        // eslint-disable-next-line no-undef
+        setTimeout(() => {
+          resolve(nextBackoff);
+        }, backoff);
+      });
+      continue;
+    }
+  }
 }
 
 async function getStateName(abbr, file) {
@@ -850,48 +1070,49 @@ async function loadGnafData(dir) {
     const state = path
       .basename(detailFile, path.extname(detailFile))
       .replace(/_.*/, '');
-    loadContext.state = state;
-    loadContext.stateName = await loadState(files, dir, state);
+    if (COVERED_STATES.length === 0 || COVERED_STATES.includes(state)) {
+      loadContext.state = state;
+      loadContext.stateName = await loadState(files, dir, state);
 
-    logger('Loading streets', state);
-    const streetLocality = await loadStreetLocality(files, dir, state);
-    loadContext.streetLocalityIndexed = {};
-    for (let index = 0; index < streetLocality.length; index++) {
-      const sl = streetLocality[index];
-      loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
+      logger('Loading streets', state);
+      const streetLocality = await loadStreetLocality(files, dir, state);
+      loadContext.streetLocalityIndexed = {};
+      for (let index = 0; index < streetLocality.length; index++) {
+        const sl = streetLocality[index];
+        loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
+      }
+
+      logger('Loading suburbs', state);
+      const locality = await loadLocality(files, dir, state);
+      loadContext.localityIndexed = {};
+      for (let index = 0; index < locality.length; index++) {
+        const l = locality[index];
+        loadContext.localityIndexed[l.LOCALITY_PID] = l;
+      }
+
+      // logger('Loading geos', state);
+      // const geo = await loadGeo(files, dir, state);
+      // loadContext.geoIndexed = {};
+      // logger('indexing geos', state, geo.length);
+      // for (let index = 0; index < geo.length; index++) {
+      //   if (index % 10000 === 0) {
+      //     logger(`${(index / geo.length) * 100.0}%`);
+      //   }
+      //   const g = geo[index];
+      //   if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
+      //     loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
+      //   } else {
+      //     loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
+      //   }
+      // }
+
+      await loadAddressDetails(
+        `${dir}/${detailFile}`,
+        filesCounts[detailFile],
+        loadContext,
+      );
     }
-
-    logger('Loading suburbs', state);
-    const locality = await loadLocality(files, dir, state);
-    loadContext.localityIndexed = {};
-    for (let index = 0; index < locality.length; index++) {
-      const l = locality[index];
-      loadContext.localityIndexed[l.LOCALITY_PID] = l;
-    }
-
-    // logger('Loading geos', state);
-    // const geo = await loadGeo(files, dir, state);
-    // loadContext.geoIndexed = {};
-    // logger('indexing geos', state, geo.length);
-    // for (let index = 0; index < geo.length; index++) {
-    //   if (index % 10000 === 0) {
-    //     logger(`${(index / geo.length) * 100.0}%`);
-    //   }
-    //   const g = geo[index];
-    //   if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
-    //     loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
-    //   } else {
-    //     loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
-    //   }
-    // }
-
-    await loadAddressDetails(
-      `${dir}/${detailFile}`,
-      filesCounts[detailFile],
-      loadContext,
-    );
   }
-  throw new PendingError(dir);
 }
 
 async function loadState(files, dir, state) {
@@ -1130,26 +1351,47 @@ export function getAddress(/*addressId*/) {
  * returns List
  **/
 export async function getAddresses(url, swagger, q /*p*/) {
-  if (q === undefined) {
-    const link = new LinkHeader();
+  const foundAddresses = await searchForAddress(q);
+  logger('foundAddresses', foundAddresses);
+
+  const link = new LinkHeader();
+  link.set({
+    rel: 'describedby',
+    uri: `/docs/#operations-${swagger.path.get[
+      'x-swagger-router-controller'
+    ].toLowerCase()}-${swagger.path.get.operationId}`,
+    title: `${swagger.path.get.operationId} API Docs`,
+    type: 'text/html',
+  });
+  link.set({
+    rel: 'self',
+    uri: url,
+  });
+  link.set({
+    rel: 'first',
+    uri: url,
+  });
+  if (foundAddresses.hits.total.value > PAGE_SIZE) {
     link.set({
-      rel: 'self',
-      uri: url,
+      rel: 'next',
+      uri: `${url}?p=2`,
     });
-    link.set({
-      rel: 'first',
-      uri: url,
-    });
-    link.set({
-      rel: 'describedby',
-      uri: `/docs/#operations-${swagger.path.get[
-        'x-swagger-router-controller'
-      ].toLowerCase()}-${swagger.path.get.operationId}`,
-      title: `${swagger.path.get.operationId} API Docs`,
-      type: 'text/html',
-    });
-    return { link: link, json: addresses };
-  } else {
-    throw new PendingError();
   }
+  const responseBody = mapToSearchAddressResponse(foundAddresses);
+  logger('responseBody', responseBody);
+  return { link: link, json: responseBody };
+}
+
+function mapToSearchAddressResponse(foundAddresses) {
+  return foundAddresses.hits.hits.map(h => {
+    return {
+      sla: h._source.sla,
+      score: h._score,
+      links: {
+        self: {
+          href: h._id,
+        },
+      },
+    };
+  });
 }

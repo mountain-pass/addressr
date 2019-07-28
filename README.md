@@ -22,12 +22,59 @@ open http://localhost:8080/docs
 
 This project leverages the mega-awesome [swagger-tools](https://github.com/apigee-127/swagger-tools) middleware which does most all the work.
 
+## System requirements
+
+Elastic Search: 1.357GiB mem
+
 ## To Do
 
 [ ] Add search API
+
+- [x] Index docs and create search logic
+- [ ] Expose search logic
+- [x] use papaparse chunks for indexing to reduce memory footprint
 
 ### Premium options?
 
 [ ] Aliases
 [ ] Geo
 [ ] Lowercase
+
+## Strange Addresses
+
+"structured": {
+"number": {},
+"street": {
+"name": "AERODROME",
+"type": {
+"code": "ROAD",
+"name": "RD"
+},
+"class": {
+"code": "C",
+"name": "CONFIRMED"
+}
+},
+"confidence": 0,
+"locality": {
+"name": "APPLETHORPE",
+"class": {
+"code": "G",
+"name": "GAZETTED LOCALITY"
+}
+},
+"postcode": "4378",
+"lotNumber": {
+"number": "16"
+},
+"state": {
+"name": "QUEENSLAND",
+"abbreviation": "QLD"
+}
+},
+"pid": "GAQLD163157353",
+"mla": [
+" AERODROME RD",
+"APPLETHORPE QLD 4378"
+],
+"sla": " AERODROME RD, APPLETHORPE QLD 4378"

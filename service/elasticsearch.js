@@ -163,11 +163,10 @@ module.exports = function(
               host: `${eshost}:${esport}`,
               log: 'info',
             });
-            esClient.index;
             logger('connecting internal esclient...');
-            await esClient.ping({
-              requestTimeout: 30000,
-            });
+            // await esClient.ping({
+            //   requestTimeout: 30000,
+            // });
             logger('...connected');
 
             await initIndex(esClient, esindex, clearindex);
@@ -180,7 +179,7 @@ module.exports = function(
             logger('retrying...');
             await new Promise(resolve => {
               // eslint-disable-next-line no-undef
-              setTimeout(() => resolve(), 1000);
+              setTimeout(() => resolve(), 5000);
             });
           }
         }
