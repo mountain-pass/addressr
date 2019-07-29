@@ -4,6 +4,7 @@ import LinkHeader from 'http-link-header';
 import {
   clearAddresses,
   loadGnaf,
+  mapAddressDetails,
   setAddresses,
 } from '../../service/AddressService';
 
@@ -112,4 +113,38 @@ Then('the returned address list will contain many addresses', async function() {
   logger('CURRENT', this.current);
   expect(this.current.json).to.be.an('array').that.is.not.empty;
   expect(this.current.json.length).to.be.greaterThan(50);
+});
+
+Given('the following address detail:', async function(docString) {
+  this.addressDetails = JSON.parse(docString);
+});
+
+Given('the following street locality:', async function(docString) {
+  this.streetLocality = JSON.parse(docString);
+});
+
+Given('the following locality:', async function(docString) {
+  this.locality = JSON.parse(docString);
+});
+
+Given('the following context:', async function(docString) {
+  this.context = JSON.parse(docString);
+});
+
+Then('the address details will map to the following address:', async function(
+  docString,
+) {
+  const expected = JSON.parse(docString);
+  this.context.streetLocalityIndexed = [];
+  this.context.localityIndexed = [];
+
+  this.context.streetLocalityIndexed[
+    this.addressDetails.STREET_LOCALITY_PID
+  ] = this.streetLocality;
+  this.context.localityIndexed[
+    this.addressDetails.LOCALITY_PID
+  ] = this.locality;
+  expect(
+    mapAddressDetails(this.addressDetails, this.context, 1, 1),
+  ).to.deep.equal(expected);
 });

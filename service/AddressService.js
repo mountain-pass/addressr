@@ -659,9 +659,10 @@ function mapToShortMla(s) {
   return fla;
 }
 
-function mapAddressDetails(d, context, i, count) {
+export function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
+
   // const geo = context.geoIndexed[d.ADDRESS_SITE_PID];
   const rval = {
     // ...((d.LEVEL_GEOCODED_CODE != '' || geo.length > 0) && {
@@ -680,32 +681,36 @@ function mapAddressDetails(d, context, i, count) {
       ...(d.BUILDING_NAME !== '' && {
         buildingName: d.BUILDING_NAME,
       }),
-      number: {
-        ...(d.NUMBER_FIRST_PREFIX !== '' && {
-          prefix: d.NUMBER_FIRST_PREFIX,
-        }),
-        ...(d.NUMBER_FIRST !== '' && {
-          number: parseInt(d.NUMBER_FIRST),
-        }),
-        ...(d.NUMBER_FIRST_SUFFIX !== '' && {
-          suffix: d.NUMBER_FIRST_SUFFIX,
-        }),
-        ...(d.NUMBER_LAST_PREFIX !== '' &&
-          d.NUMBER_LAST !== '' &&
-          d.NUMBER_LAST_SUFFIX !== '' && {
-            last: {
-              ...(d.NUMBER_LAST_PREFIX !== '' && {
-                prefix: d.NUMBER_LAST_PREFIX,
-              }),
-              ...(d.NUMBER_LAST !== '' && {
-                number: parseInt(d.NUMBER_LAST),
-              }),
-              ...(d.NUMBER_LAST_SUFFIX !== '' && {
-                suffix: d.NUMBER_LAST_SUFFIX,
-              }),
-            },
+      ...((d.NUMBER_FIRST_PREFIX !== '' ||
+        d.NUMBER_FIRST !== '' ||
+        d.NUMBER_FIRST_SUFFIX !== '') && {
+        number: {
+          ...(d.NUMBER_FIRST_PREFIX !== '' && {
+            prefix: d.NUMBER_FIRST_PREFIX,
           }),
-      },
+          ...(d.NUMBER_FIRST !== '' && {
+            number: parseInt(d.NUMBER_FIRST),
+          }),
+          ...(d.NUMBER_FIRST_SUFFIX !== '' && {
+            suffix: d.NUMBER_FIRST_SUFFIX,
+          }),
+          ...(d.NUMBER_LAST_PREFIX !== '' &&
+            d.NUMBER_LAST !== '' &&
+            d.NUMBER_LAST_SUFFIX !== '' && {
+              last: {
+                ...(d.NUMBER_LAST_PREFIX !== '' && {
+                  prefix: d.NUMBER_LAST_PREFIX,
+                }),
+                ...(d.NUMBER_LAST !== '' && {
+                  number: parseInt(d.NUMBER_LAST),
+                }),
+                ...(d.NUMBER_LAST_SUFFIX !== '' && {
+                  suffix: d.NUMBER_LAST_SUFFIX,
+                }),
+              },
+            }),
+        },
+      }),
       ...((d.LEVEL_TYPE_CODE !== '' ||
         d.LEVEL_NUMBER_PREFIX !== '' ||
         d.LEVEL_NUMBER !== '' ||
@@ -795,6 +800,7 @@ function mapAddressDetails(d, context, i, count) {
     logger('addr', JSON.stringify(rval, null, 2));
     logger(`${(i / count) * 100.0}%`);
   }
+
   return rval;
 }
 

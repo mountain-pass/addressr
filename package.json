@@ -23,8 +23,9 @@
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
     "test:component": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
-    "test:system": "DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
-    "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system"
+    "test:system": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
+    "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
+    "test:component:QLD": "COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration"
   },
   "keywords": [
     "swagger",
