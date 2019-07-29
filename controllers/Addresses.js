@@ -20,7 +20,8 @@ export function getAddress(req, res) {
 export function getAddresses(req, res) {
   var q = req.swagger.params['q'].value;
   var p = req.swagger.params['p'].value;
-  _getAddresses(req.url, req.swagger, q, p)
+  const url = new URL(req.url, `http://localhost:${process.env.port || 8080}`);
+  _getAddresses(url.pathname, req.swagger, q, p)
     .then(function(response) {
       res.setHeader('link', response.link.toString());
       writeJson(res, response.json);
