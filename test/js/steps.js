@@ -49,6 +49,7 @@ Then('the response will contain the following links:', async function(
 });
 
 When('the {string} link is followed for {string}', async function(rel, type) {
+  this.prev = this.current;
   expect(this.current.link).to.not.be.undefined;
   const link = this.current.link.get('rel', rel).find(l => l.type === type);
   logger('link', link);
@@ -56,6 +57,7 @@ When('the {string} link is followed for {string}', async function(rel, type) {
 });
 
 When('the {string} link is followed', async function(rel) {
+  this.prev = this.current;
   expect(this.current.link).to.not.be.undefined;
   const link = this.current.link.get('rel', rel);
   logger('link', link);
@@ -112,7 +114,7 @@ Given(
 Then('the returned address list will contain many addresses', async function() {
   logger('CURRENT', this.current);
   expect(this.current.json).to.be.an('array').that.is.not.empty;
-  expect(this.current.json.length).to.be.greaterThan(50);
+  expect(this.current.json.length).to.be.greaterThan(5);
 });
 
 Given('the following address detail:', async function(docString) {
@@ -148,3 +150,14 @@ Then('the address details will map to the following address:', async function(
     mapAddressDetails(this.addressDetails, this.context, 1, 1),
   ).to.deep.equal(expected);
 });
+
+Then(
+  'the set of addresses in the previous request will be distinct from the addresses in the last request',
+  async function() {
+    logger('prev', this.prev);
+    logger('current', this.current);
+    this.current.json.forEach(a => {
+      expect(this.prev.json).to.not.deep.include(a);
+    });
+  },
+);

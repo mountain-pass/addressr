@@ -107,7 +107,7 @@ Feature: Address
             | first       | /addresses                               |                       |           |
 
 
-    Scenario: Two Entries Address List
+    Scenario: Many Entries Address List
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link is followed
@@ -118,6 +118,21 @@ Feature: Address
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
             | next        | /addresses?p=2                           |                       |           |
+
+    Scenario: Next Page Entries Address List
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link is followed
+        And the "next" link is followed
+        Then the returned address list will contain many addresses
+        And the response will contain the following links:
+            | rel         | uri                                      | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
+            | self        | /addresses                               |                       |           |
+            | first       | /addresses                               |                       |           |
+            | prev        | /addresses                               |                       |           |
+            | next        | /addresses?p=3                           |                       |           |
+        And the set of addresses in the previous request will be distinct from the addresses in the last request
 
 
     Scenario: Address Details Mapping - Lot Numbes

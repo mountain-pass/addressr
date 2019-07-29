@@ -24,7 +24,8 @@
     "global": true,
     "expect": true,
     "require": true,
-    "module": true
+    "module": true,
+    "URL": true
   },
   "settings": {
     "import/core-modules": []

@@ -28,8 +28,22 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
         return getApiRoot();
       case '/addresses':
         return getAddresses(link.uri, getSwagger(link.uri));
-      default:
-        throw new PendingError();
+      default: {
+        if (link.uri.startsWith('/addresses?')) {
+          const url = new URL(
+            link.uri,
+            `http://localhost:${process.env.PORT || 8080}`,
+          );
+          logger('searchParams', url.searchParams);
+          return getAddresses(
+            url.pathname,
+            getSwagger(url.pathname),
+            url.searchParams.get('q'),
+            parseInt(url.searchParams.get('p')),
+          );
+        }
+        throw new PendingError(link.uri);
+      }
     }
   }
 }

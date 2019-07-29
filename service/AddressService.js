@@ -20,7 +20,7 @@ const cache = new Keyv({
   store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
 });
 
-const PAGE_SIZE = 64;
+const PAGE_SIZE = 8;
 
 function getCoveredStates() {
   const covered = process.env.COVERED_STATES || '';
@@ -928,12 +928,12 @@ async function loadAddressDetails(file, expectedCount, context) {
   await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
-async function searchForAddress(searchString) {
+async function searchForAddress(searchString, p) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
     index: 'addressr',
     body: {
-      from: 0,
+      from: (p - 1 || 0) * PAGE_SIZE,
       size: PAGE_SIZE,
       query: {
         bool: {
@@ -1356,8 +1356,8 @@ export function getAddress(/*addressId*/) {
  * p Integer page number (optional)
  * returns List
  **/
-export async function getAddresses(url, swagger, q /*p*/) {
-  const foundAddresses = await searchForAddress(q);
+export async function getAddresses(url, swagger, q, p = 1) {
+  const foundAddresses = await searchForAddress(q, p);
   logger('foundAddresses', foundAddresses);
 
   const link = new LinkHeader();
@@ -1377,10 +1377,16 @@ export async function getAddresses(url, swagger, q /*p*/) {
     rel: 'first',
     uri: url,
   });
-  if (foundAddresses.hits.total.value > PAGE_SIZE) {
+  if (p > 1) {
+    link.set({
+      rel: 'prev',
+      uri: p === 2 ? url : `${url}?p=${p - 1}`,
+    });
+  }
+  if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
     link.set({
       rel: 'next',
-      uri: `${url}?p=2`,
+      uri: `${url}?p=${p + 1}`,
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);

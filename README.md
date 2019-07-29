@@ -31,50 +31,15 @@ Elastic Search: 1.357GiB mem
 [ ] Add search API
 
 - [x] Index docs and create search logic
-- [ ] Expose search logic
 - [x] use papaparse chunks for indexing to reduce memory footprint
+- [x] implement pagination
+- [ ] Expose search logic
+- [ ]
+
+[ ] create start & load script
 
 ### Premium options?
 
 [ ] Aliases
 [ ] Geo
 [ ] Lowercase
-
-## Strange Addresses
-
-"structured": {
-"number": {},
-"street": {
-"name": "AERODROME",
-"type": {
-"code": "ROAD",
-"name": "RD"
-},
-"class": {
-"code": "C",
-"name": "CONFIRMED"
-}
-},
-"confidence": 0,
-"locality": {
-"name": "APPLETHORPE",
-"class": {
-"code": "G",
-"name": "GAZETTED LOCALITY"
-}
-},
-"postcode": "4378",
-"lotNumber": {
-"number": "16"
-},
-"state": {
-"name": "QUEENSLAND",
-"abbreviation": "QLD"
-}
-},
-"pid": "GAQLD163157353",
-"mla": [
-" AERODROME RD",
-"APPLETHORPE QLD 4378"
-],
-"sla": " AERODROME RD, APPLETHORPE QLD 4378"
