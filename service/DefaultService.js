@@ -1,5 +1,6 @@
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
+import ptr from 'json-ptr';
 var logger = debug('api');
 
 /**
@@ -34,19 +35,23 @@ export async function getApiRoot() {
   });
 
   const linkTemplate = new LinkHeader();
-  paths.forEach(p => {
-    const op = global.swaggerDoc.paths[p].get;
+  paths.forEach(url => {
+    const op = global.swaggerDoc.paths[url].get;
     logger(op);
     if (op.parameters) {
       const parameters = op.parameters;
       const queryParams = parameters.filter(param => param.in === 'query');
       const linkOptions = {
         rel: op['x-root-rel'],
-        uri: `${p}{?${queryParams.map(qp => qp.name).join(',')}}`,
+        uri: `${url}{?${queryParams.map(qp => qp.name).join(',')}}`,
         title: op.summary,
-        'var-base': `/docs/#operations-${op[
-          'x-swagger-router-controller'
-        ].toLowerCase()}-${op.operationId}`,
+        type: 'application/json',
+        'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
+          'paths',
+          url,
+          'get',
+          'parameters',
+        ])}`,
       };
       linkTemplate.set(linkOptions);
     }

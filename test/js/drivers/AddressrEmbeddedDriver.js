@@ -1,9 +1,11 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
+import ptr from 'json-ptr';
 import { getAddresses } from '../../../service/AddressService';
 import { getApiRoot } from '../../../service/DefaultService';
 import { swaggerDoc } from '../../../swagger';
 import { AddressrDriver } from './AddressrDriver';
+
 const logger = debug('api');
 
 function getSwagger(uri) {
@@ -44,6 +46,21 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
         }
         throw new PendingError(link.uri);
       }
+    }
+  }
+
+  async followVarBase(link) {
+    logger('FOLLOWING VAR BASE', link['var-base']);
+    const url = new URL(
+      link['var-base'],
+      `http://localhost:${process.env.PORT || 8080}`,
+    );
+    if (url.pathname === '/api-docs') {
+      logger(url);
+      const jsonPtr = ptr.create(url.hash);
+      return { json: jsonPtr.get(swaggerDoc) };
+    } else {
+      throw new PendingError(url.pathname);
     }
   }
 }

@@ -3,6 +3,7 @@ import directoryExists from 'directory-exists';
 import fs from 'fs';
 import got from 'got';
 import LinkHeader from 'http-link-header';
+import ptr from 'json-ptr';
 import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
@@ -1401,9 +1402,13 @@ export async function getAddresses(url, swagger, q, p = 1) {
       rel: op['x-root-rel'],
       uri: `${url}{?${queryParams.map(qp => qp.name).join(',')}}`,
       title: op.summary,
-      'var-base': `/docs/#operations-${op[
-        'x-swagger-router-controller'
-      ].toLowerCase()}-${op.operationId}`,
+      type: 'application/json',
+      'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
+        'paths',
+        url,
+        'get',
+        'parameters',
+      ])}`,
     };
     linkTemplate.set(linkOptions);
   }

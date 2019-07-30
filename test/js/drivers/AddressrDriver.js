@@ -5,7 +5,11 @@ export class AddressrDriver {
     throw new PendingError();
   }
 
-  async follow(/*link*/) {
-    throw new PendingError();
+  async follow(link) {
+    throw new PendingError(link);
+  }
+
+  async followVarBase(link) {
+    throw new PendingError(link);
   }
 }

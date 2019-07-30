@@ -195,3 +195,16 @@ Then(
     });
   },
 );
+
+Then('the {string} link templates var-base will contain', async function(
+  rel,
+  expectedParams,
+) {
+  this.prev = this.current;
+  expect(this.current.linkTemplate).to.not.be.undefined;
+  const link = this.current.linkTemplate.get('rel', rel);
+  logger('link', link);
+  this.current = await this.driver.followVarBase(link[0]);
+  logger(JSON.stringify(this.current.json));
+  expect(this.current.json).to.deep.equal(JSON.parse(expectedParams));
+});

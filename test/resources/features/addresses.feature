@@ -50,8 +50,25 @@ Feature: Address
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
         And the response will contain the following link template:
-            | rel                                                       | uri              | title                 | type | var-base                                 |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link templates var-base will contain
+            """
+            [
+                {
+                    "name": "q",
+                    "in": "query",
+                    "description": "search string",
+                    "type": "string"
+                },
+                {
+                    "name": "p",
+                    "in": "query",
+                    "description": "page number",
+                    "type": "integer"
+                }
+            ]
+            """
 
 
     Scenario: Two Entries Address List
@@ -109,8 +126,8 @@ Feature: Address
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
         And the response will contain the following link template:
-            | rel                                                       | uri              | title                 | type | var-base                                 |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
 
 
     Scenario: Many Entries Address List
@@ -125,8 +142,8 @@ Feature: Address
             | first       | /addresses                               |                       |           |
             | next        | /addresses?p=2                           |                       |           |
         And the response will contain the following link template:
-            | rel                                                       | uri              | title                 | type | var-base                                 |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
 
     Scenario: Next Page Entries Address List
         Given an address database is loaded from gnaf
@@ -142,8 +159,8 @@ Feature: Address
             | prev        | /addresses                               |                       |           |
             | next        | /addresses?p=3                           |                       |           |
         And the response will contain the following link template:
-            | rel                                                       | uri              | title                 | type | var-base                                 |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
         And the set of addresses in the previous request will be distinct from the addresses in the last request
 
 
