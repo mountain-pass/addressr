@@ -49,6 +49,9 @@ Feature: Address
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type | var-base                                 |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
 
 
     Scenario: Two Entries Address List
@@ -105,6 +108,9 @@ Feature: Address
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type | var-base                                 |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
 
 
     Scenario: Many Entries Address List
@@ -118,6 +124,9 @@ Feature: Address
             | self        | /addresses                               |                       |           |
             | first       | /addresses                               |                       |           |
             | next        | /addresses?p=2                           |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type | var-base                                 |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
 
     Scenario: Next Page Entries Address List
         Given an address database is loaded from gnaf
@@ -132,6 +141,9 @@ Feature: Address
             | first       | /addresses                               |                       |           |
             | prev        | /addresses                               |                       |           |
             | next        | /addresses?p=3                           |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type | var-base                                 |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses |      | /docs/#operations-addresses-getAddresses |
         And the set of addresses in the previous request will be distinct from the addresses in the last request
 
 

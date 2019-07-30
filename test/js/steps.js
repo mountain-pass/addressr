@@ -48,6 +48,40 @@ Then('the response will contain the following links:', async function(
   //   });
 });
 
+Then('the response will contain the following link template:', async function(
+  dataTable,
+) {
+  const hashes = dataTable.hashes();
+  logger('hashes', hashes);
+
+  const expectedLinks = new LinkHeader();
+  hashes.forEach(h => {
+    const link = h;
+    if (link.type === '') {
+      delete link.type;
+    }
+    if (link.title === '') {
+      delete link.title;
+    }
+    expectedLinks.set(h);
+  });
+
+  expect(this.current.linkTemplate).to.not.be.undefined;
+  //  expect(this.current.link.refs.length).to.equal(hashes.length);
+
+  const expected = expectedLinks.refs;
+  const actual = this.current.linkTemplate.refs;
+  logger('expectedLinkTemplates', expected);
+  logger('actualLinkTemplates', actual);
+  expect(actual).to.be.an('array');
+  expect(actual).to.have.deep.members(expected);
+  //   expected.forEach(e => {
+  //     logger('finding', e.uri);
+  //     const found = actual.find(l => l.uri == e.uri);
+  //     expect(found).to.deep.equal(e);
+  //   });
+});
+
 When('the {string} link is followed for {string}', async function(rel, type) {
   this.prev = this.current;
   expect(this.current.link).to.not.be.undefined;

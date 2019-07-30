@@ -12,7 +12,12 @@ export class AddressrRestDriver extends AddressrDriver {
   }
   async getApiRoot() {
     const resp = await this.requester.get('/');
-    return { link: LinkHeader.parse(resp.headers.link), body: resp.body };
+
+    return {
+      link: LinkHeader.parse(resp.headers.link || ''),
+      body: resp.body,
+      linkTemplate: LinkHeader.parse(resp.headers['link-template'] || ''),
+    };
   }
 
   async follow(link) {
@@ -21,6 +26,8 @@ export class AddressrRestDriver extends AddressrDriver {
       resp.json = JSON.parse(resp.body);
     }
     resp.link = LinkHeader.parse(resp.headers.link || '');
+    resp.linkTemplate = LinkHeader.parse(resp.headers['link-template'] || '');
+
     return resp;
   }
 }

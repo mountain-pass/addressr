@@ -34,7 +34,6 @@ Elastic Search: 1.357GiB mem
 - [x] use papaparse chunks for indexing to reduce memory footprint
 - [x] implement pagination
 - [ ] Expose search logic
-- [ ]
 
 [ ] create start & load script
 

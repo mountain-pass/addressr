@@ -24,6 +24,7 @@ export function getAddresses(req, res) {
   _getAddresses(url.pathname, req.swagger, q, p)
     .then(function(response) {
       res.setHeader('link', response.link.toString());
+      res.setHeader('link-template', response.linkTemplate.toString());
       writeJson(res, response.json);
     })
     .catch(function(response) {

@@ -1,6 +1,6 @@
+import debug from 'debug';
 import LinkHeader from 'http-link-header';
-// import debug from 'debug';
-// var logger = debug('api');
+var logger = debug('api');
 
 /**
  * API Root
@@ -32,5 +32,25 @@ export async function getApiRoot() {
     title: 'API Docs',
     type: 'application/json',
   });
-  return { link: link, body: {} };
+
+  const linkTemplate = new LinkHeader();
+  paths.forEach(p => {
+    const op = global.swaggerDoc.paths[p].get;
+    logger(op);
+    if (op.parameters) {
+      const parameters = op.parameters;
+      const queryParams = parameters.filter(param => param.in === 'query');
+      const linkOptions = {
+        rel: op['x-root-rel'],
+        uri: `${p}{?${queryParams.map(qp => qp.name).join(',')}}`,
+        title: op.summary,
+        'var-base': `/docs/#operations-${op[
+          'x-swagger-router-controller'
+        ].toLowerCase()}-${op.operationId}`,
+      };
+      linkTemplate.set(linkOptions);
+    }
+  });
+
+  return { link: link, body: {}, linkTemplate: linkTemplate };
 }

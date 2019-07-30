@@ -1391,7 +1391,24 @@ export async function getAddresses(url, swagger, q, p = 1) {
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);
   logger('responseBody', responseBody);
-  return { link: link, json: responseBody };
+
+  const linkTemplate = new LinkHeader();
+  const op = swagger.path.get;
+  if (op.parameters) {
+    const parameters = op.parameters;
+    const queryParams = parameters.filter(param => param.in === 'query');
+    const linkOptions = {
+      rel: op['x-root-rel'],
+      uri: `${url}{?${queryParams.map(qp => qp.name).join(',')}}`,
+      title: op.summary,
+      'var-base': `/docs/#operations-${op[
+        'x-swagger-router-controller'
+      ].toLowerCase()}-${op.operationId}`,
+    };
+    linkTemplate.set(linkOptions);
+  }
+
+  return { link, json: responseBody, linkTemplate };
 }
 
 function mapToSearchAddressResponse(foundAddresses) {
