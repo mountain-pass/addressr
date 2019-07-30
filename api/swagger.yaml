@@ -26,8 +26,15 @@ paths:
           schema:
             $ref: "#/definitions/Root"
           headers:
-            Link:
-              description: rfc5988 Link
+            link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+            link-template:
+              description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
@@ -92,8 +99,15 @@ paths:
                   self: 
                     href: /address/GANT_718592782
           headers:
-            Link:
+            link:
               description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+            link-template:
+              description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
@@ -120,8 +134,15 @@ paths:
           schema:
             $ref: "#/definitions/Address"
           headers:
-            Link:
+            link:
               description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: "<(.*)>;(.*)"
+            link-template:
+              description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
