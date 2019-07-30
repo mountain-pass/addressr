@@ -41,7 +41,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
             url.pathname,
             getSwagger(url.pathname),
             url.searchParams.get('q'),
-            parseInt(url.searchParams.get('p')),
+            parseInt(url.searchParams.get('p') || 1),
           );
         }
         throw new PendingError(link.uri);

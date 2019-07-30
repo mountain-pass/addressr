@@ -92,12 +92,12 @@ paths:
                 score: 1
                 links:
                   self: 
-                    href: /address/GANT_718592778
+                    href: /addresses/GANT_718592778
               - sla: 109 Kirribilli Ave, Kirribilli NSW 2061
                 score: 0.985051936618461
                 links:
                   self: 
-                    href: /address/GANT_718592782
+                    href: /addresses/GANT_718592782
           headers:
             link:
               description: rfc5988 Links

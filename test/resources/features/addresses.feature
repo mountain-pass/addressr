@@ -22,7 +22,7 @@ Feature: Address
                     "score": 1,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592778"
+                            "href": "/addresses/GANT_718592778"
                         }
                     }
                 }
@@ -38,7 +38,7 @@ Feature: Address
                     "score": 1,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592778"
+                            "href": "/addresses/GANT_718592778"
                         }
                     }
                 }
@@ -80,7 +80,7 @@ Feature: Address
                     "score": 1,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592778"
+                            "href": "/addresses/GANT_718592778"
                         }
                     }
                 },
@@ -89,7 +89,7 @@ Feature: Address
                     "score": 0.985051936618461,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592782"
+                            "href": "/addresses/GANT_718592782"
                         }
                     }
                 }
@@ -105,7 +105,7 @@ Feature: Address
                     "score": 1,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592778"
+                            "href": "/addresses/GANT_718592778"
                         }
                     }
                 },
@@ -114,7 +114,7 @@ Feature: Address
                     "score": 1,
                     "links": {
                         "self": {
-                            "href": "/address/GANT_718592782"
+                            "href": "/addresses/GANT_718592782"
                         }
                     }
                 }
@@ -301,3 +301,34 @@ Feature: Address
                 "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
             }
             """
+
+
+    Scenario: Searching Address List
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        Then the returned address list will contain many addresses
+        And the returned address list will include:
+            """
+            {
+                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
+                "score": 330.40973,
+                "links": {
+                    "self": {
+                        "href": "/addresses/GAOT_718446632"
+                    }
+                }
+            }
+            """
+        And the response will contain the following links:
+            | rel         | uri                                      | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
+            | self        | /addresses                               |                       |           |
+            | first       | /addresses                               |                       |           |
+            | next        | /addresses?p=2                           |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
+
+

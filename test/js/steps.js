@@ -120,10 +120,12 @@ Then('the an empty address list will be returned', async function() {
 });
 
 Given('an empty address database', async function() {
+  delete global.gnafLoaded;
   return clearAddresses();
 });
 
 Given('an address database with:', async function(docString) {
+  delete global.gnafLoaded;
   return setAddresses(JSON.parse(docString));
 });
 
@@ -141,12 +143,14 @@ Given(
   'an address database is loaded from gnaf',
   { timeout: ONE_HOUR },
   async function() {
-    this.dataDir = await loadGnaf();
+    if (global.gnafLoaded === undefined) {
+      global.gnafLoaded = true;
+      this.dataDir = await loadGnaf();
+    }
   },
 );
 
 Then('the returned address list will contain many addresses', async function() {
-  logger('CURRENT', this.current);
   expect(this.current.json).to.be.an('array').that.is.not.empty;
   expect(this.current.json.length).to.be.greaterThan(5);
 });
@@ -207,4 +211,27 @@ Then('the {string} link templates var-base will contain', async function(
   this.current = await this.driver.followVarBase(link[0]);
   logger(JSON.stringify(this.current.json));
   expect(this.current.json).to.deep.equal(JSON.parse(expectedParams));
+});
+
+When('the {string} link template is followed with:', async function(
+  rel,
+  params,
+) {
+  this.prev = this.current;
+  expect(this.current.linkTemplate).to.not.be.undefined;
+  const link = this.current.linkTemplate.get('rel', rel);
+  this.current = await this.driver.followTemplate(link[0], params.rowsHash());
+});
+
+Then('the returned address list will include:', async function(docString) {
+  const e = JSON.parse(docString);
+  const found = this.current.json.find(a => {
+    return (
+      a.sla === e.sla &&
+      // SCORE is non-deterministic
+      // a.score === e.score &&
+      a.links.self.href === e.links.self.href
+    );
+  });
+  expect(found).to.not.be.undefined;
 });

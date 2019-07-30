@@ -829,7 +829,7 @@ async function loadAddressDetails(file, expectedCount, context) {
             indexingBody.push({
               index: {
                 _index: 'addressr',
-                _id: item.pid,
+                _id: `/addresses/${item.pid}`,
               },
             });
             indexingBody.push({
@@ -1384,6 +1384,10 @@ export async function getAddresses(url, swagger, q, p = 1) {
       uri: p === 2 ? url : `${url}?p=${p - 1}`,
     });
   }
+  logger('TOTAL', foundAddresses.hits.total.value);
+  logger('PAGE_SIZE * p', PAGE_SIZE * p);
+  logger('next?', foundAddresses.hits.total.value > PAGE_SIZE * p);
+
   if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
     link.set({
       rel: 'next',
@@ -1391,7 +1395,7 @@ export async function getAddresses(url, swagger, q, p = 1) {
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);
-  logger('responseBody', responseBody);
+  logger('responseBody', JSON.stringify(responseBody, null, 2));
 
   const linkTemplate = new LinkHeader();
   const op = swagger.path.get;
