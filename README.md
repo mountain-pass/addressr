@@ -32,10 +32,14 @@ Elastic Search: 1.357GiB mem
 
 - [x] Index docs and create search logic
 - [x] use papaparse chunks for indexing to reduce memory footprint
-- [x] implement pagination
-- [ ] Expose search logic
+- [x] Expose search logic
+- [ ] implement pagination
 
-[ ] create start & load script
+[ ] API to get the full structured address
+[ ] start up process. Probably have the API component separate to the loader component.
+[ ] auth0 integration (to run the components, you need to provide credentials)
+[ ] telemetry capture
+[ ] GA the beta
 
 ### Premium options?
 
