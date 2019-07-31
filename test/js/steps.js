@@ -235,3 +235,16 @@ Then('the returned address list will include:', async function(docString) {
   });
   expect(found).to.not.be.undefined;
 });
+
+Then('the returned address list will NOT include:', async function(docString) {
+  const e = JSON.parse(docString);
+  const found = this.current.json.find(a => {
+    return (
+      a.sla === e.sla &&
+      // SCORE is non-deterministic
+      // a.score === e.score &&
+      a.links.self.href === e.links.self.href
+    );
+  });
+  expect(found).to.be.undefined;
+});

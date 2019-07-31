@@ -332,3 +332,67 @@ Feature: Address
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
 
 
+
+    Scenario: Searching Address List - Next Page
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        And the "next" link is followed
+        Then the returned address list will contain many addresses
+        And the returned address list will NOT include:
+            """
+            {
+                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
+                "score": 330.40973,
+                "links": {
+                    "self": {
+                        "href": "/addresses/GAOT_718446632"
+                    }
+                }
+            }
+            """
+        And the response will contain the following links:
+            | rel         | uri                                      | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
+            | self        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
+            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
+            | prev        | /addresses?q=4+COCONUT+GROVE             |                       |           |
+            | next        | /addresses?q=4+COCONUT+GROVE&p=3         |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
+
+
+
+    Scenario: Searching Address List - Next Next Page
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        And the "next" link is followed
+        And the "next" link is followed
+        Then the returned address list will contain many addresses
+        And the returned address list will NOT include:
+            """
+            {
+                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
+                "score": 330.40973,
+                "links": {
+                    "self": {
+                        "href": "/addresses/GAOT_718446632"
+                    }
+                }
+            }
+            """
+        And the response will contain the following links:
+            | rel         | uri                                      | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
+            | self        | /addresses?q=4+COCONUT+GROVE&p=3         |                       |           |
+            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
+            | prev        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
+            | next        | /addresses?q=4+COCONUT+GROVE&p=4         |                       |           |
+        And the response will contain the following link template:
+            | rel                                                       | uri              | title                 | type             | var-base                                    |
+            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
+

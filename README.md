@@ -28,12 +28,12 @@ Elastic Search: 1.357GiB mem
 
 ## To Do
 
-[ ] Add search API
+[x] Add search API
 
 - [x] Index docs and create search logic
 - [x] use papaparse chunks for indexing to reduce memory footprint
 - [x] Expose search logic
-- [ ] implement pagination
+- [x] implement pagination
 
 [ ] API to get the full structured address
 [ ] start up process. Probably have the API component separate to the loader component.
