@@ -154,7 +154,7 @@ Feature: Address
         And the response will contain the following links:
             | rel         | uri                                      | title                 | type      |
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses                               |                       |           |
+            | self        | /addresses?p=2                           |                       |           |
             | first       | /addresses                               |                       |           |
             | prev        | /addresses                               |                       |           |
             | next        | /addresses?p=3                           |                       |           |
@@ -324,9 +324,9 @@ Feature: Address
         And the response will contain the following links:
             | rel         | uri                                      | title                 | type      |
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses                               |                       |           |
-            | first       | /addresses                               |                       |           |
-            | next        | /addresses?p=2                           |                       |           |
+            | self        | /addresses?q=4+COCONUT+GROVE             |                       |           |
+            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
+            | next        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
         And the response will contain the following link template:
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |

@@ -1370,18 +1370,28 @@ export async function getAddresses(url, swagger, q, p = 1) {
     title: `${swagger.path.get.operationId} API Docs`,
     type: 'text/html',
   });
+  const sp = new URLSearchParams({
+    ...(q !== undefined && { q }),
+    ...(p !== 1 && { p }),
+  });
+  const spString = sp.toString();
   link.set({
     rel: 'self',
-    uri: url,
+    uri: `${url}${spString === '' ? '' : '?'}${spString}`,
   });
   link.set({
     rel: 'first',
-    uri: url,
+    uri: `${url}${q === undefined ? '' : '?'}${new URLSearchParams({
+      ...(q !== undefined && { q }),
+    }).toString()}`,
   });
   if (p > 1) {
     link.set({
       rel: 'prev',
-      uri: p === 2 ? url : `${url}?p=${p - 1}`,
+      uri: `${url}${q === undefined && p == 2 ? '' : '?'}${new URLSearchParams({
+        ...(q !== undefined && { q }),
+        ...(p > 2 && { p: p - 1 }),
+      }).toString()}`,
     });
   }
   logger('TOTAL', foundAddresses.hits.total.value);
@@ -1391,7 +1401,10 @@ export async function getAddresses(url, swagger, q, p = 1) {
   if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
     link.set({
       rel: 'next',
-      uri: `${url}?p=${p + 1}`,
+      uri: `${url}?${new URLSearchParams({
+        ...(q !== undefined && { q }),
+        p: p + 1,
+      }).toString()}`,
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);

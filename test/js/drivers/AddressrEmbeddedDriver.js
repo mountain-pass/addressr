@@ -29,7 +29,12 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
       case '/':
         return getApiRoot();
       case '/addresses':
-        return getAddresses(link.uri, getSwagger(link.uri));
+        return getAddresses(
+          link.uri,
+          getSwagger(link.uri),
+          undefined,
+          undefined,
+        );
       default: {
         if (link.uri.startsWith('/addresses?')) {
           const url = new URL(
@@ -37,10 +42,15 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
             `http://localhost:${process.env.PORT || 8080}`,
           );
           logger('searchParams', url.searchParams);
+          logger(
+            "parseInt(url.searchParams.get('p') || 1)",
+            parseInt(url.searchParams.get('p') || 1),
+          );
+          const query = url.searchParams.get('q');
           return getAddresses(
             url.pathname,
             getSwagger(url.pathname),
-            url.searchParams.get('q'),
+            query == null ? undefined : query,
             parseInt(url.searchParams.get('p') || 1),
           );
         }

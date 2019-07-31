@@ -25,7 +25,8 @@
     "expect": true,
     "require": true,
     "module": true,
-    "URL": true
+    "URL": true,
+    "URLSearchParams": true
   },
   "settings": {
     "import/core-modules": []
