@@ -9,12 +9,12 @@
   "config": {
     "localport": "8080"
   },
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "requirements-check": "./scripts/check-version.js",
     "postinstall": "npm run requirements-check",
-    "start": "DEBUG=error,api,express:*,swagger-tools* PORT=$npm_package_config_localport babel-node index.js",
-    "watch:start": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start",
+    "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
+    "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start",
     "npm-check": "npm-check  --skip-unused",
     "npm-check:interactive": "npm-check --skip-unused -u ",
     "npm-check-unused": "npm-check",

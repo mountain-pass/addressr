@@ -57,14 +57,14 @@ export function swaggerInit() {
 let server = undefined;
 
 export function startServer() {
-  return swaggerInit().then(({ app, middleware }) => {
-    logger(app);
-    logger(middleware);
+  return swaggerInit().then(({ app /*, middleware*/ }) => {
+    // logger(app);
+    // logger(middleware);
 
     server = createServer(app);
     server.listen(serverPort, function() {
       logger(
-        '📡  Addressr is listening on port %d (http://localhost:%d) ',
+        '📡  Addressr is listening on port %d ( http://localhost:%d ) ',
         serverPort,
         serverPort,
       );

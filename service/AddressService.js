@@ -8,7 +8,7 @@ import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
-
+import { mongoConnect } from '../client/mongo';
 const fsp = fs.promises;
 
 var logger = debug('api');
@@ -1285,16 +1285,35 @@ export async function loadGnaf() {
  * returns Address
  **/
 export async function getAddress(addressId) {
-  const json = await global.addressrCollection.findOne({ _id: addressId });
-  logger('json', json);
-  delete json._id;
-  const link = new LinkHeader();
-  link.set({
-    rel: 'self',
-    uri: `/addresses/${addressId}`,
-  });
+  try {
+    const json = await global.addressrCollection.findOne({ _id: addressId });
+    logger('json', json);
+    delete json._id;
+    const link = new LinkHeader();
+    link.set({
+      rel: 'self',
+      uri: `/addresses/${addressId}`,
+    });
 
-  return { link, json };
+    return { link, json };
+  } catch (err) {
+    if (
+      err.name === 'MongoError' &&
+      err.toString() === 'MongoError: Topology was destroyed'
+    ) {
+      // should try to reconnect here
+      if (global.addressrCollection !== undefined) {
+        global.mongoClient = undefined;
+        global.mongoDb = undefined;
+        global.addressrCollection = undefined;
+        logger('reconnecting mongo client');
+        mongoConnect().then(() => {
+          logger('mongo client connected');
+        });
+      }
+    }
+    throw err;
+  }
   //  throw new PendingError(addressId);
   // return new Promise(function(resolve /*, reject*/) {
   //   if (Object.keys(examples).length > 0) {

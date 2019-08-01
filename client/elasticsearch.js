@@ -113,48 +113,30 @@ async function initIndex(esClient, index, clear) {
   await esClient.indices.get({ index, includeDefaults: true });
 }
 
-module.exports = function(
-  esport,
-  eshost,
-  esnode,
-  esstart,
-  esindex,
-  clearindex,
+const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
+const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
+
+//const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
+
+export async function esConnect(
+  esport = ELASTIC_PORT,
+  eshost = ELASTIC_HOST,
+  interval = 1000,
+  timeout = 0,
 ) {
-  // logger('ESSTART', esstart);
-  // if (esstart == 1) {
-  //   logger('spawning elasticsearch');
-  //   const child = spawn('elasticsearch', [
-  //     '-Ecluster.name=adviserHub',
-  //     `-Enode.name=${esnode}`,
-  //     `-Ehttp.port=${esport}`,
-  //     `-Enetwork.host=${eshost}`,
-  //   ]);
-
-  //   child.on('exit', function(code, signal) {
-  //     console.error(
-  //       'elasticsearch process exited with ' +
-  //         `code ${code} and signal ${signal}`,
-  //     );
-  //     process.exit(1);
-  //   });
-
-  //   child.on('error', function(error) {
-  //     console.error(`elasticsearch could not be started: ${error}`);
-  //     process.exit(2);
-  //   });
-  //   child.stdout.pipe(process.stdout);
-  //   child.stderr.pipe(process.stderr);
-  // }
-  logger('waiting for elaticsearch to finish starting...');
-
-  return waitPort({
-    host: eshost,
-    port: esport,
-  })
-    .then(async open => {
+  // we keep trying to connect, no matter what
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    logger(`trying to reach elastic search on ${eshost}:${esport}...`);
+    try {
+      const open = await waitPort({
+        host: eshost,
+        port: esport,
+        interval,
+        timeout,
+      });
       if (open) {
-        logger('...elasticsearch has started');
+        logger(`...${eshost}:${esport} is reachable`);
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
@@ -163,32 +145,37 @@ module.exports = function(
               host: `${eshost}:${esport}`,
               log: 'info',
             });
-            logger('connecting internal esclient...');
-            // await esClient.ping({
-            //   requestTimeout: 30000,
-            // });
-            logger('...connected');
-
-            await initIndex(esClient, esindex, clearindex);
-
-            return esClient;
-          } catch (e) {
-            error(
-              `An error occured while waiting for elasticseach on port: ${e}`,
+            logger(
+              `connecting elastic search client on ${eshost}:${esport}...`,
             );
-            logger('retrying...');
-            await new Promise(resolve => {
-              // eslint-disable-next-line no-undef
-              setTimeout(() => resolve(), 5000);
+            await esClient.ping({
+              requestTimeout: interval,
+              maxRetries: 0,
             });
+            logger(`...connected to ${eshost}:${esport}`);
+            global.esClient = esClient;
+            return esClient;
+          } catch (err) {
+            error(
+              `An error occured while trying to connect the elastic search client on ${eshost}:${esport}`,
+              err,
+            );
+            await new Promise(resolve => {
+              setTimeout(() => resolve(), interval);
+            });
+            logger('retrying...');
           }
         }
       }
-    })
-    .catch(err => {
-      console.error(
-        `An unknown error occured while waiting for elasticseach on port: ${err}`,
+    } catch (err) {
+      error(
+        `An error occured while waiting to reach elastic search on ${eshost}:${esport}`,
+        err,
       );
-      process.exit(1);
-    });
-};
+      await new Promise(resolve => {
+        setTimeout(() => resolve(), interval);
+      });
+      logger('retrying...');
+    }
+  }
+}

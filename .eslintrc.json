@@ -26,7 +26,8 @@
     "require": true,
     "module": true,
     "URL": true,
-    "URLSearchParams": true
+    "URLSearchParams": true,
+    "setTimeout": true
   },
   "settings": {
     "import/core-modules": []

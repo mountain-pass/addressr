@@ -16,10 +16,10 @@ import {
 } from 'cucumber';
 import debug from 'debug';
 import Docker from 'dockerode';
-import elasticsearch from 'elasticsearch';
 import fs from 'fs';
-import mongodb from 'mongodb';
 import waitport from 'wait-port';
+import { esConnect } from '../../client/elasticsearch';
+import { mongoConnect } from '../../client/mongo';
 import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
@@ -28,16 +28,6 @@ const fsp = fs.promises;
 const logger = debug('test');
 const esLogger = debug('es');
 const mongoLogger = debug('mongo');
-const error = debug('error');
-// import ShutdownHook from 'shutdown-hook';
-
-// chai.use(chaiIterator);
-
-// const shutdownHook = new ShutdownHook();
-// shutdownHook.register();
-// shutdownHook.on('ShutdownStarted', () => logger('it has began'));
-// shutdownHook.on('ComponentShutdown', e => logger('shutting down', e.name));
-// shutdownHook.on('ShutdownEnded', () => logger('it has ended'));
 
 global.expect = chai.expect;
 global.PendingError = PendingError;
@@ -46,11 +36,6 @@ const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
 const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 const STORE_IMAGE = 'mongo:4.0.11';
-
-const esport = parseInt(process.env.ELASTIC_PORT || '9200');
-const eshost = process.env.ELASTIC_HOST || '127.0.0.1';
-// const esnode = process.env.ELASTIC_NODE || 'local';
-// const esstart = process.env.ELASTIC_START || 1;
 
 const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
 const STORE_NAME = process.env.STORE_NAME || 'addressr';
@@ -224,11 +209,7 @@ async function startElasticSearch(docker, context) {
   context.logStream.on('data', function(data) {
     esLogger(data);
   });
-  // try {
-  global.esClient = new elasticsearch.Client({
-    host: `${eshost}:${esport}`,
-    log: 'info',
-  });
+  await esConnect();
 }
 
 async function startMongo(docker, context) {
@@ -269,28 +250,7 @@ async function startMongo(docker, context) {
   context.mongoLogStream.on('data', function(data) {
     mongoLogger(data);
   });
-  // try {
-  for (let i = 0; i < 20; i++) {
-    try {
-      global.mongoClient = await mongodb.MongoClient.connect(
-        `mongodb://localhost:27017`,
-        {
-          auth: {
-            user: `root`,
-            password: `example`,
-          },
-        },
-      );
-      break;
-    } catch (err) {
-      error(err);
-      logger('retrying in 3s...');
-      await new Promise(resolve => {
-        // eslint-disable-next-line no-undef
-        setTimeout(resolve, 3000);
-      });
-    }
-  }
+  await mongoConnect();
 }
 
 function world({ attach, parameters }) {

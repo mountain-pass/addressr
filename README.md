@@ -36,10 +36,17 @@ Elastic Search: 1.357GiB mem
 - [x] implement pagination
 
 [x] API to get the full structured address
-[ ] start up process. Probably have the API component separate to the loader component.
-[ ] auth0 integration (to run the components, you need to provide credentials)
-[ ] telemetry capture
-[ ] GA the beta
+[ ] start up process. Have the API/Server component separate to the loader component.
+
+- [x] server start script
+- [ ] server docker image
+- [ ] loader start script
+- [ ] loader docker image
+- [ ] docker compose script
+      [ ] auth0 integration (to run the components, you need to provide credentials)
+      [ ] telemetry capture
+      [ ] GA the beta
+      [ ] update ES client
 
 ### Premium options?
 
