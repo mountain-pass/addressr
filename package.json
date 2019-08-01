@@ -23,9 +23,9 @@
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
     "test:component": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
-    "test:system": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
+    "test:system": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
-    "test:component:QLD": "COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration"
+    "test:component:QLD": "COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration"
   },
   "keywords": [
     "swagger",
@@ -44,11 +44,12 @@
     "json-ptr": "^1.1.2",
     "keyv": "^3.1.0",
     "keyv-file": "^0.1.13",
+    "mongodb": "^3.3.0-beta2",
     "npm-run-all": "^4.1.5",
     "papaparse": "^5.0.0",
     "swagger-tools": "^0.10.4",
     "unzip-stream": "^0.3.0",
-    "url-template": "^2.0.8"
+    "uri-template-lite": "^19.4.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -56,7 +57,7 @@
     "@babel/node": "^7.5.0",
     "@babel/polyfill": "^7.4.4",
     "@windyroad/cucumber-js-throwables": "^1.0.4",
-    "@windyroad/quick-containers-js": "^1.0.4",
+    "@windyroad/quick-containers-js": "^2.0.0",
     "babel-eslint": "^10.0.2",
     "babel-preset-env": "^1.7.0",
     "chai": "^4.2.0",
@@ -76,7 +77,6 @@
     "husky": "^3.0.0",
     "imagemin-lint-staged": "^0.4.0",
     "lint-staged": "^9.2.0",
-    "mysql": "^2.17.1",
     "ngrok": "^3.2.2",
     "nodemon": "^1.19.1",
     "npm-check": "^5.9.0",

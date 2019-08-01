@@ -35,7 +35,7 @@ Elastic Search: 1.357GiB mem
 - [x] Expose search logic
 - [x] implement pagination
 
-[ ] API to get the full structured address
+[x] API to get the full structured address
 [ ] start up process. Probably have the API component separate to the loader component.
 [ ] auth0 integration (to run the components, you need to provide credentials)
 [ ] telemetry capture

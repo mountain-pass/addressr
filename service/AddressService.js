@@ -789,6 +789,7 @@ export function mapAddressDetails(d, context, i, count) {
       precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     }),
     pid: d.ADDRESS_DETAIL_PID,
+    _id: d.ADDRESS_DETAIL_PID,
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
@@ -813,6 +814,7 @@ async function loadAddressDetails(file, expectedCount, context) {
       skipEmptyLines: true,
       chunk: function(chunk, parser) {
         parser.pause();
+        const items = [];
         if (chunk.errors.length > 0) {
           error(`Errors reading '${file}': ${chunk.errors}`);
         } else {
@@ -824,7 +826,7 @@ async function loadAddressDetails(file, expectedCount, context) {
               actualCount,
               expectedCount,
             );
-            //            details.push(item);
+            items.push(item);
             actualCount += 1;
             indexingBody.push({
               index: {
@@ -840,6 +842,16 @@ async function loadAddressDetails(file, expectedCount, context) {
           if (indexingBody.length > 0) {
             sendIndexRequest(indexingBody)
               .then(() => {
+                var bulk = global.addressrCollection.initializeOrderedBulkOp();
+                items.forEach(item => {
+                  bulk
+                    .find({ _id: item._id })
+                    .upsert()
+                    .replaceOne(item);
+                });
+                return bulk.execute();
+              })
+              .then(() => {
                 parser.resume();
               })
               .catch(err => {
@@ -847,6 +859,7 @@ async function loadAddressDetails(file, expectedCount, context) {
                 throw err;
               });
           } else {
+            // nothing to process. Have reached end of file.
             parser.resume();
           }
         }
@@ -1271,82 +1284,25 @@ export async function loadGnaf() {
  * addressId String ID of the address.
  * returns Address
  **/
-export function getAddress(/*addressId*/) {
-  return new Promise(function(resolve /*, reject*/) {
-    var examples = {};
-    examples['application/json'] = {
-      geo: {
-        level: {
-          code: 7,
-          name: 'LOCALITY,STREET, ADDRESS',
-        },
-        reliability: {
-          code: 2,
-          name: 'WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT',
-        },
-        latitude: -33.85351875,
-        longitude: 150.8947369,
-      },
-      structured: {
-        buildingName: 'Vickery Lodge',
-        number: {
-          number: 20114,
-          prefix: 'RMB',
-          suffix: 'AA',
-          last: {
-            number: '20114',
-            prefix: 'RMB',
-            suffix: 'C',
-          },
-        },
-        level: {
-          number: 64,
-          code: 'OD',
-          prefix: 'A',
-          type: 'Observation Deck',
-          suffix: 'QG',
-        },
-        flat: {
-          number: '20114',
-          code: 'Twr',
-          prefix: 'CT',
-          type: 'Tower',
-          suffix: 'AG',
-        },
-        street: {
-          code: 'Avenue',
-          name: 'Barangaroo',
-          type: 'Av',
-          suffix: {
-            code: 'De',
-            name: 'Deviation',
-          },
-        },
-        confidence: 0,
-        locality: {
-          name: 'Sydney',
-        },
-        postcode: '2000',
-        lotNumber: {
-          number: 'CP',
-          prefix: 'A',
-          suffix: 'B',
-        },
-        state: {
-          name: 'New South Wales',
-          abbreviation: 'NSW',
-        },
-      },
-      sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
-      pid: 'GANT_718592778',
-      fla: '',
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+export async function getAddress(addressId) {
+  const json = await global.addressrCollection.findOne({ _id: addressId });
+  logger('json', json);
+  delete json._id;
+  const link = new LinkHeader();
+  link.set({
+    rel: 'self',
+    uri: `/addresses/${addressId}`,
   });
+
+  return { link, json };
+  //  throw new PendingError(addressId);
+  // return new Promise(function(resolve /*, reject*/) {
+  //   if (Object.keys(examples).length > 0) {
+  //     resolve({ json: examples[Object.keys(examples)[0]] });
+  //   } else {
+  //     resolve();
+  //   }
+  // });
 }
 
 /**

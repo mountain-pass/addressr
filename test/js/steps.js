@@ -248,3 +248,19 @@ Then('the returned address list will NOT include:', async function(docString) {
   });
   expect(found).to.be.undefined;
 });
+
+When(
+  'the {string} link of the first address in the list is followed',
+  async function(rel) {
+    this.prev = this.current;
+    this.current = await this.driver.follow({
+      uri: this.current.json[0].links[rel].href,
+    });
+  },
+);
+
+Then('the response will contain:', async function(docString) {
+  const e = JSON.parse(docString);
+  console.log(JSON.stringify(this.current.json));
+  expect(this.current.json).to.deep.equal(e);
+});

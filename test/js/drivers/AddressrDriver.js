@@ -1,5 +1,5 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables/lib/pending-error';
-import template from 'url-template';
+import { URI } from 'uri-template-lite';
 
 export class AddressrDriver {
   async getApiRoot() {
@@ -15,7 +15,7 @@ export class AddressrDriver {
   }
 
   async followTemplate(link, params) {
-    var t = template.parse(link.uri);
+    var t = new URI.Template(link.uri);
     const expanded = t.expand(params);
     return this.follow(Object.assign({}, link, { uri: expanded }));
   }
