@@ -13,6 +13,8 @@
   "scripts": {
     "requirements-check": "./scripts/check-version.js",
     "postinstall": "npm run requirements-check",
+    "start:loader:OT": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
+    "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
     "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start",
     "npm-check": "npm-check  --skip-unused",
