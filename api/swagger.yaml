@@ -55,10 +55,15 @@ paths:
           in: query
           description: search string
           type: string
+          minLength: 3
+          maxLength: 15
+          required: false
         - name: p
           in: query
           description: page number
           type: integer
+          minimum: 2
+          required: false
       responses:
         200:
           description: successful query
@@ -88,12 +93,12 @@ paths:
                           description: |
                             The URL for the address, where additional information can be retrieved
             example: 
-              - sla: Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000
+              - sla: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
                 score: 1
                 links:
                   self: 
                     href: /addresses/GANT_718592778
-              - sla: 109 Kirribilli Ave, Kirribilli NSW 2061
+              - sla: 109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
                 score: 0.985051936618461
                 links:
                   self: 
@@ -155,7 +160,15 @@ definitions:
     type: object
     title: Physical Australian Address
     description: |
-      A physical Australian address in structured and unstructured formats
+      A physical Australian address in structured and unstructured formats.
+
+      If an address has a "flat" component (e.g. UNIT 12, 32 SOME ST...), then it will also have a
+      the `ssla` and `smla` fields, which are shortended versions of `sla` and `mla`. e.g. (12/32 SOME ST...)
+    required: 
+      - "pid"
+      - "structured"
+      - "sla"
+      - "mla"
     properties:
       pid:
         type: string
@@ -165,7 +178,11 @@ definitions:
         $ref: "#/definitions/StructuredAddress"
       sla:
         $ref: "#/definitions/SingleLineAddress"
+      ssla:
+        $ref: "#/definitions/SingleLineAddress"
       mla:
+        $ref: "#/definitions/MultiLineAddress"
+      smla:
         $ref: "#/definitions/MultiLineAddress"
       # geo:
       #   $ref: "#/definitions/AddressGeocoding"
@@ -214,7 +231,7 @@ definitions:
     title: Single Line Address
     description: |
       The full address flattened to a single line. The primary use is for search results and for autocomplete.
-    example: Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000
+    example: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
   MultiLineAddress:
     type: array
     items:
@@ -227,8 +244,8 @@ definitions:
     example: 
       - LEVEL 25
       - TOWER 3
-      - 300 Barangaroo Avenue
-      - Sydney NSW 2000
+      - 300 BARANGAROO AV
+      - BARANGAROO NSW 2000
   StructuredAddress:
     type: object
     properties:
