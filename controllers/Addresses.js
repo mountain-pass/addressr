@@ -12,7 +12,7 @@ export function getAddress(req, res) {
   _getAddress(addressId)
     .then(function(response) {
       res.setHeader('link', response.link.toString());
-      logger('RESPONSE', response);
+      logger('RESPONSE', JSON.stringify(response, null, 2));
       writeJson(res, response.json);
     })
     .catch(function(response) {

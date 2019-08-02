@@ -56,7 +56,6 @@ paths:
           description: search string
           type: string
           minLength: 3
-          maxLength: 15
           required: false
         - name: p
           in: query
@@ -68,41 +67,7 @@ paths:
         200:
           description: successful query
           schema:
-            type: array
-            description: |
-              The list of addresses matching the search string. The list may be paginated.
-              A the `Link` header with a `rel` of `next` will be provied if there are addional results.
-            items:
-              type: object
-              title: Flattened Address
-              properties:
-                sla:
-                  $ref:  "#/definitions/SingleLineAddress"
-                score:
-                  type: number
-                  description: strength of the match relative to the other matches
-                links:
-                  type: object
-                  properties:
-                    self:
-                      type: object
-                      properties:
-                        href:
-                          type: string
-                          title: Link
-                          description: |
-                            The URL for the address, where additional information can be retrieved
-            example: 
-              - sla: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
-                score: 1
-                links:
-                  self: 
-                    href: /addresses/GANT_718592778
-              - sla: 109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
-                score: 0.985051936618461
-                links:
-                  self: 
-                    href: /addresses/GANT_718592782
+            $ref: "#/definitions/SearchResponse"
           headers:
             link:
               description: rfc5988 Links
@@ -156,6 +121,50 @@ paths:
 definitions:
   Root:
     type: object
+  SearchResponse:
+    type: array
+    description: |
+      The list of addresses matching the search string. The list may be paginated.
+      A the `Link` header with a `rel` of `next` will be provied if there are addional results.
+    items:
+      type: object
+      title: Flattened Address
+      required:
+          - sla
+          - score
+          - links
+      properties:
+        sla:
+          $ref:  "#/definitions/SingleLineAddress"
+        score:
+          type: number
+          description: strength of the match relative to the other matches
+        links:
+          type: object
+          required: 
+            - self
+          properties:
+            self:
+              type: object
+              required: 
+                - href
+              properties:
+                href:
+                  type: string
+                  title: Link
+                  description: |
+                    The URL for the address, where additional information can be retrieved
+    example: 
+      - sla: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
+        score: 1
+        links:
+          self: 
+            href: /addresses/GANT_718592778
+      - sla: 109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
+        score: 0.985051936618461
+        links:
+          self: 
+            href: /addresses/GANT_718592782
   Address:
     type: object
     title: Physical Australian Address
@@ -289,9 +298,8 @@ definitions:
             example: CT
             maxLength: 2
           number:
-            type: string
-            example: "20114"
-            maxLength: 5
+            type: integer
+            example: 20114
           suffix:
             type: string
             example: AG
@@ -391,11 +399,11 @@ definitions:
           class:
             type: object
             properties:
-              name:
+              code:
                 type: string
                 example: G
                 maxLength: 1
-              code:
+              name:
                 type: string
                 example: GAZETTED LOCALITY
                 maxLength: 50

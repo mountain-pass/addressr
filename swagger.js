@@ -35,7 +35,13 @@ export function swaggerInit() {
       app.use(metaData);
 
       // Validate Swagger requests
-      app.use(middleware.swaggerValidator());
+      app.use(
+        middleware.swaggerValidator({
+          validateResponse:
+            process.env.NODE_ENV === undefined ||
+            process.env.NODE_ENV === 'development',
+        }),
+      );
 
       // Route validated requests to appropriate controller
       app.use(middleware.swaggerRouter(options));
