@@ -48,3 +48,4 @@ addr
 promisify
 prev
 mongodb
+dotenv

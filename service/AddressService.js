@@ -132,8 +132,10 @@ async function initIndex(esClient, index, clear) {
   await esClient.indices.get({ index, includeDefaults: true });
 }
 
+const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
+
 export async function clearAddresses() {
-  await initIndex(global.esClient, 'addressr', true);
+  await initIndex(global.esClient, INDEX_NAME, true);
 }
 
 export async function setAddresses(addr) {
@@ -143,7 +145,7 @@ export async function setAddresses(addr) {
   addr.forEach(row => {
     indexingBody.push({
       index: {
-        _index: 'addressr',
+        _index: INDEX_NAME,
         _id: row.links.self.href,
       },
     });
@@ -830,7 +832,7 @@ async function loadAddressDetails(file, expectedCount, context) {
             actualCount += 1;
             indexingBody.push({
               index: {
-                _index: 'addressr',
+                _index: INDEX_NAME,
                 _id: `/addresses/${item.pid}`,
               },
             });
@@ -945,7 +947,7 @@ async function loadAddressDetails(file, expectedCount, context) {
 async function searchForAddress(searchString, p) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
-    index: 'addressr',
+    index: INDEX_NAME,
     body: {
       from: (p - 1 || 0) * PAGE_SIZE,
       size: PAGE_SIZE,
