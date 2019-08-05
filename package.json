@@ -16,6 +16,7 @@
     "start:loader:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
+    "start:server:unverified": "ADDRESSR_USERNAME='unverified-test@montain-pass.com.au' ADDRESSR_PASSWORD='cUznu7-gahqiz-wonfup' DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
     "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server",
     "npm-check": "npm-check  --skip-unused",
     "npm-check:interactive": "npm-check --skip-unused -u ",

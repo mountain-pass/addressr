@@ -17,11 +17,26 @@ function sleep(ms) {
   });
 }
 
-async function scheduleShutdown() {
-  for (let i = 20; i > 0; i--) {
+async function scheduleShutdown(n = 20) {
+  for (let i = n; i > 0; i--) {
     try {
-      await doAuthenticate();
-      return;
+      const authResult = await doAuthenticate();
+      if (!authResult.profile.email_verified) {
+        CFonts.say(`Email not verified!|Server will shutdown in ${i}min...`, {
+          font: 'console',
+          align: 'center',
+          colors: ['yellowBright'],
+          background: 'red',
+          letterSpacing: 1,
+          lineHeight: 1,
+          space: true,
+          maxLength: '0',
+        });
+        sleep(ONE_MINUTE).then(() => {
+          scheduleShutdown(i - 1);
+        });
+      }
+      return authResult;
     } catch (err) {
       CFonts.say(
         `Authentication Failed!|Sign up for free at ${SIGNUP_URL}|Server will shutdown in ${i}min...`,
@@ -39,6 +54,16 @@ async function scheduleShutdown() {
       await sleep(ONE_MINUTE);
     }
   }
+  CFonts.say(`Server will shutdown now...`, {
+    font: 'console',
+    align: 'center',
+    colors: ['yellowBright'],
+    background: 'red',
+    letterSpacing: 1,
+    lineHeight: 1,
+    space: true,
+    maxLength: '0',
+  });
   process.exit(1);
 }
 
@@ -57,14 +82,64 @@ async function doAuthenticate() {
   const profile = await auth0.getProfile(token.access_token);
   logger('getProfile', profile);
   logger('getInfo', await auth0.users.getInfo(token.access_token));
-
   return { auth0, token, profile };
 }
 
 export async function authenticate() {
-  try {
-    return await doAuthenticate();
-  } catch (err) {
-    scheduleShutdown();
+  return scheduleShutdown();
+}
+
+export function printAuthStatus(auth) {
+  const smallBannerOptions = {
+    font: 'console',
+    align: 'center',
+    colors: ['yellowBright', 'blue'],
+    background: 'blue',
+    letterSpacing: 1,
+    lineHeight: 1,
+    space: true,
+    maxLength: '0',
+  };
+  if (auth && auth.profile.email_verified) {
+    CFonts.say(
+      `Version: ${process.env.VERSION || '1.0.0'}|Licensed To: ${
+        auth.profile.name
+      }|Email Verified: ${auth.profile.email_verified}|Environment: ${process
+        .env.NODE_ENV || 'development'}`,
+      smallBannerOptions,
+    );
+  } else if (auth && !auth.profile.email_verified) {
+    CFonts.say(
+      `Version: ${process.env.VERSION || '1.0.0'}|Licensed To: ${
+        auth.profile.name
+      }|Environment: ${process.env.NODE_ENV || 'development'}`,
+      smallBannerOptions,
+    );
+    CFonts.say(`Email Unverified!`, {
+      font: 'console',
+      align: 'center',
+      colors: ['yellowBright', 'blue'],
+      background: 'red',
+      letterSpacing: 1,
+      lineHeight: 1,
+      space: true,
+      maxLength: '0',
+    });
+  } else {
+    CFonts.say(
+      `Version: ${process.env.VERSION || '1.0.0'}|Environment: ${process.env
+        .NODE_ENV || 'development'}`,
+      smallBannerOptions,
+    );
+    CFonts.say(`Unauthenticated`, {
+      font: 'console',
+      align: 'center',
+      colors: ['yellowBright', 'blue'],
+      background: 'red',
+      letterSpacing: 1,
+      lineHeight: 1,
+      space: true,
+      maxLength: '0',
+    });
   }
 }

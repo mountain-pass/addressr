@@ -58,7 +58,7 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
 - [x] Expose search logic
 - [x] implement pagination
   - [x] API to get the full structured address
-  - [ ] start up process. Have the API/Server component separate to the loader component.
+  - [x] start up process. Have the API/Server component separate to the loader component.
 - [x] server start script
 - [x] loader start script
 - [ ] detangle loader and starter
@@ -74,9 +74,9 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
   - was approx 2.7s during data load
   - might be less when load isn't happening
 
-- [ ] auth0 integration (to run the components, you need to provide credentials)
+- [x] auth0 integration (to run the components, you need to provide credentials)
   - [x] API Server
-  - [ ] Loader
+  - [x] Loader
 - [ ] proper validation failure handling
 - [ ] telemetry capture
 - [ ] GA the beta
