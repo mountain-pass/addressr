@@ -18,11 +18,12 @@ import debug from 'debug';
 import Docker from 'dockerode';
 import fs from 'fs';
 import waitport from 'wait-port';
-import { esConnect } from '../../client/elasticsearch';
+import { esConnect, initIndex } from '../../client/elasticsearch';
 import { mongoConnect } from '../../client/mongo';
 import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
+
 const fsp = fs.promises;
 
 const logger = debug('test');
@@ -37,87 +38,87 @@ const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 const STORE_IMAGE = 'mongo:4.0.11';
 
-const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
-const STORE_NAME = process.env.STORE_NAME || 'addressr';
+const MONGO_DB_NAME = process.env.MONGO_DB_NAME || 'addressr';
+const MONGO_COLLECTION_NAME = process.env.MONGO_COLLECTION_NAME || 'addressr';
 
 // const clearIndex = true;
 
-async function initIndex(esClient, index, clear) {
-  if (await esClient.indices.exists({ index })) {
-    if (clear) {
-      await esClient.indices.delete({ index });
-    }
-  }
-  logger('checking if index exists');
-  const exists = await esClient.indices.exists({ index });
-  logger('index exists:', exists);
+// async function initIndex(esClient, index, clear) {
+//   if (await esClient.indices.exists({ index })) {
+//     if (clear) {
+//       await esClient.indices.delete({ index });
+//     }
+//   }
+//   logger('checking if index exists');
+//   const exists = await esClient.indices.exists({ index });
+//   logger('index exists:', exists);
 
-  if (!exists) {
-    await esClient.indices.create({
-      index,
-      body: {
-        settings: {
-          index: {
-            analysis: {
-              analyzer: {
-                default: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-                synonym: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'synonym'],
-                },
-                my_analyzer: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-              },
-              tokenizer: {
-                my_tokenizer: {
-                  type: 'edge_ngram',
-                  min_gram: 3,
-                  max_gram: 15,
-                  //token_chars: ['letter', 'digit'],
-                },
-              },
-              filter: {
-                synonym: {
-                  type: 'synonym',
-                  lenient: true,
-                  synonyms: [
-                    'SUPER, super, superannuation',
-                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
-                  ],
-                },
-              },
-            },
-          },
-        },
-        aliases: {},
-        mappings: {
-          properties: {
-            sla: {
-              type: 'text',
-              analyzer: 'my_analyzer',
-            },
-            ssla: {
-              type: 'text',
-              analyzer: 'my_analyzer',
-            },
-          },
-        },
-      },
-    });
-  }
-  await esClient.indices.get({ index, includeDefaults: true });
-}
+//   if (!exists) {
+//     await esClient.indices.create({
+//       index,
+//       body: {
+//         settings: {
+//           index: {
+//             analysis: {
+//               analyzer: {
+//                 default: {
+//                   tokenizer: 'my_tokenizer',
+//                   filter: ['lowercase', 'asciifolding'],
+//                 },
+//                 synonym: {
+//                   tokenizer: 'my_tokenizer',
+//                   filter: ['lowercase', 'synonym'],
+//                 },
+//                 my_analyzer: {
+//                   tokenizer: 'my_tokenizer',
+//                   filter: ['lowercase', 'asciifolding'],
+//                 },
+//               },
+//               tokenizer: {
+//                 my_tokenizer: {
+//                   type: 'edge_ngram',
+//                   min_gram: 3,
+//                   max_gram: 15,
+//                   //token_chars: ['letter', 'digit'],
+//                 },
+//               },
+//               filter: {
+//                 synonym: {
+//                   type: 'synonym',
+//                   lenient: true,
+//                   synonyms: [
+//                     'SUPER, super, superannuation',
+//                     'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
+//                   ],
+//                 },
+//               },
+//             },
+//           },
+//         },
+//         aliases: {},
+//         mappings: {
+//           properties: {
+//             sla: {
+//               type: 'text',
+//               analyzer: 'my_analyzer',
+//             },
+//             ssla: {
+//               type: 'text',
+//               analyzer: 'my_analyzer',
+//             },
+//           },
+//         },
+//       },
+//     });
+//   }
+//   await esClient.indices.get({ index, includeDefaults: true });
+// }
 
-async function initStore(mongoClient, dbName, clear) {
+async function initStore(mongoClient, dbName, collectionName, clear) {
   const db = await mongoClient.db(dbName);
   if (clear) {
     try {
-      await db.dropCollection(dbName);
+      await db.dropCollection(collectionName);
     } catch (err) {
       if (err.codeName === 'NamespaceNotFound') {
         // already dropped. Ignore error.
@@ -127,7 +128,7 @@ async function initStore(mongoClient, dbName, clear) {
     }
   }
 
-  return db.collection(dbName);
+  return db.collection(collectionName);
 }
 
 BeforeAll({ timeout: 240000 }, async function() {
@@ -147,13 +148,14 @@ BeforeAll({ timeout: 240000 }, async function() {
   this.containers = {};
   const docker = new Docker();
   await startElasticSearch(docker, this);
-  await initIndex(global.esClient, INDEX_NAME, true);
+  await initIndex(global.esClient, true);
 
   await startMongo(docker, this);
   // eslint-disable-next-line require-atomic-updates
   global.addressrCollection = await initStore(
     global.mongoClient,
-    STORE_NAME,
+    MONGO_DB_NAME,
+    MONGO_COLLECTION_NAME,
     true,
   );
 });

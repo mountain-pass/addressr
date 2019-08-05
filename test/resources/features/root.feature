@@ -18,13 +18,17 @@ Feature: Root API
                 {
                     "name": "q",
                     "in": "query",
+                    "minLength": 3,
                     "description": "search string",
+                    "required": false,
                     "type": "string"
                 },
                 {
                     "name": "p",
                     "in": "query",
+                    "minimum": 2,
                     "description": "page number",
+                    "required": false,
                     "type": "integer"
                 }
             ]

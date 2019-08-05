@@ -4,19 +4,23 @@ import debug from 'debug';
 const logger = debug('api');
 const error = debug('error');
 
-async function initIndex(esClient, index, clear) {
-  if (await esClient.indices.exists({ index })) {
+const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
+const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
+const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
+
+export async function initIndex(esClient, clear) {
+  if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
     if (clear) {
-      await esClient.indices.delete({ index });
+      await esClient.indices.delete({ index: ES_INDEX_NAME });
     }
   }
   logger('checking if index exists');
-  const exists = await esClient.indices.exists({ index });
+  const exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   logger('index exists:', exists);
 
   if (!exists) {
     await esClient.indices.create({
-      index,
+      index: ES_INDEX_NAME,
       body: {
         // max_result_window: 8196,
         // max_inner_result_window: 128,
@@ -110,13 +114,8 @@ async function initIndex(esClient, index, clear) {
       },
     });
   }
-  await esClient.indices.get({ index, includeDefaults: true });
+  await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });
 }
-
-const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
-const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
-
-//const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
 
 export async function esConnect(
   esport = ELASTIC_PORT,

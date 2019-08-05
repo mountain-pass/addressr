@@ -13,7 +13,7 @@
   "scripts": {
     "requirements-check": "./scripts/check-version.js",
     "postinstall": "npm run requirements-check",
-    "start:loader:OT": "COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
+    "start:loader:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
     "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server",
@@ -23,11 +23,11 @@
     "lint": "node_modules/.bin/eslint controllers/*.js --fix",
     "test": "NO_STRICT=' ' npm-run-all --serial test:component test:system",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
-    "test:component": "MONGO_COLLECTION_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
+    "test:component": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "watch:test:component": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:component",
-    "test:system": "MONGO_COLLECTION_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
+    "test:system": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
-    "test:component:QLD": "MONGO_COLLECTION_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration"
+    "test:component:QLD": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration"
   },
   "keywords": [
     "swagger",

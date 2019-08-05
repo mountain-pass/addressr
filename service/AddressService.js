@@ -8,7 +8,9 @@ import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
+import { initIndex } from '../client/elasticsearch';
 import { mongoConnect } from '../client/mongo';
+
 const fsp = fs.promises;
 
 var logger = debug('api');
@@ -39,6 +41,8 @@ const ONE_DAY_S = 60 /*sec*/ * 60 /*min*/ * 24; /*hours*/
 const ONE_DAY_MS = 1000 * ONE_DAY_S;
 const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 
+const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
+
 // let addresses = [
 //   {
 //     sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
@@ -60,82 +64,83 @@ const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 //   },
 // ];
 
-async function initIndex(esClient, index, clear) {
-  if (await esClient.indices.exists({ index })) {
-    if (clear) {
-      await esClient.indices.delete({ index });
-    }
-  }
-  logger('checking if index exists');
-  const exists = await esClient.indices.exists({ index });
-  logger('index exists:', exists);
+// async function initIndex(esClient, index, clear) {
+//   if (await esClient.indices.exists({ index })) {
+//     if (clear) {
+//       await esClient.indices.delete({ index });
+//     }
+//   }
+//   logger('checking if index exists');
+//   const exists = await esClient.indices.exists({ index });
+//   logger('index exists:', exists);
 
-  if (!exists) {
-    await esClient.indices.create({
-      index,
-      body: {
-        settings: {
-          index: {
-            analysis: {
-              analyzer: {
-                default: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-                synonym: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'synonym'],
-                },
-                my_analyzer: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-              },
-              tokenizer: {
-                my_tokenizer: {
-                  type: 'edge_ngram',
-                  min_gram: 3,
-                  max_gram: 15,
-                  //token_chars: ['letter', 'digit'],
-                },
-              },
-              filter: {
-                synonym: {
-                  type: 'synonym',
-                  lenient: true,
-                  synonyms: [
-                    'SUPER, super, superannuation',
-                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
-                  ],
-                },
-              },
-            },
-          },
-        },
-        aliases: {},
-        mappings: {
-          properties: {
-            sla: {
-              type: 'text',
-              analyzer: 'my_analyzer',
-            },
-            ssla: {
-              type: 'text',
-              analyzer: 'my_analyzer',
-            },
-          },
-        },
-      },
-    });
-    logger('Index created');
-  }
-  await esClient.indices.get({ index, includeDefaults: true });
-}
+//   if (!exists) {
+//     await esClient.indices.create({
+//       index,
+//       body: {
+//         settings: {
+//           index: {
+//             analysis: {
+//               analyzer: {
+//                 default: {
+//                   tokenizer: 'addressAutoCompleteTokenizer',
+//                   filter: ['lowercase', 'asciifolding'],
+//                 },
+//                 synonym: {
+//                   tokenizer: 'addressAutoCompleteTokenizer',
+//                   filter: ['lowercase', 'synonym'],
+//                 },
+//                 addressAutoCompleteAnalyzer: {
+//                   tokenizer: 'addressAutoCompleteTokenizer',
+//                   filter: ['lowercase', 'asciifolding'],
+//                 },
+//               },
+//               tokenizer: {
+//                 addressAutoCompleteTokenizer: {
+//                   type: 'edge_ngram',
+//                   min_gram: 3,
+//                   max_gram: 15,
+//                   //token_chars: ['letter', 'digit'],
+//                 },
+//               },
+//               filter: {
+//                 synonym: {
+//                   type: 'synonym',
+//                   lenient: true,
+//                   synonyms: [
+//                     // TODO: Put street abbreviations here
+//                     'SUPER, super, superannuation',
+//                     'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
+//                   ],
+//                 },
+//               },
+//             },
+//           },
+//         },
+//         aliases: {},
+//         mappings: {
+//           properties: {
+//             sla: {
+//               type: 'text',
+//               analyzer: 'addressAutoCompleteAnalyzer',
+//             },
+//             ssla: {
+//               type: 'text',
+//               analyzer: 'addressAutoCompleteAnalyzer',
+//             },
+//           },
+//         },
+//       },
+//     });
+//     logger('Index created');
+//   }
+//   await esClient.indices.get({ index, includeDefaults: true });
+// }
 
-const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
+//const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
 
 export async function clearAddresses() {
-  await initIndex(global.esClient, INDEX_NAME, true);
+  await initIndex(global.esClient, true);
 }
 
 export async function setAddresses(addr) {
@@ -145,7 +150,7 @@ export async function setAddresses(addr) {
   addr.forEach(row => {
     indexingBody.push({
       index: {
-        _index: INDEX_NAME,
+        _index: ES_INDEX_NAME,
         _id: row.links.self.href,
       },
     });
@@ -832,7 +837,7 @@ async function loadAddressDetails(file, expectedCount, context) {
             actualCount += 1;
             indexingBody.push({
               index: {
-                _index: INDEX_NAME,
+                _index: ES_INDEX_NAME,
                 _id: `/addresses/${item.pid}`,
               },
             });
@@ -947,7 +952,7 @@ async function loadAddressDetails(file, expectedCount, context) {
 async function searchForAddress(searchString, p) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
-    index: INDEX_NAME,
+    index: ES_INDEX_NAME,
     body: {
       from: (p - 1 || 0) * PAGE_SIZE,
       size: PAGE_SIZE,
