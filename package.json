@@ -46,6 +46,7 @@
     "dotenv": "^8.0.0",
     "elasticsearch": "^16.3.0",
     "etag": "^1.8.1",
+    "express": "^4.17.1",
     "js-yaml": "^3.3.0",
     "json-ptr": "^1.1.2",
     "keyv": "^3.1.0",

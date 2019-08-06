@@ -56,7 +56,7 @@ paths:
           description: search string
           type: string
           minLength: 3
-          required: false
+          required: true
         - name: p
           in: query
           description: page number
@@ -83,6 +83,10 @@ paths:
               items:
                 type: string
                 pattern: "<(.*)>;(.*)"
+        400:
+          description: invalid query
+          schema:
+            $ref: "#/definitions/ValidationError"
   /addresses/{addressId}:
     get:
       summary: Get Address
@@ -426,3 +430,16 @@ definitions:
         type: integer
         description: |
           Reflects how many contributor databases this address appears in (0 = 1 database, 1 = 2 database etc.).
+  ValidationError:
+    type: object
+    properties:
+      code:
+        type: string
+      failedValidation:
+        type: boolean
+      path:
+        type: array
+        items:
+          type: string
+      paramName:
+        type: string

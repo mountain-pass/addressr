@@ -19,7 +19,11 @@ export async function getApiRoot() {
   const link = new LinkHeader();
   paths.forEach(p => {
     const op = global.swaggerDoc.paths[p].get;
-    link.set({ rel: op['x-root-rel'], uri: p, title: op.summary });
+    if (op.parameters && op.parameters.find(param => param.required === true)) {
+      // skip
+    } else {
+      link.set({ rel: op['x-root-rel'], uri: p, title: op.summary });
+    }
   });
   link.set({
     rel: 'describedby',

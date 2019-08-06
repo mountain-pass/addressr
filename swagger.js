@@ -1,12 +1,13 @@
-import connect from 'connect';
+//import connect from 'connect';
 import debug from 'debug';
+import express from 'express';
 import { readFileSync } from 'fs';
 import { createServer } from 'http';
 import { safeLoad } from 'js-yaml';
 import { join } from 'path';
 import { initializeMiddleware } from 'swagger-tools';
 
-var app = connect();
+var app = express();
 
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
@@ -53,6 +54,18 @@ export function swaggerInit() {
           // swaggerUi: '/docs',
         }),
       );
+
+      app.use(function(err, req, res, next) {
+        if (err.failedValidation) {
+          // handle validation errror
+          error('error!!!', JSON.stringify(err, null, 2));
+          //          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.status('400').json(err);
+        } else {
+          next();
+        }
+      });
+
       global.swaggerApp = app;
       global.swaggerMiddleware = middleware;
       resolve({ app, middleware });
