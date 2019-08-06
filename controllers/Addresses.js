@@ -29,6 +29,7 @@ export function getAddresses(req, res) {
     .then(function(response) {
       res.setHeader('link', response.link.toString());
       res.setHeader('link-template', response.linkTemplate.toString());
+      logger('RESPONSE', JSON.stringify(response, null, 2));
       writeJson(res, response.json);
     })
     .catch(function(response) {

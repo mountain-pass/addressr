@@ -33,9 +33,10 @@ var writeJson = (exports.writeJson = function(response, arg1, arg2) {
     // if no response code given, we default to 200
     code = 200;
   }
-  if (typeof payload === 'object') {
-    payload = JSON.stringify(payload, null, 2);
-  }
-  response.writeHead(code, { 'Content-Type': 'application/json' });
-  response.end(payload);
+  // if (typeof payload === 'object') {
+  //   payload = JSON.stringify(payload, null, 2);
+  // }
+  response.status(code);
+  response.setHeader('Content-Type', 'application/json');
+  response.json(payload);
 });

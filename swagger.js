@@ -58,9 +58,25 @@ export function swaggerInit() {
       app.use(function(err, req, res, next) {
         if (err.failedValidation) {
           // handle validation errror
-          error('error!!!', JSON.stringify(err, null, 2));
-          //          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.status('400').json(err);
+          const rehydratedError = Object.assign({}, err);
+          if (err.originalResponse) {
+            rehydratedError.originalResponse = JSON.parse(err.originalResponse);
+          }
+          if (err.message) {
+            rehydratedError.message = err.message;
+          }
+          if (err.results) {
+            rehydratedError.errors = err.results.errors;
+            delete rehydratedError.results;
+          }
+          error(
+            'error!!!',
+            err.message,
+            JSON.stringify(rehydratedError, null, 2),
+          );
+          res
+            .status(err.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
+            .json(rehydratedError);
         } else {
           next();
         }

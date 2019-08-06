@@ -77,7 +77,7 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
 - [x] auth0 integration (to run the components, you need to provide credentials)
   - [x] API Server
   - [x] Loader
-- [ ] proper validation failure handling
+- [x] proper validation failure handling
 - [ ] telemetry capture
 - [ ] GA the beta
 - [ ] update ES client

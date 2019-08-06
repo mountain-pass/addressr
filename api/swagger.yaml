@@ -443,3 +443,5 @@ definitions:
           type: string
       paramName:
         type: string
+      message:
+        type: string
