@@ -79,6 +79,21 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
   - [x] Loader
 - [x] proper validation failure handling
 - [ ] telemetry capture
+
+  - [x] create data capture server
+  - What do we want to capture?
+  - [x] Server/Loader start and stop
+    - [x] who
+    - [ ] email status
+    - [ ] environment
+  - [ ] CPU and Memory usage
+  - [ ] Server
+    - [ ] API response times
+  - [ ] Loader
+    - [ ] Upload times
+    - [ ] Download times
+    - [ ] unzip times
+
 - [ ] GA the beta
 - [ ] update ES client
 

@@ -27,7 +27,8 @@
     "module": true,
     "URL": true,
     "URLSearchParams": true,
-    "setTimeout": true
+    "setTimeout": true,
+    "setInterval": true
   },
   "settings": {
     "import/core-modules": []

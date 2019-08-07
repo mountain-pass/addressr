@@ -3,6 +3,7 @@ import debug from 'debug';
 import { esConnect } from './client/elasticsearch';
 import { mongoConnect } from './client/mongo';
 import { authenticate, printAuthStatus } from './service/Auth';
+import { initMonitoring } from './service/Monitoring';
 import { startServer } from './swagger';
 
 const logger = debug('api');
@@ -18,7 +19,7 @@ authenticate().then(auth => {
     const p2 = mongoConnect().then(() => {
       logger('mongo client connected');
     });
-    Promise.all([p1, p2]).then(() => {
+    Promise.all([p1, p2, initMonitoring('server', auth)]).then(() => {
       const bannerOptions = {
         font: '3d',
         align: 'center',
