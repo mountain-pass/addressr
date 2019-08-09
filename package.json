@@ -30,7 +30,7 @@
     "test:system": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
     "test:component:QLD": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
-    "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/addressr/server/up addressr-249104"
+    "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/opencensus/addressr/server/mem-usage addressr-249104"
   },
   "keywords": [
     "swagger",
@@ -73,6 +73,7 @@
     "@babel/core": "^7.5.4",
     "@babel/node": "^7.5.0",
     "@babel/polyfill": "^7.4.4",
+    "@google-cloud/monitoring": "^1.2.3",
     "@windyroad/cucumber-js-throwables": "^1.0.4",
     "@windyroad/quick-containers-js": "^2.0.0",
     "babel-eslint": "^10.0.2",
