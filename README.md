@@ -82,13 +82,14 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
 
   - [x] create data capture server
   - What do we want to capture?
-  - [x] Server/Loader start and stop
+  - [x] Server/[ ]Loader
+    - [x] start and stop
     - [x] who
-    - [ ] email status
-    - [ ] environment
-  - [ ] CPU and Memory usage
-  - [ ] Server
-    - [ ] API response times
+    - [x] email status
+    - [x] environment
+    - [x] CPU and Memory usage
+  - [x] Server
+    - [x] API response times
   - [ ] Loader
     - [ ] Upload times
     - [ ] Download times

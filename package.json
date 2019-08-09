@@ -30,7 +30,7 @@
     "test:system": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=system cucumber-js -p system -- --harmony_async_iteration",
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
     "test:component:QLD": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
-    "mectrics": "./scripts/metrics.js delete custom.googleapis.com/addressr/server/up2 addressr-249104"
+    "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/addressr/server/up addressr-249104"
   },
   "keywords": [
     "swagger",
@@ -40,7 +40,12 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "dependencies": {
-    "@google-cloud/monitoring": "^1.2.3",
+    "@google-cloud/debug-agent": "^4.0.1",
+    "@opencensus/core": "0.0.16",
+    "@opencensus/exporter-stackdriver": "0.0.16",
+    "@opencensus/instrumentation-http": "0.0.16",
+    "@opencensus/instrumentation-mongodb": "0.0.16",
+    "@opencensus/nodejs": "0.0.16",
     "auth0": "^2.18.0",
     "cfonts": "^2.4.4",
     "connect": "^3.2.0",
@@ -60,7 +65,8 @@
     "papaparse": "^5.0.0",
     "swagger-tools": "^0.10.4",
     "unzip-stream": "^0.3.0",
-    "uri-template-lite": "^19.4.0"
+    "uri-template-lite": "^19.4.0",
+    "usage": "^0.7.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
