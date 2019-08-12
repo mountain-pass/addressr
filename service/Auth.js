@@ -100,19 +100,22 @@ export function printAuthStatus(auth) {
     space: true,
     maxLength: '0',
   };
+  let env = process.env.NODE_ENV || 'development';
   if (auth && auth.profile.email_verified) {
+    if (env === 'development') {
+      env = `${env}|(set NODE_ENV to 'production' in production environments)`;
+    }
     CFonts.say(
-      `Version: ${process.env.VERSION || '1.0.0'}|Licensed To: ${
+      `Version: ${process.env.npm_package_version || '1.0.0'}|Licensed To: ${
         auth.profile.name
-      }|Email Verified: ${auth.profile.email_verified}|Environment: ${process
-        .env.NODE_ENV || 'development'}`,
+      }|Email Verified: ${auth.profile.email_verified}|NODE_ENV: ${env}`,
       smallBannerOptions,
     );
   } else if (auth && !auth.profile.email_verified) {
     CFonts.say(
       `Version: ${process.env.VERSION || '1.0.0'}|Licensed To: ${
         auth.profile.name
-      }|Environment: ${process.env.NODE_ENV || 'development'}`,
+      }|NODE_ENV: ${env}`,
       smallBannerOptions,
     );
     CFonts.say(`Email Unverified!`, {
