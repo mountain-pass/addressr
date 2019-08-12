@@ -10,6 +10,7 @@ import stream from 'stream';
 import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
 import { mongoConnect } from '../client/mongo';
+import { getTracer } from '../service/Monitoring';
 
 const fsp = fs.promises;
 
@@ -178,6 +179,10 @@ const GNAF_PACKAGE_URL =
   'https://data.gov.au/api/3/action/package_show?id=19432f89-dc3a-4ef3-b943-5326ef1dbecc';
 
 async function fetchPackageData() {
+  const span = getTracer().startChildSpan({
+    name: 'fetch gnaf package data',
+  });
+  span.start();
   const packageUrl = GNAF_PACKAGE_URL;
   // See if we have the value in cache
   const cachedRes = await cache.get(packageUrl);
@@ -189,6 +194,9 @@ async function fetchPackageData() {
     logger('created', created);
     age = Date.now() - created;
     if (age <= ONE_DAY_MS) {
+      span.addAttribute('x-cache', 'HIT');
+      span.addAnnotation('cache hit');
+      span.end();
       return cachedRes;
     }
   }
@@ -199,6 +207,9 @@ async function fetchPackageData() {
     logger('fresh gnaf package data', { body: res.body, headers: res.headers });
     await cache.set(packageUrl, { body: res.body, headers: res.headers });
     res.headers['x-cache'] = 'MISS';
+    span.addAttribute('x-cache', 'MISS');
+    span.addAnnotation('cache miss');
+    span.end();
     return res;
   } catch (err) {
     // we were unable to fetch. if we have cached value that isn't stale, return in
@@ -256,14 +267,22 @@ export async function fetchGnafFile() {
     return dest;
   } catch (e) {
     // file doesn't exist, so we need to download it.
+    const span = getTracer().startChildSpan({ name: 'fetch gnaf zip' });
+    span.addAttribute('url', dataResource.url);
+    span.start();
     return new Promise((resolve, reject) => {
       got
         .stream(dataResource.url, {})
         .pipe(fs.createWriteStream(`${incomplete_path}/${basename}`))
         .on('finish', () => {
           fs.rename(`${incomplete_path}/${basename}`, dest, err => {
-            if (err) reject(err);
-            else resolve(dest);
+            if (err) {
+              span.end();
+              reject(err);
+            } else {
+              span.end();
+              resolve(dest);
+            }
           });
         })
         .on('error', error => {
@@ -272,12 +291,18 @@ export async function fetchGnafFile() {
         .on('downloadProgress', progress => {
           // I don't know why this isn't working
           logger('progress', progress);
+        })
+        .on('uploadProgress', progress => {
+          // I don't know why this isn't working
+          logger('progress', progress);
         });
     });
   }
 }
 
 export async function unzipFile(file) {
+  const span = getTracer().startChildSpan({ name: 'unzip GNAF' });
+  span.start();
   const extname = path.extname(file);
   const basenameWithoutExtention = path.basename(file, extname);
   const incomplete_path = `${GNAF_DIR}/incomplete/${basenameWithoutExtention}`;
@@ -287,6 +312,8 @@ export async function unzipFile(file) {
   if (exists) {
     logger('directory exits. Skipping extract', complete_path);
     // already extracted. Move along.
+    span.addAttribute('x-cache', 'HIT');
+    span.end();
     return complete_path;
   } else {
     await new Promise((resolve, reject) => {
@@ -357,10 +384,13 @@ export async function unzipFile(file) {
         )
         .on('finish', () => {
           logger('finish');
+          span.addAttribute('x-cache', 'MISS');
+          span.end();
           resolve();
         })
         .on('error', e => {
           logger('error unzipping data file', e);
+          span.end();
           reject(e);
         });
     });
@@ -815,6 +845,7 @@ export function mapAddressDetails(d, context, i, count) {
 
 async function loadAddressDetails(file, expectedCount, context) {
   let actualCount = 0;
+
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
       header: true,
@@ -1056,6 +1087,8 @@ async function getStateName(abbr, file) {
 }
 
 async function loadGnafData(dir) {
+  let span = getTracer().startChildSpan({ name: 'load GNAF counts' });
+  span.start();
   const filesCounts = {};
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(`${dir}/Counts.csv`), {
@@ -1084,6 +1117,7 @@ async function loadGnafData(dir) {
   });
   logger('filesCounts', filesCounts);
   const files = Object.keys(filesCounts);
+  span.end();
   logger('files', files);
   const loadContext = {};
   await loadAuthFiles(files, dir, loadContext, filesCounts);
@@ -1102,12 +1136,19 @@ async function loadGnafData(dir) {
       loadContext.stateName = await loadState(files, dir, state);
 
       logger('Loading streets', state);
+      let span = getTracer().startChildSpan({ name: 'loading street' });
+      span.addAttribute('state', state);
+      span.start();
       const streetLocality = await loadStreetLocality(files, dir, state);
       loadContext.streetLocalityIndexed = {};
       for (let index = 0; index < streetLocality.length; index++) {
         const sl = streetLocality[index];
         loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
       }
+      span.end();
+      span = getTracer().startChildSpan({ name: 'loading suburbs' });
+      span.addAttribute('state', state);
+      span.start();
 
       logger('Loading suburbs', state);
       const locality = await loadLocality(files, dir, state);
@@ -1116,6 +1157,7 @@ async function loadGnafData(dir) {
         const l = locality[index];
         loadContext.localityIndexed[l.LOCALITY_PID] = l;
       }
+      span.end();
 
       // logger('Loading geos', state);
       // const geo = await loadGeo(files, dir, state);
@@ -1133,11 +1175,15 @@ async function loadGnafData(dir) {
       //   }
       // }
 
+      span = getTracer().startChildSpan({ name: 'loading address details' });
+      span.addAttribute('state', state);
+      span.start();
       await loadAddressDetails(
         `${dir}/${detailFile}`,
         filesCounts[detailFile],
         loadContext,
       );
+      span.end();
     }
   }
 }
@@ -1234,6 +1280,9 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
   logger('authCodeFiles', authCodeFiles);
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
+    const span = getTracer().startChildSpan({ name: 'loading GNAF Auth file' });
+    span.addAttribute('authfile', authFile);
+    span.start();
     await new Promise((resolve, reject) => {
       Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
         delimiter: '|',
@@ -1241,6 +1290,7 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
         complete: function(results) {
           loadContext[path.basename(authFile, path.extname(authFile))] =
             results.data;
+          span.end();
           if (results.data.length != filesCounts[authFile]) {
             error(
               `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,

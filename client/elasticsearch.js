@@ -1,6 +1,7 @@
 const waitPort = require('wait-port');
 const elasticsearch = require('elasticsearch');
 import debug from 'debug';
+import { getTracer } from '../service/Monitoring';
 const logger = debug('api');
 const error = debug('error');
 
@@ -9,6 +10,10 @@ const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 
 export async function initIndex(esClient, clear) {
+  const span = getTracer().startChildSpan({
+    name: 'init elastic search index',
+  });
+  span.start();
   if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
     if (clear) {
       await esClient.indices.delete({ index: ES_INDEX_NAME });
@@ -115,6 +120,7 @@ export async function initIndex(esClient, clear) {
     });
   }
   await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });
+  span.end();
 }
 
 export async function esConnect(
@@ -127,6 +133,10 @@ export async function esConnect(
   // eslint-disable-next-line no-constant-condition
   while (true) {
     logger(`trying to reach elastic search on ${eshost}:${esport}...`);
+    const innerLoopSpan = getTracer().startChildSpan({
+      name: 'elastic search connect',
+    });
+    innerLoopSpan.start();
     try {
       const open = await waitPort({
         host: eshost,
@@ -153,6 +163,7 @@ export async function esConnect(
             });
             logger(`...connected to ${eshost}:${esport}`);
             global.esClient = esClient;
+            innerLoopSpan.end();
             return esClient;
           } catch (err) {
             error(
@@ -163,6 +174,7 @@ export async function esConnect(
               setTimeout(() => resolve(), interval);
             });
             logger('retrying...');
+            innerLoopSpan.end();
           }
         }
       }
@@ -175,6 +187,7 @@ export async function esConnect(
         setTimeout(() => resolve(), interval);
       });
       logger('retrying...');
+      innerLoopSpan.end();
     }
   }
 }

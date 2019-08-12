@@ -47,8 +47,11 @@ const statsExporter = new StackdriverStatsExporter({
 // Pass the created exporter to Stats
 globalStats.registerExporter(statsExporter);
 
+export function getTracer() {
+  return tracing.tracer;
+}
+
 export async function initMonitoring(component, auth) {
-  // Your Google Cloud Platform project ID
   const mId = await machineId();
   const pId = process.pid;
 
@@ -63,7 +66,6 @@ export async function initMonitoring(component, auth) {
     },
     stats: globalStats,
   });
-  console.log('tracing', tracing);
 
   let previousUsage = process.cpuUsage();
   let sampleDate = Date.now();
@@ -133,10 +135,8 @@ export async function initMonitoring(component, auth) {
     (100 * (previousUsage.user + previousUsage.system)) /
     ((Date.now() - sampleDate) * 1000);
   sampleDate = Date.now();
-  console.log({ percentCPU });
-
   const memUsage = process.memoryUsage().heapUsed / 1024;
-  console.log({ memUsage });
+  console.log({ percentCPU, memUsage });
 
   globalStats.record(
     [
@@ -157,33 +157,32 @@ export async function initMonitoring(component, auth) {
   );
 
   // Writes time series data
-  setInterval(async () => {
-    previousUsage = process.cpuUsage(previousUsage);
-    const percentCPU =
-      (100 * (previousUsage.user + previousUsage.system)) /
-      ((Date.now() - sampleDate) * 1000);
-    sampleDate = Date.now();
-    console.log(percentCPU);
+  const monitoringInterval = 0; // setInterval(async () => {
+  //   previousUsage = process.cpuUsage(previousUsage);
+  //   const percentCPU =
+  //     (100 * (previousUsage.user + previousUsage.system)) /
+  //     ((Date.now() - sampleDate) * 1000);
+  //   sampleDate = Date.now();
+  //   const memUsage = process.memoryUsage().heapUsed / 1024;
+  //   console.log({ percentCPU, memUsage });
 
-    const memUsage = process.memoryUsage().heapUsed / 1024;
-    console.log({ memUsage });
-
-    globalStats.record(
-      [
-        {
-          measure: cpuMeasure,
-          value: percentCPU,
-        },
-        {
-          measure: memMeasure,
-          value: memUsage,
-        },
-        {
-          measure: upMeasure,
-          value: 1,
-        },
-      ],
-      tags,
-    );
-  }, 60000);
+  //   globalStats.record(
+  //     [
+  //       {
+  //         measure: cpuMeasure,
+  //         value: percentCPU,
+  //       },
+  //       {
+  //         measure: memMeasure,
+  //         value: memUsage,
+  //       },
+  //       {
+  //         measure: upMeasure,
+  //         value: 1,
+  //       },
+  //     ],
+  //     tags,
+  //   );
+  // }, 60000);
+  return { tracing: tracing, monitoringInterval, traceExporter };
 }

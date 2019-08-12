@@ -1,6 +1,7 @@
 import debug from 'debug';
 import mongodb from 'mongodb';
 import waitPort from 'wait-port';
+import { getTracer } from '../service/Monitoring';
 const logger = debug('api');
 const error = debug('error');
 
@@ -26,6 +27,10 @@ export async function mongoConnect(
   // eslint-disable-next-line no-constant-condition
   while (true) {
     logger(`trying to reach mongo on ${host}:${port}...`);
+    let span = getTracer().startChildSpan({
+      name: 'mongodb wait port',
+    });
+    span.start();
     try {
       const open = await waitPort({
         host: host,
@@ -35,9 +40,14 @@ export async function mongoConnect(
       });
       if (open) {
         logger(`...${host}:${port} is reachable`);
+        span.end();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
+          span = getTracer().startChildSpan({
+            name: 'mongodb connect',
+          });
+          span.start();
           try {
             logger(
               `connecting mongo client on ${host}:${port} using ${username}:${password}...`,
@@ -62,6 +72,7 @@ export async function mongoConnect(
             global.mongoClient = client;
             global.mongoDb = db;
             global.addressrCollection = collection;
+            span.end();
             return { client, db, collection };
           } catch (err) {
             error(
@@ -73,6 +84,7 @@ export async function mongoConnect(
             });
             logger('retrying...');
           }
+          span.end();
         }
       }
     } catch (err) {
@@ -85,5 +97,6 @@ export async function mongoConnect(
       });
       logger('retrying...');
     }
+    span.end();
   }
 }

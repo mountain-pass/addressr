@@ -61,28 +61,16 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
   - [x] start up process. Have the API/Server component separate to the loader component.
 - [x] server start script
 - [x] loader start script
-- [ ] detangle loader and starter
-- [ ] server docker image
-- [ ] loader docker image
-- [ ] docker compose script
 - [x] Figure out why search with < 3 chars is giving dodgy results - it's because the min ngram is 3
-
-  - [ ] Play around with min ngrams less than 3 and either reduce min ngram or set min length on q param
-
-- [ ] Improve search response time
-
-  - was approx 2.7s during data load
-  - might be less when load isn't happening
-
 - [x] auth0 integration (to run the components, you need to provide credentials)
   - [x] API Server
   - [x] Loader
 - [x] proper validation failure handling
-- [ ] telemetry capture
+- [x] telemetry capture
 
   - [x] create data capture server
   - What do we want to capture?
-  - [x] Server/[ ]Loader
+  - [x] Server/ [x] Loader
     - [x] start and stop
     - [x] who
     - [x] email status
@@ -90,13 +78,21 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
     - [x] CPU and Memory usage
   - [x] Server
     - [x] API response times
-  - [ ] Loader
-    - [ ] Upload times
-    - [ ] Download times
-    - [ ] unzip times
+  - [x] Loader
+    - [x] Upload times
+    - [x] Download times
+    - [x] unzip times
 
+- [ ] Versioning
+- [ ] server docker image
+- [ ] loader docker image
+- [ ] docker compose script
 - [ ] GA the beta
 - [ ] update ES client
+- [ ] Improve search response time
+  - was approx 2.7s during data load
+  - might be less when load isn't happening
+- [ ] detangle loader and starter
 
 ### Premium options?
 

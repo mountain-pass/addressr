@@ -41,6 +41,7 @@
   "private": true,
   "dependencies": {
     "@google-cloud/debug-agent": "^4.0.1",
+    "@google-cloud/logging": "^5.2.1",
     "@opencensus/core": "0.0.16",
     "@opencensus/exporter-stackdriver": "0.0.16",
     "@opencensus/instrumentation-http": "0.0.16",
