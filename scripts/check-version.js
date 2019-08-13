@@ -1,7 +1,7 @@
-#!/usr/bin/env babel-node
+#!/usr/bin/env node
 
-import { satisfies } from 'semver';
-import { engines } from '../package';
+const { satisfies } = require('semver');
+const { engines } = require('../package');
 
 const version = engines.node;
 if (!satisfies(process.version, version)) {
