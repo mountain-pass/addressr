@@ -17,9 +17,11 @@
     "postinstall": "npm run requirements-check",
     "prestart:loader:babel:OT": "npm run build && cp -r target lib/.",
     "start:loader:babel:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport node lib/loader.js",
+    "start:loader:packaged:OT": "npm run build && npm pack && npm install -g addressr-1.0.0.tgz && MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT addressr-loader",
     "start:loader:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
+    "start:server:packaged": "npm run build && npm pack && npm install -g addressr-1.0.0.tgz && addressr-server",
     "prestart:server:babel": "npm run build && cp -r target lib/.",
     "start:server:babel": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport node lib/server.js",
     "start:server:8081": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=8081 babel-node server.js",
@@ -41,8 +43,8 @@
     "postbuild": "cp -r api lib/."
   },
   "bin": {
-    "addressr-loader": "./lib/loader.js",
-    "addressr-server": "./lib/server.js"
+    "addressr-loader": "./lib/bin/addressr-loader.js",
+    "addressr-server": "./lib/bin/addressr-server.js"
   },
   "files": [
     "lib/",
@@ -83,7 +85,10 @@
     "swagger-tools": "^0.10.4",
     "unzip-stream": "^0.3.0",
     "uri-template-lite": "^19.4.0",
-    "usage": "^0.7.1"
+    "usage": "^0.7.1",
+    "wait-port": "^0.2.2",
+    "got": "^9.6.0",
+    "http-link-header": "^1.0.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -107,8 +112,6 @@
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
-    "got": "^9.6.0",
-    "http-link-header": "^1.0.2",
     "husky": "^3.0.0",
     "imagemin-lint-staged": "^0.4.0",
     "lint-staged": "^9.2.0",
@@ -118,7 +121,6 @@
     "prettier": "^1.18.2",
     "prettier-config-standard": "^1.0.1",
     "semver": "^6.2.0",
-    "wait-port": "^0.2.2",
     "why-is-node-running": "^2.1.0",
     "wtfnode": "^0.8.0"
   },

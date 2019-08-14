@@ -11,6 +11,17 @@ const SIGNUP_URL = 'https://addressr.mountain-pass.com.au/signup/';
 
 const ONE_MINUTE = 60 * 1000;
 
+const errorOptions = {
+  font: 'console',
+  align: 'center',
+  colors: ['yellowBright', 'blue'],
+  background: 'red',
+  letterSpacing: 1,
+  lineHeight: 1,
+  space: true,
+  maxLength: '0',
+};
+
 function sleep(ms) {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
@@ -22,16 +33,10 @@ async function scheduleShutdown(n = 20) {
     try {
       const authResult = await doAuthenticate();
       if (!authResult.profile.email_verified) {
-        CFonts.say(`Email not verified!|Server will shutdown in ${i}min...`, {
-          font: 'console',
-          align: 'center',
-          colors: ['yellowBright'],
-          background: 'red',
-          letterSpacing: 1,
-          lineHeight: 1,
-          space: true,
-          maxLength: '0',
-        });
+        CFonts.say(
+          `Email not verified!|Server will shutdown in ${i}min...`,
+          errorOptions,
+        );
         sleep(ONE_MINUTE).then(() => {
           scheduleShutdown(i - 1);
         });
@@ -40,16 +45,7 @@ async function scheduleShutdown(n = 20) {
     } catch (err) {
       CFonts.say(
         `Authentication Failed!|Sign up for free at ${SIGNUP_URL}|Server will shutdown in ${i}min...`,
-        {
-          font: 'console',
-          align: 'center',
-          colors: ['yellowBright'],
-          background: 'red',
-          letterSpacing: 1,
-          lineHeight: 1,
-          space: true,
-          maxLength: '0',
-        },
+        errorOptions,
       );
       await sleep(ONE_MINUTE);
     }
@@ -118,31 +114,29 @@ export function printAuthStatus(auth) {
       }|NODE_ENV: ${env}`,
       smallBannerOptions,
     );
-    CFonts.say(`Email Unverified!`, {
-      font: 'console',
-      align: 'center',
-      colors: ['yellowBright', 'blue'],
-      background: 'red',
-      letterSpacing: 1,
-      lineHeight: 1,
-      space: true,
-      maxLength: '0',
-    });
+    CFonts.say(`Email Unverified!`, errorOptions);
   } else {
     CFonts.say(
       `Version: ${process.env.VERSION || '1.0.0'}|Environment: ${process.env
         .NODE_ENV || 'development'}`,
       smallBannerOptions,
     );
-    CFonts.say(`Unauthenticated`, {
-      font: 'console',
-      align: 'center',
-      colors: ['yellowBright', 'blue'],
-      background: 'red',
-      letterSpacing: 1,
-      lineHeight: 1,
-      space: true,
-      maxLength: '0',
-    });
+
+    CFonts.say(`Unauthenticated`, errorOptions);
+    if (
+      process.env.ADDRESSR_USERNAME === undefined &&
+      process.env.ADDRESSR_PASSWORD === undefined
+    ) {
+      CFonts.say(
+        `ADDRESSR_USERNAME and ADDRESSR_PASSWORD not set`,
+        errorOptions,
+      );
+    } else if (process.env.ADDRESSR_USERNAME === undefined) {
+      CFonts.say(`ADDRESSR_USERNAME not set`, errorOptions);
+    } else if (process.env.ADDRESSR_PASSWORD === undefined) {
+      CFonts.say(`ADDRESSR_PASSWORD not set`, errorOptions);
+    } else {
+      CFonts.say(`Authentication failed`, errorOptions);
+    }
   }
 }

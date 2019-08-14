@@ -911,7 +911,7 @@ async function loadAddressDetails(file, expectedCount, context) {
       //   }
       // },
       complete: function() {
-        console.log('All done!');
+        console.log('Address details loaded', context.state, expectedCount);
         resolve();
         // global.esClient.indices
         //   .refresh({
@@ -977,7 +977,7 @@ async function loadAddressDetails(file, expectedCount, context) {
   //     error(resp.items[0].index);
   //   }
   // }
-  await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
+  //await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
 async function searchForAddress(searchString, p) {
@@ -1106,7 +1106,7 @@ async function loadGnafData(dir) {
         }
       },
       complete: function() {
-        console.log('All done!');
+        console.log('GNAF data loaded');
         resolve();
       },
       error: (error, file) => {
