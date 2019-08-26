@@ -17,11 +17,11 @@
     "postinstall": "npm run requirements-check",
     "prestart:loader:babel:OT": "npm run build && cp -r target lib/.",
     "start:loader:babel:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport node lib/loader.js",
-    "start:loader:packaged:OT": "npm run build && npm pack && npm install -g addressr-1.0.0.tgz && MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT addressr-loader",
+    "start:loader:packaged:OT": "npm pack && npm install -g addressr-1.0.0.tgz && MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT addressr-loader",
     "start:loader:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node loader.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport babel-node server.js",
-    "start:server:packaged": "npm run build && npm pack && npm install -g addressr-1.0.0.tgz && addressr-server",
+    "start:server:packaged": "npm pack && npm install -g addressr-1.0.0.tgz && addressr-server",
     "prestart:server:babel": "npm run build && cp -r target lib/.",
     "start:server:babel": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport node lib/server.js",
     "start:server:8081": "DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=8081 babel-node server.js",
@@ -39,16 +39,20 @@
     "watch:test:system": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:system",
     "test:component:QLD": "MONGO_COLLECTION_NAME=test ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es,mongo TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/opencensus/addressr/server/mem-usage addressr-249104",
-    "build": "babel . --ignore node_modules --ignore test --ignore lib --ignore cucumber.js --ignore scripts -d lib --source-maps",
-    "postbuild": "cp -r api lib/."
+    "prebuld": "cat ./templates/LICENSE.md | envsubst '${PRODUCT},${VERSION},${COMPANY},${YEAR}' > ./LICENSE.md",
+    "build": "babel . --ignore ./LICENSE.template.md --ignore  node_modules --ignore test --ignore lib --ignore cucumber.js --ignore scripts -d lib ",
+    "postbuild": "cp -r api lib/.",
+    "postpostbuild": "export PRODUCT=${npm_package_name} VERSION=${npm_package_version} COMPANY='Mountain Pass Pty Ltd' YEAR=`date '+%Y'`",
+    "prepack": "npm run build"
   },
   "bin": {
     "addressr-loader": "./lib/bin/addressr-loader.js",
     "addressr-server": "./lib/bin/addressr-server.js"
   },
   "files": [
-    "lib/",
-    "scripts/check-version.js"
+    "/lib/",
+    "/scripts/check-version.js",
+    "/20160226-eula-open-g-naf.pdf"
   ],
   "keywords": [
     "swagger",

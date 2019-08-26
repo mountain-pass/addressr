@@ -6,7 +6,7 @@ const logger = debug('api');
 const error = debug('error');
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
-const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
+export const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 
 export async function initIndex(esClient, clear) {
@@ -132,7 +132,7 @@ export async function esConnect(
   // we keep trying to connect, no matter what
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    logger(`trying to reach elastic search on ${eshost}:${esport}...`);
+    console.log(`trying to reach elastic search on ${eshost}:${esport}...`);
     const innerLoopSpan = getTracer().startChildSpan({
       name: 'elastic search connect',
     });

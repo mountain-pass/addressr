@@ -5,13 +5,21 @@ import { getTracer } from '../service/Monitoring';
 const logger = debug('api');
 const error = debug('error');
 
-const MONGO_PORT = parseInt(process.env.MONGO_PORT || '27017');
-const MONGO_HOST = process.env.MONGO_HOST || '127.0.0.1';
+let MONGO_PORT = parseInt(process.env.MONGO_PORT || '27017');
+let MONGO_HOST = process.env.MONGO_HOST || '127.0.0.1';
 
+export const MONGO_URL =
+  process.env.MONGO_URL || `mongodb://${MONGO_HOST}:${MONGO_PORT}`;
+const MONGO_URL_url = new URL(MONGO_URL);
+MONGO_HOST = MONGO_URL_url.hostname;
+MONGO_PORT = parseInt(MONGO_URL_url.port || '27017');
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'root';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'example';
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || 'addressr';
 const MONGO_COLLECTION_NAME = process.env.MONGO_COLLECTION_NAME || 'addressr';
+
+// - dec
+// - 4th dec
 
 export async function mongoConnect(
   port = MONGO_PORT,
@@ -26,7 +34,7 @@ export async function mongoConnect(
   // we keep trying to connect, no matter what
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    logger(`trying to reach mongo on ${host}:${port}...`);
+    console.log(`trying to reach mongo on ${MONGO_URL} ...`);
     let span = getTracer().startChildSpan({
       name: 'mongodb wait port',
     });

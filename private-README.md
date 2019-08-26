@@ -83,6 +83,7 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
     - [x] Download times
     - [x] unzip times
 
+- [ ] Download progress
 - [ ] Clean up logging
 - [ ] Versioning
 - [ ] server docker image

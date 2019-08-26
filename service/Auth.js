@@ -2,6 +2,7 @@ import { AuthenticationClient } from 'auth0';
 import CFonts from 'cfonts';
 import debug from 'debug';
 import dotenv from 'dotenv';
+import { MONGO_URL } from '../client/mongo';
 
 dotenv.config();
 var logger = debug('api');
@@ -104,7 +105,9 @@ export function printAuthStatus(auth) {
     CFonts.say(
       `Version: ${process.env.npm_package_version || '1.0.0'}|Licensed To: ${
         auth.profile.name
-      }|Email Verified: ${auth.profile.email_verified}|NODE_ENV: ${env}`,
+      }|Email Verified: ${
+        auth.profile.email_verified
+      }|NODE_ENV: ${env}|MONGO_URL: ${MONGO_URL}`,
       smallBannerOptions,
     );
   } else if (auth && !auth.profile.email_verified) {
