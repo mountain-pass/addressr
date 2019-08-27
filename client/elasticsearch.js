@@ -9,6 +9,8 @@ const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
 export const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 
+const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
+
 export async function initIndex(esClient, clear) {
   const span = getTracer().startChildSpan({
     name: 'init elastic search index',
@@ -79,7 +81,7 @@ export async function initIndex(esClient, clear) {
                 my_tokenizer: {
                   type: 'edge_ngram',
                   min_gram: 3,
-                  max_gram: 15,
+                  max_gram: ADDRESSR_MAX_GRAM,
                   //token_chars: ['letter', 'digit'],
                 },
               },

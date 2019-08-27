@@ -11,6 +11,7 @@ import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
 import { mongoConnect } from '../client/mongo';
 import { getTracer } from '../service/Monitoring';
+import download from '../utils/stream-down';
 
 const fsp = fs.promises;
 
@@ -270,33 +271,20 @@ export async function fetchGnafFile() {
     const span = getTracer().startChildSpan({ name: 'fetch gnaf zip' });
     span.addAttribute('url', dataResource.url);
     span.start();
-    return new Promise((resolve, reject) => {
-      got
-        .stream(dataResource.url, {})
-        .pipe(fs.createWriteStream(`${incomplete_path}/${basename}`))
-        .on('finish', () => {
-          fs.rename(`${incomplete_path}/${basename}`, dest, err => {
-            if (err) {
-              span.end();
-              reject(err);
-            } else {
-              span.end();
-              resolve(dest);
-            }
-          });
-        })
-        .on('error', error => {
-          reject(error);
-        })
-        .on('downloadProgress', progress => {
-          // I don't know why this isn't working
-          logger('progress', progress);
-        })
-        .on('uploadProgress', progress => {
-          // I don't know why this isn't working
-          logger('progress', progress);
-        });
-    });
+    logger('Starting G-NAF download');
+    try {
+      await download(
+        dataResource.url,
+        `${incomplete_path}/${basename}`,
+        dataResource.size,
+      );
+      await fsp.rename(`${incomplete_path}/${basename}`, dest);
+      logger('Finished downloading G-NAF', dest);
+      return dest;
+    } catch (err) {
+      error('Error downloading G-NAF', err);
+      throw err;
+    }
   }
 }
 

@@ -10,6 +10,10 @@ const error = debug('error');
 
 let auth = undefined;
 
+if (process.env.DEBUG == undefined) {
+  debug.enable('api,error');
+}
+
 authenticate()
   .then(a => {
     auth = a;
