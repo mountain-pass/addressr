@@ -13,7 +13,6 @@ module.exports = function(url, path, size) {
 
   return new Promise(function(resolve, reject) {
     http.get(uri.href).on('response', function(res) {
-      console.log('HEADERS', res.headers);
       const len = res.headers['content-length']
         ? parseInt(res.headers['content-length'], 10)
         : size;
