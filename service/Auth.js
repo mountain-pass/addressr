@@ -64,11 +64,18 @@ async function scheduleShutdown(n = 20) {
   process.exit(1);
 }
 
+const AUTH0_CLIENT_ID =
+  process.env.AUTH0_CLIENT_ID || 'ktamGQ8aAubQBbjL5i1PQUnJAirObYzT';
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'mountain-pass.au.auth0.com';
+const AUTH0_CLIENT_SECRET =
+  process.env.AUTH0_CLIENT_SECRET ||
+  '4T-cB1NlVFHlTaEyXa8zawNnrq75e8cQL70LrqfrHM60UF2f1UaYqOWmh7PUq-pP';
+
 async function doAuthenticate() {
   var auth0 = new AuthenticationClient({
-    domain: process.env.AUTH0_DOMAIN,
-    clientId: process.env.AUTH0_CLIENT_ID,
-    clientSecret: process.env.AUTH0_CLIENT_SECRET,
+    domain: AUTH0_DOMAIN,
+    clientId: AUTH0_CLIENT_ID,
+    clientSecret: AUTH0_CLIENT_SECRET,
   });
   const token = await auth0.oauth.passwordGrant({
     username: process.env.ADDRESSR_USERNAME,
