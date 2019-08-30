@@ -34,14 +34,43 @@ const GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'addressr-249104';
 //   description: 'addressr-service-foobar',
 // });
 
+const GOOGLE_CREDENTIALS = {
+  type: process.env.GOOGLE_CREDENTIALS_TYPE || 'service_account',
+  project_id: GCLOUD_PROJECT,
+  private_key_id:
+    process.env.GOOGLE_CREDENTIALS_private_key_id ||
+    '3a621535318cb91b39aef8f94d9c99d4867517b5',
+  private_key:
+    process.env.GOOGLE_CREDENTIALS_private_key ||
+    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCt7uNXBylpcQ1t\n/BwxUy5Yk9mlQ6VNV1aF2SKta8uuJ9Lmq9xYTTMaowFOfcPJZZXKmRPX+Geiip1V\nQP1hx9AGgOC3a/vRFJ507r51+L/CdtVa2m+Z7zzwe5ox+FR017mTeedvdXq1ZrPk\n6GsDNnTYF3PmmJiRyGLFrJEG6f+TDRm9bQwH6bgxS0e+f297QbkGEv23s53tiCnX\n4cPqVmCi3EHj/jGLa0+1b5FuZpCJ5v9DZ21oe+1pe6UP9Tqu34/R6LVJIxl941vz\nliqFurtOBqDeKW801YtUfRrJgdvfCJG88/vEnJwsAVdQufm59BjrSmxVtPIQcXJa\n/FigpxXTAgMBAAECggEAAyuP/DWWtSPI3WDTeLit5xJmzKLTf/ngC1d+UM/eqgFy\n0B6AySE7Fbiz3OTg7SpLVSJ+IJkX9nf1Tyj8lUwph/zQW7d9ov1vt+zkDs1mXVqC\nIAJMN2+LWky+bju6+lg2OzBlHfxzrJu/GqR70taqwYeH5sOQQFP5LOYszIX2UQ1L\n4hZkPkp/iohurRKpB/Nh9i2l9XPHl36YgnIB+AW/YUfG8Og7uPCDFxVKBVgoLP+W\n0zmkTpDC4wXmVDpcIIsRAReCGw/P4FqMRy9saCX+WXHzqdIJ9xuRBVQxFXCFiwTc\nDY/1Lp5RWS6tg7wuZnWR/I4F10tM9FoLOl4pBUrC2QKBgQDUMBhAC/iIrL5BcALA\nsS7GGC6sic1qXR3qjE70bAaiabX5LBQH3GoP30W2e2vwLDBcT1BoMp4IpPPsXV6m\n5h+/eLVhTrBTnIR4gJ4rWe65po0WnuJnPikxVI/BKlxbIrQtdLp+GTZMbImsjNLc\npH8uLjNhE+pACLG2a+MbBAR2GQKBgQDR2LYh4rVSBBMIxSVTrnIftUn7ALwUNxzF\ncq6woCCB4yzhYPjsPsKpsCX5rMCmVWfOZGX9IRBEnO1yKRByXyhIVM3qF2YI0YcL\nXnVaBob/T1OVOeBQDKJATeR5hsyQzPXBhrH9tO/NVjud0VzZ3aJBneez2v9BsjzF\nKyGEBlbwywKBgCf5w6fVWYaOXO3BJ5OcDf7eMXTqJVwjnO5CbuGXtIxGtDT0e/Wb\nLhQ9cUnW6Nf/y0Co5LIszx87zIS8doelFVgiarGhfJDUDRUSzjnGoLYzTaN0XZ0r\n1eDoWIkA7RNyb1WdB0GYiGVPkYSDp3pQN3HA3IculFRqDukaXFgLoreJAoGBAL/w\n8j8yZ9maAnMOKKNPN/IK151wQZhYBMgRqvnBrZpA2idYlLc6fMHLbiDew+Qg0G93\nY9ZR7NhllcbLCtEieu0WLLbHKjw8ssJSZxKuT8Kto20mYCe4NpyM4sPJ6ck0wEGA\n28ONQZ7XFna3Lq/Uyvor3eikEsDbsDxExEZHqjRbAoGAMnNdgniHMEK7tM6WDpe/\nOSVohYBOf8eysTfzQGJiPMF7VP11qzx68iwF6UtOqYa9Ei1VFzQpBpYSmoKLOmmj\nx9PBX5jcesyQ/coA10GROxzQbpYvynhHndPthUsRB8JQznfwtqPaLUDDl/DzCkI2\nDBHWSjA6jZmKRFCEG6/VInE=\n-----END PRIVATE KEY-----\n',
+  client_email:
+    process.env.GOOGLE_CREDENTIALS_client_email ||
+    'addressr@addressr-249104.iam.gserviceaccount.com',
+  client_id:
+    process.env.GOOGLE_CREDENTIALS_client_id || '112640684218263046489',
+  auth_uri:
+    process.env.GOOGLE_CREDENTIALS_auth_uri ||
+    'https://accounts.google.com/o/oauth2/auth',
+  token_uri:
+    process.env.GOOGLE_CREDENTIALS_token_uri ||
+    'https://oauth2.googleapis.com/token',
+  auth_provider_x509_cert_url:
+    process.env.GOOGLE_CREDENTIALS_auth_provider_x509_cert_url ||
+    'https://www.googleapis.com/oauth2/v1/certs',
+  client_x509_cert_url:
+    process.env.GOOGLE_CREDENTIALS_client_x509_cert_url ||
+    'https://www.googleapis.com/robot/v1/metadata/x509/addressr%40addressr-249104.iam.gserviceaccount.com',
+};
+
 // Add your project id to the Stackdriver options
 const traceExporter = new StackdriverTraceExporter({
   projectId: GCLOUD_PROJECT,
-  prefix: 'testing',
+  credentials: GOOGLE_CREDENTIALS,
 });
 
 const statsExporter = new StackdriverStatsExporter({
   projectId: GCLOUD_PROJECT,
+  credentials: GOOGLE_CREDENTIALS,
 });
 
 // Pass the created exporter to Stats
