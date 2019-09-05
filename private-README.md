@@ -102,3 +102,63 @@ On 8GiB host it ended up using 3GiB (38.24%). Need to try constraining this to f
 - [ ] Aliases
 - [ ] Geo
 - [ ] Lowercase
+
+# Engines of Growth
+
+I suspect that we will need two engines of growth, despite the recommendation to stick to one. I believe we will need one engine of growth for free customers (e.g. Sticky), which will help feed the engine of growth for paying customers (e.g. paid). For instance, the sticky engine
+of growth feeds the paid engine of growth, in which case the cost of running the sticky engine needs to be included in the CoA for the paid engine.
+
+## Viral
+
+There is no viral element to addressr.
+
+Even if we force free users to provide links to addressr, the actual end user is unlikely to become a customer as so few end users would have a need for address lookup. Therefore the viral co-effient will always be well below 1.0.
+
+## Paid
+
+Purchased ads could result in free customers; this was validated early on. However this is not sustainable as the marginal profit will be below zero. More specifically, the total lifetime value of a free customer will be less that the cost of aquisition.
+
+A sales pipeline for paid customers could be a viable engine of growth for enterprise customers, however this requires significant investment in building
+that sales pipeline, in what is already a crowded market. It may make sense to to pivot to this apperoach later, if we can grow the pipeline through partners while we are running on another engine.
+
+Another possibility could be purchesed ads resulting in free customers, which then results in paing customers. We would need to keep a close on on cost of aquisition of each free customer and then use the convertion rate to paying customer to figure out the cost of aquisition of each paying customer to figure out a price point. e.g. CoA free = $2. Converstion rate = 0.1%. CoA Paying = $2,000. Total lifetime value of paying customer must be greater than \$2,000.
+
+## Sticky
+
+The sticky engine of growth appears to be the most viable initially, especially for growing the free customers
+
+## Plan of Attack
+
+### Free customers part of CoA
+
+1. Unsustainable paid ads to get intial traction in the market, buy awareness and kick start the next engine
+   Key metrtics are:
+   1. Cost of aquision
+   2. Rate of aquisions
+   3. Rate of attrition
+      When rate of aquisions > Rate of attrition, should be able to reduce cost of aquision
+2. Sticky engine of growth to grow free customers. We should be able to turn off ads and continue to grow.
+   Key metrics are:
+   1. Rate of aquisions
+   2. Rate of attrition
+3. Paid engine of growth to grow paying customers. The cost of running the engine of growth for the free customers is part of the CoA for the paying customers.
+   Key metrics are:
+   1. Cost of Aquisition of each free customer
+   2. Coverstion rate from free to paid
+   3. TLV of paid customers
+
+### Partner Play
+
+I don't like this.
+
+Growing a partner network for other products was painful, however I wasn't thinkning about the engine of growth for the network. This engine of growth for growing the partner network needs to be factored into the blow.
+
+It feels very complicated, which is a smell.
+
+1. Unsustainable paid ads to get intial traction in the market, buy awareness and kick start the next engine
+2. Sticky engine of growth to grow free customers. We should be able to turn off ads and continue to grow.
+   1. ??? engine of growth for the partner network
+   2. sticky would be more partners joining than leaving
+   3. paid would be sales pipeline for parnters, having a TLV of partners (sales they generate?)
+   4. viral is not viable (one partner doe snot beget another partner)
+3. Paid engine of growth to grow paying customers, utilizing partners.

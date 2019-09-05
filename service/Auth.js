@@ -30,25 +30,28 @@ function sleep(ms) {
 }
 
 async function scheduleShutdown(n = 20) {
-  for (let i = n; i > 0; i--) {
+  if (n > 0) {
     try {
       const authResult = await doAuthenticate();
       if (!authResult.profile.email_verified) {
         CFonts.say(
-          `Email not verified!|Server will shutdown in ${i}min...`,
+          `Email not verified!|Server will shutdown in ${n}min...`,
           errorOptions,
         );
         sleep(ONE_MINUTE).then(() => {
-          scheduleShutdown(i - 1);
+          scheduleShutdown(n - 1);
         });
       }
       return authResult;
     } catch (err) {
       CFonts.say(
-        `Authentication Failed!|Sign up for free at ${SIGNUP_URL}|Server will shutdown in ${i}min...`,
+        `Authentication Failed!|Sign up for free at ${SIGNUP_URL}|Server will shutdown in ${n}min...`,
         errorOptions,
       );
-      await sleep(ONE_MINUTE);
+      sleep(ONE_MINUTE).then(() => {
+        scheduleShutdown(n - 1);
+      });
+      return;
     }
   }
   CFonts.say(`Server will shutdown now...`, {

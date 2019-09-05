@@ -8,9 +8,12 @@ import { startServer } from './swagger';
 
 const logger = debug('api');
 
+logger('AUTHENTICATING');
 authenticate().then(auth => {
+  logger('AFTER AUTH');
   initMonitoring('server', auth)
     .then(() => {
+      logger('AFTER MON');
       return startServer();
     })
     .then(() => {

@@ -101,6 +101,9 @@
 
 ## System requirements
 
+Node JS >= 11.14.0
+Python >= 2.7.16
+
 ### Elastic Search:
 
 elasticsearch-oss >= 7.2.0 with 1.4GiB mem

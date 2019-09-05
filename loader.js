@@ -14,12 +14,15 @@ if (process.env.DEBUG == undefined) {
   debug.enable('api,error');
 }
 
+logger('AUTHENTICATING');
 authenticate()
   .then(a => {
+    logger('AFTER AUTH');
     auth = a;
     return initMonitoring('loader', auth);
   })
   .then(mon => {
+    logger('AFTER MON');
     mon.tracing.tracer.startRootSpan({ name: 'loader' }, rootSpan => {
       rootSpan.addAttribute('COVERED_STATES', process.env.COVERED_STATES);
       const start = process.hrtime();

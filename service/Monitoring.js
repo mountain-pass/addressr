@@ -87,8 +87,8 @@ export async function initMonitoring(component, auth) {
   tracing.registerExporter(traceExporter).start({
     samplingRate: 1,
     defaultAttributes: {
-      namespace: auth.profile.name,
-      verfied: auth.profile.email_verified.toString(),
+      namespace: auth ? auth.profile.name : 'unauthenticated',
+      verfied: (auth ? auth.profile.email_verified : false).toString(),
       environment: process.env.NODE_ENV || 'development',
       job: component,
       task_id: `${mId}-${pId}`,
@@ -152,11 +152,13 @@ export async function initMonitoring(component, auth) {
   globalStats.registerView(upUsageView);
 
   const tags = new TagMap();
-  tags.set(nsTagKey, { value: auth.profile.name });
+  tags.set(nsTagKey, { value: auth ? auth.profile.name : 'unauthenticated' });
 
   tags.set(jobTagKey, { value: component });
   tags.set(taskTagKey, { value: `${mId}-${pId}` });
-  tags.set(verifiedTagKey, { value: auth.profile.email_verified.toString() });
+  tags.set(verifiedTagKey, {
+    value: (auth ? auth.profile.email_verified : false).toString(),
+  });
   tags.set(environmentTagKey, { value: process.env.NODE_ENV || 'development' });
 
   previousUsage = process.cpuUsage(previousUsage);
