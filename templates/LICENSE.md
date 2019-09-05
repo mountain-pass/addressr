@@ -59,7 +59,7 @@ You shall use ${PRODUCT} ${VERSION} in compliance with all applicable laws and n
 </p>
 
 <p>
-Each licensed copy of ${PRODUCT} ${VERSION} may be used on one single computer location by one user. Use of ${PRODUCT} ${VERSION} means that you have loaded, installed, or run ${PRODUCT} ${VERSION} on a computer or similar device. If you install ${PRODUCT} ${VERSION} onto a multi-user platform, server or network, each and every individual user of ${PRODUCT} ${VERSION} must be licensed separately. In this context, an individual user may be interpreted as an organisation or individual providing ${PRODUCT} ${VERSION} enabled capabilties within forms (or other interactive UI elements) within their website(s) and/or application(s), mobile, desktop or otherwise. In this context the users interacting with these forms (or other interactive UI elements) do not need to be licensed users of ${PRODUCT} ${VERSION}. However, if the licensed user is providing providing ${PRODUCT} ${VERSION} enabled capabilties within forms (or other interactive UI elements) to other organisations and/or individuals, then each and every one of those organisations and/or individuals must be a separately licensed user of ${PRODUCT} ${VERSION}.
+Each licensed copy of ${PRODUCT} ${VERSION} may be used on one single computer location by one user. Use of ${PRODUCT} ${VERSION} means that you have loaded, installed, or run ${PRODUCT} ${VERSION} on a computer or similar device. If you install ${PRODUCT} ${VERSION} onto a multi-user platform, server or network, each and every individual user of ${PRODUCT} ${VERSION} must be licensed separately. In this context, an individual user may be interpreted as an organisation or individual providing ${PRODUCT} ${VERSION} enabled capabilities within forms (or other interactive UI elements) within their website(s) and/or application(s), mobile, desktop or otherwise. In this context the users interacting with these forms (or other interactive UI elements) do not need to be licensed users of ${PRODUCT} ${VERSION}. However, if the licensed user is providing providing ${PRODUCT} ${VERSION} enabled capabilities within forms (or other interactive UI elements) to other organisations and/or individuals, then each and every one of those organisations and/or individuals must be a separately licensed user of ${PRODUCT} ${VERSION}.
 </p>
 
 <p>
@@ -130,7 +130,7 @@ You agree that ${COMPANY} may collect and use information gathered in any manner
 
 <p>
 ${PRODUCT} ${VERSION} collects usage and telemetry information at run-time, which is sent to ${COMPANY} controlled systems.
-You shall not, and shall not attempt to, disable, modify, interfere with, block or otherwise re-reroute this information. You may capture this information for your own use. In the context of running ${PRODUCT} ${VERSION}, you shall set the NODE_ENV environment to 'production' when ${PRODUCT} ${VERSION} is running in production environments, so that accurate production telemetry cn be captured.
+You shall not, and shall not attempt to, disable, modify, interfere with, block or otherwise re-reroute this information. You may capture this information for your own use. In the context of running ${PRODUCT} ${VERSION}, you shall set the NODE_ENV environment to 'production' when ${PRODUCT} ${VERSION} is running in production environments, so that accurate production telemetry can be captured.
 <p>
 
 <h2>6. CONSENT OF DISCLOSURE AND USE OF LIKENESS AND TRADEMARKS</h2>
