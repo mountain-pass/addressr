@@ -44,12 +44,13 @@
    export MONGO_URL=mongodb://localhost:27017
    addressr-loader
    ```
-7. OK, so we streched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+7. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
 8. Search for an address
    ```
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
 9. Wire you address form up to the address-server api.
+10. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
 
 ## How it Works
 
@@ -106,13 +107,13 @@ Python >= 2.7.16
 
 ### Elastic Search:
 
-elasticsearch-oss >= 7.2.0 with 1.4GiB mem
+elasticsearch-oss >= 7.2.0 with 1.4GiB of memory
 
 ### Mongo DB
 
-mongo >= 4.0.11 with 3.4GiB mem
+mongo >= 4.0.11 with 3.4GiB of memory
 
-Mongo's memory usage is complicated and the amount it uses depends on how much is available. In our expereince, the more memory it had available the laster the data load would run.
+Mongo's memory usage is complicated and the amount it uses depends on how much is available. In our experience, the more memory it had available the faster the data load would run.
 
 ### Addressr Loader
 
