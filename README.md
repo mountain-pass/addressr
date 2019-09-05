@@ -9,7 +9,7 @@
 1. Sign up at https://addressr.mountain-pass.com.au/signup/ and get your username and password
 2. Install addressr
    ```
-   npm install addressr -g
+   npm install @mountainpass/addressr -g
    ```
 3. Start elastic search. For example
    ```
