@@ -11,6 +11,7 @@
    ```
    npm install @mountainpass/addressr -g
    ```
+   NOTE: If you are running windows, you'll need to use [wsl](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
 3. Start elastic search. For example
    ```
    docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
