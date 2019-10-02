@@ -20,7 +20,7 @@
    ```
    docker pull mongo:4.0.11
    mkdir ~/data
-   docker run -d -p 27017:27017 -v ~/data:/data/db MONGO_INITDB_ROOT_USERNAME=root MONGO_INITDB_ROOT_PASSWORD=example mongo:4.0.11
+   docker run -d -p 27017:27017 -v ~/data:/data/db -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example mongo:4.0.11
    ```
 5. Start API server
    ```
