@@ -1,7 +1,7 @@
 {
   "name": "@mountainpass/addressr",
   "version": "1.0.1",
-  "description": "Free Australian Address Validation, Search and Autocomplete ",
+  "description": "Free Australian Address Validation, Search and Autocomplete",
   "author": "Mountain Pass <addressr@mountain-pass.com.au>",
   "contributors": [
     "Tom Howard <tom@mountain-pass.com.au>"
@@ -45,9 +45,13 @@
     "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/opencensus/addressr/server/mem-usage addressr-249104",
     "prebuld": "cat ./templates/LICENSE.md | envsubst '${PRODUCT},${VERSION},${COMPANY},${YEAR}' > ./LICENSE.md",
     "build": "babel . --ignore ./LICENSE.template.md --ignore  node_modules --ignore test --ignore lib --ignore cucumber.js --ignore scripts -d lib ",
+    "build:docker": "docker build --build-arg PACKAGE=@mountainpass/addressr@${npm_package_version} -t mountainpass/addressr:${npm_package_version}  -t mountainpass/addressr:latest .",
     "postbuild": "cp -r api lib/.",
     "postpostbuild": "export PRODUCT=${npm_package_name} VERSION=${npm_package_version} COMPANY='Mountain Pass Pty Ltd' YEAR=`date '+%Y'`",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "predocker:push": "echo \"$DOCKER_ID_PASS\" | docker login --username \"$DOCKER_ID_USER\" --password-stdin",
+    "docker:push": "docker push \"mountainpass/addressr:${npm_package_version}\"",
+    "postdocker:push": "docker push \"mountainpass/addressr:latest\""
   },
   "bin": {
     "addressr-loader": "./lib/bin/addressr-loader.js",
