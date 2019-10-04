@@ -1010,19 +1010,26 @@ async function searchForAddress(searchString, p) {
   return searchResp;
 }
 
-async function sendIndexRequest(indexingBody, initialBackoff = 1000) {
+async function sendIndexRequest(
+  indexingBody,
+  initialBackoff = process.env.ADDRESSR_INDEX_BACKOFF || 1000,
+) {
   let backoff = initialBackoff;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    let nextBackoff = Math.min(10000, backoff + 1000);
+    let nextBackoff = Math.min(
+      process.env.ADDRESSR_INDEX_BACKOFF_MAX || 10000,
+      backoff + (process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || 1000),
+    );
     try {
       const resp = await global.esClient.bulk({
         refresh: true,
         body: indexingBody,
+        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s',
       });
 
       if (resp.errors) {
-        throw resp.errors;
+        throw resp;
         // // error(resp);
         // // error(resp.items[0].index);
         // error(`backing off for ${backoff}ms`);
@@ -1043,16 +1050,18 @@ async function sendIndexRequest(indexingBody, initialBackoff = 1000) {
       // }
       return;
     } catch (err) {
-      error('Indexing error', err);
+      error('Indexing error', JSON.stringify(err, null, 2));
       error(`backing off for ${backoff}ms`);
       // parser.pause();
       // paused = true;
-      const backoff = await new Promise(resolve => {
+      await new Promise(resolve => {
         // eslint-disable-next-line no-undef
         setTimeout(() => {
-          resolve(nextBackoff);
+          resolve();
         }, backoff);
       });
+      // eslint-disable-next-line require-atomic-updates
+      backoff = nextBackoff;
       continue;
     }
   }

@@ -43,6 +43,10 @@
    export MONGO_USERNAME=root
    export MONGO_PASSWORD=example
    export MONGO_URL=mongodb://localhost:27017
+   export ADDRESSR_INDEX_TIMEOUT=30s
+   export ADDRESSR_INDEX_BACKOFF=1000
+   export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000
+   export ADDRESSR_INDEX_BACKOFF_MAX=10000
    addressr-loader
    ```
 7. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
