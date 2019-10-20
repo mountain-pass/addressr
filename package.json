@@ -67,7 +67,7 @@
     "g-naf",
     "address"
   ],
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "Apache-2.0",
   "private": false,
   "dependencies": {
     "@opencensus/core": "0.0.16",
