@@ -10,7 +10,6 @@ import stream from 'stream';
 import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
 import { mongoConnect } from '../client/mongo';
-import { getTracer } from '../service/Monitoring';
 import download from '../utils/stream-down';
 
 const fsp = fs.promises;
@@ -22,7 +21,7 @@ const Keyv = require('keyv');
 const KeyvFile = require('keyv-file');
 
 const cache = new Keyv({
-  store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
+  store: new KeyvFile({ filename: 'target/keyv-file.msgpack' })
 });
 
 const PAGE_SIZE = 8;
@@ -153,12 +152,12 @@ export async function setAddresses(addr) {
     indexingBody.push({
       index: {
         _index: ES_INDEX_NAME,
-        _id: row.links.self.href,
-      },
+        _id: row.links.self.href
+      }
     });
     indexingBody.push({
       sla: row.sla,
-      ...(row.ssla != undefined && { ssla: row.ssla }),
+      ...(row.ssla != undefined && { ssla: row.ssla })
     });
   });
 
@@ -180,10 +179,6 @@ const GNAF_PACKAGE_URL =
   'https://data.gov.au/api/3/action/package_show?id=19432f89-dc3a-4ef3-b943-5326ef1dbecc';
 
 async function fetchPackageData() {
-  const span = getTracer().startChildSpan({
-    name: 'fetch gnaf package data',
-  });
-  span.start();
   const packageUrl = GNAF_PACKAGE_URL;
   // See if we have the value in cache
   const cachedRes = await cache.get(packageUrl);
@@ -195,9 +190,6 @@ async function fetchPackageData() {
     logger('created', created);
     age = Date.now() - created;
     if (age <= ONE_DAY_MS) {
-      span.addAttribute('x-cache', 'HIT');
-      span.addAnnotation('cache hit');
-      span.end();
       return cachedRes;
     }
   }
@@ -208,9 +200,6 @@ async function fetchPackageData() {
     logger('fresh gnaf package data', { body: res.body, headers: res.headers });
     await cache.set(packageUrl, { body: res.body, headers: res.headers });
     res.headers['x-cache'] = 'MISS';
-    span.addAttribute('x-cache', 'MISS');
-    span.addAnnotation('cache miss');
-    span.end();
     return res;
   } catch (err) {
     // we were unable to fetch. if we have cached value that isn't stale, return in
@@ -232,7 +221,7 @@ export async function fetchGnafFile() {
   const pack = JSON.parse(res.body);
   // id as of 16/07 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
   const dataResource = pack.result.resources.find(
-    r => r.state === 'active' && r.mimetype === 'application/zip',
+    r => r.state === 'active' && r.mimetype === 'application/zip'
   );
 
   // id as of 16/07/2019 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
@@ -268,15 +257,12 @@ export async function fetchGnafFile() {
     return dest;
   } catch (e) {
     // file doesn't exist, so we need to download it.
-    const span = getTracer().startChildSpan({ name: 'fetch gnaf zip' });
-    span.addAttribute('url', dataResource.url);
-    span.start();
     logger('Starting G-NAF download');
     try {
       await download(
         dataResource.url,
         `${incomplete_path}/${basename}`,
-        dataResource.size,
+        dataResource.size
       );
       await fsp.rename(`${incomplete_path}/${basename}`, dest);
       logger('Finished downloading G-NAF', dest);
@@ -289,8 +275,6 @@ export async function fetchGnafFile() {
 }
 
 export async function unzipFile(file) {
-  const span = getTracer().startChildSpan({ name: 'unzip GNAF' });
-  span.start();
   const extname = path.extname(file);
   const basenameWithoutExtention = path.basename(file, extname);
   const incomplete_path = `${GNAF_DIR}/incomplete/${basenameWithoutExtention}`;
@@ -300,8 +284,6 @@ export async function unzipFile(file) {
   if (exists) {
     logger('directory exits. Skipping extract', complete_path);
     // already extracted. Move along.
-    span.addAttribute('x-cache', 'HIT');
-    span.end();
     return complete_path;
   } else {
     await new Promise((resolve, reject) => {
@@ -367,18 +349,15 @@ export async function unzipFile(file) {
                   }
                 });
               }
-            },
-          }),
+            }
+          })
         )
         .on('finish', () => {
           logger('finish');
-          span.addAttribute('x-cache', 'MISS');
-          span.end();
           resolve();
         })
         .on('error', e => {
           logger('error unzipping data file', e);
-          span.end();
           reject(e);
         });
     });
@@ -401,7 +380,7 @@ export async function unzipFile(file) {
 
 function levelTypeCodeToName(code, context) {
   const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -412,7 +391,7 @@ function levelTypeCodeToName(code, context) {
 
 function flatTypeCodeToName(code, context) {
   const found = context['Authority_Code_FLAT_TYPE_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -423,7 +402,7 @@ function flatTypeCodeToName(code, context) {
 
 function streetTypeCodeToName(code, context) {
   const found = context['Authority_Code_STREET_TYPE_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -434,7 +413,7 @@ function streetTypeCodeToName(code, context) {
 
 function streetClassCodeToName(code, context) {
   const found = context['Authority_Code_STREET_CLASS_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -445,7 +424,7 @@ function streetClassCodeToName(code, context) {
 
 function localityClassCodeToName(code, context) {
   const found = context['Authority_Code_LOCALITY_CLASS_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -456,7 +435,7 @@ function localityClassCodeToName(code, context) {
 
 function streetSuffixCodeToName(code, context) {
   const found = context['Authority_Code_STREET_SUFFIX_AUT_psv'].find(
-    e => e.CODE === code,
+    e => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -501,40 +480,40 @@ function streetSuffixCodeToName(code, context) {
 function mapLocality(l, context) {
   return {
     ...(l.LOCALITY_NAME !== '' && {
-      name: l.LOCALITY_NAME,
+      name: l.LOCALITY_NAME
     }),
     ...(l.LOCALITY_CLASS_CODE !== '' && {
       class: {
         code: l.LOCALITY_CLASS_CODE,
-        name: localityClassCodeToName(l.LOCALITY_CLASS_CODE, context),
-      },
-    }),
+        name: localityClassCodeToName(l.LOCALITY_CLASS_CODE, context)
+      }
+    })
   };
 }
 
 function mapStreetLocality(l, context) {
   return {
     ...(l.STREET_NAME !== '' && {
-      name: l.STREET_NAME,
+      name: l.STREET_NAME
     }),
     ...(l.STREET_TYPE_CODE !== '' && {
       type: {
         code: l.STREET_TYPE_CODE,
-        name: streetTypeCodeToName(l.STREET_TYPE_CODE, context),
-      },
+        name: streetTypeCodeToName(l.STREET_TYPE_CODE, context)
+      }
     }),
     ...(l.STREET_CLASS_CODE !== '' && {
       class: {
         code: l.STREET_CLASS_CODE,
-        name: streetClassCodeToName(l.STREET_CLASS_CODE, context),
-      },
+        name: streetClassCodeToName(l.STREET_CLASS_CODE, context)
+      }
     }),
     ...(l.STREET_SUFFIX_CODE !== '' && {
       suffix: {
         code: l.STREET_SUFFIX_CODE,
-        name: streetSuffixCodeToName(l.STREET_SUFFIX_CODE, context),
-      },
-    }),
+        name: streetSuffixCodeToName(l.STREET_SUFFIX_CODE, context)
+      }
+    })
   };
 }
 
@@ -598,14 +577,14 @@ function mapToMla(s) {
   if (s.level) {
     fla.push(
       `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
-        ''}${s.level.suffix || ''}`,
+        ''}${s.level.suffix || ''}`
     );
   }
 
   if (s.flat) {
     fla.push(
       `${s.flat.type.name || ''} ${s.flat.prefix || ''}${s.flat.number || ''}${s
-        .flat.suffix || ''}`,
+        .flat.suffix || ''}`
     );
   }
 
@@ -650,7 +629,7 @@ function mapToShortMla(s) {
   if (s.level) {
     fla.push(
       `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
-        ''}${s.level.suffix || ''}`,
+        ''}${s.level.suffix || ''}`
     );
   }
 
@@ -705,37 +684,37 @@ export function mapAddressDetails(d, context, i, count) {
     // }),
     structured: {
       ...(d.BUILDING_NAME !== '' && {
-        buildingName: d.BUILDING_NAME,
+        buildingName: d.BUILDING_NAME
       }),
       ...((d.NUMBER_FIRST_PREFIX !== '' ||
         d.NUMBER_FIRST !== '' ||
         d.NUMBER_FIRST_SUFFIX !== '') && {
         number: {
           ...(d.NUMBER_FIRST_PREFIX !== '' && {
-            prefix: d.NUMBER_FIRST_PREFIX,
+            prefix: d.NUMBER_FIRST_PREFIX
           }),
           ...(d.NUMBER_FIRST !== '' && {
-            number: parseInt(d.NUMBER_FIRST),
+            number: parseInt(d.NUMBER_FIRST)
           }),
           ...(d.NUMBER_FIRST_SUFFIX !== '' && {
-            suffix: d.NUMBER_FIRST_SUFFIX,
+            suffix: d.NUMBER_FIRST_SUFFIX
           }),
           ...(d.NUMBER_LAST_PREFIX !== '' &&
             d.NUMBER_LAST !== '' &&
             d.NUMBER_LAST_SUFFIX !== '' && {
               last: {
                 ...(d.NUMBER_LAST_PREFIX !== '' && {
-                  prefix: d.NUMBER_LAST_PREFIX,
+                  prefix: d.NUMBER_LAST_PREFIX
                 }),
                 ...(d.NUMBER_LAST !== '' && {
-                  number: parseInt(d.NUMBER_LAST),
+                  number: parseInt(d.NUMBER_LAST)
                 }),
                 ...(d.NUMBER_LAST_SUFFIX !== '' && {
-                  suffix: d.NUMBER_LAST_SUFFIX,
-                }),
-              },
-            }),
-        },
+                  suffix: d.NUMBER_LAST_SUFFIX
+                })
+              }
+            })
+        }
       }),
       ...((d.LEVEL_TYPE_CODE !== '' ||
         d.LEVEL_NUMBER_PREFIX !== '' ||
@@ -745,19 +724,19 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.LEVEL_TYPE_CODE !== '' && {
             type: {
               code: d.LEVEL_TYPE_CODE,
-              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context),
-            },
+              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context)
+            }
           }),
           ...(d.LEVEL_NUMBER_PREFIX !== '' && {
-            prefix: d.LEVEL_NUMBER_PREFIX,
+            prefix: d.LEVEL_NUMBER_PREFIX
           }),
           ...(d.LEVEL_NUMBER !== '' && {
-            number: parseInt(d.LEVEL_NUMBER),
+            number: parseInt(d.LEVEL_NUMBER)
           }),
           ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
-            suffix: d.LEVEL_NUMBER_SUFFIX,
-          }),
-        },
+            suffix: d.LEVEL_NUMBER_SUFFIX
+          })
+        }
       }),
       ...((d.FLAT_TYPE_CODE !== '' ||
         d.FLAT_NUMBER_PREFIX !== '' ||
@@ -767,54 +746,54 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.FLAT_TYPE_CODE !== '' && {
             type: {
               code: d.FLAT_TYPE_CODE,
-              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context),
-            },
+              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context)
+            }
           }),
           ...(d.FLAT_NUMBER_PREFIX !== '' && {
-            prefix: d.FLAT_NUMBER_PREFIX,
+            prefix: d.FLAT_NUMBER_PREFIX
           }),
           ...(d.FLAT_NUMBER !== '' && {
-            number: parseInt(d.FLAT_NUMBER),
+            number: parseInt(d.FLAT_NUMBER)
           }),
           ...(d.FLAT_NUMBER_SUFFIX !== '' && {
-            suffix: d.FLAT_NUMBER_SUFFIX,
-          }),
-        },
+            suffix: d.FLAT_NUMBER_SUFFIX
+          })
+        }
       }),
       // May need to include street locality aliases here
       street: mapStreetLocality(streetLocality, context),
       ...(d.CONFIDENCE !== '' && {
-        confidence: parseInt(d.CONFIDENCE),
+        confidence: parseInt(d.CONFIDENCE)
       }),
       locality: mapLocality(locality, context),
       ...(d.POSTCODE !== '' && {
-        postcode: d.POSTCODE,
+        postcode: d.POSTCODE
       }),
       ...((d.LOT_NUMBER_PREFIX !== '' ||
         d.LOT_NUMBER !== '' ||
         d.LOT_NUMBER_SUFFIX !== '') && {
         lotNumber: {
           ...(d.LOT_NUMBER_PREFIX !== '' && {
-            prefix: d.LOT_NUMBER_PREFIX,
+            prefix: d.LOT_NUMBER_PREFIX
           }),
           ...(d.LOT_NUMBER !== '' && {
-            number: d.LOT_NUMBER,
+            number: d.LOT_NUMBER
           }),
           ...(d.LOT_NUMBER_SUFFIX !== '' && {
-            suffix: d.LOT_NUMBER_SUFFIX,
-          }),
-        },
+            suffix: d.LOT_NUMBER_SUFFIX
+          })
+        }
       }),
       state: {
         name: context.stateName,
-        abbreviation: context.state,
-      },
+        abbreviation: context.state
+      }
     },
     ...(d.PRIMARY_SECONDARY !== '' && {
-      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
+      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary'
     }),
     pid: d.ADDRESS_DETAIL_PID,
-    _id: d.ADDRESS_DETAIL_PID,
+    _id: d.ADDRESS_DETAIL_PID
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
@@ -850,19 +829,19 @@ async function loadAddressDetails(file, expectedCount, context) {
               row,
               context,
               actualCount,
-              expectedCount,
+              expectedCount
             );
             items.push(item);
             actualCount += 1;
             indexingBody.push({
               index: {
                 _index: ES_INDEX_NAME,
-                _id: `/addresses/${item.pid}`,
-              },
+                _id: `/addresses/${item.pid}`
+              }
             });
             indexingBody.push({
               sla: item.sla,
-              ...(item.ssla != undefined && { ssla: item.ssla }),
+              ...(item.ssla != undefined && { ssla: item.ssla })
             });
           });
           if (indexingBody.length > 0) {
@@ -921,12 +900,12 @@ async function loadAddressDetails(file, expectedCount, context) {
       error: (error, file) => {
         console.log(error, file);
         reject();
-      },
+      }
     });
   });
   if (actualCount != expectedCount) {
     error(
-      `Error loading '${file}'. Expected '${expectedCount}' rows, got '${actualCount}'`,
+      `Error loading '${file}'. Expected '${expectedCount}' rows, got '${actualCount}'`
     );
   } else {
     logger(`loaded '${actualCount}' rows from '${file}'`);
@@ -980,9 +959,9 @@ async function searchForAddress(searchString, p) {
           must: [
             {
               exists: {
-                field: 'sla',
-              },
-            },
+                field: 'sla'
+              }
+            }
           ],
           ...(searchString && {
             should: [
@@ -991,20 +970,20 @@ async function searchForAddress(searchString, p) {
                   fields: ['sla', 'ssla'],
                   query: searchString,
                   fuzziness: 'AUTO',
-                  auto_generate_synonyms_phrase_query: true,
-                },
-              },
-            ],
-          }),
-        },
+                  auto_generate_synonyms_phrase_query: true
+                }
+              }
+            ]
+          })
+        }
       },
       highlight: {
         fields: {
           sla: {},
-          ssla: {},
-        },
-      },
-    },
+          ssla: {}
+        }
+      }
+    }
   });
   logger('hits', JSON.stringify(searchResp.hits, null, 2));
   return searchResp;
@@ -1012,20 +991,20 @@ async function searchForAddress(searchString, p) {
 
 async function sendIndexRequest(
   indexingBody,
-  initialBackoff = process.env.ADDRESSR_INDEX_BACKOFF || 1000,
+  initialBackoff = process.env.ADDRESSR_INDEX_BACKOFF || 1000
 ) {
   let backoff = initialBackoff;
   // eslint-disable-next-line no-constant-condition
   while (true) {
     let nextBackoff = Math.min(
       process.env.ADDRESSR_INDEX_BACKOFF_MAX || 10000,
-      backoff + (process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || 1000),
+      backoff + (process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || 1000)
     );
     try {
       const resp = await global.esClient.bulk({
         refresh: true,
         body: indexingBody,
-        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s',
+        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s'
       });
 
       if (resp.errors) {
@@ -1078,14 +1057,12 @@ async function getStateName(abbr, file) {
       error: (error, file) => {
         console.log(error, file);
         reject(error);
-      },
+      }
     });
   });
 }
 
 async function loadGnafData(dir) {
-  let span = getTracer().startChildSpan({ name: 'load GNAF counts' });
-  span.start();
   const filesCounts = {};
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(`${dir}/Counts.csv`), {
@@ -1097,7 +1074,7 @@ async function loadGnafData(dir) {
         } else {
           const psvFile = row.data.File.replace(/\\/g, '/').replace(
             /\.zip$/,
-            '.psv',
+            '.psv'
           );
           filesCounts[psvFile] = row.data.Count;
         }
@@ -1109,17 +1086,16 @@ async function loadGnafData(dir) {
       error: (error, file) => {
         console.log(error, file);
         reject();
-      },
+      }
     });
   });
   logger('filesCounts', filesCounts);
   const files = Object.keys(filesCounts);
-  span.end();
   logger('files', files);
   const loadContext = {};
   await loadAuthFiles(files, dir, loadContext, filesCounts);
   const addressDetailFiles = files.filter(
-    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
+    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
   );
   logger('addressDetailFiles', addressDetailFiles);
   for (let i = 0; i < addressDetailFiles.length; i++) {
@@ -1133,19 +1109,12 @@ async function loadGnafData(dir) {
       loadContext.stateName = await loadState(files, dir, state);
 
       logger('Loading streets', state);
-      let span = getTracer().startChildSpan({ name: 'loading street' });
-      span.addAttribute('state', state);
-      span.start();
       const streetLocality = await loadStreetLocality(files, dir, state);
       loadContext.streetLocalityIndexed = {};
       for (let index = 0; index < streetLocality.length; index++) {
         const sl = streetLocality[index];
         loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
       }
-      span.end();
-      span = getTracer().startChildSpan({ name: 'loading suburbs' });
-      span.addAttribute('state', state);
-      span.start();
 
       logger('Loading suburbs', state);
       const locality = await loadLocality(files, dir, state);
@@ -1154,7 +1123,6 @@ async function loadGnafData(dir) {
         const l = locality[index];
         loadContext.localityIndexed[l.LOCALITY_PID] = l;
       }
-      span.end();
 
       // logger('Loading geos', state);
       // const geo = await loadGeo(files, dir, state);
@@ -1172,15 +1140,11 @@ async function loadGnafData(dir) {
       //   }
       // }
 
-      span = getTracer().startChildSpan({ name: 'loading address details' });
-      span.addAttribute('state', state);
-      span.start();
       await loadAddressDetails(
         `${dir}/${detailFile}`,
         filesCounts[detailFile],
-        loadContext,
+        loadContext
       );
-      span.end();
     }
   }
 }
@@ -1198,11 +1162,11 @@ async function loadState(files, dir, state) {
 
 async function loadStreetLocality(files, dir, state) {
   const localityFile = files.find(f =>
-    f.match(new RegExp(`${state}_STREET_LOCALITY_psv`)),
+    f.match(new RegExp(`${state}_STREET_LOCALITY_psv`))
   );
   if (localityFile === undefined) {
     error(
-      `Could not find street locality file '${state}_STREET_LOCALITY_psv.psv'`,
+      `Could not find street locality file '${state}_STREET_LOCALITY_psv.psv'`
     );
     return [];
   } else {
@@ -1216,7 +1180,7 @@ async function loadStreetLocality(files, dir, state) {
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        },
+        }
       });
     });
   }
@@ -1224,7 +1188,7 @@ async function loadStreetLocality(files, dir, state) {
 
 async function loadLocality(files, dir, state) {
   const localityFile = files.find(f =>
-    f.match(new RegExp(`${state}_LOCALITY_psv`)),
+    f.match(new RegExp(`${state}_LOCALITY_psv`))
   );
   if (localityFile === undefined) {
     error(`Could not find locality file '${state}_LOCALITY_psv.psv'`);
@@ -1240,7 +1204,7 @@ async function loadLocality(files, dir, state) {
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        },
+        }
       });
     });
   }
@@ -1277,9 +1241,6 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
   logger('authCodeFiles', authCodeFiles);
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
-    const span = getTracer().startChildSpan({ name: 'loading GNAF Auth file' });
-    span.addAttribute('authfile', authFile);
-    span.start();
     await new Promise((resolve, reject) => {
       Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
         delimiter: '|',
@@ -1287,13 +1248,12 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
         complete: function(results) {
           loadContext[path.basename(authFile, path.extname(authFile))] =
             results.data;
-          span.end();
           if (results.data.length != filesCounts[authFile]) {
             error(
-              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
+              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
             );
             reject(
-              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
+              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
             );
           } else {
             logger(`loaded '${results.length}' rows from '${dir}/${authFile}'`);
@@ -1303,7 +1263,7 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
         error: (error, file) => {
           error(`Error loading '${dir}/${authFile}`, error, file);
           reject([`Error loading '${dir}/${authFile}`, error, file]);
-        },
+        }
       });
     });
   }
@@ -1322,7 +1282,7 @@ export async function loadGnaf() {
   }
   if (contents.length > 1) {
     throw new Error(
-      `Data dir '${unzipped}' has more than one entry: ${contents}`,
+      `Data dir '${unzipped}' has more than one entry: ${contents}`
     );
   }
   const mainDir = `${unzipped}/${contents[0]}`;
@@ -1346,7 +1306,7 @@ export async function getAddress(addressId) {
     const link = new LinkHeader();
     link.set({
       rel: 'self',
-      uri: `/addresses/${addressId}`,
+      uri: `/addresses/${addressId}`
     });
 
     return { link, json };
@@ -1397,30 +1357,30 @@ export async function getAddresses(url, swagger, q, p = 1) {
       'x-swagger-router-controller'
     ].toLowerCase()}-${swagger.path.get.operationId}`,
     title: `${swagger.path.get.operationId} API Docs`,
-    type: 'text/html',
+    type: 'text/html'
   });
   const sp = new URLSearchParams({
     ...(q !== undefined && { q }),
-    ...(p !== 1 && { p }),
+    ...(p !== 1 && { p })
   });
   const spString = sp.toString();
   link.set({
     rel: 'self',
-    uri: `${url}${spString === '' ? '' : '?'}${spString}`,
+    uri: `${url}${spString === '' ? '' : '?'}${spString}`
   });
   link.set({
     rel: 'first',
     uri: `${url}${q === undefined ? '' : '?'}${new URLSearchParams({
-      ...(q !== undefined && { q }),
-    }).toString()}`,
+      ...(q !== undefined && { q })
+    }).toString()}`
   });
   if (p > 1) {
     link.set({
       rel: 'prev',
       uri: `${url}${q === undefined && p == 2 ? '' : '?'}${new URLSearchParams({
         ...(q !== undefined && { q }),
-        ...(p > 2 && { p: p - 1 }),
-      }).toString()}`,
+        ...(p > 2 && { p: p - 1 })
+      }).toString()}`
     });
   }
   logger('TOTAL', foundAddresses.hits.total.value);
@@ -1432,8 +1392,8 @@ export async function getAddresses(url, swagger, q, p = 1) {
       rel: 'next',
       uri: `${url}?${new URLSearchParams({
         ...(q !== undefined && { q }),
-        p: p + 1,
-      }).toString()}`,
+        p: p + 1
+      }).toString()}`
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);
@@ -1453,8 +1413,8 @@ export async function getAddresses(url, swagger, q, p = 1) {
         'paths',
         url,
         'get',
-        'parameters',
-      ])}`,
+        'parameters'
+      ])}`
     };
     linkTemplate.set(linkOptions);
   }
@@ -1469,9 +1429,9 @@ function mapToSearchAddressResponse(foundAddresses) {
       score: h._score,
       links: {
         self: {
-          href: h._id,
-        },
-      },
+          href: h._id
+        }
+      }
     };
   });
 }

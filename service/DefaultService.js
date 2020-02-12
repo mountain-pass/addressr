@@ -13,7 +13,7 @@ export async function getApiRoot() {
   const paths = Object.keys(global.swaggerDoc.paths).filter(
     p =>
       global.swaggerDoc.paths[p].get !== undefined &&
-      global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined,
+      global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined
   );
 
   const link = new LinkHeader();
@@ -29,13 +29,13 @@ export async function getApiRoot() {
     rel: 'describedby',
     uri: '/docs/',
     title: 'API Docs',
-    type: 'text/html',
+    type: 'text/html'
   });
   link.set({
     rel: 'describedby',
     uri: '/api-docs',
     title: 'API Docs',
-    type: 'application/json',
+    type: 'application/json'
   });
 
   const linkTemplate = new LinkHeader();
@@ -54,8 +54,8 @@ export async function getApiRoot() {
           'paths',
           url,
           'get',
-          'parameters',
-        ])}`,
+          'parameters'
+        ])}`
       };
       linkTemplate.set(linkOptions);
     }

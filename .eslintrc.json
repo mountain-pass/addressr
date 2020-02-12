@@ -31,7 +31,6 @@
     "comma-dangle": "off",
     "strict": 2,
     "prettier/prettier": "error",
-    "no-console": 0,
     "import/default": 0
   },
   "plugins": ["prettier"]

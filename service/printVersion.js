@@ -10,18 +10,18 @@ export function printVersion() {
     align: 'center',
     colors: ['yellowBright', 'blue'],
     background: 'blue',
-    letterSpacing: 1,
-    lineHeight: 1,
-    space: true,
-    maxLength: '0',
+    letterSpacing: 0,
+    lineHeight: 0,
+    space: true
   };
   let env = process.env.NODE_ENV || 'development';
   if (env === 'development') {
     env = `${env}|(set NODE_ENV to 'production' in production environments)`;
   }
+
   CFonts.say(
     `Version: ${process.env.npm_package_version ||
       '1.0.0'}|NODE_ENV: ${env}|MONGO_URL: ${MONGO_URL}`,
-    smallBannerOptions,
+    smallBannerOptions
   );
 }

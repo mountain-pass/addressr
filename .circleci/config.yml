@@ -19,6 +19,7 @@ jobs:
             # FAIL_FAST=" " npm run test
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
+            npm publish
             npm run build:docker
             npm run docker:push
       - store_test_results:

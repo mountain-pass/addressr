@@ -1,7 +1,6 @@
 import debug from 'debug';
 import mongodb from 'mongodb';
 import waitPort from 'wait-port';
-import { getTracer } from '../service/Monitoring';
 const logger = debug('api');
 const error = debug('error');
 
@@ -29,47 +28,38 @@ export async function mongoConnect(
   dbName = MONGO_DB_NAME,
   collectionName = MONGO_COLLECTION_NAME,
   interval = 1000,
-  timeout = 0,
+  timeout = 0
 ) {
   // we keep trying to connect, no matter what
   // eslint-disable-next-line no-constant-condition
   while (true) {
     console.log(`trying to reach mongo on ${MONGO_URL} ...`);
-    let span = getTracer().startChildSpan({
-      name: 'mongodb wait port',
-    });
-    span.start();
     try {
       const open = await waitPort({
         host: host,
         port: port,
         interval,
-        timeout,
+        timeout
       });
       if (open) {
         logger(`...${host}:${port} is reachable`);
-        span.end();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
-          span = getTracer().startChildSpan({
-            name: 'mongodb connect',
-          });
-          span.start();
           try {
             logger(
-              `connecting mongo client on ${host}:${port} using ${username}:${password}...`,
+              `connecting mongo client on ${host}:${port} using ${username}:${password}...`
             );
             const client = await mongodb.MongoClient.connect(
               `mongodb://${host}:${port}`,
               {
                 auth: {
                   user: username,
-                  password: password,
+                  password: password
                 },
                 reconnectTries: -1,
-                reconnectInterval: interval,
-              },
+                reconnectInterval: interval
+              }
             );
             logger(`...connected to ${host}:${port}`);
 
@@ -80,31 +70,28 @@ export async function mongoConnect(
             global.mongoClient = client;
             global.mongoDb = db;
             global.addressrCollection = collection;
-            span.end();
             return { client, db, collection };
           } catch (err) {
             error(
               `An error occured while trying to connect the mongo client on ${host}:${port}`,
-              err,
+              err
             );
             await new Promise(resolve => {
               setTimeout(() => resolve(), interval);
             });
             logger('retrying...');
           }
-          span.end();
         }
       }
     } catch (err) {
       error(
         `An error occured while waiting to reach mongo on ${host}:${port}`,
-        err,
+        err
       );
       await new Promise(resolve => {
         setTimeout(() => resolve(), interval);
       });
       logger('retrying...');
     }
-    span.end();
   }
 }

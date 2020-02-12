@@ -5,7 +5,7 @@ import {
   clearAddresses,
   loadGnaf,
   mapAddressDetails,
-  setAddresses,
+  setAddresses
 } from '../../service/AddressService';
 
 var logger = debug('test');
@@ -15,7 +15,7 @@ When('the root api is requested', async function() {
 });
 
 Then('the response will contain the following links:', async function(
-  dataTable,
+  dataTable
 ) {
   const hashes = dataTable.hashes();
   logger('hashes', hashes);
@@ -49,7 +49,7 @@ Then('the response will contain the following links:', async function(
 });
 
 Then('the response will contain the following link template:', async function(
-  dataTable,
+  dataTable
 ) {
   const hashes = dataTable.hashes();
   logger('hashes', hashes);
@@ -100,7 +100,7 @@ When('the {string} link is followed', async function(rel) {
 
 Then('the html docs will be returned', async function() {
   expect(this.current.headers['content-type']).to.equal(
-    'text/html; charset=UTF-8',
+    'text/html; charset=UTF-8'
   );
   expect(this.current.body).to.have.string('<title>Swagger UI</title>');
 });
@@ -147,7 +147,7 @@ Given(
       global.gnafLoaded = true;
       this.dataDir = await loadGnaf();
     }
-  },
+  }
 );
 
 Then('the returned address list will contain many addresses', async function() {
@@ -172,7 +172,7 @@ Given('the following context:', async function(docString) {
 });
 
 Then('the address details will map to the following address:', async function(
-  docString,
+  docString
 ) {
   const expected = JSON.parse(docString);
   this.context.streetLocalityIndexed = [];
@@ -185,7 +185,7 @@ Then('the address details will map to the following address:', async function(
     this.addressDetails.LOCALITY_PID
   ] = this.locality;
   expect(
-    mapAddressDetails(this.addressDetails, this.context, 1, 1),
+    mapAddressDetails(this.addressDetails, this.context, 1, 1)
   ).to.deep.equal(expected);
 });
 
@@ -197,12 +197,12 @@ Then(
     this.current.json.forEach(a => {
       expect(this.prev.json).to.not.deep.include(a);
     });
-  },
+  }
 );
 
 Then('the {string} link templates var-base will contain', async function(
   rel,
-  expectedParams,
+  expectedParams
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
@@ -215,7 +215,7 @@ Then('the {string} link templates var-base will contain', async function(
 
 When('the {string} link template is followed with:', async function(
   rel,
-  params,
+  params
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
@@ -254,9 +254,9 @@ When(
   async function(rel) {
     this.prev = this.current;
     this.current = await this.driver.follow({
-      uri: this.current.json[0].links[rel].href,
+      uri: this.current.json[0].links[rel].href
     });
-  },
+  }
 );
 
 Then('the response will contain:', async function(docString) {

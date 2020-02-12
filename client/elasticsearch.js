@@ -1,7 +1,6 @@
 const waitPort = require('wait-port');
 const elasticsearch = require('elasticsearch');
 import debug from 'debug';
-import { getTracer } from '../service/Monitoring';
 const logger = debug('api');
 const error = debug('error');
 
@@ -12,10 +11,6 @@ const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
 
 export async function initIndex(esClient, clear) {
-  const span = getTracer().startChildSpan({
-    name: 'init elastic search index',
-  });
-  span.start();
   if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
     if (clear) {
       await esClient.indices.delete({ index: ES_INDEX_NAME });
@@ -66,24 +61,24 @@ export async function initIndex(esClient, clear) {
               analyzer: {
                 default: {
                   tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
+                  filter: ['lowercase', 'asciifolding']
                 },
                 synonym: {
                   tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'synonym'],
+                  filter: ['lowercase', 'synonym']
                 },
                 my_analyzer: {
                   tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
+                  filter: ['lowercase', 'asciifolding']
+                }
               },
               tokenizer: {
                 my_tokenizer: {
                   type: 'edge_ngram',
                   min_gram: 3,
-                  max_gram: ADDRESSR_MAX_GRAM,
+                  max_gram: ADDRESSR_MAX_GRAM
                   //token_chars: ['letter', 'digit'],
-                },
+                }
               },
               filter: {
                 synonym: {
@@ -91,12 +86,12 @@ export async function initIndex(esClient, clear) {
                   lenient: true,
                   synonyms: [
                     'SUPER, super, superannuation',
-                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
-                  ],
-                },
-              },
-            },
-          },
+                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
+                  ]
+                }
+              }
+            }
+          }
         },
         aliases: {},
         mappings: {
@@ -109,42 +104,37 @@ export async function initIndex(esClient, clear) {
             sla: {
               // search_analyzer: 'keyword_analyzer',
               type: 'text',
-              analyzer: 'my_analyzer',
+              analyzer: 'my_analyzer'
             },
             ssla: {
               // search_analyzer: 'keyword_analyzer',
               type: 'text',
-              analyzer: 'my_analyzer',
-            },
-          },
-        },
-      },
+              analyzer: 'my_analyzer'
+            }
+          }
+        }
+      }
     });
   }
   await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });
-  span.end();
 }
 
 export async function esConnect(
   esport = ELASTIC_PORT,
   eshost = ELASTIC_HOST,
   interval = 1000,
-  timeout = 0,
+  timeout = 0
 ) {
   // we keep trying to connect, no matter what
   // eslint-disable-next-line no-constant-condition
   while (true) {
     console.log(`trying to reach elastic search on ${eshost}:${esport}...`);
-    const innerLoopSpan = getTracer().startChildSpan({
-      name: 'elastic search connect',
-    });
-    innerLoopSpan.start();
     try {
       const open = await waitPort({
         host: eshost,
         port: esport,
         interval,
-        timeout,
+        timeout
       });
       if (open) {
         logger(`...${eshost}:${esport} is reachable`);
@@ -154,42 +144,39 @@ export async function esConnect(
           try {
             const esClient = new elasticsearch.Client({
               host: `${eshost}:${esport}`,
-              log: 'info',
+              log: 'info'
             });
             logger(
-              `connecting elastic search client on ${eshost}:${esport}...`,
+              `connecting elastic search client on ${eshost}:${esport}...`
             );
             await esClient.ping({
               requestTimeout: interval,
-              maxRetries: 0,
+              maxRetries: 0
             });
             logger(`...connected to ${eshost}:${esport}`);
             global.esClient = esClient;
-            innerLoopSpan.end();
             return esClient;
           } catch (err) {
             error(
               `An error occured while trying to connect the elastic search client on ${eshost}:${esport}`,
-              err,
+              err
             );
             await new Promise(resolve => {
               setTimeout(() => resolve(), interval);
             });
             logger('retrying...');
-            innerLoopSpan.end();
           }
         }
       }
     } catch (err) {
       error(
         `An error occured while waiting to reach elastic search on ${eshost}:${esport}`,
-        err,
+        err
       );
       await new Promise(resolve => {
         setTimeout(() => resolve(), interval);
       });
       logger('retrying...');
-      innerLoopSpan.end();
     }
   }
 }

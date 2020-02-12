@@ -32,7 +32,6 @@ esConnect()
       maxLength: '0'
     };
     CFonts.say('Addressr|Data|Loader', bannerOptions);
-
     printVersion();
   })
   .then(loadGnaf)
