@@ -49,6 +49,7 @@
     "postbuild": "cp -r api lib/.",
     "postpostbuild": "export PRODUCT=${npm_package_name} VERSION=${npm_package_version} COMPANY='Mountain Pass Pty Ltd' YEAR=`date '+%Y'`",
     "prepack": "npm run build",
+    "postpack": "npm publish mountainpass-addressr-${npm_package_version}.tgz --access public",
     "predocker:push": "echo \"$DOCKER_ID_PASS\" | docker login --username \"$DOCKER_ID_USER\" --password-stdin",
     "docker:push": "docker push \"mountainpass/addressr:${npm_package_version}\"",
     "postdocker:push": "docker push \"mountainpass/addressr:latest\""
@@ -147,6 +148,10 @@
     ],
     "*.{png,jpeg,jpg,gif,svg}": [
       "imagemin-lint-staged",
+      "git add"
+    ],
+    ".circleci/config.yml": [
+      "circleci config validate",
       "git add"
     ]
   },

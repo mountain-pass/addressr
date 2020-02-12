@@ -17,6 +17,9 @@ jobs:
           command: |
             npm install
             FAIL_FAST=" " npm run test
+            npm pack
+            npm run build:docker
+            npm run docker:push
       - store_test_results:
           path: test-results
       - store_artifacts:
