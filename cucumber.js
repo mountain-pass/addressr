@@ -14,17 +14,17 @@ function generateConfig(profile) {
   const FORMAT_OPTIONS = {
     snippetInterface: 'async-await',
     snippetSyntax:
-      './node_modules/@windyroad/cucumber-js-throwables/lib/custom-cucumber-syntax.js',
+      './node_modules/@windyroad/cucumber-js-throwables/lib/custom-cucumber-syntax.js'
   };
   const MODULES =
     '--require-module @babel/register --require-module @babel/polyfill';
   const REQUIRE_GLOB = 'test/js/**/*.js';
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
-    FORMAT_OPTIONS,
+    FORMAT_OPTIONS
   )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
   if (profile === 'system') {
     return `${BASE_CONFIG} --world-parameters '${JSON.stringify({
-      client: 'rest',
+      client: 'rest'
     })}'`;
   }
   return BASE_CONFIG;
@@ -32,5 +32,5 @@ function generateConfig(profile) {
 
 module.exports = {
   default: generateConfig('component'),
-  system: generateConfig('system'),
+  system: generateConfig('system')
 };

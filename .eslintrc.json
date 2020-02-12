@@ -1,16 +1,10 @@
 {
-  "env": { "es6": true },
   "parser": "babel-eslint",
-  "extends": [
-    "eslint:recommended",
-    "prettier",
-    "plugin:prettier/recommended",
-    "prettier/flowtype",
-    "prettier/standard",
-    "plugin:import/errors",
-    "plugin:import/warnings"
-  ],
-  "plugins": ["prettier"],
+  "extends": ["eslint:recommended", "prettier", "prettier/babel"],
+  "env": {
+    "browser": false,
+    "node": true
+  },
   "globals": {
     "document": true,
     "window": true,
@@ -28,23 +22,17 @@
     "URL": true,
     "URLSearchParams": true,
     "setTimeout": true,
-    "setInterval": true
-  },
-  "settings": {
-    "import/core-modules": []
+    "setInterval": true,
+    "Promise": true
   },
   "rules": {
+    "quotes": "off",
+    "no-console": "off",
+    "comma-dangle": "off",
     "strict": 2,
     "prettier/prettier": "error",
-    "import/no-extraneous-dependencies": [
-      "error",
-      {
-        "devDependencies": ["**/*"],
-        "optionalDependencies": false,
-        "peerDependencies": true
-      }
-    ],
     "no-console": 0,
     "import/default": 0
-  }
+  },
+  "plugins": ["prettier"]
 }

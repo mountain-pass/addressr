@@ -18,7 +18,7 @@ error.log = console.error.bind(console); // eslint-disable-line no-console
 var options = {
   swaggerUi: join(__dirname, '/swagger.json'),
   controllers: join(__dirname, './controllers'),
-  useStubs: process.env.NODE_ENV === 'development', // Conditionally turn on stubs (mock mode)
+  useStubs: process.env.NODE_ENV === 'development' // Conditionally turn on stubs (mock mode)
 };
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
@@ -40,8 +40,8 @@ export function swaggerInit() {
         middleware.swaggerValidator({
           validateResponse:
             process.env.NODE_ENV === undefined ||
-            process.env.NODE_ENV === 'development',
-        }),
+            process.env.NODE_ENV === 'development'
+        })
       );
 
       // Route validated requests to appropriate controller
@@ -52,7 +52,7 @@ export function swaggerInit() {
         middleware.swaggerUi({
           // apiDocs: '/api-docs',
           // swaggerUi: '/docs',
-        }),
+        })
       );
 
       app.use(function(err, req, res, next) {
@@ -72,7 +72,7 @@ export function swaggerInit() {
           error(
             'error!!!',
             err.message,
-            JSON.stringify(rehydratedError, null, 2),
+            JSON.stringify(rehydratedError, null, 2)
           );
           res
             .status(err.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
@@ -101,11 +101,11 @@ export function startServer() {
       logger(
         '📡  Addressr is listening on port %d ( http://localhost:%d ) ',
         serverPort,
-        serverPort,
+        serverPort
       );
       logger(
         '📑  Swagger-ui is available on http://localhost:%d/docs',
-        serverPort,
+        serverPort
       );
       if (process.env.NODE_ENV !== 'PRODUCTION') {
         // ngrok.connect(serverPort).then(url => {

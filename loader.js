@@ -29,7 +29,7 @@ esConnect()
       letterSpacing: 1,
       lineHeight: 1,
       space: true,
-      maxLength: '0',
+      maxLength: '0'
     };
     CFonts.say('Addressr|Data|Loader', bannerOptions);
 
