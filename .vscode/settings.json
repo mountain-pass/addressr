@@ -1,6 +1,5 @@
 {
   "editor.formatOnSave": true,
-  "prettier.eslintIntegration": true,
   "eslint.autoFixOnSave": true,
   "npm.enableScriptExplorer": true,
   "eslint.alwaysShowStatus": true,
@@ -23,5 +22,8 @@
   "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"],
   "cucumberautocomplete.onTypeFormat": true,
   "cucumberautocomplete.steps": ["test/js/*.js"],
-  "cucumberautocomplete.skipDocStringsFormat": true
+  "cucumberautocomplete.skipDocStringsFormat": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
 }

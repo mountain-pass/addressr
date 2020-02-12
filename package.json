@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Free Australian Address Validation, Search and Autocomplete",
   "author": "Mountain Pass <addressr@mountain-pass.com.au>",
   "contributors": [
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "hmm": "echo mountainpass-addressr-${npm_package_version}.tgz",
-    "requirements-check": "./scripts/check-version.js",
+    "requirements-check": "scripts/check-version.js",
     "postinstall": "npm run requirements-check",
     "prestart:loader:babel:OT": "npm run build && cp -r target lib/.",
     "start:loader:babel:OT": "MONGO_COLLECTION_NAME=ot ES_INDEX_NAME=ot COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es,mongo PORT=$npm_package_config_localport node lib/loader.js",
@@ -54,13 +54,13 @@
     "postdocker:push": "docker push \"mountainpass/addressr:latest\""
   },
   "bin": {
-    "addressr-loader": "./lib/bin/addressr-loader.js",
-    "addressr-server": "./lib/bin/addressr-server.js"
+    "addressr-loader": "lib/bin/addressr-loader.js",
+    "addressr-server": "lib/bin/addressr-server.js"
   },
   "files": [
-    "/lib/",
-    "/scripts/check-version.js",
-    "/20160226-eula-open-g-naf.pdf"
+    "lib/",
+    "scripts/check-version.js",
+    "20160226-eula-open-g-naf.pdf"
   ],
   "keywords": [
     "swagger",
@@ -130,10 +130,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mountain-pass/addressr.mountain-pass.com.au.git"
+    "url": "git+https://github.com/mountain-pass/addressr.git"
   },
   "bugs": {
-    "url": "https://github.com/mountain-pass/addressr.mountain-pass.com.au/issues"
+    "url": "https://github.com/mountain-pass/addressr/issues"
   },
   "homepage": "https://addressr.mountain-pass.com.au",
   "lint-staged": {
