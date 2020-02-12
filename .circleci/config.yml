@@ -19,7 +19,7 @@ jobs:
             # FAIL_FAST=" " npm run test
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
-            npm publish
+            npm run dopublish
             npm run build:docker
             npm run docker:push
             npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
