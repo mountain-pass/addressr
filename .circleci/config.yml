@@ -23,6 +23,8 @@ jobs:
             npm run build:docker
             npm run docker:push
             npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
+            git config user.email "tom@windyroad.com.au"
+            git config user.name "Tom Howard"
             git add package.json
             git commit -m "Version bump. [skip ci]"
       - store_test_results:
