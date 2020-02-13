@@ -27,11 +27,12 @@ jobs:
             git config user.name "Tom Howard"
             git add package.json
             git commit -m "Version bump. [skip ci]"
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results
-          destination: test-results
+            git push origin HEAD:master && git push --tags
+      # - store_test_results:
+      #     path: test-results
+      # - store_artifacts:
+      #     path: test-results
+      #     destination: test-results
       - save_cache:
           paths:
             - node_modules
