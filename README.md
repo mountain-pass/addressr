@@ -42,7 +42,7 @@
 
 ## How it Works
 
-![How it works](./addressr.svg 'How it works')
+![How it works](https://addressr.mountain-pass.com.au/static/addressr-3c1d2abdc47fea8d0d7c5acb00ccc648.svg 'How it works')
 
 ## System requirements
 
