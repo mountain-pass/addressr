@@ -9,7 +9,6 @@ import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
-import { mongoConnect } from '../client/mongo';
 import download from '../utils/stream-down';
 
 const fsp = fs.promises;
@@ -155,9 +154,11 @@ export async function setAddresses(addr) {
         _id: row.links.self.href
       }
     });
+    const { sla, ssla, ...structurted } = row;
     indexingBody.push({
-      sla: row.sla,
-      ...(row.ssla != undefined && { ssla: row.ssla })
+      sla,
+      ssla,
+      structurted
     });
   });
 
@@ -792,8 +793,7 @@ export function mapAddressDetails(d, context, i, count) {
     ...(d.PRIMARY_SECONDARY !== '' && {
       precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary'
     }),
-    pid: d.ADDRESS_DETAIL_PID,
-    _id: d.ADDRESS_DETAIL_PID
+    pid: d.ADDRESS_DETAIL_PID
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
@@ -839,23 +839,15 @@ async function loadAddressDetails(file, expectedCount, context) {
                 _id: `/addresses/${item.pid}`
               }
             });
+            const { sla, ssla, ...structured } = item;
             indexingBody.push({
-              sla: item.sla,
-              ...(item.ssla != undefined && { ssla: item.ssla })
+              sla,
+              ssla,
+              structured
             });
           });
           if (indexingBody.length > 0) {
             sendIndexRequest(indexingBody)
-              .then(() => {
-                var bulk = global.addressrCollection.initializeOrderedBulkOp();
-                items.forEach(item => {
-                  bulk
-                    .find({ _id: item._id })
-                    .upsert()
-                    .replaceOne(item);
-                });
-                return bulk.execute();
-              })
               .then(() => {
                 parser.resume();
               })
@@ -1300,7 +1292,15 @@ export async function loadGnaf() {
  **/
 export async function getAddress(addressId) {
   try {
-    const json = await global.addressrCollection.findOne({ _id: addressId });
+    const jsonX = await global.esClient.get({
+      index: ES_INDEX_NAME,
+      id: `/addresses/${addressId}`
+    });
+    logger('jsonX', jsonX);
+    const json = {
+      ...jsonX._source.structured,
+      sla: jsonX._source.sla
+    };
     logger('json', json);
     delete json._id;
     const link = new LinkHeader();
@@ -1311,21 +1311,8 @@ export async function getAddress(addressId) {
 
     return { link, json };
   } catch (err) {
-    if (
-      err.name === 'MongoError' &&
-      err.toString() === 'MongoError: Topology was destroyed'
-    ) {
-      // should try to reconnect here
-      if (global.addressrCollection !== undefined) {
-        global.mongoClient = undefined;
-        global.mongoDb = undefined;
-        global.addressrCollection = undefined;
-        logger('reconnecting mongo client');
-        mongoConnect().then(() => {
-          logger('mongo client connected');
-        });
-      }
-    }
+    logger('err', err);
+
     throw err;
   }
   //  throw new PendingError(addressId);

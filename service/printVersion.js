@@ -1,6 +1,5 @@
 import CFonts from 'cfonts';
 import dotenv from 'dotenv';
-import { MONGO_URL } from '../client/mongo';
 
 dotenv.config();
 
@@ -20,8 +19,7 @@ export function printVersion() {
   }
 
   CFonts.say(
-    `Version: ${process.env.npm_package_version ||
-      '1.0.0'}|NODE_ENV: ${env}|MONGO_URL: ${MONGO_URL}`,
+    `Version: ${process.env.npm_package_version || '1.0.0'}|NODE_ENV: ${env}`,
     smallBannerOptions
   );
 }

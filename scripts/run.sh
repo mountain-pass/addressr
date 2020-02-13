@@ -13,8 +13,5 @@ echo $hostip
 
 export ELASTIC_PORT="9200"
 export ELASTIC_HOST="$hostip"
-export MONGO_USERNAME="root"
-export MONGO_PASSWORD="example"
-export MONGO_URL="mongodb://$hostip:27017"
 
-DEBUG=error,api,express:*,swagger-tools*,test,es,mongo addressr-server
+DEBUG=error,api,express:*,swagger-tools*,test,es addressr-server

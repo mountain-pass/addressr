@@ -1,7 +1,6 @@
 import CFonts from 'cfonts';
 import debug from 'debug';
 import { esConnect } from './client/elasticsearch';
-import { mongoConnect } from './client/mongo';
 import { printVersion } from './service/printVersion';
 import { startServer } from './swagger';
 
@@ -13,11 +12,7 @@ startServer().then(() => {
     global.esClient = esClient;
     logger('es client connected');
   });
-  logger('connecting mongo client');
-  const p2 = mongoConnect().then(() => {
-    logger('mongo client connected');
-  });
-  Promise.all([p1, p2]).then(() => {
+  p1.then(() => {
     const bannerOptions = {
       font: '3d',
       align: 'center',

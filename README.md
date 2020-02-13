@@ -1,6 +1,6 @@
 # Addressr
 
-![alt text](https://addressr.mountain-pass.com.au/icons/icon-144x144.png 'Addressr')
+![Addressr](https://addressr.mountain-pass.com.au/icons/icon-144x144.png 'Addressr')
 
 [Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au)
 
@@ -16,103 +16,39 @@
    docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
    docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.2.0
    ```
-3. Start mongodb. For example
-   ```
-   docker pull mongo:4.0.11
-   mkdir ~/data
-   docker run -d -p 27017:27017 -v ~/data:/data/db -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example mongo:4.0.11
-   ```
-4. Start API server
+3. Start API server
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
-   export MONGO_USERNAME=root
-   export MONGO_PASSWORD=example
-   export MONGO_URL=mongodb://localhost:27017
    addressr-server
    ```
-5. Run data Loader
+4. Run data Loader
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
-   export MONGO_USERNAME=root
-   export MONGO_PASSWORD=example
-   export MONGO_URL=mongodb://localhost:27017
    export ADDRESSR_INDEX_TIMEOUT=30s
    export ADDRESSR_INDEX_BACKOFF=1000
    export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000
    export ADDRESSR_INDEX_BACKOFF_MAX=10000
    addressr-loader
    ```
-6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
-7. Search for an address
+5. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+6. Search for an address
    ```
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
-8. Wire you address form up to the address-server api.
-9. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
+7. Wire you address form up to the address-server api.
+8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
 
 ## How it Works
 
-```
-
-                             ┌──────────────────┐
-                1. Get       │                  │
-          ┌──────G-NAF──────>│   data.gov.au    │
-          │                  │                  │
-          │                  └──────────────────┘
-          │                       .─────────.
-          │                      (           )
- ┌────────────────┐              │`─────────'│
- │................│ 2. Save and  │           │
- │.address-loader.│───extract───>│filesystem │
- │................│    G-NAF     │           │
- └────────────────┘              └           ┘
-          │                       `─────────'
-          │                       .─────────.
-          │                      (           )
-          │                      │`─────────'│              ┌───────────────────────┐
-          │      3a. Index       │  elastic  │     Search   │.......................│
-          ├────────G-NAF────────>│  search   │<──Addresses──│<───────────────────┐..│
-          │       records        │           │              │....................│..│
-          │                      └           ┘              │....................│..│
-          │                       `─────────'               │....................│..│
-          │                       .─────────.               │....addressr-server.│..│
-          │                      (           )              │....................│..│
-          │                      │`─────────'│              │....................│..│
-          │      3b. Store       │           │      Get     │....................│..│
-          └────────G-NAF────────>│  mongodb  │<───Address───│<──┐................│..│
-                  Records        │           │    Details   │...│................│..│
-                                 └           ┘              └───┴────────────────┴──┘
-                                  `─────────'                   ^                ^
-                                                                │                │
-                                                               GET               │
-                                                         /addresses/{ID}         │
-                                                                │               GET
-                                                                │        /addresses?q=...
-                                                                │                │
-                                                             ┌──────────────────────┐
-                                                             │                      │
-                                                             │                      │
-                                                             │        client        │
-                                                             │                      │
-                                                             │                      │
-                                                             └──────────────────────┘
-```
+![How it works](./addressr.svg 'How it works')
 
 ## System requirements
-
-Node JS >= 11.14.0
 
 ### Elastic Search:
 
 elasticsearch-oss >= 7.2.0 with 1.4GiB of memory
-
-### Mongo DB
-
-mongo >= 4.0.11 with 3.4GiB of memory
-
-Mongo's memory usage is complicated and the amount it uses depends on how much is available. In our experience, the more memory it had available the faster the data load would run.
 
 ### Addressr Loader
 

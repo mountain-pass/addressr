@@ -131,7 +131,6 @@ Feature: Address
                     }
                 },
                 "pid": "GAQLD163157353",
-                "_id": "GAQLD163157353",
                 "mla": [
                     "LOT 16 AERODROME RD",
                     "APPLETHORPE QLD 4378"

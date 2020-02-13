@@ -63,10 +63,10 @@ export async function initIndex(esClient, clear) {
                   tokenizer: 'my_tokenizer',
                   filter: ['lowercase', 'asciifolding']
                 },
-                synonym: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'synonym']
-                },
+                // synonym: {
+                //   tokenizer: 'my_tokenizer',
+                //   filter: ['lowercase', 'synonym']
+                // },
                 my_analyzer: {
                   tokenizer: 'my_tokenizer',
                   filter: ['lowercase', 'asciifolding']
@@ -79,17 +79,17 @@ export async function initIndex(esClient, clear) {
                   max_gram: ADDRESSR_MAX_GRAM
                   //token_chars: ['letter', 'digit'],
                 }
-              },
-              filter: {
-                synonym: {
-                  type: 'synonym',
-                  lenient: true,
-                  synonyms: [
-                    'SUPER, super, superannuation',
-                    'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
-                  ]
-                }
               }
+              // filter: {
+              //   synonym: {
+              //     type: 'synonym',
+              //     lenient: true,
+              //     synonyms: [
+              //       'SUPER, super, superannuation',
+              //       'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
+              //     ]
+              //   }
+              // }
             }
           }
         },
@@ -101,6 +101,10 @@ export async function initIndex(esClient, clear) {
           //   },
           // },
           properties: {
+            structured: {
+              type: 'object',
+              enabled: false
+            },
             sla: {
               // search_analyzer: 'keyword_analyzer',
               type: 'text',

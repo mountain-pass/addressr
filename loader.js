@@ -1,7 +1,6 @@
 import CFonts from 'cfonts';
 import debug from 'debug';
 import { esConnect } from './client/elasticsearch';
-import { mongoConnect } from './client/mongo';
 import { loadGnaf } from './service/AddressService';
 import { printVersion } from './service/printVersion';
 const logger = debug('api');
@@ -15,10 +14,6 @@ const start = process.hrtime();
 esConnect()
   .then(() => {
     logger('es client connected');
-  })
-  .then(mongoConnect)
-  .then(() => {
-    logger('mongo client connected');
   })
   .then(() => {
     const bannerOptions = {
@@ -37,11 +32,6 @@ esConnect()
   .then(loadGnaf)
   .then(() => {
     logger('data loaded');
-  })
-  .then(() => {
-    logger('closing mongoClient conection');
-    const p = global.mongoClient.close();
-    return p;
   })
   .then(() => {
     const end = process.hrtime(start);
