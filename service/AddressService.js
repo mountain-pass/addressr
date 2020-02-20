@@ -1272,15 +1272,23 @@ export async function loadGnaf() {
   if (contents.length == 0) {
     throw new Error(`Data dir '${unzipped}' is empty`);
   }
-  if (contents.length > 1) {
+  if (contents.length == 1) {
+    // before feb20, the gnaf zip had an intermediate directory
+    const mainDir = `${unzipped}/${contents[0]}`;
+    logger('1. Main Data dir', mainDir);
+
+    await loadGnafData(mainDir);
+  } else if (contents.includes('Counts.csv')) {
+    // feb20 doesn't have an intermediate directory
+    const mainDir = unzipped;
+    logger('2. Main Data dir', mainDir);
+
+    await loadGnafData(mainDir);
+  } else {
     throw new Error(
-      `Data dir '${unzipped}' has more than one entry: ${contents}`
+      `Data dir '${unzipped}' has unexpected contents: ${contents}`
     );
   }
-  const mainDir = `${unzipped}/${contents[0]}`;
-  logger('Main Data dir', mainDir);
-
-  await loadGnafData(mainDir);
 }
 
 /**
