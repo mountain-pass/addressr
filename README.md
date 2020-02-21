@@ -22,7 +22,7 @@
    export ELASTIC_HOST=localhost
    addressr-server
    ```
-4. Run data Loader
+4. Setup the env vars for the data loader, but runnning
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
@@ -30,15 +30,39 @@
    export ADDRESSR_INDEX_BACKOFF=1000
    export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000
    export ADDRESSR_INDEX_BACKOFF_MAX=10000
+   ```
+   1. Optional - enable geocodes by setting the following env vars for the data loader.
+      **NOTE:** with geocodes enabled, indexing takes much longer and needs much more memory. Only use turn them on if you need them. You can always add them later.
+   ```
+   export ADDRESSR_ENABLE_GEO=1
+   export NODE_OPTIONS=--max_old_space_size=8196
+   ```
+   2. Optional - limit the addresses to a single state by setting the `COVERED_STATES` env var for the data loader.
+      This dramatically speeds up indexing. For example:
+   ```
+   COVERED_STATES=VIC,SA
+   ```
+   Valid values are:
+   - ACT
+   - NSW
+   - NT
+   - OT
+   - QLD
+   - SA
+   - TAS
+   - VIC
+   - WA
+5. Run data Loader
+   ```
    addressr-loader
    ```
-5. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
-6. Search for an address
+6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+7. Search for an address
    ```
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
-7. Wire you address form up to the address-server api.
-8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
+8. Wire you address form up to the address-server api.
+9. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
 
 ## How it Works
 
@@ -52,7 +76,13 @@ elasticsearch-oss >= 7.2.0 with 1.4GiB of memory
 
 ### Addressr Loader
 
+#### Default
+
 Node JS >= 11.14.0 with 1GiB of memory
+
+#### With Geocoding enabled
+
+Node JS >= 11.14.0 with 8GiB of memory
 
 ### Addressr Server
 

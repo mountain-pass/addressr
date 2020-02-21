@@ -197,48 +197,78 @@ definitions:
         $ref: "#/definitions/MultiLineAddress"
       smla:
         $ref: "#/definitions/MultiLineAddress"
-      # geo:
-      #   $ref: "#/definitions/AddressGeocoding"
-  # AddressGeocoding:
-  #   type: object
-  #   description: Geocoding information about the address
-  #   properties:
-  #     level:
-  #       type: object
-  #       properties:
-  #         code:
-  #           type: integer
-  #           maxLength: 2
-  #           description: |
-  #             Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
-  #           example: 7
-  #         name:
-  #           type: string
-  #           maxLength: 50
-  #           description: |
-  #             Name of the geocode level type code.
-  #           example: LOCALITY,STREET, ADDRESS
-  #     reliability:
-  #       type: object
-  #       properties:
-  #         code:
-  #           type: integer
-  #           maxLength: 1
-  #           description: |
-  #             Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
-  #           example: 2
-  #         name:
-  #           type: string
-  #           maxLength: 50
-  #           description: |
-  #             Name of the geocode reliability code.
-  #           example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
-  #     latitude:
-  #       type: number
-  #       example: -33.85351875
-  #     longitude:
-  #       type: number
-  #       example: 150.8947369
+      geo:
+        $ref: "#/definitions/AddressGeocoding"
+  AddressGeocoding:
+    type: object
+    description: Geocoding information about the address
+    properties:
+      level:
+        type: object
+        properties:
+          code:
+            type: integer
+            maxLength: 2
+            description: |
+              Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
+            example: 7
+          name:
+            type: string
+            maxLength: 50
+            description: |
+              Name of the geocode level type code.
+            example: LOCALITY,STREET, ADDRESS
+      geocodes:
+        type: array
+        items: 
+          type: object
+          properties:
+            default:
+              type: boolean
+              description: |
+                Indicates if the geocode is the default or a site geocode (i.e. from *_ADDRESS_DEFAULT_GEOCODE_psv or from *_ADDRESS_SITE_GEOCODE_psv)
+            latitude:
+              type: number
+              example: -33.85351875
+            longitude:
+              type: number
+              example: 150.8947369
+            reliability:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  maxLength: 1
+                  description: |
+                    Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
+                  example: 2
+                name:
+                  type: string
+                  maxLength: 50
+                  description: |
+                    Name of the geocode reliability code.
+                  example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
+            type:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  maxLength: 1
+                  description: |
+                    Unique abbreviation for geocode feature. (e.g. "PRCL") (SAWG 7.4.1).
+                  example: 2
+                name:
+                  type: string
+                  maxLength: 50
+                  description: |
+                    Name of the geocode type code.
+                  example: PROPERTY CENTROID
+            description:
+                type: string
+                maxLength: 50
+                description: |
+                  Additional textual data
+                example: REAR
   SingleLineAddress:
     type: string
     title: Single Line Address

@@ -7,10 +7,14 @@ function generateConfig(profile) {
   fs.mkdirSync(`test-results/${profile}`, { recursive: true });
 
   const RERUN = `@cucumber-${profile}.rerun`;
+  const TAGS = process.env.ADDRESSR_ENABLE_GEO
+    ? `--tags 'not(@not-${profile}) and not(@not-geo)'`
+    : `--tags 'not(@not-${profile}) and not(@geo)'`;
+  const NON_RERUN_GLOB = `test/resources/features/**/*.feature ${TAGS}`;
   const FEATURE_GLOB =
     fs.existsSync(RERUN) && fs.statSync(RERUN).size !== 0
       ? RERUN
-      : `test/resources/features/**/*.feature --tags 'not(@not-${profile})'`;
+      : NON_RERUN_GLOB;
   const FORMAT_OPTIONS = {
     snippetInterface: 'async-await',
     snippetSyntax:
@@ -23,10 +27,14 @@ function generateConfig(profile) {
     FORMAT_OPTIONS
   )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
   if (profile === 'system') {
-    return `${BASE_CONFIG} --world-parameters '${JSON.stringify({
+    const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest'
     })}'`;
+    console.log('BASE_CONFIG', rval);
+
+    return rval;
   }
+  console.log('BASE_CONFIG', BASE_CONFIG);
   return BASE_CONFIG;
 }
 

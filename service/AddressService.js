@@ -445,38 +445,44 @@ function streetSuffixCodeToName(code, context) {
   return undefined;
 }
 
-// function geocodeReliabilityCodeToName(code, context) {
-//   const found = context['Authority_Code_GEOCODE_RELIABILITY_AUT_psv'].find(
-//     e => e.CODE === code,
-//   );
-//   if (found) {
-//     return found.NAME;
-//   }
-//   error(`Unknown Geocode Reliability Code: '${code}'`);
-//   return undefined;
-// }
+function geocodeReliabilityCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODE_RELIABILITY_AUT_psv'].find(
+    e => e.CODE === code
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Geocode Reliability Code: '${code}'`);
+  return undefined;
+}
 
-// function geocodeTypeCodeToName(code, context) {
-//   const found = context['Authority_Code_GEOCODE_TYPE_AUT_psv'].find(
-//     e => e.CODE === code,
-//   );
-//   if (found) {
-//     return found.NAME;
-//   }
-//   error(`Unknown Geocode Type Code: '${code}'`);
-//   return undefined;
-// }
+function geocodeTypeCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODE_TYPE_AUT_psv'].find(
+    e => e.CODE === code
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(`Unknown Geocode Type Code: '${code}'`);
+  return undefined;
+}
 
-// function levelGeocodedCodeToName(code, context) {
-//   const found = context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'].find(
-//     e => e.CODE === code,
-//   );
-//   if (found) {
-//     return found.NAME;
-//   }
-//   error(`Unknown Geocoded Level Type Code: '${code}'`);
-//   return undefined;
-// }
+function levelGeocodedCodeToName(code, context) {
+  const found = context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'].find(
+    e => e.CODE === code
+  );
+  if (found) {
+    return found.NAME;
+  }
+  error(
+    `Unknown Geocoded Level Type Code: '${code}' in:\n${JSON.stringify(
+      context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'],
+      null,
+      2
+    )}`
+  );
+  return undefined;
+}
 
 function mapLocality(l, context) {
   return {
@@ -518,56 +524,72 @@ function mapStreetLocality(l, context) {
   };
 }
 
-// function mapGeo(geos, context) {
-//   return geos.map(geo => {
-//     if (geo.BOUNDARY_EXTENT !== '') {
-//       console.log('be', geo);
-//       process.exit(1);
-//     }
-//     if (geo.PLANIMETRIC_ACCURACY !== '') {
-//       console.log('pa', geo);
-//       process.exit(1);
-//     }
-//     if (geo.ELEVATION !== '') {
-//       console.log('e', geo);
-//       process.exit(1);
-//     }
-//     if (geo.GEOCODE_SITE_NAME !== '') {
-//       console.log('gsn', geo);
-//       process.exit(1);
-//     }
-//     if (geo.GEOCODE_SITE_DESCRIPTION !== '') {
-//       console.log('gsd', geo);
-//       process.exit(1);
-//     }
-//     return {
-//       ...(geo.GEOCODE_TYPE_CODE !== '' && {
-//         type: {
-//           code: geo.GEOCODE_TYPE_CODE,
-//           name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context),
-//         },
-//       }),
-//       ...(geo.RELIABILITY_CODE !== '' && {
-//         reliability: {
-//           code: geo.RELIABILITY_CODE,
-//           name: geocodeReliabilityCodeToName(geo.RELIABILITY_CODE, context),
-//         },
-//       }),
-//       ...(geo.LATITUDE !== '' && {
-//         latitude: parseFloat(geo.LATITUDE),
-//       }),
-//       ...(geo.LONGITUDE !== '' && {
-//         longitude: parseFloat(geo.LONGITUDE),
-//       }),
-//       ...(geo.GEOCODE_SITE_NAME !== '' && {
-//         name: geo.GEOCODE_SITE_NAME,
-//       }),
-//       ...(geo.GEOCODE_SITE_DESCRIPTION !== '' && {
-//         description: geo.GEOCODE_SITE_DESCRIPTION,
-//       }),
-//     };
-//   });
-// }
+function mapGeo(geoSite, context, geoDefault) {
+  const sites = geoSite
+    ? geoSite.map(geo => {
+        if (geo.BOUNDARY_EXTENT !== '') {
+          console.log('be', geo);
+          process.exit(1);
+        }
+        if (geo.PLANIMETRIC_ACCURACY !== '') {
+          console.log('pa', geo);
+          process.exit(1);
+        }
+        if (geo.ELEVATION !== '') {
+          console.log('e', geo);
+          process.exit(1);
+        }
+        if (geo.GEOCODE_SITE_NAME !== '') {
+          console.log('gsn', geo);
+          process.exit(1);
+        }
+        return {
+          default: false,
+          ...(geo.GEOCODE_TYPE_CODE !== '' && {
+            type: {
+              code: geo.GEOCODE_TYPE_CODE,
+              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
+            }
+          }),
+          ...(geo.RELIABILITY_CODE !== '' && {
+            reliability: {
+              code: geo.RELIABILITY_CODE,
+              name: geocodeReliabilityCodeToName(geo.RELIABILITY_CODE, context)
+            }
+          }),
+          ...(geo.LATITUDE !== '' && {
+            latitude: parseFloat(geo.LATITUDE)
+          }),
+          ...(geo.LONGITUDE !== '' && {
+            longitude: parseFloat(geo.LONGITUDE)
+          }),
+          ...(geo.GEOCODE_SITE_DESCRIPTION !== '' && {
+            description: geo.GEOCODE_SITE_DESCRIPTION
+          })
+        };
+      })
+    : [];
+  const def = geoDefault
+    ? geoDefault.map(geo => {
+        return {
+          default: true,
+          ...(geo.GEOCODE_TYPE_CODE !== '' && {
+            type: {
+              code: geo.GEOCODE_TYPE_CODE,
+              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
+            }
+          }),
+          ...(geo.LATITUDE !== '' && {
+            latitude: parseFloat(geo.LATITUDE)
+          }),
+          ...(geo.LONGITUDE !== '' && {
+            longitude: parseFloat(geo.LONGITUDE)
+          })
+        };
+      })
+    : [];
+  return sites.concat(def);
+}
 
 function mapToSla(fla) {
   return fla.join(', ');
@@ -669,20 +691,41 @@ export function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
 
-  // const geo = context.geoIndexed[d.ADDRESS_SITE_PID];
+  // if (d.ADDRESS_DETAIL_PID === 'GAOT_718446632') {
+  //   // logger('geo', geo);
+  //   // logger('geo', context.geoIndexed);
+  //   logger('geo', d.ADDRESS_SITE_PID);
+  //   logger('geo', d.ADDRESS_DETAIL_PID);
+  //   logger('geo site', context.geoIndexed[d.ADDRESS_SITE_PID]);
+  //   logger('geo default', context.geoDefaultIndexed[d.ADDRESS_DETAIL_PID]);
+  //   process.exit(1);
+  // }
+
+  const geoSite = context.geoIndexed
+    ? context.geoIndexed[d.ADDRESS_SITE_PID]
+    : undefined;
+  const geoDefault = context.geoDefaultIndexed
+    ? context.geoDefaultIndexed[d.ADDRESS_DETAIL_PID]
+    : undefined;
+  const hasGeo =
+    d.LEVEL_GEOCODED_CODE != '' &&
+    ((geoSite !== undefined && geoSite.length > 0) ||
+      (geoDefault !== undefined && geoDefault.length > 0));
   const rval = {
-    // ...((d.LEVEL_GEOCODED_CODE != '' || geo.length > 0) && {
-    //   geocoding: {
-    //     ...(d.LEVEL_GEOCODED_CODE !== '' && {
-    //       level: {
-    //         code: d.LEVEL_GEOCODED_CODE,
-    //         name: levelGeocodedCodeToName(d.LEVEL_GEOCODED_CODE, context),
-    //       },
-    //     }),
-    //     ...(geo !== undefined &&
-    //       geo.length > 0 && { geocodes: mapGeo(geo, context) }),
-    //   },
-    // }),
+    ...(d.LEVEL_GEOCODED_CODE != '' &&
+      hasGeo && {
+        geocoding: {
+          ...(d.LEVEL_GEOCODED_CODE !== '' && {
+            level: {
+              code: d.LEVEL_GEOCODED_CODE,
+              name: levelGeocodedCodeToName(d.LEVEL_GEOCODED_CODE, context)
+            }
+          }),
+          ...(hasGeo && {
+            geocodes: mapGeo(geoSite, context, geoDefault)
+          })
+        }
+      }),
     structured: {
       ...(d.BUILDING_NAME !== '' && {
         buildingName: d.BUILDING_NAME
@@ -1116,21 +1159,41 @@ async function loadGnafData(dir) {
         loadContext.localityIndexed[l.LOCALITY_PID] = l;
       }
 
-      // logger('Loading geos', state);
-      // const geo = await loadGeo(files, dir, state);
-      // loadContext.geoIndexed = {};
-      // logger('indexing geos', state, geo.length);
-      // for (let index = 0; index < geo.length; index++) {
-      //   if (index % 10000 === 0) {
-      //     logger(`${(index / geo.length) * 100.0}%`);
-      //   }
-      //   const g = geo[index];
-      //   if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
-      //     loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
-      //   } else {
-      //     loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
-      //   }
-      // }
+      if (process.env.ADDRESSR_ENABLE_GEO) {
+        loadContext.geoIndexed = {};
+        await loadSiteGeo(files, dir, state, loadContext, filesCounts);
+        // logger('indexing site geos', state, geo.length);
+        // for (let index = 0; index < geo.length; index++) {
+        //   if (index % 10000 === 0) {
+        //     logger(`${(index / geo.length) * 100.0}%`);
+        //   }
+        //   const g = geo[index];
+        //   if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
+        //     loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
+        //   } else {
+        //     loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
+        //   }
+        // }
+
+        loadContext.geoDefaultIndexed = {};
+        await loadDefaultGeo(files, dir, state, loadContext, filesCounts);
+        // logger('indexing default geos', state, geoDefault.length);
+        // for (let index = 0; index < geoDefault.length; index++) {
+        //   if (index % 10000 === 0) {
+        //     logger(`${(index / geoDefault.length) * 100.0}%`);
+        //   }
+        //   const g = geoDefault[index];
+        //   if (
+        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] === undefined
+        //   ) {
+        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] = [g];
+        //   } else {
+        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID].push(g);
+        //   }
+        // }
+      } else {
+        logger(`Skipping geos. set 'ADDRESSR_ENABLE_GEO' env var to enable`);
+      }
 
       await loadAddressDetails(
         `${dir}/${detailFile}`,
@@ -1202,44 +1265,131 @@ async function loadLocality(files, dir, state) {
   }
 }
 
-// async function loadGeo(files, dir, state) {
-//   const geoFile = files.find(f =>
-//     f.match(new RegExp(`${state}_ADDRESS_SITE_GEOCODE_psv`)),
-//   );
-//   if (geoFile === undefined) {
-//     error(
-//       `Could not find address site geocode file '${state}_ADDRESS_SITE_GEOCODE_psv.psv'`,
-//     );
-//     return [];
-//   } else {
-//     return await new Promise((resolve, reject) => {
-//       Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
-//         header: true,
-//         delimiter: '|',
-//         complete: results => {
-//           resolve(results.data);
-//         },
-//         error: (error, file) => {
-//           console.log(error, file);
-//           reject(error);
-//         },
-//       });
-//     });
-//   }
-// }
+async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
+  logger('Loading site geos');
+
+  const geoFile = files.find(f =>
+    f.match(new RegExp(`${state}_ADDRESS_SITE_GEOCODE_psv`))
+  );
+  if (geoFile === undefined) {
+    error(
+      `Could not find address site geocode file '${state}_ADDRESS_SITE_GEOCODE_psv.psv'`
+    );
+    return [];
+  } else {
+    const expectedCount = filesCounts[geoFile];
+    let count = 0;
+
+    return await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
+        header: true,
+        delimiter: '|',
+        chunk: function(chunk, parser) {
+          parser.pause();
+          if (chunk.errors.length > 0) {
+            error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
+          } else {
+            chunk.data.forEach(row => {
+              if (count % Math.ceil(expectedCount / 100) === 0) {
+                logger(
+                  `${Math.floor(
+                    (count / expectedCount) * 100.0
+                  )}% (${count}/ ${expectedCount})`
+                );
+              }
+              const g = row;
+              if (loadContext.geoIndexed[g.ADDRESS_SITE_PID] === undefined) {
+                loadContext.geoIndexed[g.ADDRESS_SITE_PID] = [g];
+              } else {
+                loadContext.geoIndexed[g.ADDRESS_SITE_PID].push(g);
+              }
+              count += 1;
+            });
+            parser.resume();
+          }
+        },
+        complete: () => {
+          resolve();
+        },
+        error: (error, file) => {
+          console.log(error, file);
+          reject(error);
+        }
+      });
+    });
+  }
+}
+
+async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
+  logger('Loading default geos');
+  const geoFile = files.find(f =>
+    f.match(new RegExp(`${state}_ADDRESS_DEFAULT_GEOCODE_psv`))
+  );
+  if (geoFile === undefined) {
+    error(
+      `Could not find address site geocode file '${state}_ADDRESS_DEFAULT_GEOCODE_psv.psv'`
+    );
+    return [];
+  } else {
+    const expectedCount = filesCounts[geoFile];
+    let count = 0;
+
+    return await new Promise((resolve, reject) => {
+      Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
+        header: true,
+        delimiter: '|',
+        chunk: function(chunk, parser) {
+          parser.pause();
+          if (chunk.errors.length > 0) {
+            error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
+          } else {
+            chunk.data.forEach(row => {
+              if (count % Math.ceil(expectedCount / 100) === 0) {
+                logger(
+                  `${Math.floor(
+                    (count / expectedCount) * 100.0
+                  )}% (${count}/ ${expectedCount})`
+                );
+              }
+              const g = row;
+              if (
+                loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] ===
+                undefined
+              ) {
+                loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] = [g];
+              } else {
+                loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID].push(g);
+              }
+              count += 1;
+            });
+            parser.resume();
+          }
+        },
+        complete: () => {
+          resolve();
+        },
+
+        error: (error, file) => {
+          console.log(error, file);
+          reject(error);
+        }
+      });
+    });
+  }
+}
 
 async function loadAuthFiles(files, dir, loadContext, filesCounts) {
   const authCodeFiles = files.filter(f => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
+    const contextKey = path.basename(authFile, path.extname(authFile));
     await new Promise((resolve, reject) => {
       Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
         delimiter: '|',
         header: true,
         complete: function(results) {
-          loadContext[path.basename(authFile, path.extname(authFile))] =
-            results.data;
+          loadContext[contextKey] = results.data;
           if (results.data.length != filesCounts[authFile]) {
             error(
               `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
@@ -1248,7 +1398,9 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
               `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
             );
           } else {
-            logger(`loaded '${results.length}' rows from '${dir}/${authFile}'`);
+            logger(
+              `loaded '${results.data.length}' rows from '${dir}/${authFile}' into key '${contextKey}'`
+            );
             resolve();
           }
         },
