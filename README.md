@@ -11,18 +11,18 @@
    npm install @mountainpass/addressr -g
    ```
    NOTE: If you are running windows, you'll need to use [wsl](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
-2. Start elastic search. For example
+2. Start elastic search. For example run
    ```
    docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
    docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.2.0
    ```
-3. Start API server
+3. Start API server. In a second window run:
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
    addressr-server
    ```
-4. Setup the env vars for the data loader, but runnning
+4. Setup the env vars for the data loader. In a third window run:
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
@@ -31,14 +31,14 @@
    export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000
    export ADDRESSR_INDEX_BACKOFF_MAX=10000
    ```
-   1. Optional - enable geocodes by setting the following env vars for the data loader.
+   1. Optional - enable geocodes by setting the following env vars for the data loader. In the third window run:
       **NOTE:** with geocodes enabled, indexing takes much longer and needs much more memory. Only use turn them on if you need them. You can always add them later.
    ```
    export ADDRESSR_ENABLE_GEO=1
    export NODE_OPTIONS=--max_old_space_size=8196
    ```
    2. Optional - limit the addresses to a single state by setting the `COVERED_STATES` env var for the data loader.
-      This dramatically speeds up indexing. For example:
+      This dramatically speeds up indexing. For example, in the third window run:
    ```
    COVERED_STATES=VIC,SA
    ```
@@ -52,7 +52,7 @@
    - TAS
    - VIC
    - WA
-5. Run data Loader
+5. Run data Loader. In the third window run:
    ```
    addressr-loader
    ```
