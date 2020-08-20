@@ -12,7 +12,7 @@ jobs:
             - dependencies-{{ checksum "package.json" }}
             - dependencies-
       - setup_remote_docker:
-          docker_layer_caching: true
+          docker_layer_caching: false
       - run:
           command: |
             npm install
