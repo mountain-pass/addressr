@@ -16,7 +16,8 @@ jobs:
       - run:
           command: |
             npm install
-            # FAIL_FAST=" " npm run test
+            # FAIL_FAST=" "
+            npm run test
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
             npm run dopublish
