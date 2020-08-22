@@ -89,6 +89,7 @@ jobs:
           command: |
             set +x
             npm install
+            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
             npm run dopublish
             npm run build:docker
