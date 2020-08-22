@@ -15,8 +15,18 @@ jobs:
           docker_layer_caching: false
       - run:
           command: |
+            set +x
             npm install
             # FAIL_FAST=" "
+            docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+            docker run -d \
+              -p 9200:9200 \
+              -p 9300:9300 \
+              -e "discovery.type=single-node" \
+              --name 'qc-elasticsearch-test' \
+              docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+            ./node_modules/.bin/wait-port -t 20000 localhost:9200
+            ./node_modules/.bin/wait-port -t 20000 http://localhost:9200/_cluster/health?wait_for_status=green
             npm run test
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
@@ -29,11 +39,11 @@ jobs:
             git add package.json
             git commit -m "Version bump. [skip ci]"
             git push origin HEAD:master && git push --tags
-      # - store_test_results:
-      #     path: test-results
-      # - store_artifacts:
-      #     path: test-results
-      #     destination: test-results
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: test-results
       - save_cache:
           paths:
             - node_modules
