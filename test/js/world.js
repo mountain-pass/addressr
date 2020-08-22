@@ -58,7 +58,9 @@ BeforeAll({ timeout: 240000 }, async function() {
 AfterAll({ timeout: 30000 }, async function() {
   stopServer();
   //delete global.esClient;
-  this.logStream.destroy();
+  if (this.logStream) {
+    this.logStream.destroy();
+  }
 });
 
 async function startElasticSearch(docker, context) {
