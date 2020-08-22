@@ -4,7 +4,7 @@ jobs:
     # machine: true
     docker:
       - image: circleci/node:11.14.0
-      - image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
@@ -21,15 +21,6 @@ jobs:
           command: |
             set +x
             npm install
-            # FAIL_FAST=" "
-            # docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
-            # docker run -d \
-            #   -p 9200:9200 \
-            #   -p 9300:9300 \
-            #   -e "discovery.type=single-node" \
-            #   -e "bootstrap.system_call_filter=false" \
-            #   --name 'qc-elasticsearch-test' \
-            #   docker.elastic.co/elasticsearch/elasticsearch:7.2.0
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             npm run test
