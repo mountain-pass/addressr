@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  test:
     # machine: true
     docker:
       - image: circleci/node:11.14.0
@@ -24,17 +24,6 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             npm run test
-            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
-            npm pack
-            npm run dopublish
-            npm run build:docker
-            npm run docker:push
-            npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
-            git config user.email "tom@windyroad.com.au"
-            git config user.name "Tom Howard"
-            git add package.json
-            git commit -m "Version bump. [skip ci]"
-            git push origin HEAD:master && git push --tags
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -46,9 +35,74 @@ jobs:
             - target/gnaf
           key: dependencies-{{ checksum "package.json" }}
 
+  test-geo:
+    # machine: true
+    docker:
+      - image: circleci/node:11.14.0
+      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
+        environment:
+          'discovery.type': 'single-node'
+          'bootstrap.system_call_filter': 'false'
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}
+            - dependencies-
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          command: |
+            set +x
+            npm install
+            ./node_modules/.bin/wait-port -t 600000 localhost:9200
+            ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
+            npm run test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - save_cache:
+          paths:
+            - node_modules
+            - target/gnaf
+          key: dependencies-{{ checksum "package.json" }}
+
+  build-and-release:
+    # machine: true
+    docker:
+      - image: circleci/node:11.14.0
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}
+            - dependencies-
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          command: |
+            set +x
+            npm install
+            npm pack
+            npm run dopublish
+            npm run build:docker
+            npm run docker:push
+            npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
+            git config user.email "tom@windyroad.com.au"
+            git config user.name "Tom Howard"
+            git add package.json
+            git commit -m "Version bump. [skip ci]"
+            git push origin HEAD:master && git push --tags
+
 workflows:
   version: 2
 
   ci:
     jobs:
-      - build
+      - test
+      - test-geo
+      - build-and-release
