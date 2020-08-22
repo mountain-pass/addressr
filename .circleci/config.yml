@@ -23,10 +23,11 @@ jobs:
               -p 9200:9200 \
               -p 9300:9300 \
               -e "discovery.type=single-node" \
+              -e "bootstrap.system_call_filter=false" \
               --name 'qc-elasticsearch-test' \
               docker.elastic.co/elasticsearch/elasticsearch:7.2.0
-            ./node_modules/.bin/wait-port -t 1200000 localhost:9200
-            ./node_modules/.bin/wait-port -t 1200000 http://localhost:9200/_cluster/health?wait_for_status=green
+            ./node_modules/.bin/wait-port -t 600000 localhost:9200
+            ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             npm run test
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             npm pack
