@@ -23,6 +23,7 @@ jobs:
             npm install
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
+            export ES_STARTED=1
             npm run test
       - store_test_results:
           path: test-results
@@ -58,6 +59,7 @@ jobs:
             npm install
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
+            export ES_STARTED=1
             npm run test
       - store_test_results:
           path: test-results
