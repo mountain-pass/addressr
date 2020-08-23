@@ -73,7 +73,6 @@ jobs:
           key: dependencies-{{ checksum "package.json" }}
 
   build-and-release:
-    # machine: true
     docker:
       - image: circleci/node:11.14.0
     steps:
@@ -112,3 +111,7 @@ workflows:
           requires:
             - test
             - test-geo
+          filters:
+            branches:
+              only:
+                - master
