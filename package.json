@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr",
-  "version": "1.0.14",
+  "version": "1.0.16",
   "description": "Free Australian Address Validation, Search and Autocomplete",
   "author": "Mountain Pass <addressr@mountain-pass.com.au>",
   "contributors": [
@@ -40,6 +40,7 @@
     "npm-check-unused": "npm-check",
     "lint": "node_modules/.bin/eslint ./*.js --fix",
     "test": "NO_STRICT=' ' npm-run-all --serial test:component test:system",
+    "test:geo": "NO_STRICT=' ' npm-run-all --serial test:component:geo test:system:geo",
     "watch:test": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test",
     "test:component": "ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "test:component:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
@@ -88,7 +89,7 @@
     "got": "^9.6.0",
     "http-link-header": "^1.0.2",
     "js-yaml": "^3.3.0",
-    "json-ptr": "^1.1.2",
+    "json-ptr": "1.1.2",
     "keyv": "^3.1.0",
     "keyv-file": "^0.1.13",
     "node-machine-id": "^1.1.12",

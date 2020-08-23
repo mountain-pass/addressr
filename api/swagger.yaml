@@ -1,16 +1,16 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
   description: |
     Free Australian Address Validation, Search and Autocomplete
-  version: "1.0.0"
-  title: "Addressr by Mountain Pass"
-basePath: "/"
+  version: '1.0.0'
+  title: 'Addressr by Mountain Pass'
+basePath: '/'
 tags:
   - name: address
 schemes:
-- "https"
+  - 'https'
 produces:
-  - "application/json"
+  - 'application/json'
 paths:
   /:
     get:
@@ -24,7 +24,7 @@ paths:
         200:
           description: successful operation
           schema:
-            $ref: "#/definitions/Root"
+            $ref: '#/definitions/Root'
           headers:
             link:
               description: rfc5988 Links
@@ -32,14 +32,14 @@ paths:
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
             link-template:
               description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
   /addresses:
     get:
       summary: Get List of Addresses
@@ -50,7 +50,7 @@ paths:
         returns a list of addresses matching the search string
       tags:
         - address
-      parameters: 
+      parameters:
         - name: q
           in: query
           description: search string
@@ -67,7 +67,7 @@ paths:
         200:
           description: successful query
           schema:
-            $ref: "#/definitions/SearchResponse"
+            $ref: '#/definitions/SearchResponse'
           headers:
             link:
               description: rfc5988 Links
@@ -75,18 +75,18 @@ paths:
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
             link-template:
               description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
         400:
           description: invalid query
           schema:
-            $ref: "#/definitions/ValidationError"
+            $ref: '#/definitions/ValidationError'
   /addresses/{addressId}:
     get:
       summary: Get Address
@@ -96,7 +96,7 @@ paths:
         returns detailed information about a specific address
       tags:
         - address
-      parameters: 
+      parameters:
         - name: addressId
           in: path
           description: ID of the address.
@@ -106,7 +106,7 @@ paths:
         200:
           description: successful query
           schema:
-            $ref: "#/definitions/Address"
+            $ref: '#/definitions/Address'
           headers:
             link:
               description: rfc5988 Links
@@ -114,14 +114,14 @@ paths:
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
             link-template:
               description: rfc6570 Links Templates
               type: array
               collectionFormat: csv
               items:
                 type: string
-                pattern: "<(.*)>;(.*)"
+                pattern: '<(.*)>;(.*)'
 definitions:
   Root:
     type: object
@@ -129,28 +129,28 @@ definitions:
     type: array
     description: |
       The list of addresses matching the search string. The list may be paginated.
-      A the `Link` header with a `rel` of `next` will be provied if there are addional results.
+      A the `Link` header with a `rel` of `next` will be provided if there are additional results.
     items:
       type: object
       title: Flattened Address
       required:
-          - sla
-          - score
-          - links
+        - sla
+        - score
+        - links
       properties:
         sla:
-          $ref:  "#/definitions/SingleLineAddress"
+          $ref: '#/definitions/SingleLineAddress'
         score:
           type: number
           description: strength of the match relative to the other matches
         links:
           type: object
-          required: 
+          required:
             - self
           properties:
             self:
               type: object
-              required: 
+              required:
                 - href
               properties:
                 href:
@@ -158,16 +158,16 @@ definitions:
                   title: Link
                   description: |
                     The URL for the address, where additional information can be retrieved
-    example: 
+    example:
       - sla: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
         score: 1
         links:
-          self: 
+          self:
             href: /addresses/GANT_718592778
       - sla: 109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
         score: 0.985051936618461
         links:
-          self: 
+          self:
             href: /addresses/GANT_718592782
   Address:
     type: object
@@ -177,28 +177,28 @@ definitions:
 
       If an address has a "flat" component (e.g. UNIT 12, 32 SOME ST...), then it will also have a
       the `ssla` and `smla` fields, which are shortended versions of `sla` and `mla`. e.g. (12/32 SOME ST...)
-    required: 
-      - "pid"
-      - "structured"
-      - "sla"
-      - "mla"
+    required:
+      - 'pid'
+      - 'structured'
+      - 'sla'
+      - 'mla'
     properties:
       pid:
         type: string
         description: The Persistent Identifier is unique to the real world feature this record represents.
         example: GANT_718592778
       structured:
-        $ref: "#/definitions/StructuredAddress"
+        $ref: '#/definitions/StructuredAddress'
       sla:
-        $ref: "#/definitions/SingleLineAddress"
+        $ref: '#/definitions/SingleLineAddress'
       ssla:
-        $ref: "#/definitions/SingleLineAddress"
+        $ref: '#/definitions/SingleLineAddress'
       mla:
-        $ref: "#/definitions/MultiLineAddress"
+        $ref: '#/definitions/MultiLineAddress'
       smla:
-        $ref: "#/definitions/MultiLineAddress"
+        $ref: '#/definitions/MultiLineAddress'
       geo:
-        $ref: "#/definitions/AddressGeocoding"
+        $ref: '#/definitions/AddressGeocoding'
   AddressGeocoding:
     type: object
     description: Geocoding information about the address
@@ -220,7 +220,7 @@ definitions:
             example: LOCALITY,STREET, ADDRESS
       geocodes:
         type: array
-        items: 
+        items:
           type: object
           properties:
             default:
@@ -264,11 +264,11 @@ definitions:
                     Name of the geocode type code.
                   example: PROPERTY CENTROID
             description:
-                type: string
-                maxLength: 50
-                description: |
-                  Additional textual data
-                example: REAR
+              type: string
+              maxLength: 50
+              description: |
+                Additional textual data
+              example: REAR
   SingleLineAddress:
     type: string
     title: Single Line Address
@@ -284,7 +284,7 @@ definitions:
     title: Multi Line Address
     description: |
       The full address flattened to at most four lines. The primary use is for address labels
-    example: 
+    example:
       - LEVEL 25
       - TOWER 3
       - 300 BARANGAROO AV
@@ -358,7 +358,7 @@ definitions:
             maxLength: 2
           number:
             type: integer
-            example: "64"
+            example: '64'
             maxLength: 5
           suffix:
             type: string
@@ -373,11 +373,11 @@ definitions:
             maxLength: 3
           number:
             type: integer
-            example: "20114"
+            example: '20114'
             maxLength: 6
           suffix:
             type: string
-            example: "AA"
+            example: 'AA'
             maxLength: 2
           last:
             type: object
@@ -388,11 +388,11 @@ definitions:
                 maxLength: 3
               number:
                 type: string
-                example: "20114"
+                example: '20114'
                 maxLength: 6
               suffix:
                 type: string
-                example: "C"
+                example: 'C'
                 maxLength: 2
       street:
         type: object
@@ -454,7 +454,7 @@ definitions:
             maxLength: 3
       postcode:
         type: string
-        example: "2000"
+        example: '2000'
         maxLength: 4
       confidence:
         type: integer

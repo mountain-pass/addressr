@@ -1,21 +1,34 @@
+// {
+//   "editor.formatOnSave": false,
+//   "npm.enableScriptExplorer": true,
+//   "eslint.alwaysShowStatus": true,
+//   "eslint.validate": ["javascript", "javascriptreact"],
+//   "[javascript]": {
+//     "editor.codeActionsOnSave": {
+//       "source.organizeImports": false,
+//       "source.fixAll.eslint": true
+//     },
+//     "editor.formatOnSave": false
+//   },
+//   "spellright.addToSystemDictionary": true,
+//   "spellright.language": ["en"],
+//   "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"],
+//   "cucumberautocomplete.onTypeFormat": true,
+//   "cucumberautocomplete.steps": ["test/js/*.js"],
+//   "cucumberautocomplete.skipDocStringsFormat": true,
+//   "editor.codeActionsOnSave": {
+//     "source.fixAll.eslint": true
+//   }
+// }
+
 {
-  "editor.formatOnSave": false,
-  "npm.enableScriptExplorer": true,
   "eslint.alwaysShowStatus": true,
-  "eslint.validate": ["javascript", "javascriptreact"],
-  "[javascript]": {
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": false,
-      "source.fixAll.eslint": true
-    },
-    "editor.formatOnSave": false
-  },
-  "spellright.addToSystemDictionary": true,
-  "spellright.language": ["en"],
-  "spellright.documentTypes": ["markdown", "latex", "plaintext", "javascript"],
+  "eslint.autoFixOnSave": true,
+  "editor.formatOnSave": true,
   "cucumberautocomplete.onTypeFormat": true,
-  "cucumberautocomplete.steps": ["test/js/*.js"],
+  "cucumberautocomplete.steps": ["src/test/**/*.js"],
   "cucumberautocomplete.skipDocStringsFormat": true,
+  "cucumberautocomplete.syncfeatures": "src/test/**/*.feature",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   }

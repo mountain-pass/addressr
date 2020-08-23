@@ -65,3 +65,8 @@ test-results
 target
 
 lib
+deploy/resolved_*
+deploy/task-definitions/addressr-server.json
+deploy/plan.out
+deploy/.terraform
+deploy/.terraform/terraform.tfstate
