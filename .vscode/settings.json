@@ -31,5 +31,6 @@
   "cucumberautocomplete.syncfeatures": "src/test/**/*.feature",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
-  }
+  },
+  "linter_codeclimate.enabled": true
 }

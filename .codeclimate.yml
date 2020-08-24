@@ -1,0 +1,35 @@
+---
+version: '2'
+plugins:
+  eslint:
+    enabled: true
+    config:
+      config: .eslintrc.json
+    channel: 'eslint-6'
+  git-legal:
+    enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+        - javascript
+  markdownlint:
+    enabled: true
+  nodesecurity:
+    enabled: true
+exclude_patterns:
+  - config/
+  - db/
+  - dist/
+  - features/
+  - '**/node_modules/'
+  - .scannerwork/css-bundle/node_modules
+  - script/
+  - '**/spec/'
+  - '**/test/'
+  - '**/tests/'
+  - Tests/
+  - '**/vendor/'
+  - '**/*_test.go'
+  - '**/*.d.ts'
+  - gl-code-quality-report.json
