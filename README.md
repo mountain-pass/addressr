@@ -4,6 +4,10 @@
 
 [Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au)
 
+<p>
+<img src="https://badgen.net/github/dependabot/mountain-pass/addressr" alt="Dependabot Badge" />
+</p>
+
 ## Quick Start
 
 1. Install addressr

@@ -1,9 +1,14 @@
 version: 2
 updates:
-- package-ecosystem: npm
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "08:00"
-    timezone: Australia/Sydney
-  open-pull-requests-limit: 10
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: live
+    open-pull-requests-limit: 10
+    automerged_updates:
+      - match:
+        dependency_name: "development"
+        update_type: "all"
+      - match:
+        dependency_name: "production"
+        update_type: "all"
