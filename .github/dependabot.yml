@@ -1,14 +1,12 @@
-version: 2
-updates:
-  - package-ecosystem: npm
-    directory: "/"
-    schedule:
-      interval: live
-    open-pull-requests-limit: 10
+version: 1
+update_configs:
+  - package_manager: javascript
+    directory: '/'
+    update_schedule: live
     automerged_updates:
       - match:
-        dependency_name: "development"
-        update_type: "all"
+          dependency_name: 'development'
+          update_type: 'all'
       - match:
-        dependency_name: "production"
-        update_type: "all"
+          dependency_name: 'production'
+          update_type: 'all'
