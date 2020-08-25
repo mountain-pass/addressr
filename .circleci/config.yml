@@ -110,6 +110,7 @@ jobs:
     environment:
       CC_TEST_REPORTER_ID: 9511827b5c714ecf56f5af3bd77ecd90731821cd8c24b11edd55ed1e99575a1f
     steps:
+      - checkout
       - restore_cache:
           keys:
             - dependencies-{{ checksum "package.json" }}
