@@ -154,7 +154,7 @@ jobs:
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
             # make sure we're the most recent published version + 1
             CURRENT_VERSION=$(npm --unsafe-perm show "@mountainpass/addressr" version)
-            npm --unsafe-perm --no-git-tag-version version "${CURRENT_VERSION}" -m "Version bump to %s."
+            npm --unsafe-perm --no-git-tag-version version "${CURRENT_VERSION}" --allow-same-version -m "Version bump to %s."
             if ! git diff --exit-code package.json > /dev/null; then
               # version changed, so commit it
               git add package.json
