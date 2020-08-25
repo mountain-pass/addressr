@@ -39,6 +39,7 @@ jobs:
           keys:
             - dependencies-{{ checksum "package.json" }}
             - dependencies-
+            - gnaf
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
@@ -64,9 +65,8 @@ jobs:
           destination: test-results
       - save_cache:
           paths:
-            - node_modules
             - target/gnaf
-          key: dependencies-{{ checksum "package.json" }}
+          key: gnaf
 
   test-geo:
     docker:
@@ -82,6 +82,7 @@ jobs:
           keys:
             - dependencies-{{ checksum "package.json" }}
             - dependencies-
+            - gnaf
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
@@ -105,6 +106,10 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: test-results
+      - save_cache:
+          paths:
+            - target/gnaf
+          key: gnaf
 
   upload-coverage:
     docker:
