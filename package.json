@@ -94,7 +94,7 @@
     "http-link-header": "^1.0.2",
     "js-yaml": "^3.3.0",
     "json-ptr": "1.1.2",
-    "keyv": "^3.1.0",
+    "keyv": "^4.0.1",
     "keyv-file": "^0.1.13",
     "node-machine-id": "^1.1.12",
     "papaparse": "^5.0.0",
