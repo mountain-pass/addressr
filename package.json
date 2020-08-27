@@ -101,7 +101,7 @@
     "progress": "^2.0.3",
     "swagger-tools": "^0.10.4",
     "unzip-stream": "^0.3.0",
-    "uri-template-lite": "^19.4.0",
+    "uri-template-lite": "^20.5.0",
     "wait-port": "^0.2.2"
   },
   "devDependencies": {
