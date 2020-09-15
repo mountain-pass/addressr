@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const { satisfies } = require('semver');
 const { engines } = require('../package');
 

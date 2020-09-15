@@ -1,5 +1,8 @@
 {
   "parser": "babel-eslint",
+  "parserOptions": {
+    "sourceType": "module"
+  },
   "plugins": ["prettier", "security", "chai-friendly", "unicorn", "promise"],
   "extends": [
     "eslint:recommended",
@@ -8,7 +11,8 @@
     "plugin:security/recommended",
     "plugin:eslint-comments/recommended",
     "plugin:unicorn/recommended",
-    "plugin:promise/recommended"
+    "plugin:promise/recommended",
+    "plugin:node/recommended"
   ],
   "env": {
     "browser": false,
@@ -28,7 +32,7 @@
       "warn",
       {
         "cases": {
-          "camelCase": true,
+          "kebabCase": true,
           "pascalCase": true
         }
       }
@@ -37,7 +41,10 @@
     "unicorn/no-null": "warn",
     "unicorn/no-process-exit": "warn",
     "promise/always-return": "warn",
-    "promise/catch-or-return": "warn"
+    "promise/catch-or-return": "warn",
+    "node/no-unsupported-features/es-syntax": "off",
+    "node/no-deprecated-api": "warn",
+    "no-process-exit": "warn"
   },
   "overrides": [
     {
