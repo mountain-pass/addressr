@@ -3,7 +3,7 @@
   "parserOptions": {
     "sourceType": "module"
   },
-  "plugins": ["prettier", "security", "chai-friendly", "unicorn", "promise"],
+  "plugins": ["prettier", "security", "unicorn", "promise"],
   "extends": [
     "eslint:recommended",
     "prettier",
