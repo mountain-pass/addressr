@@ -2,9 +2,9 @@ import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
 import ptr from 'json-ptr';
 import { URI } from 'uri-template-lite';
-import { getAddress, getAddresses } from '../../../service/AddressService';
+import { getAddress, getAddresses } from '../../../service/address-service';
 import { getApiRoot } from '../../../service/DefaultService';
-import { swaggerDoc } from '../../../swagger';
+import { swaggerDoc as swaggerDocument } from '../../../swagger';
 import { AddressrDriver } from './AddressrDriver';
 
 const logger = debug('api');
@@ -12,7 +12,7 @@ const error = debug('error');
 
 function getSwagger(uri) {
   return {
-    path: swaggerDoc.paths[uri],
+    path: swaggerDocument.paths[uri],
   };
 }
 export class AddressrEmbeddedDriver extends AddressrDriver {
@@ -25,45 +25,40 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
     switch (link.uri) {
       case '/api-docs':
         return {
-          json: swaggerDoc,
+          json: swaggerDocument,
           headers: { 'content-type': 'application/json' },
         };
       case '/':
         return getApiRoot();
       case '/addresses':
-        return getAddresses(
-          link.uri,
-          getSwagger(link.uri),
-          undefined,
-          undefined,
-        );
+        return getAddresses(link.uri, getSwagger(link.uri));
       default: {
         if (link.uri.startsWith('/addresses?')) {
           const url = new URL(
             link.uri,
-            `http://localhost:${process.env.PORT || 8080}`,
+            `http://localhost:${process.env.PORT || 8080}`
           );
           logger('searchParams', url.searchParams);
           logger(
             "parseInt(url.searchParams.get('p') || 1)",
-            parseInt(url.searchParams.get('p') || 1),
+            Number.parseInt(url.searchParams.get('p') || 1)
           );
           const query = url.searchParams.get('q');
           return getAddresses(
             url.pathname,
             getSwagger(url.pathname),
-            query == null ? undefined : query,
-            parseInt(url.searchParams.get('p') || 1),
+            query == undefined ? undefined : query,
+            Number.parseInt(url.searchParams.get('p') || 1)
           );
         } else if (link.uri.startsWith('/addresses/')) {
           var template = new URI.Template('/addresses/{address_id}');
-          const params = template.match(link.uri);
-          logger(params);
+          const parameters = template.match(link.uri);
+          logger(parameters);
           try {
-            return await getAddress(params.address_id);
-          } catch (err) {
-            error(JSON.stringify(err));
-            if (err.code === 'ENOENT') {
+            return await getAddress(parameters.address_id);
+          } catch (error_) {
+            error(JSON.stringify(error_));
+            if (error_.code === 'ENOENT') {
               throw new PendingError('Not Found');
             }
             throw new PendingError('501');
@@ -78,12 +73,12 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
     logger('FOLLOWING VAR BASE', link['var-base']);
     const url = new URL(
       link['var-base'],
-      `http://localhost:${process.env.PORT || 8080}`,
+      `http://localhost:${process.env.PORT || 8080}`
     );
     if (url.pathname === '/api-docs') {
       logger(url);
       const jsonPtr = ptr.create(url.hash);
-      return { json: jsonPtr.get(swaggerDoc) };
+      return { json: jsonPtr.get(swaggerDocument) };
     } else {
       throw new PendingError(url.pathname);
     }

@@ -23,13 +23,13 @@
 
 {
   "eslint.alwaysShowStatus": true,
-  "eslint.autoFixOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true
+  },
   "editor.formatOnSave": true,
   "cucumberautocomplete.onTypeFormat": true,
-  "cucumberautocomplete.steps": ["src/test/**/*.js"],
+  "cucumberautocomplete.steps": ["test/**/*.js"],
   "cucumberautocomplete.skipDocStringsFormat": true,
   "cucumberautocomplete.syncfeatures": "src/test/**/*.feature",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  }
+  "linter_codeclimate.enabled": true
 }

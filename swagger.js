@@ -18,7 +18,7 @@ error.log = console.error.bind(console); // eslint-disable-line no-console
 var options = {
   swaggerUi: join(__dirname, '/swagger.json'),
   controllers: join(__dirname, './controllers'),
-  useStubs: process.env.NODE_ENV === 'development' // Conditionally turn on stubs (mock mode)
+  useStubs: process.env.NODE_ENV === 'development', // Conditionally turn on stubs (mock mode)
 };
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
@@ -29,8 +29,8 @@ global.swaggerDoc = swaggerDoc;
 
 export function swaggerInit() {
   // Initialize the Swagger middleware
-  return new Promise(resolve => {
-    initializeMiddleware(swaggerDoc, function(middleware) {
+  return new Promise((resolve) => {
+    initializeMiddleware(swaggerDoc, function (middleware) {
       // Interpret Swagger resources and attach metadata to request - must be first in swagger-tools middleware chain
       const metaData = middleware.swaggerMetadata();
       app.use(metaData);
@@ -40,7 +40,7 @@ export function swaggerInit() {
         middleware.swaggerValidator({
           validateResponse:
             process.env.NODE_ENV === undefined ||
-            process.env.NODE_ENV === 'development'
+            process.env.NODE_ENV === 'development',
         })
       );
 
@@ -55,27 +55,29 @@ export function swaggerInit() {
         })
       );
 
-      app.use(function(err, req, res, next) {
-        if (err.failedValidation) {
+      app.use(function (error_, request, res, next) {
+        if (error_.failedValidation) {
           // handle validation errror
-          const rehydratedError = Object.assign({}, err);
-          if (err.originalResponse) {
-            rehydratedError.originalResponse = JSON.parse(err.originalResponse);
+          const rehydratedError = Object.assign({}, error_);
+          if (error_.originalResponse) {
+            rehydratedError.originalResponse = JSON.parse(
+              error_.originalResponse
+            );
           }
-          if (err.message) {
-            rehydratedError.message = err.message;
+          if (error_.message) {
+            rehydratedError.message = error_.message;
           }
-          if (err.results) {
-            rehydratedError.errors = err.results.errors;
+          if (error_.results) {
+            rehydratedError.errors = error_.results.errors;
             delete rehydratedError.results;
           }
           error(
             'error!!!',
-            err.message,
-            JSON.stringify(rehydratedError, null, 2)
+            error_.message,
+            JSON.stringify(rehydratedError, undefined, 2)
           );
           res
-            .status(err.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
+            .status(error_.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
             .json(rehydratedError);
         } else {
           next();
@@ -89,7 +91,7 @@ export function swaggerInit() {
   });
 }
 
-let server = undefined;
+let server;
 
 export function startServer() {
   return swaggerInit().then(({ app /*, middleware*/ }) => {
@@ -97,7 +99,7 @@ export function startServer() {
     // logger(middleware);
 
     server = createServer(app);
-    server.listen(serverPort, function() {
+    server.listen(serverPort, function () {
       logger(
         '📡  Addressr is listening on port %d ( http://localhost:%d ) ',
         serverPort,

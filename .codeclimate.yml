@@ -1,0 +1,56 @@
+---
+version: '2'
+checks:
+  argument-count:
+    enabled: false
+  complex-logic:
+    enabled: false
+  file-lines:
+    enabled: false
+  method-complexity:
+    enabled: false
+  method-count:
+    enabled: false
+  method-lines:
+    enabled: false
+  nested-control-flow:
+    enabled: false
+  return-statements:
+    enabled: false
+  similar-code:
+    enabled: false
+  identical-code:
+    enabled: false
+plugins:
+  eslint:
+    enabled: true
+    config:
+      config: .eslintrc.json
+    channel: 'eslint-6'
+  git-legal:
+    enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+        - javascript
+  markdownlint:
+    enabled: true
+  nodesecurity:
+    enabled: true
+exclude_patterns:
+  - config/
+  - db/
+  - dist/
+  - features/
+  - '**/node_modules/'
+  - .scannerwork/css-bundle/node_modules
+  - script/
+  - '**/spec/'
+  - '**/test/'
+  - '**/tests/'
+  - Tests/
+  - '**/vendor/'
+  - '**/*_test.go'
+  - '**/*.d.ts'
+  - gl-code-quality-report.json

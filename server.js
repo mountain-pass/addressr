@@ -8,7 +8,7 @@ const logger = debug('api');
 
 startServer().then(() => {
   logger('connecting es client');
-  const p1 = esConnect().then(esClient => {
+  const p1 = esConnect().then((esClient) => {
     global.esClient = esClient;
     logger('es client connected');
   });
@@ -21,7 +21,7 @@ startServer().then(() => {
       letterSpacing: 1,
       lineHeight: 1,
       space: true,
-      maxLength: '0'
+      maxLength: '0',
     };
     CFonts.say('Addressr|API|Server', bannerOptions);
 

@@ -18,7 +18,7 @@ function generateConfig(profile) {
   const FORMAT_OPTIONS = {
     snippetInterface: 'async-await',
     snippetSyntax:
-      './node_modules/@windyroad/cucumber-js-throwables/lib/custom-cucumber-syntax.js'
+      './node_modules/@windyroad/cucumber-js-throwables/lib/custom-cucumber-syntax.js',
   };
   const MODULES =
     '--require-module @babel/register --require-module @babel/polyfill';
@@ -28,7 +28,7 @@ function generateConfig(profile) {
   )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
   if (profile === 'system') {
     const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
-      client: 'rest'
+      client: 'rest',
     })}'`;
     console.log('BASE_CONFIG', rval);
 
@@ -40,5 +40,5 @@ function generateConfig(profile) {
 
 module.exports = {
   default: generateConfig('component'),
-  system: generateConfig('system')
+  system: generateConfig('system'),
 };

@@ -1,13 +1,10 @@
-version: 2
+version: 2.1
+orbs:
+  queue: eddiewebb/queue@1.5.0
 jobs:
-  test:
-    # machine: true
+  deps:
     docker:
       - image: circleci/node:11.14.0
-      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
-        environment:
-          'discovery.type': 'single-node'
-          'bootstrap.system_call_filter': 'false'
     steps:
       - checkout
 
@@ -15,6 +12,34 @@ jobs:
           keys:
             - dependencies-{{ checksum "package.json" }}
             - dependencies-
+      - run:
+          name: npm install
+          command: |
+            npm install
+      - run:
+          name: Download cc-test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./node_modules/cc-test-reporter
+            chmod +x ./node_modules/cc-test-reporter
+      - save_cache:
+          paths:
+            - node_modules
+          key: dependencies-{{ checksum "package.json" }}
+
+  test:
+    docker:
+      - image: circleci/node:11.14.0
+      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
+        environment:
+          "discovery.type": "single-node"
+          "bootstrap.system_call_filter": "false"
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}
+            - dependencies-
+            - gnaf
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
@@ -24,7 +49,15 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
-            npm run test
+            npm run cover:component
+            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.component.json coverage/component/lcov.info
+            npm run cover:system
+            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.system.json coverage/system/lcov.info
+      - persist_to_workspace:
+          root: coverage
+          paths:
+            - codeclimate.component.json
+            - codeclimate.system.json
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -32,18 +65,16 @@ jobs:
           destination: test-results
       - save_cache:
           paths:
-            - node_modules
             - target/gnaf
-          key: dependencies-{{ checksum "package.json" }}
+          key: gnaf
 
   test-geo:
-    # machine: true
     docker:
       - image: circleci/node:11.14.0
       - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
-          'discovery.type': 'single-node'
-          'bootstrap.system_call_filter': 'false'
+          "discovery.type": "single-node"
+          "bootstrap.system_call_filter": "false"
     steps:
       - checkout
 
@@ -51,6 +82,7 @@ jobs:
           keys:
             - dependencies-{{ checksum "package.json" }}
             - dependencies-
+            - gnaf
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
@@ -60,7 +92,15 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
-            npm run test
+            npm run cover:component:geo
+            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.component-geo.json coverage/component-geo/lcov.info
+            npm run cover:system:geo
+            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.system-geo.json coverage/system-geo/lcov.info
+      - persist_to_workspace:
+          root: coverage
+          paths:
+            - codeclimate.component-geo.json
+            - codeclimate.system-geo.json
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -68,15 +108,35 @@ jobs:
           destination: test-results
       - save_cache:
           paths:
-            - node_modules
             - target/gnaf
-          key: dependencies-{{ checksum "package.json" }}
+          key: gnaf
+
+  upload-coverage:
+    docker:
+      - image: circleci/node:11.14.0
+    environment:
+      CC_TEST_REPORTER_ID: 9511827b5c714ecf56f5af3bd77ecd90731821cd8c24b11edd55ed1e99575a1f
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}
+            - dependencies-
+      - attach_workspace:
+          at: coverage
+      - run:
+          name: Upload coverage results to Code Climate
+          command: |
+            ./node_modules/cc-test-reporter sum-coverage coverage/codeclimate.*.json -p 4 -o coverage/codeclimate.total.json
+            ./node_modules/cc-test-reporter upload-coverage -i coverage/codeclimate.total.json
 
   build-and-release:
-    # machine: true
     docker:
       - image: circleci/node:11.14.0
     steps:
+      - queue/until_front_of_line:
+          only-on-branch: master
+          time: "10"
       - checkout
 
       - restore_cache:
@@ -88,17 +148,32 @@ jobs:
       - run:
           command: |
             set +x
+            git config user.email "tom@windyroad.com.au"
+            git config user.name "Tom Howard"
             npm install
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH" > ~/.npmrc
+            # make sure we're the most recent published version + 1
+            CURRENT_VERSION=$(npm --unsafe-perm show "@mountainpass/addressr" version)
+            npm --unsafe-perm --no-git-tag-version version "${CURRENT_VERSION}" --allow-same-version -m "Version bump to %s."
+            if ! git diff --exit-code package.json > /dev/null; then
+              # version changed, so commit it
+              git add package.json
+              NEW_VERSION=$(node -p "require('./package.json').version")
+              git commit -m "Version bump to $NEW_VERSION. [skip ci]"
+            fi
+            npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
+            # now pack and publish
             npm pack
             npm run dopublish
             npm run build:docker
             npm run docker:push
+            PUBLISHED_VERSION=$(node -p "require('./package.json').version")
+            git tag "v${PUBLISHED_VERSION}"
+            # now increment again so we are ready for next time
             npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
-            git config user.email "tom@windyroad.com.au"
-            git config user.name "Tom Howard"
             git add package.json
-            git commit -m "Version bump. [skip ci]"
+            NEXT_VERSION=$(node -p "require('./package.json').version")
+            git commit -m "Version bump to $NEXT_VERSION. [skip ci]"
             git push origin HEAD:master && git push --tags
 
 workflows:
@@ -106,9 +181,22 @@ workflows:
 
   ci:
     jobs:
-      - test
-      - test-geo
+      - deps
+      - test:
+          requires:
+            - deps
+      - test-geo:
+          requires:
+            - deps
+      - upload-coverage:
+          requires:
+            - test
+            - test-geo
       - build-and-release:
           requires:
             - test
             - test-geo
+          filters:
+            branches:
+              only:
+                - master
