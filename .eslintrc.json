@@ -12,7 +12,9 @@
     "plugin:eslint-comments/recommended",
     "plugin:unicorn/recommended",
     "plugin:promise/recommended",
-    "plugin:node/recommended"
+    "plugin:node/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings"
   ],
   "env": {
     "browser": false,
