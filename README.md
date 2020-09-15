@@ -4,9 +4,7 @@
 
 [Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au)
 
-<p>
-<img src="https://badgen.net/github/dependabot/mountain-pass/addressr" alt="Dependabot Badge" />
-</p>
+[![Addressr Build Status](https://circleci.com/gh/mountain-pass/addressr.svg?style=shield)](https://circleci.com/gh/mountain-pass/addressr) ![Dependabot](https://badgen.net/dependabot/mountain-pass/addressr?icon=dependabot)
 
 ## Quick Start
 
