@@ -5,7 +5,7 @@ const logger = debug('api');
 const error = debug('error');
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
-export const ELASTIC_PORT = parseInt(process.env.ELASTIC_PORT || '9200');
+export const ELASTIC_PORT = Number.parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 
 const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
@@ -160,10 +160,10 @@ export async function esConnect(
             logger(`...connected to ${eshost}:${esport}`);
             global.esClient = esClient;
             return esClient;
-          } catch (err) {
+          } catch (error_) {
             error(
               `An error occured while trying to connect the elastic search client on ${eshost}:${esport}`,
-              err
+              error_
             );
             await new Promise((resolve) => {
               setTimeout(() => resolve(), interval);
@@ -172,10 +172,10 @@ export async function esConnect(
           }
         }
       }
-    } catch (err) {
+    } catch (error_) {
       error(
         `An error occured while waiting to reach elastic search on ${eshost}:${esport}`,
-        err
+        error_
       );
       await new Promise((resolve) => {
         setTimeout(() => resolve(), interval);

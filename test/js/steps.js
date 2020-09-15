@@ -6,7 +6,7 @@ import {
   loadGnaf,
   mapAddressDetails,
   setAddresses,
-} from '../../service/AddressService';
+} from '../../service/address-service';
 
 var logger = debug('test');
 
@@ -124,13 +124,15 @@ Given('an empty address database', async function () {
   return clearAddresses();
 });
 
-Given('an address database with:', async function (docString) {
+Given('an address database with:', async function (documentString) {
   delete global.gnafLoaded;
-  return setAddresses(JSON.parse(docString));
+  return setAddresses(JSON.parse(documentString));
 });
 
-Then('the returned address list will contain:', async function (docString) {
-  const expected = JSON.parse(docString);
+Then('the returned address list will contain:', async function (
+  documentString
+) {
+  const expected = JSON.parse(documentString);
   expect(this.current.json).to.be.an('array').that.is.not.empty;
   expect(this.current.json[0]).to.have.a.property('sla');
   expect(this.current.json).to.have.deep.members(expected);
@@ -158,26 +160,26 @@ Then(
   }
 );
 
-Given('the following address detail:', async function (docString) {
-  this.addressDetails = JSON.parse(docString);
+Given('the following address detail:', async function (documentString) {
+  this.addressDetails = JSON.parse(documentString);
 });
 
-Given('the following street locality:', async function (docString) {
-  this.streetLocality = JSON.parse(docString);
+Given('the following street locality:', async function (documentString) {
+  this.streetLocality = JSON.parse(documentString);
 });
 
-Given('the following locality:', async function (docString) {
-  this.locality = JSON.parse(docString);
+Given('the following locality:', async function (documentString) {
+  this.locality = JSON.parse(documentString);
 });
 
-Given('the following context:', async function (docString) {
-  this.context = JSON.parse(docString);
+Given('the following context:', async function (documentString) {
+  this.context = JSON.parse(documentString);
 });
 
 Then('the address details will map to the following address:', async function (
-  docString
+  documentString
 ) {
-  const expected = JSON.parse(docString);
+  const expected = JSON.parse(documentString);
   this.context.streetLocalityIndexed = [];
   this.context.localityIndexed = [];
 
@@ -205,7 +207,7 @@ Then(
 
 Then('the {string} link templates var-base will contain', async function (
   rel,
-  expectedParams
+  expectedParameters
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
@@ -213,21 +215,26 @@ Then('the {string} link templates var-base will contain', async function (
   logger('link', link);
   this.current = await this.driver.followVarBase(link[0]);
   logger(JSON.stringify(this.current.json));
-  expect(this.current.json).to.deep.equal(JSON.parse(expectedParams));
+  expect(this.current.json).to.deep.equal(JSON.parse(expectedParameters));
 });
 
 When('the {string} link template is followed with:', async function (
   rel,
-  params
+  parameters
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
   const link = this.current.linkTemplate.get('rel', rel);
-  this.current = await this.driver.followTemplate(link[0], params.rowsHash());
+  this.current = await this.driver.followTemplate(
+    link[0],
+    parameters.rowsHash()
+  );
 });
 
-Then('the returned address list will include:', async function (docString) {
-  const e = JSON.parse(docString);
+Then('the returned address list will include:', async function (
+  documentString
+) {
+  const e = JSON.parse(documentString);
   const found = this.current.json.find((a) => {
     return (
       a.sla === e.sla &&
@@ -239,8 +246,10 @@ Then('the returned address list will include:', async function (docString) {
   expect(found).to.not.be.undefined;
 });
 
-Then('the returned address list will NOT include:', async function (docString) {
-  const e = JSON.parse(docString);
+Then('the returned address list will NOT include:', async function (
+  documentString
+) {
+  const e = JSON.parse(documentString);
   const found = this.current.json.find((a) => {
     return (
       a.sla === e.sla &&
@@ -262,8 +271,8 @@ When(
   }
 );
 
-Then('the response will contain:', async function (docString) {
-  const e = JSON.parse(docString);
+Then('the response will contain:', async function (documentString) {
+  const e = JSON.parse(documentString);
   console.log(JSON.stringify(this.current.json));
   expect(this.current.json).to.deep.equal(e);
 });

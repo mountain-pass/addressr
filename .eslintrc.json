@@ -1,11 +1,13 @@
 {
   "parser": "babel-eslint",
+  "plugins": ["prettier", "security", "chai-friendly", "unicorn"],
   "extends": [
     "eslint:recommended",
     "prettier",
     "prettier/babel",
     "plugin:security/recommended",
-    "plugin:eslint-comments/recommended"
+    "plugin:eslint-comments/recommended",
+    "plugin:unicorn/recommended"
   ],
   "env": {
     "browser": false,
@@ -20,9 +22,20 @@
     "comma-dangle": "off",
     "strict": 2,
     "prettier/prettier": "error",
-    "import/default": 0
+    "import/default": 0,
+    "unicorn/filename-case": [
+      "warn",
+      {
+        "cases": {
+          "camelCase": true,
+          "pascalCase": true
+        }
+      }
+    ],
+    "unicorn/prevent-abbreviations": "warn",
+    "unicorn/no-null": "warn",
+    "unicorn/no-process-exit": "warn"
   },
-  "plugins": ["prettier", "security", "chai-friendly"],
   "overrides": [
     {
       "files": ["test/**"],

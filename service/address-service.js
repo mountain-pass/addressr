@@ -202,7 +202,7 @@ async function fetchPackageData() {
     await cache.set(packageUrl, { body: res.body, headers: res.headers });
     res.headers['x-cache'] = 'MISS';
     return res;
-  } catch (err) {
+  } catch (error_) {
     // we were unable to fetch. if we have cached value that isn't stale, return in
     if (cachedRes !== undefined) {
       if (age < THIRTY_DAYS_MS) {
@@ -211,7 +211,7 @@ async function fetchPackageData() {
       }
     }
     // otherwise, throw the original network error
-    throw err;
+    throw error_;
   }
 }
 
@@ -234,29 +234,29 @@ export async function fetchGnafFile() {
   const complete_path = GNAF_DIR;
   const incomplete_path = `${complete_path}/incomplete`;
   await new Promise((resolve, reject) => {
-    fs.mkdir(incomplete_path, { recursive: true }, (err) => {
-      if (err) reject(err);
+    fs.mkdir(incomplete_path, { recursive: true }, (error_) => {
+      if (error_) reject(error_);
       else resolve();
     });
   });
-  const dest = `${complete_path}/${basename}`;
+  const destination = `${complete_path}/${basename}`;
   await new Promise((resolve, reject) => {
-    fs.mkdir(incomplete_path, { recursive: true }, (err) => {
-      if (err) reject(err);
+    fs.mkdir(incomplete_path, { recursive: true }, (error_) => {
+      if (error_) reject(error_);
       else resolve();
     });
   });
   // see if the file exists already
   try {
     await new Promise((resolve, reject) => {
-      fs.access(dest, fs.constants.R_OK, (err) => {
-        if (err) reject(err);
+      fs.access(destination, fs.constants.R_OK, (error_) => {
+        if (error_) reject(error_);
         else resolve();
       });
     });
     // it does exist, so don't bother trying to download it again
-    return dest;
-  } catch (e) {
+    return destination;
+  } catch {
     // file doesn't exist, so we need to download it.
     logger('Starting G-NAF download');
     try {
@@ -265,12 +265,12 @@ export async function fetchGnafFile() {
         `${incomplete_path}/${basename}`,
         dataResource.size
       );
-      await fsp.rename(`${incomplete_path}/${basename}`, dest);
-      logger('Finished downloading G-NAF', dest);
-      return dest;
-    } catch (err) {
-      error('Error downloading G-NAF', err);
-      throw err;
+      await fsp.rename(`${incomplete_path}/${basename}`, destination);
+      logger('Finished downloading G-NAF', destination);
+      return destination;
+    } catch (error_) {
+      error('Error downloading G-NAF', error_);
+      throw error_;
     }
   }
 }
@@ -288,8 +288,8 @@ export async function unzipFile(file) {
     return complete_path;
   } else {
     await new Promise((resolve, reject) => {
-      fs.mkdir(incomplete_path, { recursive: true }, (err) => {
-        if (err) reject(err);
+      fs.mkdir(incomplete_path, { recursive: true }, (error_) => {
+        if (error_) reject(error_);
         else resolve();
       });
     });
@@ -301,37 +301,37 @@ export async function unzipFile(file) {
         .pipe(
           stream.Transform({
             objectMode: true,
-            transform: function (entry, encoding, cb) {
+            transform: function (entry, encoding, callback) {
               const entryPath = `${incomplete_path}/${entry.path}`;
               if (entry.isDirectory) {
-                fs.mkdir(entryPath, { recursive: true }, (err) => {
-                  if (err) {
+                fs.mkdir(entryPath, { recursive: true }, (error_) => {
+                  if (error_) {
                     entry.autodrain();
-                    cb(err);
+                    callback(error_);
                   } else {
                     entry.autodrain();
-                    cb();
+                    callback();
                   }
                 });
               } else {
                 const dirname = path.dirname(entryPath);
-                fs.mkdir(dirname, { recursive: true }, (err) => {
-                  if (err) {
+                fs.mkdir(dirname, { recursive: true }, (error_) => {
+                  if (error_) {
                     entry.autodrain();
-                    cb(err);
+                    callback(error_);
                   } else {
-                    fs.stat(entryPath, (err, stats) => {
-                      if (err && err.code !== 'ENOENT') {
-                        logger('error statting file', err);
+                    fs.stat(entryPath, (error_, stats) => {
+                      if (error_ && error_.code !== 'ENOENT') {
+                        logger('error statting file', error_);
                         entry.autodrain();
-                        cb(err);
+                        callback(error_);
                         return;
                       }
                       if (stats != undefined && stats.size === entry.size) {
                         // no need to extract again. Skip
                         logger('skipping extract for', entryPath);
                         entry.autodrain();
-                        cb();
+                        callback();
                       } else {
                         // size is different, so extract the file
                         logger('extracting', entryPath);
@@ -339,11 +339,11 @@ export async function unzipFile(file) {
                           .pipe(fs.createWriteStream(entryPath))
                           .on('finish', () => {
                             logger('finished extracting', entryPath);
-                            cb();
+                            callback();
                           })
                           .on('error', (error) => {
                             logger('error unzipping entry', error);
-                            cb(error);
+                            callback(error);
                           });
                       }
                     });
@@ -365,8 +365,8 @@ export async function unzipFile(file) {
     await prom;
 
     return await new Promise((resolve, reject) => {
-      fs.rename(incomplete_path, complete_path, (err) => {
-        if (err) reject(err);
+      fs.rename(incomplete_path, complete_path, (error_) => {
+        if (error_) reject(error_);
         else resolve(complete_path);
       });
     });
@@ -387,7 +387,7 @@ function levelTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Level Type Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function flatTypeCodeToName(code, context) {
@@ -398,7 +398,7 @@ function flatTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Flat Type Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function streetTypeCodeToName(code, context) {
@@ -409,7 +409,7 @@ function streetTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Street Type Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function streetClassCodeToName(code, context) {
@@ -420,7 +420,7 @@ function streetClassCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Street Class Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function localityClassCodeToName(code, context) {
@@ -431,7 +431,7 @@ function localityClassCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Locality Class Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function streetSuffixCodeToName(code, context) {
@@ -442,7 +442,7 @@ function streetSuffixCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Street Suffix Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function geocodeReliabilityCodeToName(code, context) {
@@ -453,7 +453,7 @@ function geocodeReliabilityCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Geocode Reliability Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function geocodeTypeCodeToName(code, context) {
@@ -464,7 +464,7 @@ function geocodeTypeCodeToName(code, context) {
     return found.NAME;
   }
   error(`Unknown Geocode Type Code: '${code}'`);
-  return undefined;
+  return;
 }
 
 function levelGeocodedCodeToName(code, context) {
@@ -481,7 +481,7 @@ function levelGeocodedCodeToName(code, context) {
       2
     )}`
   );
-  return undefined;
+  return;
 }
 
 function mapLocality(l, context) {
@@ -558,10 +558,10 @@ function mapGeo(geoSite, context, geoDefault) {
             },
           }),
           ...(geo.LATITUDE !== '' && {
-            latitude: parseFloat(geo.LATITUDE),
+            latitude: Number.parseFloat(geo.LATITUDE),
           }),
           ...(geo.LONGITUDE !== '' && {
-            longitude: parseFloat(geo.LONGITUDE),
+            longitude: Number.parseFloat(geo.LONGITUDE),
           }),
           ...(geo.GEOCODE_SITE_DESCRIPTION !== '' && {
             description: geo.GEOCODE_SITE_DESCRIPTION,
@@ -580,10 +580,10 @@ function mapGeo(geoSite, context, geoDefault) {
             },
           }),
           ...(geo.LATITUDE !== '' && {
-            latitude: parseFloat(geo.LATITUDE),
+            latitude: Number.parseFloat(geo.LATITUDE),
           }),
           ...(geo.LONGITUDE !== '' && {
-            longitude: parseFloat(geo.LONGITUDE),
+            longitude: Number.parseFloat(geo.LONGITUDE),
           }),
         };
       })
@@ -748,7 +748,7 @@ export function mapAddressDetails(d, context, i, count) {
             prefix: d.NUMBER_FIRST_PREFIX,
           }),
           ...(d.NUMBER_FIRST !== '' && {
-            number: parseInt(d.NUMBER_FIRST),
+            number: Number.parseInt(d.NUMBER_FIRST),
           }),
           ...(d.NUMBER_FIRST_SUFFIX !== '' && {
             suffix: d.NUMBER_FIRST_SUFFIX,
@@ -761,7 +761,7 @@ export function mapAddressDetails(d, context, i, count) {
                   prefix: d.NUMBER_LAST_PREFIX,
                 }),
                 ...(d.NUMBER_LAST !== '' && {
-                  number: parseInt(d.NUMBER_LAST),
+                  number: Number.parseInt(d.NUMBER_LAST),
                 }),
                 ...(d.NUMBER_LAST_SUFFIX !== '' && {
                   suffix: d.NUMBER_LAST_SUFFIX,
@@ -785,7 +785,7 @@ export function mapAddressDetails(d, context, i, count) {
             prefix: d.LEVEL_NUMBER_PREFIX,
           }),
           ...(d.LEVEL_NUMBER !== '' && {
-            number: parseInt(d.LEVEL_NUMBER),
+            number: Number.parseInt(d.LEVEL_NUMBER),
           }),
           ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
             suffix: d.LEVEL_NUMBER_SUFFIX,
@@ -807,7 +807,7 @@ export function mapAddressDetails(d, context, i, count) {
             prefix: d.FLAT_NUMBER_PREFIX,
           }),
           ...(d.FLAT_NUMBER !== '' && {
-            number: parseInt(d.FLAT_NUMBER),
+            number: Number.parseInt(d.FLAT_NUMBER),
           }),
           ...(d.FLAT_NUMBER_SUFFIX !== '' && {
             suffix: d.FLAT_NUMBER_SUFFIX,
@@ -817,7 +817,7 @@ export function mapAddressDetails(d, context, i, count) {
       // May need to include street locality aliases here
       street: mapStreetLocality(streetLocality, context),
       ...(d.CONFIDENCE !== '' && {
-        confidence: parseInt(d.CONFIDENCE),
+        confidence: Number.parseInt(d.CONFIDENCE),
       }),
       locality: mapLocality(locality, context),
       ...(d.POSTCODE !== '' && {
@@ -857,7 +857,7 @@ export function mapAddressDetails(d, context, i, count) {
   // process.stdout.write('.');
   if (i % Math.ceil(count / 100) === 0) {
     logger('addr', JSON.stringify(rval, null, 2));
-    logger(`${(i / count) * 100.0}%`);
+    logger(`${(i / count) * 100}%`);
   }
 
   return rval;
@@ -904,9 +904,9 @@ async function loadAddressDetails(file, expectedCount, context) {
               .then(() => {
                 parser.resume();
               })
-              .catch((err) => {
-                error('error sending index request', err);
-                throw err;
+              .catch((error_) => {
+                error('error sending index request', error_);
+                throw error_;
               });
           } else {
             // nothing to process. Have reached end of file.
@@ -1073,8 +1073,8 @@ async function sendIndexRequest(
       //   parser.resume();
       // }
       return;
-    } catch (err) {
-      error('Indexing error', JSON.stringify(err, null, 2));
+    } catch (error_) {
+      error('Indexing error', JSON.stringify(error_, null, 2));
       error(`backing off for ${backoff}ms`);
       // parser.pause();
       // paused = true;
@@ -1143,9 +1143,7 @@ async function loadGnafData(dir) {
     (f) => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
   );
   logger('addressDetailFiles', addressDetailFiles);
-  for (let i = 0; i < addressDetailFiles.length; i++) {
-    const detailFile = addressDetailFiles[i];
-
+  for (const detailFile of addressDetailFiles) {
     const state = path
       .basename(detailFile, path.extname(detailFile))
       .replace(/_.*/, '');
@@ -1156,16 +1154,14 @@ async function loadGnafData(dir) {
       logger('Loading streets', state);
       const streetLocality = await loadStreetLocality(files, dir, state);
       loadContext.streetLocalityIndexed = {};
-      for (let index = 0; index < streetLocality.length; index++) {
-        const sl = streetLocality[index];
+      for (const sl of streetLocality) {
         loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
       }
 
       logger('Loading suburbs', state);
       const locality = await loadLocality(files, dir, state);
       loadContext.localityIndexed = {};
-      for (let index = 0; index < locality.length; index++) {
-        const l = locality[index];
+      for (const l of locality) {
         loadContext.localityIndexed[l.LOCALITY_PID] = l;
       }
 
@@ -1220,7 +1216,7 @@ async function loadState(files, dir, state) {
   );
   if (stateFile === undefined) {
     error(`Could not find state file '${state}_STATE_psv.psv'`);
-    return undefined;
+    return;
   } else {
     const name = await getStateName(state, `${dir}/${stateFile}`);
     return name;
@@ -1305,7 +1301,7 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
               if (count % Math.ceil(expectedCount / 100) === 0) {
                 logger(
                   `${Math.floor(
-                    (count / expectedCount) * 100.0
+                    (count / expectedCount) * 100
                   )}% (${count}/ ${expectedCount})`
                 );
               }
@@ -1359,7 +1355,7 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
               if (count % Math.ceil(expectedCount / 100) === 0) {
                 logger(
                   `${Math.floor(
-                    (count / expectedCount) * 100.0
+                    (count / expectedCount) * 100
                   )}% (${count}/ ${expectedCount})`
                 );
               }
@@ -1393,8 +1389,7 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
 async function loadAuthFiles(files, dir, loadContext, filesCounts) {
   const authCodeFiles = files.filter((f) => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
-  for (let i = 0; i < authCodeFiles.length; i++) {
-    const authFile = authCodeFiles[i];
+  for (const authFile of authCodeFiles) {
     const contextKey = path.basename(authFile, path.extname(authFile));
     await new Promise((resolve, reject) => {
       Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
@@ -1482,10 +1477,10 @@ export async function getAddress(addressId) {
     });
 
     return { link, json };
-  } catch (err) {
-    logger('err', err);
+  } catch (error_) {
+    logger('err', error_);
 
-    throw err;
+    throw error_;
   }
   //  throw new PendingError(addressId);
   // return new Promise(function(resolve /*, reject*/) {
@@ -1562,10 +1557,12 @@ export async function getAddresses(url, swagger, q, p = 1) {
   const op = swagger.path.get;
   if (op.parameters) {
     const parameters = op.parameters;
-    const queryParams = parameters.filter((param) => param.in === 'query');
+    const queryParameters = parameters.filter(
+      (parameter) => parameter.in === 'query'
+    );
     const linkOptions = {
       rel: op['x-root-rel'],
-      uri: `${url}{?${queryParams.map((qp) => qp.name).join(',')}}`,
+      uri: `${url}{?${queryParameters.map((qp) => qp.name).join(',')}}`,
       title: op.summary,
       type: 'application/json',
       'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([

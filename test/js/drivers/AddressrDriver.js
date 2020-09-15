@@ -14,9 +14,9 @@ export class AddressrDriver {
     throw new PendingError(link);
   }
 
-  async followTemplate(link, params) {
+  async followTemplate(link, parameters) {
     var t = new URI.Template(link.uri);
-    const expanded = t.expand(params);
+    const expanded = t.expand(parameters);
     return this.follow(Object.assign({}, link, { uri: expanded }));
   }
 }

@@ -55,27 +55,29 @@ export function swaggerInit() {
         })
       );
 
-      app.use(function (err, req, res, next) {
-        if (err.failedValidation) {
+      app.use(function (error_, request, res, next) {
+        if (error_.failedValidation) {
           // handle validation errror
-          const rehydratedError = Object.assign({}, err);
-          if (err.originalResponse) {
-            rehydratedError.originalResponse = JSON.parse(err.originalResponse);
+          const rehydratedError = Object.assign({}, error_);
+          if (error_.originalResponse) {
+            rehydratedError.originalResponse = JSON.parse(
+              error_.originalResponse
+            );
           }
-          if (err.message) {
-            rehydratedError.message = err.message;
+          if (error_.message) {
+            rehydratedError.message = error_.message;
           }
-          if (err.results) {
-            rehydratedError.errors = err.results.errors;
+          if (error_.results) {
+            rehydratedError.errors = error_.results.errors;
             delete rehydratedError.results;
           }
           error(
             'error!!!',
-            err.message,
-            JSON.stringify(rehydratedError, null, 2)
+            error_.message,
+            JSON.stringify(rehydratedError, undefined, 2)
           );
           res
-            .status(err.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
+            .status(error_.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
             .json(rehydratedError);
         } else {
           next();
@@ -89,7 +91,7 @@ export function swaggerInit() {
   });
 }
 
-let server = undefined;
+let server;
 
 export function startServer() {
   return swaggerInit().then(({ app /*, middleware*/ }) => {

@@ -13,13 +13,15 @@ export function printVersion() {
     lineHeight: 0,
     space: true,
   };
-  let env = process.env.NODE_ENV || 'development';
-  if (env === 'development') {
-    env = `${env}|(set NODE_ENV to 'production' in production environments)`;
+  let environment = process.env.NODE_ENV || 'development';
+  if (environment === 'development') {
+    environment = `${environment}|(set NODE_ENV to 'production' in production environments)`;
   }
 
   CFonts.say(
-    `Version: ${process.env.npm_package_version || '1.0.0'}|NODE_ENV: ${env}`,
+    `Version: ${
+      process.env.npm_package_version || '1.0.0'
+    }|NODE_ENV: ${environment}`,
     smallBannerOptions
   );
 }

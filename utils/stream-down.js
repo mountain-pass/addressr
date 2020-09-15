@@ -13,8 +13,8 @@ module.exports = function (url, path, size) {
 
   return new Promise(function (resolve, reject) {
     http.get(uri.href).on('response', function (res) {
-      const len = res.headers['content-length']
-        ? parseInt(res.headers['content-length'], 10)
+      const length = res.headers['content-length']
+        ? Number.parseInt(res.headers['content-length'], 10)
         : size;
       //   let downloaded = 0;
       //   let percent = 0;
@@ -24,7 +24,7 @@ module.exports = function (url, path, size) {
           complete: '=',
           incomplete: ' ',
           width: 20,
-          total: len,
+          total: length,
         }
       );
 
@@ -47,8 +47,8 @@ module.exports = function (url, path, size) {
           console.log(`\n${uri.path} downloaded to: ${path}`);
           resolve(res);
         })
-        .on('error', function (err) {
-          reject(err);
+        .on('error', function (error) {
+          reject(error);
         });
     });
   });
