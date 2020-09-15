@@ -4,7 +4,11 @@
 
 [Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au)
 
-[![Addressr Build Status](https://circleci.com/gh/mountain-pass/addressr.svg?style=shield)](https://circleci.com/gh/mountain-pass/addressr) ![Dependabot](https://badgen.net/dependabot/mountain-pass/addressr?icon=dependabot)
+[![GitHub license](https://img.shields.io/github/license/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/blob/master/LICENSE) ![npm](https://img.shields.io/npm/v/@mountainpass/addressr) ![npm downloads](https://img.shields.io/npm/dm/@mountainpass/addressr) ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/mountainpass/addressr?label=image%20version) ![Docker Pulls](https://img.shields.io/docker/pulls/mountainpass/addressr)
+
+[![Addressr Build Status](https://circleci.com/gh/mountain-pass/addressr.svg?style=shield)](https://circleci.com/gh/mountain-pass/addressr) [![Test Coverage](https://api.codeclimate.com/v1/badges/e5117809cacb7e32eb5c/test_coverage)](https://codeclimate.com/github/mountain-pass/addressr/test_coverage)
+
+[![GitHub issues](https://img.shields.io/github/issues/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/issues) ![GitHub pull requests](https://img.shields.io/github/issues-pr/mountain-pass/addressr) ![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/npm/@mountainpass/addressr)
 
 ## Quick Start
 
