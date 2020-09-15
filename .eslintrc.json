@@ -57,6 +57,15 @@
       "globals": {
         "expect": true
       }
+    },
+    {
+      "files": ["scripts/check-version.js"],
+      "parserOptions": {
+        "sourceType": "script"
+      },
+      "rules": {
+        "node/shebang": "off"
+      }
     }
   ]
 }

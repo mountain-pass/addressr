@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+'use strict';
 const { satisfies } = require('semver');
 const { engines } = require('../package');
 
