@@ -1,13 +1,14 @@
 {
   "parser": "babel-eslint",
-  "plugins": ["prettier", "security", "chai-friendly", "unicorn"],
+  "plugins": ["prettier", "security", "chai-friendly", "unicorn", "promise"],
   "extends": [
     "eslint:recommended",
     "prettier",
     "prettier/babel",
     "plugin:security/recommended",
     "plugin:eslint-comments/recommended",
-    "plugin:unicorn/recommended"
+    "plugin:unicorn/recommended",
+    "plugin:promise/recommended"
   ],
   "env": {
     "browser": false,
@@ -34,7 +35,9 @@
     ],
     "unicorn/prevent-abbreviations": "warn",
     "unicorn/no-null": "warn",
-    "unicorn/no-process-exit": "warn"
+    "unicorn/no-process-exit": "warn",
+    "promise/always-return": "warn",
+    "promise/catch-or-return": "warn"
   },
   "overrides": [
     {
