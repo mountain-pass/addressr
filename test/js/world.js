@@ -1,7 +1,7 @@
 //const logWhy = require('why-is-node-running');
 import {
   PendingError,
-  stepDefinitionWrapper
+  stepDefinitionWrapper,
 } from '@windyroad/cucumber-js-throwables';
 import qc from '@windyroad/quick-containers-js';
 import chai from 'chai';
@@ -12,7 +12,7 @@ import {
   AfterAll,
   BeforeAll,
   setDefinitionFunctionWrapper,
-  setWorldConstructor
+  setWorldConstructor,
 } from 'cucumber';
 import debug from 'debug';
 import Docker from 'dockerode';
@@ -35,7 +35,7 @@ const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
 const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 
-BeforeAll({ timeout: 240000 }, async function() {
+BeforeAll({ timeout: 240000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
     case 'system':
@@ -55,7 +55,7 @@ BeforeAll({ timeout: 240000 }, async function() {
   await initIndex(global.esClient, true);
 });
 
-AfterAll({ timeout: 30000 }, async function() {
+AfterAll({ timeout: 30000 }, async function () {
   stopServer();
   //delete global.esClient;
   if (this.logStream) {
@@ -73,27 +73,27 @@ async function startElasticSearch(docker, context) {
         Tty: false,
         ExposedPorts: {
           '9200/tcp': {},
-          '9300/tcp': {}
+          '9300/tcp': {},
         },
         HostConfig: {
           PortBindings: {
             '9200/tcp': [{ HostPort: '9200' }],
-            '9300/tcp': [{ HostPort: '9300' }]
+            '9300/tcp': [{ HostPort: '9300' }],
           },
           Binds: [
             // When we used the local file system, ES freaked out about the lack of space 🤷‍♂️
             // `${cwd}/target/Elasticsearch/data:/var/data/elasticsearch`,
             // `${cwd}/target/Elasticsearch/log:/var/log/elasticsearch`,
             // `${cwd}/test/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml`,
-          ]
+          ],
         },
         Env: ['discovery.type=single-node', 'ES_JAVA_OPTS=-Xms1g -Xmx1g'],
-        name: 'qc-elasticsearch-test'
+        name: 'qc-elasticsearch-test',
       },
       () =>
         waitport({
           port: 9200,
-          timeout: 60000
+          timeout: 60000,
         })
     );
     const cont = docker.getContainer('qc-elasticsearch-test');
@@ -101,10 +101,10 @@ async function startElasticSearch(docker, context) {
       stdout: true,
       stderr: true,
       follow: true,
-      tail: 50
+      tail: 50,
     });
     context.logStream.setEncoding('utf8');
-    context.logStream.on('data', function(data) {
+    context.logStream.on('data', function (data) {
       esLogger(data);
     });
   }

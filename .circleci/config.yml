@@ -31,8 +31,8 @@ jobs:
       - image: circleci/node:11.14.0
       - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
-          'discovery.type': 'single-node'
-          'bootstrap.system_call_filter': 'false'
+          "discovery.type": "single-node"
+          "bootstrap.system_call_filter": "false"
     steps:
       - checkout
       - restore_cache:
@@ -73,8 +73,8 @@ jobs:
       - image: circleci/node:11.14.0
       - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
-          'discovery.type': 'single-node'
-          'bootstrap.system_call_filter': 'false'
+          "discovery.type": "single-node"
+          "bootstrap.system_call_filter": "false"
     steps:
       - checkout
 
@@ -136,7 +136,7 @@ jobs:
     steps:
       - queue/until_front_of_line:
           only-on-branch: master
-          time: '10'
+          time: "10"
       - checkout
 
       - restore_cache:

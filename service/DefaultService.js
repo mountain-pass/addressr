@@ -11,15 +11,18 @@ var logger = debug('api');
  **/
 export async function getApiRoot() {
   const paths = Object.keys(global.swaggerDoc.paths).filter(
-    p =>
+    (p) =>
       global.swaggerDoc.paths[p].get !== undefined &&
       global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined
   );
 
   const link = new LinkHeader();
-  paths.forEach(p => {
+  paths.forEach((p) => {
     const op = global.swaggerDoc.paths[p].get;
-    if (op.parameters && op.parameters.find(param => param.required === true)) {
+    if (
+      op.parameters &&
+      op.parameters.find((param) => param.required === true)
+    ) {
       // skip
     } else {
       link.set({ rel: op['x-root-rel'], uri: p, title: op.summary });
@@ -29,33 +32,33 @@ export async function getApiRoot() {
     rel: 'describedby',
     uri: '/docs/',
     title: 'API Docs',
-    type: 'text/html'
+    type: 'text/html',
   });
   link.set({
     rel: 'describedby',
     uri: '/api-docs',
     title: 'API Docs',
-    type: 'application/json'
+    type: 'application/json',
   });
 
   const linkTemplate = new LinkHeader();
-  paths.forEach(url => {
+  paths.forEach((url) => {
     const op = global.swaggerDoc.paths[url].get;
     logger(op);
     if (op.parameters) {
       const parameters = op.parameters;
-      const queryParams = parameters.filter(param => param.in === 'query');
+      const queryParams = parameters.filter((param) => param.in === 'query');
       const linkOptions = {
         rel: op['x-root-rel'],
-        uri: `${url}{?${queryParams.map(qp => qp.name).join(',')}}`,
+        uri: `${url}{?${queryParams.map((qp) => qp.name).join(',')}}`,
         title: op.summary,
         type: 'application/json',
         'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
           'paths',
           url,
           'get',
-          'parameters'
-        ])}`
+          'parameters',
+        ])}`,
       };
       linkTemplate.set(linkOptions);
     }

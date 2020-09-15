@@ -11,7 +11,7 @@ export function printVersion() {
     background: 'blue',
     letterSpacing: 0,
     lineHeight: 0,
-    space: true
+    space: true,
   };
   let env = process.env.NODE_ENV || 'development';
   if (env === 'development') {

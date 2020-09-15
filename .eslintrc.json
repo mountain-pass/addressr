@@ -1,28 +1,17 @@
 {
   "parser": "babel-eslint",
-  "extends": ["eslint:recommended", "prettier", "prettier/babel"],
+  "extends": [
+    "eslint:recommended",
+    "prettier",
+    "prettier/babel",
+    "plugin:security/recommended",
+    "plugin:eslint-comments/recommended"
+  ],
   "env": {
     "browser": false,
     "node": true
   },
   "globals": {
-    "document": true,
-    "window": true,
-    "Image": true,
-    "localStorage": true,
-    "fetch": true,
-    "exports": true,
-    "process": true,
-    "console": true,
-    "__dirname": true,
-    "global": true,
-    "expect": true,
-    "require": true,
-    "module": true,
-    "URL": true,
-    "URLSearchParams": true,
-    "setTimeout": true,
-    "setInterval": true,
     "Promise": true
   },
   "rules": {
@@ -33,5 +22,15 @@
     "prettier/prettier": "error",
     "import/default": 0
   },
-  "plugins": ["prettier"]
+  "plugins": ["prettier", "security", "chai-friendly"],
+  "overrides": [
+    {
+      "files": ["test/**"],
+      "plugins": ["chai-friendly"],
+      "extends": ["plugin:chai-friendly/recommended"],
+      "globals": {
+        "expect": true
+      }
+    }
+  ]
 }

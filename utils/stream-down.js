@@ -4,15 +4,15 @@ const fs = require('fs');
 const { basename } = require('path');
 import ProgressBar from 'progress';
 
-module.exports = function(url, path, size) {
+module.exports = function (url, path, size) {
   const uri = parse(url);
   if (!path) {
     path = basename(uri.path);
   }
   const file = fs.createWriteStream(path);
 
-  return new Promise(function(resolve, reject) {
-    http.get(uri.href).on('response', function(res) {
+  return new Promise(function (resolve, reject) {
+    http.get(uri.href).on('response', function (res) {
       const len = res.headers['content-length']
         ? parseInt(res.headers['content-length'], 10)
         : size;
@@ -25,11 +25,11 @@ module.exports = function(url, path, size) {
           incomplete: ' ',
           width: 20,
           total: len,
-        },
+        }
       );
 
       res
-        .on('data', function(chunk) {
+        .on('data', function (chunk) {
           file.write(chunk);
           //   downloaded += chunk.length;
           //percent = ((100.0 * downloaded) / len).toFixed(2);
@@ -42,12 +42,12 @@ module.exports = function(url, path, size) {
           //     })}\t\t\t\t\t\t\r`,
           //   );
         })
-        .on('end', function() {
+        .on('end', function () {
           file.end();
           console.log(`\n${uri.path} downloaded to: ${path}`);
           resolve(res);
         })
-        .on('error', function(err) {
+        .on('error', function (err) {
           reject(err);
         });
     });

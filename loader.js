@@ -24,7 +24,7 @@ esConnect()
       letterSpacing: 1,
       lineHeight: 1,
       space: true,
-      maxLength: '0'
+      maxLength: '0',
     };
     CFonts.say('Addressr|Data|Loader', bannerOptions);
     printVersion();
@@ -41,7 +41,7 @@ esConnect()
     logger(`Fin`);
     process.exit();
   })
-  .catch(err => {
+  .catch((err) => {
     error('error loading data', err);
     throw err;
   });

@@ -61,7 +61,7 @@ export async function initIndex(esClient, clear) {
               analyzer: {
                 default: {
                   tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding']
+                  filter: ['lowercase', 'asciifolding'],
                 },
                 // synonym: {
                 //   tokenizer: 'my_tokenizer',
@@ -69,17 +69,17 @@ export async function initIndex(esClient, clear) {
                 // },
                 my_analyzer: {
                   tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding']
-                }
+                  filter: ['lowercase', 'asciifolding'],
+                },
               },
               tokenizer: {
                 my_tokenizer: {
                   type: 'edge_ngram',
                   min_gram: 3,
-                  max_gram: ADDRESSR_MAX_GRAM
+                  max_gram: ADDRESSR_MAX_GRAM,
                   //token_chars: ['letter', 'digit'],
-                }
-              }
+                },
+              },
               // filter: {
               //   synonym: {
               //     type: 'synonym',
@@ -90,8 +90,8 @@ export async function initIndex(esClient, clear) {
               //     ]
               //   }
               // }
-            }
-          }
+            },
+          },
         },
         aliases: {},
         mappings: {
@@ -103,21 +103,21 @@ export async function initIndex(esClient, clear) {
           properties: {
             structured: {
               type: 'object',
-              enabled: false
+              enabled: false,
             },
             sla: {
               // search_analyzer: 'keyword_analyzer',
               type: 'text',
-              analyzer: 'my_analyzer'
+              analyzer: 'my_analyzer',
             },
             ssla: {
               // search_analyzer: 'keyword_analyzer',
               type: 'text',
-              analyzer: 'my_analyzer'
-            }
-          }
-        }
-      }
+              analyzer: 'my_analyzer',
+            },
+          },
+        },
+      },
     });
   }
   await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });
@@ -138,7 +138,7 @@ export async function esConnect(
         host: eshost,
         port: esport,
         interval,
-        timeout
+        timeout,
       });
       if (open) {
         logger(`...${eshost}:${esport} is reachable`);
@@ -148,14 +148,14 @@ export async function esConnect(
           try {
             const esClient = new elasticsearch.Client({
               host: `${eshost}:${esport}`,
-              log: 'info'
+              log: 'info',
             });
             logger(
               `connecting elastic search client on ${eshost}:${esport}...`
             );
             await esClient.ping({
               requestTimeout: interval,
-              maxRetries: 0
+              maxRetries: 0,
             });
             logger(`...connected to ${eshost}:${esport}`);
             global.esClient = esClient;
@@ -165,7 +165,7 @@ export async function esConnect(
               `An error occured while trying to connect the elastic search client on ${eshost}:${esport}`,
               err
             );
-            await new Promise(resolve => {
+            await new Promise((resolve) => {
               setTimeout(() => resolve(), interval);
             });
             logger('retrying...');
@@ -177,7 +177,7 @@ export async function esConnect(
         `An error occured while waiting to reach elastic search on ${eshost}:${esport}`,
         err
       );
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(() => resolve(), interval);
       });
       logger('retrying...');
