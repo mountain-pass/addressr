@@ -46,7 +46,8 @@
     "promise/catch-or-return": "warn",
     "node/no-unsupported-features/es-syntax": "off",
     "node/no-deprecated-api": "warn",
-    "no-process-exit": "warn"
+    "no-process-exit": "warn",
+    "complexity": "warn"
   },
   "overrides": [
     {
