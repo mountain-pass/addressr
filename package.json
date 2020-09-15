@@ -91,7 +91,6 @@
   "license": "Apache-2.0",
   "private": false,
   "dependencies": {
-    "auth0": "^2.18.0",
     "cfonts": "^2.4.4",
     "debug": "^4.1.1",
     "directory-exists": "^2.0.1",
