@@ -78,7 +78,15 @@
   "keywords": [
     "swagger",
     "g-naf",
-    "address"
+    "address",
+    "australia",
+    "validation",
+    "autocomplete",
+    "autosuggest",
+    "street-address",
+    "geo",
+    "geocoding",
+    "Geo::StreetAddress:AU"
   ],
   "license": "Apache-2.0",
   "private": false,
