@@ -3,13 +3,13 @@ import directoryExists from 'directory-exists';
 import fs from 'fs';
 import got from 'got';
 import LinkHeader from 'http-link-header';
-import ptr from 'json-ptr';
 import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
+import { setLinkOptions } from './setLinkOptions';
 
 const fsp = fs.promises;
 
@@ -1555,25 +1555,7 @@ export async function getAddresses(url, swagger, q, p = 1) {
 
   const linkTemplate = new LinkHeader();
   const op = swagger.path.get;
-  if (op.parameters) {
-    const parameters = op.parameters;
-    const queryParameters = parameters.filter(
-      (parameter) => parameter.in === 'query'
-    );
-    const linkOptions = {
-      rel: op['x-root-rel'],
-      uri: `${url}{?${queryParameters.map((qp) => qp.name).join(',')}}`,
-      title: op.summary,
-      type: 'application/json',
-      'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
-        'paths',
-        url,
-        'get',
-        'parameters',
-      ])}`,
-    };
-    linkTemplate.set(linkOptions);
-  }
+  setLinkOptions(op, url, linkTemplate);
 
   return { link, json: responseBody, linkTemplate };
 }

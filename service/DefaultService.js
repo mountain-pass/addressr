@@ -1,6 +1,6 @@
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
-import ptr from 'json-ptr';
+import { setLinkOptions } from './setLinkOptions';
 var logger = debug('api');
 
 /**
@@ -45,25 +45,7 @@ export async function getApiRoot() {
   paths.forEach((url) => {
     const op = global.swaggerDoc.paths[url].get;
     logger(op);
-    if (op.parameters) {
-      const parameters = op.parameters;
-      const queryParameters = parameters.filter(
-        (parameter) => parameter.in === 'query'
-      );
-      const linkOptions = {
-        rel: op['x-root-rel'],
-        uri: `${url}{?${queryParameters.map((qp) => qp.name).join(',')}}`,
-        title: op.summary,
-        type: 'application/json',
-        'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
-          'paths',
-          url,
-          'get',
-          'parameters',
-        ])}`,
-      };
-      linkTemplate.set(linkOptions);
-    }
+    setLinkOptions(op, url, linkTemplate);
   });
 
   return { link: link, body: {}, linkTemplate: linkTemplate };

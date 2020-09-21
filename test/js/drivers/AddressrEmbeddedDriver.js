@@ -1,6 +1,6 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
-import ptr from 'json-ptr';
+import { JsonPointer } from 'json-ptr';
 import { URI } from 'uri-template-lite';
 import { getAddress, getAddresses } from '../../../service/address-service';
 import { getApiRoot } from '../../../service/DefaultService';
@@ -77,7 +77,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
     );
     if (url.pathname === '/api-docs') {
       logger(url);
-      const jsonPtr = ptr.create(url.hash);
+      const jsonPtr = JsonPointer.create(url.hash);
       return { json: jsonPtr.get(swaggerDocument) };
     } else {
       throw new PendingError(url.pathname);
