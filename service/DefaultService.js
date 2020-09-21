@@ -21,7 +21,7 @@ export async function getApiRoot() {
     const op = global.swaggerDoc.paths[p].get;
     if (
       op.parameters &&
-      op.parameters.find((param) => param.required === true)
+      op.parameters.find((parameter) => parameter.required === true)
     ) {
       // skip
     } else {

@@ -2,11 +2,13 @@
 
 ![Addressr](https://addressr.mountain-pass.com.au/icons/icon-144x144.png 'Addressr')
 
-[Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au)
+[Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au) - [addressr.mountain-pass.com.au](https://addressr.mountain-pass.com.au)
 
-<p>
-<img src="https://badgen.net/github/dependabot/mountain-pass/addressr" alt="Dependabot Badge" />
-</p>
+[![GitHub license](https://img.shields.io/github/license/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/blob/master/LICENSE) [![npm](https://img.shields.io/npm/v/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![npm downloads](https://img.shields.io/npm/dm/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/mountainpass/addressr?label=image%20version)](https://hub.docker.com/r/mountainpass/addressr) [![Docker Pulls](https://img.shields.io/docker/pulls/mountainpass/addressr)](https://hub.docker.com/r/mountainpass/addressr)
+
+[![Addressr Build Status](https://circleci.com/gh/mountain-pass/addressr.svg?style=shield)](https://circleci.com/gh/mountain-pass/addressr) [![Maintainability](https://api.codeclimate.com/v1/badges/e5117809cacb7e32eb5c/maintainability)](https://codeclimate.com/github/mountain-pass/addressr/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/e5117809cacb7e32eb5c/test_coverage)](https://codeclimate.com/github/mountain-pass/addressr/test_coverage)
+
+[![GitHub issues](https://img.shields.io/github/issues/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/pulls) [![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/npm/@mountainpass/addressr)](https://libraries.io/npm/@mountainpass%2Faddressr)
 
 ## Quick Start
 
