@@ -51,7 +51,7 @@ jobs:
             export ES_STARTED=1
             npm run cover:component:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.component.json coverage/component/lcov.info
-            npm run cover:system
+            npm run cover:system:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.system.json coverage/system/lcov.info
       - persist_to_workspace:
           root: coverage
