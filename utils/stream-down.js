@@ -1,13 +1,13 @@
 const { parse } = require('url');
 const http = require('https');
 const fs = require('fs');
-const { basename } = require('path');
+const pathUtil = require('path');
 import ProgressBar from 'progress';
 
 module.exports = function (url, path, size) {
   const uri = parse(url);
   if (!path) {
-    path = basename(uri.path);
+    path = pathUtil.basename(uri.path);
   }
   const file = fs.createWriteStream(path);
 

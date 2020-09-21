@@ -4,7 +4,7 @@ import express from 'express';
 import { readFileSync } from 'fs';
 import { createServer } from 'http';
 import { safeLoad } from 'js-yaml';
-import { join } from 'path';
+import pathUtil from 'path';
 import { initializeMiddleware } from 'swagger-tools';
 
 var app = express();
@@ -16,13 +16,13 @@ error.log = console.error.bind(console); // eslint-disable-line no-console
 
 // swaggerRouter configuration
 var options = {
-  swaggerUi: join(__dirname, '/swagger.json'),
-  controllers: join(__dirname, './controllers'),
+  swaggerUi: pathUtil.join(__dirname, '/swagger.json'),
+  controllers: pathUtil.join(__dirname, './controllers'),
   useStubs: process.env.NODE_ENV === 'development', // Conditionally turn on stubs (mock mode)
 };
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
-var spec = readFileSync(join(__dirname, 'api/swagger.yaml'), 'utf8');
+var spec = readFileSync(pathUtil.join(__dirname, 'api/swagger.yaml'), 'utf8');
 export var swaggerDoc = safeLoad(spec);
 
 global.swaggerDoc = swaggerDoc;
