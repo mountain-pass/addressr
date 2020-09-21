@@ -1,7 +1,7 @@
 //import debug from 'debug';
 import got from 'got';
 import LinkHeader from 'http-link-header';
-import ptr from 'json-ptr';
+import { JsonPointer } from 'json-ptr';
 import { AddressrDriver } from './AddressrDriver';
 //var logger = debug('test');
 
@@ -39,9 +39,9 @@ export class AddressrRestDriver extends AddressrDriver {
     }
     const url = new URL(
       link['var-base'],
-      `http://localhost:${process.env.PORT || 8080}`,
+      `http://localhost:${process.env.PORT || 8080}`
     );
-    resp.json = ptr.create(url.hash).get(resp.json);
+    resp.json = JsonPointer.create(url.hash).get(resp.json);
 
     return resp;
   }

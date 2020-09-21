@@ -3,7 +3,7 @@ import directoryExists from 'directory-exists';
 import fs from 'fs';
 import got from 'got';
 import LinkHeader from 'http-link-header';
-import ptr from 'json-ptr';
+import { encodeUriFragmentIdentifier } from 'json-ptr';
 import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
@@ -20,7 +20,7 @@ const Keyv = require('keyv');
 const KeyvFile = require('keyv-file');
 
 const cache = new Keyv({
-  store: new KeyvFile({ filename: 'target/keyv-file.msgpack' })
+  store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
 });
 
 const PAGE_SIZE = 8;
@@ -147,18 +147,18 @@ export async function setAddresses(addr) {
   await clearAddresses();
 
   const indexingBody = [];
-  addr.forEach(row => {
+  addr.forEach((row) => {
     indexingBody.push({
       index: {
         _index: ES_INDEX_NAME,
-        _id: row.links.self.href
-      }
+        _id: row.links.self.href,
+      },
     });
     const { sla, ssla, ...structurted } = row;
     indexingBody.push({
       sla,
       ssla,
-      structurted
+      structurted,
     });
   });
 
@@ -222,7 +222,7 @@ export async function fetchGnafFile() {
   const pack = JSON.parse(res.body);
   // id as of 16/07 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
   const dataResource = pack.result.resources.find(
-    r => r.state === 'active' && r.mimetype === 'application/zip'
+    (r) => r.state === 'active' && r.mimetype === 'application/zip'
   );
 
   // id as of 16/07/2019 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
@@ -234,14 +234,14 @@ export async function fetchGnafFile() {
   const complete_path = GNAF_DIR;
   const incomplete_path = `${complete_path}/incomplete`;
   await new Promise((resolve, reject) => {
-    fs.mkdir(incomplete_path, { recursive: true }, err => {
+    fs.mkdir(incomplete_path, { recursive: true }, (err) => {
       if (err) reject(err);
       else resolve();
     });
   });
   const dest = `${complete_path}/${basename}`;
   await new Promise((resolve, reject) => {
-    fs.mkdir(incomplete_path, { recursive: true }, err => {
+    fs.mkdir(incomplete_path, { recursive: true }, (err) => {
       if (err) reject(err);
       else resolve();
     });
@@ -249,7 +249,7 @@ export async function fetchGnafFile() {
   // see if the file exists already
   try {
     await new Promise((resolve, reject) => {
-      fs.access(dest, fs.constants.R_OK, err => {
+      fs.access(dest, fs.constants.R_OK, (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -288,7 +288,7 @@ export async function unzipFile(file) {
     return complete_path;
   } else {
     await new Promise((resolve, reject) => {
-      fs.mkdir(incomplete_path, { recursive: true }, err => {
+      fs.mkdir(incomplete_path, { recursive: true }, (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -301,10 +301,10 @@ export async function unzipFile(file) {
         .pipe(
           stream.Transform({
             objectMode: true,
-            transform: function(entry, encoding, cb) {
+            transform: function (entry, encoding, cb) {
               const entryPath = `${incomplete_path}/${entry.path}`;
               if (entry.isDirectory) {
-                fs.mkdir(entryPath, { recursive: true }, err => {
+                fs.mkdir(entryPath, { recursive: true }, (err) => {
                   if (err) {
                     entry.autodrain();
                     cb(err);
@@ -315,7 +315,7 @@ export async function unzipFile(file) {
                 });
               } else {
                 const dirname = path.dirname(entryPath);
-                fs.mkdir(dirname, { recursive: true }, err => {
+                fs.mkdir(dirname, { recursive: true }, (err) => {
                   if (err) {
                     entry.autodrain();
                     cb(err);
@@ -341,7 +341,7 @@ export async function unzipFile(file) {
                             logger('finished extracting', entryPath);
                             cb();
                           })
-                          .on('error', error => {
+                          .on('error', (error) => {
                             logger('error unzipping entry', error);
                             cb(error);
                           });
@@ -350,14 +350,14 @@ export async function unzipFile(file) {
                   }
                 });
               }
-            }
+            },
           })
         )
         .on('finish', () => {
           logger('finish');
           resolve();
         })
-        .on('error', e => {
+        .on('error', (e) => {
           logger('error unzipping data file', e);
           reject(e);
         });
@@ -365,7 +365,7 @@ export async function unzipFile(file) {
     await prom;
 
     return await new Promise((resolve, reject) => {
-      fs.rename(incomplete_path, complete_path, err => {
+      fs.rename(incomplete_path, complete_path, (err) => {
         if (err) reject(err);
         else resolve(complete_path);
       });
@@ -381,7 +381,7 @@ export async function unzipFile(file) {
 
 function levelTypeCodeToName(code, context) {
   const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -392,7 +392,7 @@ function levelTypeCodeToName(code, context) {
 
 function flatTypeCodeToName(code, context) {
   const found = context['Authority_Code_FLAT_TYPE_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -403,7 +403,7 @@ function flatTypeCodeToName(code, context) {
 
 function streetTypeCodeToName(code, context) {
   const found = context['Authority_Code_STREET_TYPE_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -414,7 +414,7 @@ function streetTypeCodeToName(code, context) {
 
 function streetClassCodeToName(code, context) {
   const found = context['Authority_Code_STREET_CLASS_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -425,7 +425,7 @@ function streetClassCodeToName(code, context) {
 
 function localityClassCodeToName(code, context) {
   const found = context['Authority_Code_LOCALITY_CLASS_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -436,7 +436,7 @@ function localityClassCodeToName(code, context) {
 
 function streetSuffixCodeToName(code, context) {
   const found = context['Authority_Code_STREET_SUFFIX_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -447,7 +447,7 @@ function streetSuffixCodeToName(code, context) {
 
 function geocodeReliabilityCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODE_RELIABILITY_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -458,7 +458,7 @@ function geocodeReliabilityCodeToName(code, context) {
 
 function geocodeTypeCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODE_TYPE_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -469,7 +469,7 @@ function geocodeTypeCodeToName(code, context) {
 
 function levelGeocodedCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'].find(
-    e => e.CODE === code
+    (e) => e.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -487,46 +487,46 @@ function levelGeocodedCodeToName(code, context) {
 function mapLocality(l, context) {
   return {
     ...(l.LOCALITY_NAME !== '' && {
-      name: l.LOCALITY_NAME
+      name: l.LOCALITY_NAME,
     }),
     ...(l.LOCALITY_CLASS_CODE !== '' && {
       class: {
         code: l.LOCALITY_CLASS_CODE,
-        name: localityClassCodeToName(l.LOCALITY_CLASS_CODE, context)
-      }
-    })
+        name: localityClassCodeToName(l.LOCALITY_CLASS_CODE, context),
+      },
+    }),
   };
 }
 
 function mapStreetLocality(l, context) {
   return {
     ...(l.STREET_NAME !== '' && {
-      name: l.STREET_NAME
+      name: l.STREET_NAME,
     }),
     ...(l.STREET_TYPE_CODE !== '' && {
       type: {
         code: l.STREET_TYPE_CODE,
-        name: streetTypeCodeToName(l.STREET_TYPE_CODE, context)
-      }
+        name: streetTypeCodeToName(l.STREET_TYPE_CODE, context),
+      },
     }),
     ...(l.STREET_CLASS_CODE !== '' && {
       class: {
         code: l.STREET_CLASS_CODE,
-        name: streetClassCodeToName(l.STREET_CLASS_CODE, context)
-      }
+        name: streetClassCodeToName(l.STREET_CLASS_CODE, context),
+      },
     }),
     ...(l.STREET_SUFFIX_CODE !== '' && {
       suffix: {
         code: l.STREET_SUFFIX_CODE,
-        name: streetSuffixCodeToName(l.STREET_SUFFIX_CODE, context)
-      }
-    })
+        name: streetSuffixCodeToName(l.STREET_SUFFIX_CODE, context),
+      },
+    }),
   };
 }
 
 function mapGeo(geoSite, context, geoDefault) {
   const sites = geoSite
-    ? geoSite.map(geo => {
+    ? geoSite.map((geo) => {
         if (geo.BOUNDARY_EXTENT !== '') {
           console.log('be', geo);
           process.exit(1);
@@ -548,43 +548,43 @@ function mapGeo(geoSite, context, geoDefault) {
           ...(geo.GEOCODE_TYPE_CODE !== '' && {
             type: {
               code: geo.GEOCODE_TYPE_CODE,
-              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
-            }
+              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context),
+            },
           }),
           ...(geo.RELIABILITY_CODE !== '' && {
             reliability: {
               code: geo.RELIABILITY_CODE,
-              name: geocodeReliabilityCodeToName(geo.RELIABILITY_CODE, context)
-            }
+              name: geocodeReliabilityCodeToName(geo.RELIABILITY_CODE, context),
+            },
           }),
           ...(geo.LATITUDE !== '' && {
-            latitude: parseFloat(geo.LATITUDE)
+            latitude: parseFloat(geo.LATITUDE),
           }),
           ...(geo.LONGITUDE !== '' && {
-            longitude: parseFloat(geo.LONGITUDE)
+            longitude: parseFloat(geo.LONGITUDE),
           }),
           ...(geo.GEOCODE_SITE_DESCRIPTION !== '' && {
-            description: geo.GEOCODE_SITE_DESCRIPTION
-          })
+            description: geo.GEOCODE_SITE_DESCRIPTION,
+          }),
         };
       })
     : [];
   const def = geoDefault
-    ? geoDefault.map(geo => {
+    ? geoDefault.map((geo) => {
         return {
           default: true,
           ...(geo.GEOCODE_TYPE_CODE !== '' && {
             type: {
               code: geo.GEOCODE_TYPE_CODE,
-              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
-            }
+              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context),
+            },
           }),
           ...(geo.LATITUDE !== '' && {
-            latitude: parseFloat(geo.LATITUDE)
+            latitude: parseFloat(geo.LATITUDE),
           }),
           ...(geo.LONGITUDE !== '' && {
-            longitude: parseFloat(geo.LONGITUDE)
-          })
+            longitude: parseFloat(geo.LONGITUDE),
+          }),
         };
       })
     : [];
@@ -599,15 +599,17 @@ function mapToMla(s) {
   const fla = [];
   if (s.level) {
     fla.push(
-      `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
-        ''}${s.level.suffix || ''}`
+      `${s.level.type.name || ''} ${s.level.prefix || ''}${
+        s.level.number || ''
+      }${s.level.suffix || ''}`
     );
   }
 
   if (s.flat) {
     fla.push(
-      `${s.flat.type.name || ''} ${s.flat.prefix || ''}${s.flat.number || ''}${s
-        .flat.suffix || ''}`
+      `${s.flat.type.name || ''} ${s.flat.prefix || ''}${s.flat.number || ''}${
+        s.flat.suffix || ''
+      }`
     );
   }
 
@@ -622,14 +624,17 @@ function mapToMla(s) {
 
   let number = '';
   if (s.lotNumber && s.number === undefined) {
-    number = `LOT ${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
-      .lotNumber.suffix || ''}`;
+    number = `LOT ${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${
+      s.lotNumber.suffix || ''
+    }`;
   } else {
-    number = `${s.number.prefix || ''}${s.number.number || ''}${s.number
-      .suffix || ''}`;
+    number = `${s.number.prefix || ''}${s.number.number || ''}${
+      s.number.suffix || ''
+    }`;
     if (s.number.last) {
-      number = `${number}-${s.number.last.prefix || ''}${s.number.last.number ||
-        ''}${s.number.last.suffix || ''}`;
+      number = `${number}-${s.number.last.prefix || ''}${
+        s.number.last.number || ''
+      }${s.number.last.suffix || ''}`;
     }
   }
 
@@ -651,25 +656,30 @@ function mapToShortMla(s) {
   const fla = [];
   if (s.level) {
     fla.push(
-      `${s.level.type.name || ''} ${s.level.prefix || ''}${s.level.number ||
-        ''}${s.level.suffix || ''}`
+      `${s.level.type.name || ''} ${s.level.prefix || ''}${
+        s.level.number || ''
+      }${s.level.suffix || ''}`
     );
   }
 
   let number = '';
   if (s.flat) {
-    number = `${s.flat.prefix || ''}${s.flat.number || ''}${s.flat.suffix ||
-      ''}/`;
+    number = `${s.flat.prefix || ''}${s.flat.number || ''}${
+      s.flat.suffix || ''
+    }/`;
   }
   if (s.lotNumber && s.number === undefined) {
-    number = `${number}${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
-      .lotNumber.suffix || ''}`;
+    number = `${number}${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${
+      s.lotNumber.suffix || ''
+    }`;
   } else {
-    number = `${number}${s.number.prefix || ''}${s.number.number || ''}${s
-      .number.suffix || ''}`;
+    number = `${number}${s.number.prefix || ''}${s.number.number || ''}${
+      s.number.suffix || ''
+    }`;
     if (s.number.last) {
-      number = `${number}-${s.number.last.prefix || ''}${s.number.last.number ||
-        ''}${s.number.last.suffix || ''}`;
+      number = `${number}-${s.number.last.prefix || ''}${
+        s.number.last.number || ''
+      }${s.number.last.suffix || ''}`;
     }
   }
 
@@ -718,47 +728,47 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.LEVEL_GEOCODED_CODE !== '' && {
             level: {
               code: d.LEVEL_GEOCODED_CODE,
-              name: levelGeocodedCodeToName(d.LEVEL_GEOCODED_CODE, context)
-            }
+              name: levelGeocodedCodeToName(d.LEVEL_GEOCODED_CODE, context),
+            },
           }),
           ...(hasGeo && {
-            geocodes: mapGeo(geoSite, context, geoDefault)
-          })
-        }
+            geocodes: mapGeo(geoSite, context, geoDefault),
+          }),
+        },
       }),
     structured: {
       ...(d.BUILDING_NAME !== '' && {
-        buildingName: d.BUILDING_NAME
+        buildingName: d.BUILDING_NAME,
       }),
       ...((d.NUMBER_FIRST_PREFIX !== '' ||
         d.NUMBER_FIRST !== '' ||
         d.NUMBER_FIRST_SUFFIX !== '') && {
         number: {
           ...(d.NUMBER_FIRST_PREFIX !== '' && {
-            prefix: d.NUMBER_FIRST_PREFIX
+            prefix: d.NUMBER_FIRST_PREFIX,
           }),
           ...(d.NUMBER_FIRST !== '' && {
-            number: parseInt(d.NUMBER_FIRST)
+            number: parseInt(d.NUMBER_FIRST),
           }),
           ...(d.NUMBER_FIRST_SUFFIX !== '' && {
-            suffix: d.NUMBER_FIRST_SUFFIX
+            suffix: d.NUMBER_FIRST_SUFFIX,
           }),
           ...(d.NUMBER_LAST_PREFIX !== '' &&
             d.NUMBER_LAST !== '' &&
             d.NUMBER_LAST_SUFFIX !== '' && {
               last: {
                 ...(d.NUMBER_LAST_PREFIX !== '' && {
-                  prefix: d.NUMBER_LAST_PREFIX
+                  prefix: d.NUMBER_LAST_PREFIX,
                 }),
                 ...(d.NUMBER_LAST !== '' && {
-                  number: parseInt(d.NUMBER_LAST)
+                  number: parseInt(d.NUMBER_LAST),
                 }),
                 ...(d.NUMBER_LAST_SUFFIX !== '' && {
-                  suffix: d.NUMBER_LAST_SUFFIX
-                })
-              }
-            })
-        }
+                  suffix: d.NUMBER_LAST_SUFFIX,
+                }),
+              },
+            }),
+        },
       }),
       ...((d.LEVEL_TYPE_CODE !== '' ||
         d.LEVEL_NUMBER_PREFIX !== '' ||
@@ -768,19 +778,19 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.LEVEL_TYPE_CODE !== '' && {
             type: {
               code: d.LEVEL_TYPE_CODE,
-              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context)
-            }
+              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context),
+            },
           }),
           ...(d.LEVEL_NUMBER_PREFIX !== '' && {
-            prefix: d.LEVEL_NUMBER_PREFIX
+            prefix: d.LEVEL_NUMBER_PREFIX,
           }),
           ...(d.LEVEL_NUMBER !== '' && {
-            number: parseInt(d.LEVEL_NUMBER)
+            number: parseInt(d.LEVEL_NUMBER),
           }),
           ...(d.LEVEL_NUMBER_SUFFIX !== '' && {
-            suffix: d.LEVEL_NUMBER_SUFFIX
-          })
-        }
+            suffix: d.LEVEL_NUMBER_SUFFIX,
+          }),
+        },
       }),
       ...((d.FLAT_TYPE_CODE !== '' ||
         d.FLAT_NUMBER_PREFIX !== '' ||
@@ -790,53 +800,53 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.FLAT_TYPE_CODE !== '' && {
             type: {
               code: d.FLAT_TYPE_CODE,
-              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context)
-            }
+              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context),
+            },
           }),
           ...(d.FLAT_NUMBER_PREFIX !== '' && {
-            prefix: d.FLAT_NUMBER_PREFIX
+            prefix: d.FLAT_NUMBER_PREFIX,
           }),
           ...(d.FLAT_NUMBER !== '' && {
-            number: parseInt(d.FLAT_NUMBER)
+            number: parseInt(d.FLAT_NUMBER),
           }),
           ...(d.FLAT_NUMBER_SUFFIX !== '' && {
-            suffix: d.FLAT_NUMBER_SUFFIX
-          })
-        }
+            suffix: d.FLAT_NUMBER_SUFFIX,
+          }),
+        },
       }),
       // May need to include street locality aliases here
       street: mapStreetLocality(streetLocality, context),
       ...(d.CONFIDENCE !== '' && {
-        confidence: parseInt(d.CONFIDENCE)
+        confidence: parseInt(d.CONFIDENCE),
       }),
       locality: mapLocality(locality, context),
       ...(d.POSTCODE !== '' && {
-        postcode: d.POSTCODE
+        postcode: d.POSTCODE,
       }),
       ...((d.LOT_NUMBER_PREFIX !== '' ||
         d.LOT_NUMBER !== '' ||
         d.LOT_NUMBER_SUFFIX !== '') && {
         lotNumber: {
           ...(d.LOT_NUMBER_PREFIX !== '' && {
-            prefix: d.LOT_NUMBER_PREFIX
+            prefix: d.LOT_NUMBER_PREFIX,
           }),
           ...(d.LOT_NUMBER !== '' && {
-            number: d.LOT_NUMBER
+            number: d.LOT_NUMBER,
           }),
           ...(d.LOT_NUMBER_SUFFIX !== '' && {
-            suffix: d.LOT_NUMBER_SUFFIX
-          })
-        }
+            suffix: d.LOT_NUMBER_SUFFIX,
+          }),
+        },
       }),
       state: {
         name: context.stateName,
-        abbreviation: context.state
-      }
+        abbreviation: context.state,
+      },
     },
     ...(d.PRIMARY_SECONDARY !== '' && {
-      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary'
+      precedence: d.PRIMARY_SECONDARY === 'P' ? 'primary' : 'secondary',
     }),
-    pid: d.ADDRESS_DETAIL_PID
+    pid: d.ADDRESS_DETAIL_PID,
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
@@ -860,14 +870,14 @@ async function loadAddressDetails(file, expectedCount, context) {
     Papa.parse(fs.createReadStream(file), {
       header: true,
       skipEmptyLines: true,
-      chunk: function(chunk, parser) {
+      chunk: function (chunk, parser) {
         parser.pause();
         const items = [];
         if (chunk.errors.length > 0) {
           error(`Errors reading '${file}': ${chunk.errors}`);
         } else {
           const indexingBody = [];
-          chunk.data.forEach(row => {
+          chunk.data.forEach((row) => {
             const item = mapAddressDetails(
               row,
               context,
@@ -879,14 +889,14 @@ async function loadAddressDetails(file, expectedCount, context) {
             indexingBody.push({
               index: {
                 _index: ES_INDEX_NAME,
-                _id: `/addresses/${item.pid}`
-              }
+                _id: `/addresses/${item.pid}`,
+              },
             });
             const { sla, ssla, ...structured } = item;
             indexingBody.push({
               sla,
               ssla,
-              structured
+              structured,
             });
           });
           if (indexingBody.length > 0) {
@@ -894,7 +904,7 @@ async function loadAddressDetails(file, expectedCount, context) {
               .then(() => {
                 parser.resume();
               })
-              .catch(err => {
+              .catch((err) => {
                 error('error sending index request', err);
                 throw err;
               });
@@ -912,7 +922,7 @@ async function loadAddressDetails(file, expectedCount, context) {
       //     i += 1;
       //   }
       // },
-      complete: function() {
+      complete: function () {
         console.log('Address details loaded', context.state, expectedCount);
         resolve();
         // global.esClient.indices
@@ -935,7 +945,7 @@ async function loadAddressDetails(file, expectedCount, context) {
       error: (error, file) => {
         console.log(error, file);
         reject();
-      }
+      },
     });
   });
   if (actualCount != expectedCount) {
@@ -994,9 +1004,9 @@ async function searchForAddress(searchString, p) {
           must: [
             {
               exists: {
-                field: 'sla'
-              }
-            }
+                field: 'sla',
+              },
+            },
           ],
           ...(searchString && {
             should: [
@@ -1005,20 +1015,20 @@ async function searchForAddress(searchString, p) {
                   fields: ['sla', 'ssla'],
                   query: searchString,
                   fuzziness: 'AUTO',
-                  auto_generate_synonyms_phrase_query: true
-                }
-              }
-            ]
-          })
-        }
+                  auto_generate_synonyms_phrase_query: true,
+                },
+              },
+            ],
+          }),
+        },
       },
       highlight: {
         fields: {
           sla: {},
-          ssla: {}
-        }
-      }
-    }
+          ssla: {},
+        },
+      },
+    },
   });
   logger('hits', JSON.stringify(searchResp.hits, null, 2));
   return searchResp;
@@ -1039,7 +1049,7 @@ async function sendIndexRequest(
       const resp = await global.esClient.bulk({
         refresh: true,
         body: indexingBody,
-        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s'
+        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s',
       });
 
       if (resp.errors) {
@@ -1068,7 +1078,7 @@ async function sendIndexRequest(
       error(`backing off for ${backoff}ms`);
       // parser.pause();
       // paused = true;
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         // eslint-disable-next-line no-undef
         setTimeout(() => {
           resolve();
@@ -1086,13 +1096,13 @@ async function getStateName(abbr, file) {
     Papa.parse(fs.createReadStream(file), {
       header: true,
       delimiter: '|',
-      complete: results => {
+      complete: (results) => {
         resolve(results.data[0].STATE_NAME);
       },
       error: (error, file) => {
         console.log(error, file);
         reject(error);
-      }
+      },
     });
   });
 }
@@ -1103,7 +1113,7 @@ async function loadGnafData(dir) {
     Papa.parse(fs.createReadStream(`${dir}/Counts.csv`), {
       header: true,
       skipEmptyLines: true,
-      step: function(row) {
+      step: function (row) {
         if (row.errors.length > 0) {
           error(`Errors reading '${dir}/Counts.csv': ${row.errors}`);
         } else {
@@ -1114,14 +1124,14 @@ async function loadGnafData(dir) {
           filesCounts[psvFile] = row.data.Count;
         }
       },
-      complete: function() {
+      complete: function () {
         console.log('GNAF data loaded');
         resolve();
       },
       error: (error, file) => {
         console.log(error, file);
         reject();
-      }
+      },
     });
   });
   logger('filesCounts', filesCounts);
@@ -1130,7 +1140,7 @@ async function loadGnafData(dir) {
   const loadContext = {};
   await loadAuthFiles(files, dir, loadContext, filesCounts);
   const addressDetailFiles = files.filter(
-    f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
+    (f) => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
   );
   logger('addressDetailFiles', addressDetailFiles);
   for (let i = 0; i < addressDetailFiles.length; i++) {
@@ -1205,7 +1215,9 @@ async function loadGnafData(dir) {
 }
 
 async function loadState(files, dir, state) {
-  const stateFile = files.find(f => f.match(new RegExp(`${state}_STATE_psv`)));
+  const stateFile = files.find((f) =>
+    f.match(new RegExp(`${state}_STATE_psv`))
+  );
   if (stateFile === undefined) {
     error(`Could not find state file '${state}_STATE_psv.psv'`);
     return undefined;
@@ -1216,7 +1228,7 @@ async function loadState(files, dir, state) {
 }
 
 async function loadStreetLocality(files, dir, state) {
-  const localityFile = files.find(f =>
+  const localityFile = files.find((f) =>
     f.match(new RegExp(`${state}_STREET_LOCALITY_psv`))
   );
   if (localityFile === undefined) {
@@ -1229,20 +1241,20 @@ async function loadStreetLocality(files, dir, state) {
       Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
         header: true,
         delimiter: '|',
-        complete: results => {
+        complete: (results) => {
           resolve(results.data);
         },
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        }
+        },
       });
     });
   }
 }
 
 async function loadLocality(files, dir, state) {
-  const localityFile = files.find(f =>
+  const localityFile = files.find((f) =>
     f.match(new RegExp(`${state}_LOCALITY_psv`))
   );
   if (localityFile === undefined) {
@@ -1253,13 +1265,13 @@ async function loadLocality(files, dir, state) {
       Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
         header: true,
         delimiter: '|',
-        complete: results => {
+        complete: (results) => {
           resolve(results.data);
         },
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        }
+        },
       });
     });
   }
@@ -1268,7 +1280,7 @@ async function loadLocality(files, dir, state) {
 async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
   logger('Loading site geos');
 
-  const geoFile = files.find(f =>
+  const geoFile = files.find((f) =>
     f.match(new RegExp(`${state}_ADDRESS_SITE_GEOCODE_psv`))
   );
   if (geoFile === undefined) {
@@ -1284,12 +1296,12 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
       Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
         header: true,
         delimiter: '|',
-        chunk: function(chunk, parser) {
+        chunk: function (chunk, parser) {
           parser.pause();
           if (chunk.errors.length > 0) {
             error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
           } else {
-            chunk.data.forEach(row => {
+            chunk.data.forEach((row) => {
               if (count % Math.ceil(expectedCount / 100) === 0) {
                 logger(
                   `${Math.floor(
@@ -1314,7 +1326,7 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        }
+        },
       });
     });
   }
@@ -1322,7 +1334,7 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
 
 async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
   logger('Loading default geos');
-  const geoFile = files.find(f =>
+  const geoFile = files.find((f) =>
     f.match(new RegExp(`${state}_ADDRESS_DEFAULT_GEOCODE_psv`))
   );
   if (geoFile === undefined) {
@@ -1338,12 +1350,12 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
       Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
         header: true,
         delimiter: '|',
-        chunk: function(chunk, parser) {
+        chunk: function (chunk, parser) {
           parser.pause();
           if (chunk.errors.length > 0) {
             error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
           } else {
-            chunk.data.forEach(row => {
+            chunk.data.forEach((row) => {
               if (count % Math.ceil(expectedCount / 100) === 0) {
                 logger(
                   `${Math.floor(
@@ -1372,14 +1384,14 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
         error: (error, file) => {
           console.log(error, file);
           reject(error);
-        }
+        },
       });
     });
   }
 }
 
 async function loadAuthFiles(files, dir, loadContext, filesCounts) {
-  const authCodeFiles = files.filter(f => f.match(/Authority Code/));
+  const authCodeFiles = files.filter((f) => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
   for (let i = 0; i < authCodeFiles.length; i++) {
     const authFile = authCodeFiles[i];
@@ -1388,7 +1400,7 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
       Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
         delimiter: '|',
         header: true,
-        complete: function(results) {
+        complete: function (results) {
           loadContext[contextKey] = results.data;
           if (results.data.length != filesCounts[authFile]) {
             error(
@@ -1407,7 +1419,7 @@ async function loadAuthFiles(files, dir, loadContext, filesCounts) {
         error: (error, file) => {
           error(`Error loading '${dir}/${authFile}`, error, file);
           reject([`Error loading '${dir}/${authFile}`, error, file]);
-        }
+        },
       });
     });
   }
@@ -1454,19 +1466,19 @@ export async function getAddress(addressId) {
   try {
     const jsonX = await global.esClient.get({
       index: ES_INDEX_NAME,
-      id: `/addresses/${addressId}`
+      id: `/addresses/${addressId}`,
     });
     logger('jsonX', jsonX);
     const json = {
       ...jsonX._source.structured,
-      sla: jsonX._source.sla
+      sla: jsonX._source.sla,
     };
     logger('json', json);
     delete json._id;
     const link = new LinkHeader();
     link.set({
       rel: 'self',
-      uri: `/addresses/${addressId}`
+      uri: `/addresses/${addressId}`,
     });
 
     return { link, json };
@@ -1504,30 +1516,30 @@ export async function getAddresses(url, swagger, q, p = 1) {
       'x-swagger-router-controller'
     ].toLowerCase()}-${swagger.path.get.operationId}`,
     title: `${swagger.path.get.operationId} API Docs`,
-    type: 'text/html'
+    type: 'text/html',
   });
   const sp = new URLSearchParams({
     ...(q !== undefined && { q }),
-    ...(p !== 1 && { p })
+    ...(p !== 1 && { p }),
   });
   const spString = sp.toString();
   link.set({
     rel: 'self',
-    uri: `${url}${spString === '' ? '' : '?'}${spString}`
+    uri: `${url}${spString === '' ? '' : '?'}${spString}`,
   });
   link.set({
     rel: 'first',
     uri: `${url}${q === undefined ? '' : '?'}${new URLSearchParams({
-      ...(q !== undefined && { q })
-    }).toString()}`
+      ...(q !== undefined && { q }),
+    }).toString()}`,
   });
   if (p > 1) {
     link.set({
       rel: 'prev',
       uri: `${url}${q === undefined && p == 2 ? '' : '?'}${new URLSearchParams({
         ...(q !== undefined && { q }),
-        ...(p > 2 && { p: p - 1 })
-      }).toString()}`
+        ...(p > 2 && { p: p - 1 }),
+      }).toString()}`,
     });
   }
   logger('TOTAL', foundAddresses.hits.total.value);
@@ -1539,8 +1551,8 @@ export async function getAddresses(url, swagger, q, p = 1) {
       rel: 'next',
       uri: `${url}?${new URLSearchParams({
         ...(q !== undefined && { q }),
-        p: p + 1
-      }).toString()}`
+        p: p + 1,
+      }).toString()}`,
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);
@@ -1550,18 +1562,18 @@ export async function getAddresses(url, swagger, q, p = 1) {
   const op = swagger.path.get;
   if (op.parameters) {
     const parameters = op.parameters;
-    const queryParams = parameters.filter(param => param.in === 'query');
+    const queryParams = parameters.filter((param) => param.in === 'query');
     const linkOptions = {
       rel: op['x-root-rel'],
-      uri: `${url}{?${queryParams.map(qp => qp.name).join(',')}}`,
+      uri: `${url}{?${queryParams.map((qp) => qp.name).join(',')}}`,
       title: op.summary,
       type: 'application/json',
-      'var-base': `/api-docs${ptr.encodeUriFragmentIdentifier([
+      'var-base': `/api-docs${encodeUriFragmentIdentifier([
         'paths',
         url,
         'get',
-        'parameters'
-      ])}`
+        'parameters',
+      ])}`,
     };
     linkTemplate.set(linkOptions);
   }
@@ -1570,15 +1582,15 @@ export async function getAddresses(url, swagger, q, p = 1) {
 }
 
 function mapToSearchAddressResponse(foundAddresses) {
-  return foundAddresses.hits.hits.map(h => {
+  return foundAddresses.hits.hits.map((h) => {
     return {
       sla: h._source.sla,
       score: h._score,
       links: {
         self: {
-          href: h._id
-        }
-      }
+          href: h._id,
+        },
+      },
     };
   });
 }

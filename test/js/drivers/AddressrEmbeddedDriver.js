@@ -1,6 +1,6 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
-import ptr from 'json-ptr';
+import { JsonPointer } from 'json-ptr';
 import { URI } from 'uri-template-lite';
 import { getAddress, getAddresses } from '../../../service/AddressService';
 import { getApiRoot } from '../../../service/DefaultService';
@@ -35,25 +35,25 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
           link.uri,
           getSwagger(link.uri),
           undefined,
-          undefined,
+          undefined
         );
       default: {
         if (link.uri.startsWith('/addresses?')) {
           const url = new URL(
             link.uri,
-            `http://localhost:${process.env.PORT || 8080}`,
+            `http://localhost:${process.env.PORT || 8080}`
           );
           logger('searchParams', url.searchParams);
           logger(
             "parseInt(url.searchParams.get('p') || 1)",
-            parseInt(url.searchParams.get('p') || 1),
+            parseInt(url.searchParams.get('p') || 1)
           );
           const query = url.searchParams.get('q');
           return getAddresses(
             url.pathname,
             getSwagger(url.pathname),
             query == null ? undefined : query,
-            parseInt(url.searchParams.get('p') || 1),
+            parseInt(url.searchParams.get('p') || 1)
           );
         } else if (link.uri.startsWith('/addresses/')) {
           var template = new URI.Template('/addresses/{address_id}');
@@ -78,11 +78,11 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
     logger('FOLLOWING VAR BASE', link['var-base']);
     const url = new URL(
       link['var-base'],
-      `http://localhost:${process.env.PORT || 8080}`,
+      `http://localhost:${process.env.PORT || 8080}`
     );
     if (url.pathname === '/api-docs') {
       logger(url);
-      const jsonPtr = ptr.create(url.hash);
+      const jsonPtr = JsonPointer.create(url.hash);
       return { json: jsonPtr.get(swaggerDoc) };
     } else {
       throw new PendingError(url.pathname);
