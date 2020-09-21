@@ -10,14 +10,13 @@ import unzip from 'unzip-stream';
 import { initIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './setLinkOptions';
+import Keyv from 'keyv';
+import { KeyvFile } from 'keyv-file';
 
 const fsp = fs.promises;
 
 var logger = debug('api');
 var error = debug('error');
-
-const Keyv = require('keyv');
-const KeyvFile = require('keyv-file');
 
 const cache = new Keyv({
   store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
