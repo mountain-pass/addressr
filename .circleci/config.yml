@@ -31,8 +31,8 @@ jobs:
       - image: circleci/node:11.14.0
       - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
-          "discovery.type": "single-node"
-          "bootstrap.system_call_filter": "false"
+          'discovery.type': 'single-node'
+          'bootstrap.system_call_filter': 'false'
     steps:
       - checkout
       - restore_cache:
@@ -49,7 +49,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
-            npm run cover:component
+            npm run cover:component:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.component.json coverage/component/lcov.info
             npm run cover:system
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.system.json coverage/system/lcov.info
@@ -73,8 +73,8 @@ jobs:
       - image: circleci/node:11.14.0
       - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
         environment:
-          "discovery.type": "single-node"
-          "bootstrap.system_call_filter": "false"
+          'discovery.type': 'single-node'
+          'bootstrap.system_call_filter': 'false'
     steps:
       - checkout
 
@@ -136,7 +136,7 @@ jobs:
     steps:
       - queue/until_front_of_line:
           only-on-branch: master
-          time: "10"
+          time: '10'
       - checkout
 
       - restore_cache:
