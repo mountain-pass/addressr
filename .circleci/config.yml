@@ -53,15 +53,11 @@ jobs:
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.nodejs.json coverage/nodejs/lcov.info
             npm run cover:rest:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.rest.json coverage/rest/lcov.info
-            export SUDO_INSTALL=sudo
-            npm run cover:cli:nogeo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.cli.json coverage/cli/lcov.info
       - persist_to_workspace:
           root: coverage
           paths:
             - codeclimate.nodejs.json
             - codeclimate.rest.json
-            - codeclimate.cli.json
       - store_test_results:
           path: test-results
       - store_artifacts:
