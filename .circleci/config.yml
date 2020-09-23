@@ -95,7 +95,9 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
-            export SUDO_INSTALL=sudo
+            export NPM_CONFIG_PREFIX=$(pwd)/global-npm
+            mkdir -p NPM_CONFIG_PREFIX
+            export PATH=$PATH:$NPM_CONFIG_PREFIX
             npm run cover:cli:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.cli.json coverage/cli/lcov.info
       - persist_to_workspace:
