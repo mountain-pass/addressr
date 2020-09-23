@@ -97,7 +97,7 @@ jobs:
             export ES_STARTED=1
             export NPM_CONFIG_PREFIX=$(pwd)/global-npm
             mkdir -p NPM_CONFIG_PREFIX
-            export PATH=$PATH:$NPM_CONFIG_PREFIX
+            export PATH=$PATH:$NPM_CONFIG_PREFIX/bin
             npm run cover:cli:nogeo
             ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.cli.json coverage/cli/lcov.info
       - persist_to_workspace:
