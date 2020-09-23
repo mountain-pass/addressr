@@ -169,7 +169,7 @@ jobs:
       - run:
           name: Upload coverage results to Code Climate
           command: |
-            ./node_modules/cc-test-reporter sum-coverage coverage/codeclimate.*.json -p 4 -o coverage/codeclimate.total.json
+            ./node_modules/cc-test-reporter sum-coverage coverage/codeclimate.*.json -p 5 -o coverage/codeclimate.total.json
             ./node_modules/cc-test-reporter upload-coverage -i coverage/codeclimate.total.json
 
   build-and-release:
