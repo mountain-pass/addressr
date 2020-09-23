@@ -191,9 +191,6 @@ workflows:
       - test-geo:
           requires:
             - deps
-      - test-cli:
-          requires:
-            - deps
       - upload-coverage:
           requires:
             - test
