@@ -1,6 +1,6 @@
 Feature: Structured Address
 
-#GAOT_718709561
+    #GAOT_718709561
 
     @geo
     Scenario: Getting Structured Address
@@ -39,15 +39,17 @@ Feature: Structured Address
                 },
                 "pid": "GAOT_718446632",
                 "geocoding": {
-                    "geocodes": [ {
-                        "default": true,
-                        "latitude": -10.48549891,
-                        "longitude": 105.63584627,
-                        "type": {
-                            "code": "LOC",
-                            "name": "LOCALITY"
+                    "geocodes": [
+                        {
+                            "default": true,
+                            "latitude": -10.48549891,
+                            "longitude": 105.63584627,
+                            "type": {
+                                "code": "LOC",
+                                "name": "LOCALITY"
+                            }
                         }
-                    } ],
+                    ],
                     "level": {
                         "code": "4",
                         "name": "LOCALITY,NO STREET,NO ADDRESS"

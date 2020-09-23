@@ -225,6 +225,7 @@ When('the {string} link template is followed with:', async function (
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
   const link = this.current.linkTemplate.get('rel', rel);
+  logger('link', link);
   this.current = await this.driver.followTemplate(
     link[0],
     parameters.rowsHash()
@@ -265,6 +266,7 @@ When(
   'the {string} link of the first address in the list is followed',
   async function (rel) {
     this.prev = this.current;
+    logger('current', this.current);
     this.current = await this.driver.follow({
       uri: this.current.json[0].links[rel].href,
     });

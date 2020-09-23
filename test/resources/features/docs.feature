@@ -1,6 +1,6 @@
 Feature: Docs
 
-    @not-component
+    @not-nodejs
     Scenario: HTML Docs
         When the root api is requested
         And the "describedby" link is followed for "text/html"

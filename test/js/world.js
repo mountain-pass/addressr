@@ -35,11 +35,33 @@ const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
 const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
 
+var serverPort = process.env.PORT || 8080;
+
+async function startExternalServer() {
+  await waitport({
+    port: Number.parseInt(serverPort),
+    timeout: 60000,
+  });
+  return `http://localhost:${serverPort}`;
+}
+
+async function ensureDockerServerStarted() {
+  // wait till running
+  throw new PendingError();
+  // return `http://localhost:${serverPort}`;
+}
+
 BeforeAll({ timeout: 240000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
-    case 'system':
+    case 'rest':
       global.driver = new AddressrRestDriver(await startServer());
+      break;
+    case 'cli':
+      global.driver = new AddressrRestDriver(await startExternalServer());
+      break;
+    case 'docker':
+      global.driver = new AddressrRestDriver(await ensureDockerServerStarted());
       break;
     default:
       global.driver = new AddressrEmbeddedDriver();

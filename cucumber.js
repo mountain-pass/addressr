@@ -26,12 +26,19 @@ function generateConfig(profile) {
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
     FORMAT_OPTIONS
   )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
-  if (profile === 'system') {
+  if (profile === 'rest') {
     const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest',
     })}'`;
     console.log('BASE_CONFIG', rval);
-
+    return rval;
+  }
+  if (profile === 'cli') {
+    const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
+      client: 'rest',
+      starter: 'cli',
+    })}'`;
+    console.log('BASE_CONFIG', rval);
     return rval;
   }
   console.log('BASE_CONFIG', BASE_CONFIG);
@@ -39,6 +46,7 @@ function generateConfig(profile) {
 }
 
 module.exports = {
-  default: generateConfig('component'),
-  system: generateConfig('system'),
+  default: generateConfig('nodejs'),
+  rest: generateConfig('rest'),
+  cli: generateConfig('cli'),
 };

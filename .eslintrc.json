@@ -47,7 +47,15 @@
     "node/no-unsupported-features/es-syntax": "off",
     "node/no-deprecated-api": "warn",
     "no-process-exit": "warn",
-    "complexity": "warn"
+    "complexity": "warn",
+    "node/shebang": [
+      "error",
+      {
+        "convertPath": {
+          "bin/**/*.js": ["^bin/(.+?)\\.js$", "lib/bin/$1.js"]
+        }
+      }
+    ]
   },
   "overrides": [
     {

@@ -1029,7 +1029,7 @@ async function searchForAddress(searchString, p) {
       },
     },
   });
-  logger('hits', JSON.stringify(searchResp.hits, null, 2));
+  logger('hits', JSON.stringify(searchResp.hits, undefined, 2));
   return searchResp;
 }
 
@@ -1073,7 +1073,7 @@ async function sendIndexRequest(
       // }
       return;
     } catch (error_) {
-      error('Indexing error', JSON.stringify(error_, null, 2));
+      error('Indexing error', JSON.stringify(error_, undefined, 2));
       error(`backing off for ${backoff}ms`);
       // parser.pause();
       // paused = true;
@@ -1502,7 +1502,6 @@ export async function getAddress(addressId) {
 export async function getAddresses(url, swagger, q, p = 1) {
   const foundAddresses = await searchForAddress(q, p);
   logger('foundAddresses', foundAddresses);
-
   const link = new LinkHeader();
   link.set({
     rel: 'describedby',
