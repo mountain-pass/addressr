@@ -12,7 +12,6 @@ export function getAddress(request, res) {
   _getAddress(addressId)
     .then(function (response) {
       res.setHeader('link', response.link.toString());
-      logger('RESPONSEYYY', JSON.stringify(response, undefined, 2));
       writeJson(res, response.json);
     })
     .catch(function (error) {
@@ -32,7 +31,6 @@ export function getAddresses(request, res) {
     .then(function (response) {
       res.setHeader('link', response.link.toString());
       res.setHeader('link-template', response.linkTemplate.toString());
-      logger('RESPONSEXXX', JSON.stringify(response, undefined, 2));
       writeJson(res, response.json);
     })
     .catch(function (error) {

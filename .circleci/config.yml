@@ -205,9 +205,8 @@ jobs:
             fi
             npm --unsafe-perm --no-git-tag-version version patch -m "Version bump to %s."
             # now pack and publish
-            npm pack
-            npm run dopublish
             npm run build:docker
+            npm run dopublish
             npm run docker:push
             PUBLISHED_VERSION=$(node -p "require('./package.json').version")
             git tag "v${PUBLISHED_VERSION}"
