@@ -10,7 +10,7 @@
     "node": ">=11.14.0"
   },
   "config": {
-    "localport": "8080"
+    "localport": "6060"
   },
   "scripts": {
     "hmm": "echo mountainpass-addressr-${npm_package_version}.tgz",
@@ -49,17 +49,17 @@
     "test:nodejs:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "cover:nodejs:geo": "nyc --report-dir coverage/nodejs-geo --temp-dir coverage/nodejs-geo/.nyc_output npm run test:nodejs:geo",
     "watch:test:nodejs:nogeo": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:nodejs:nogeo",
-    "test:rest:nogeo": "ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=rest cucumber-js -p rest -- --harmony_async_iteration",
+    "test:rest:nogeo": "PORT=$npm_package_config_localport ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=rest cucumber-js -p rest -- --harmony_async_iteration",
     "cover:rest:nogeo": "nyc --report-dir coverage/rest --temp-dir coverage/rest/.nyc_output npm run test:rest:nogeo",
-    "test:rest:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=rest cucumber-js -p rest -- --harmony_async_iteration",
+    "test:rest:geo": "PORT=$npm_package_config_localport ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=rest cucumber-js -p rest -- --harmony_async_iteration",
     "cover:rest:geo": "nyc --report-dir coverage/rest-geo --temp-dir coverage/rest-geo/.nyc_output npm run test:rest:geo",
     "watch:test:rest:nogeo": "nodemon -V  --ext \"*.feature, *.js, *.json, *.css, *.yaml\" -x npm -- run test:rest:nogeo",
     "dotest:cli:nogeo": "ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=cli cucumber-js -p cli -- --harmony_async_iteration",
     "pretest:cli:nogeo": "npm pack && npm install -g mountainpass-addressr-${npm_package_version}.tgz && ES_INDEX_NAME=test COVERED_STATES=OT DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport addressr-loader",
-    "test:cli:nogeo": "ES_INDEX_NAME=test PORT=8080 run-p --race start:server:preinstalled dotest:cli:nogeo",
+    "test:cli:nogeo": "ES_INDEX_NAME=test PORT=$npm_package_config_localport run-p --race start:server:preinstalled dotest:cli:nogeo",
     "cover:cli:nogeo": "nyc --report-dir coverage/cli --temp-dir coverage/cli/.nyc_output npm run test:cli:nogeo",
-    "test:nodejs:QLD:nogeo": "ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
-    "test:nodejs:QLD:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default NODE_OPTIONS=--max_old_space_size=8196 cucumber-js -p default -- --harmony_async_iteration",
+    "test:nodejs:QLD:nogeo": "PORT=$npm_package_config_localport ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
+    "test:nodejs:QLD:geo": "PORT=$npm_package_config_localport ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=QLD DEBUG=error,api,express:*,swagger-tools*,test,es TEST_PROFILE=default NODE_OPTIONS=--max_old_space_size=8196 cucumber-js -p default -- --harmony_async_iteration",
     "metrics:purge": "./scripts/metrics.js delete custom.googleapis.com/opencensus/addressr/server/mem-usage addressr-249104",
     "prebuld": "cat ./templates/LICENSE.md | envsubst '${PRODUCT},${VERSION},${COMPANY},${YEAR}' > ./LICENSE.md",
     "build": "babel . --ignore ./LICENSE.template.md --ignore  node_modules --ignore test --ignore lib --ignore cucumber.js --ignore scripts -d lib ",

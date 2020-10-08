@@ -29,6 +29,7 @@
    addressr-server
    ```
 4. Setup the env vars for the data loader. In a third window run:
+
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
@@ -37,18 +38,24 @@
    export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000
    export ADDRESSR_INDEX_BACKOFF_MAX=10000
    ```
+
    1. Optional - enable geocodes by setting the following env vars for the data loader. In the third window run:
       **NOTE:** with geocodes enabled, indexing takes much longer and needs much more memory. Only use turn them on if you need them. You can always add them later.
+
    ```
    export ADDRESSR_ENABLE_GEO=1
    export NODE_OPTIONS=--max_old_space_size=8196
    ```
+
    2. Optional - limit the addresses to a single state by setting the `COVERED_STATES` env var for the data loader.
       This dramatically speeds up indexing. For example, in the third window run:
+
    ```
-   COVERED_STATES=VIC,SA
+   export COVERED_STATES=VIC,SA
    ```
+
    Valid values are:
+
    - ACT
    - NSW
    - NT
@@ -58,6 +65,7 @@
    - TAS
    - VIC
    - WA
+
 5. Run data Loader. In the third window run:
    ```
    addressr-loader
@@ -73,6 +81,17 @@
 ## How it Works
 
 ![How it works](https://addressr.mountain-pass.com.au/static/addressr-43fb89f43718b9b9d05becd4cb045672.svg 'How it works')
+
+## Additional Settings
+
+| Environment Variable | Value       | Description                                           | Default |
+| -------------------- | ----------- | ----------------------------------------------------- | ------- |
+| ELASTIC_PROTOCOL     | http        | Connect to elastic search over http                   | ✅      |
+| ELASTIC_PROTOCOL     | https       | Connect to elastic search over https                  |         |
+| ELASTIC_USERNAME     | _blank_     | Connect to elastic search without authentication      | ✅      |
+| ELASTIC_USERNAME     | _non-blank_ | Connect to elastic search with the specified username |         |
+| ELASTIC_PASSWORD     | _blank_     | Connect to elastic search without authentication      | ✅      |
+| ELASTIC_PASSWORD     | _non-blank_ | Connect to elastic search with the specified password |         |
 
 ## System requirements
 

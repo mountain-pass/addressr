@@ -7,6 +7,9 @@ const error = debug('error');
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
 export const ELASTIC_PORT = Number.parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
+const ELASTIC_USERNAME = process.env.ELASTIC_USERNAME || undefined;
+const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD || undefined;
+const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http';
 
 const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
 
@@ -146,10 +149,21 @@ export async function esConnect(
         // eslint-disable-next-line no-constant-condition
         while (true) {
           try {
-            const esClient = new elasticsearch.Client({
-              host: `${eshost}:${esport}`,
+            const esClientOptions = {
+              host: [
+                {
+                  host: eshost,
+                  ...(ELASTIC_USERNAME &&
+                    ELASTIC_PASSWORD && {
+                      auth: `${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}`,
+                    }),
+                  protocol: ELASTIC_PROTOCOL,
+                  port: esport,
+                },
+              ],
               log: 'info',
-            });
+            };
+            const esClient = new elasticsearch.Client(esClientOptions);
             logger(
               `connecting elastic search client on ${eshost}:${esport}...`
             );
