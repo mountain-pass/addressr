@@ -2,13 +2,15 @@ ARG BASE_IMAGE=node:11.14.0-alpine
 FROM ${BASE_IMAGE}
 ARG MAINTAINER
 LABEL maintainer="${MAINTAINER}"
-ARG USER=node
-ARG PACKAGE
-USER ${USER}
 
 RUN apk add --no-cache \
     dumb-init
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+ARG USER=node
+ARG PACKAGE
+USER ${USER}
+
 
 RUN mkdir -p "/home/${USER}/.npm"
 RUN npm config set prefix "/home/${USER}/.npm"
