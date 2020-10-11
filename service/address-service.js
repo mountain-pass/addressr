@@ -869,6 +869,10 @@ async function loadAddressDetails(file, expectedCount, context) {
     Papa.parse(fs.createReadStream(file), {
       header: true,
       skipEmptyLines: true,
+      chunkSize:
+        Number.parseInt(process.env.ADDRESSR_LOADING_CHUNK_SIZE || '10') *
+        1024 *
+        1024,
       chunk: function (chunk, parser) {
         parser.pause();
         const items = [];
@@ -1035,15 +1039,11 @@ async function searchForAddress(searchString, p) {
 
 async function sendIndexRequest(
   indexingBody,
-  initialBackoff = process.env.ADDRESSR_INDEX_BACKOFF || 1000
+  initialBackoff = Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF || '1000')
 ) {
   let backoff = initialBackoff;
   // eslint-disable-next-line no-constant-condition
-  while (true) {
-    let nextBackoff = Math.min(
-      process.env.ADDRESSR_INDEX_BACKOFF_MAX || 10000,
-      backoff + (process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || 1000)
-    );
+  for (let count = 0; true; count++) {
     try {
       const resp = await global.esClient.bulk({
         refresh: true,
@@ -1083,9 +1083,15 @@ async function sendIndexRequest(
           resolve();
         }, backoff);
       });
-      // eslint-disable-next-line require-atomic-updates
-      backoff = nextBackoff;
-      continue;
+      backoff += Number.parseInt(
+        process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || '1000'
+      );
+      backoff = Math.min(
+        Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF_MAX || '30000'),
+        backoff
+      );
+      error(`next backoff: ${backoff}ms`);
+      error(`count: ${count}`);
     }
   }
 }
