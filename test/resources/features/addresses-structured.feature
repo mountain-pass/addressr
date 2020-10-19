@@ -113,3 +113,23 @@ Feature: Structured Address
         And the response will contain the following links:
             | rel  | uri                       | title | type |
             | self | /addresses/GAOT_718446632 |       |      |
+
+
+    @not-nodejs @not-cli
+    Scenario: Allow CORS for Root
+        When CORS is set to "*"
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        And the "self" link of the first address in the list is followed
+        Then the reponse will have a "access-control-allow-origin" of "*"
+
+
+    @not-nodejs @not-cli
+    Scenario: Swagger Docs No CORS
+        When CORS is not set
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        And the "self" link of the first address in the list is followed
+        Then the reponse will not have a "access-control-allow-origin" header

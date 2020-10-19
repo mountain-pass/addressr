@@ -278,3 +278,25 @@ Then('the response will contain:', async function (documentString) {
   console.log(JSON.stringify(this.current.json));
   expect(this.current.json).to.deep.equal(e);
 });
+
+When('CORS is set to {string}', async function (string) {
+  process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN = string;
+});
+
+When('CORS is not set', async function () {
+  delete process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN;
+});
+
+Then('the reponse will have a {string} of {string}', async function (
+  headerName,
+  headerValue
+) {
+  expect(this.current.headers[headerName.toString()]).to.not.be.undefined;
+  expect(this.current.headers[headerName.toString()]).to.equal(headerValue);
+});
+
+Then('the reponse will not have a {string} header', async function (
+  headerName
+) {
+  expect(this.current.headers[headerName.toString()]).to.be.undefined;
+});

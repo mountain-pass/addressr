@@ -18,6 +18,7 @@ export class AddressrRestDriver extends AddressrDriver {
       link: LinkHeader.parse(resp.headers.link || ''),
       body: resp.body,
       linkTemplate: LinkHeader.parse(resp.headers['link-template'] || ''),
+      headers: resp.headers,
     };
   }
 

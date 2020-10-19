@@ -66,7 +66,7 @@ Feature: Address
                     }
                 ],
                 "Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv": [
-                    { 
+                    {
                         "CODE": "7",
                         "NAME": "LOCALITY,STREET, ADDRESS"
                     }
@@ -80,11 +80,14 @@ Feature: Address
                 "state": "QLD",
                 "stateName": "QUEENSLAND",
                 "geoDefaultIndexed": {
-                    "GAQLD163157353": [ { "ADDRESS_DETAIL_PID": "GAQLD163157353",
-                        "GEOCODE_TYPE_CODE":"PC",
-                        "LONGITUDE": "151.98157112",
-                        "LATITUDE": "-28.62207489" 
-                    } ]
+                    "GAQLD163157353": [
+                        {
+                            "ADDRESS_DETAIL_PID": "GAQLD163157353",
+                            "GEOCODE_TYPE_CODE": "PC",
+                            "LONGITUDE": "151.98157112",
+                            "LATITUDE": "-28.62207489"
+                        }
+                    ]
                 }
             }
             """
@@ -121,55 +124,58 @@ Feature: Address
         Then the address details will map to the following address:
             """
             {
-            "structured": {
-                "street": {
-                "name": "AERODROME",
-                "type": {
-                    "code": "ROAD",
-                    "name": "RD"
-                },
-                "class": {
-                    "code": "C",
-                    "name": "CONFIRMED"
-                }
-                },
-                "confidence": 0,
-                "locality": {
-                "name": "APPLETHORPE",
-                "class": {
-                    "code": "G",
-                    "name": "GAZETTED LOCALITY"
-                }
-                },
-                "postcode": "4378",
-                "lotNumber": {
-                "number": "16"
-                },
-                "state": {
-                "name": "QUEENSLAND",
-                "abbreviation": "QLD"
-                }
-            },
-            "geocoding": {
-                "geocodes": [
-                {
-                    "default": true,
-                    "latitude": -28.62207489,
-                    "longitude": 151.98157112,
-                    "type": {
-                    "code": "PC",
-                    "name": "PROPERTY CENTROID"
+                "structured": {
+                    "street": {
+                        "name": "AERODROME",
+                        "type": {
+                            "code": "ROAD",
+                            "name": "RD"
+                        },
+                        "class": {
+                            "code": "C",
+                            "name": "CONFIRMED"
+                        }
+                    },
+                    "confidence": 0,
+                    "locality": {
+                        "name": "APPLETHORPE",
+                        "class": {
+                            "code": "G",
+                            "name": "GAZETTED LOCALITY"
+                        }
+                    },
+                    "postcode": "4378",
+                    "lotNumber": {
+                        "number": "16"
+                    },
+                    "state": {
+                        "name": "QUEENSLAND",
+                        "abbreviation": "QLD"
                     }
-                }
+                },
+                "geocoding": {
+                    "geocodes": [
+                        {
+                            "default": true,
+                            "latitude": -28.62207489,
+                            "longitude": 151.98157112,
+                            "type": {
+                                "code": "PC",
+                                "name": "PROPERTY CENTROID"
+                            }
+                        }
+                    ],
+                    "level": {
+                        "code": "7",
+                        "name": "LOCALITY,STREET, ADDRESS"
+                    }
+                },
+                "pid": "GAQLD163157353",
+                "mla": [
+                    "LOT 16 AERODROME RD",
+                    "APPLETHORPE QLD 4378"
                 ],
-                "level": {
-                "code": "7",
-                "name": "LOCALITY,STREET, ADDRESS"
-                }
-            },
-            "pid": "GAQLD163157353",
-            "mla": ["LOT 16 AERODROME RD", "APPLETHORPE QLD 4378"],
-            "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
+                "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
             }
             """
 
@@ -405,3 +411,20 @@ Feature: Address
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
 
+
+
+    @not-nodejs @not-cli
+    Scenario: Allow CORS for Root
+        When CORS is set to "*"
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        Then the reponse will have a "access-control-allow-origin" of "*"
+
+    @not-nodejs @not-cli
+    Scenario: Swagger Docs No CORS
+        When CORS is not set
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 4 COCONUT GROVE |
+        Then the reponse will not have a "access-control-allow-origin" header

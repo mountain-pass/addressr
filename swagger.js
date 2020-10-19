@@ -94,6 +94,16 @@ export function swaggerInit() {
 let server;
 
 export function startServer() {
+  app.use((request, response, next) => {
+    if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
+      response.append(
+        'Access-Control-Allow-Origin',
+        process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN
+      );
+    }
+    next();
+  });
+
   return swaggerInit().then(({ app /*, middleware*/ }) => {
     // logger(app);
     // logger(middleware);
