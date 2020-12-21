@@ -46,11 +46,6 @@ jobs:
             export ES_STARTED=1
             npm run cover:nodejs:nogeo
             npm run cover:rest:nogeo
-      - persist_to_workspace:
-          root: coverage
-          paths:
-            - codeclimate.nodejs.json
-            - codeclimate.rest.json
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -88,10 +83,6 @@ jobs:
             mkdir -p NPM_CONFIG_PREFIX
             export PATH=$PATH:$NPM_CONFIG_PREFIX/bin
             npm run cover:cli:nogeo
-      - persist_to_workspace:
-          root: coverage
-          paths:
-            - codeclimate.cli.json
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -128,11 +119,6 @@ jobs:
             export ES_STARTED=1
             npm run cover:nodejs:geo
             npm run cover:rest:geo
-      - persist_to_workspace:
-          root: coverage
-          paths:
-            - codeclimate.nodejs-geo.json
-            - codeclimate.rest-geo.json
       - store_test_results:
           path: test-results
       - store_artifacts:
