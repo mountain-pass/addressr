@@ -27,6 +27,7 @@
     "start:loader:VIC:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=ot COVERED_STATES=VIC DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js",
     "start:loader": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node loader.js",
     "start:loader:geo": "ADDRESSR_ENABLE_GEO=1 DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
+    "start:loader:geo:prod": ". .env && env | grep ADDRESSR && ADDRESSR_ENABLE_GEO=1 DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node server.js",
     "start:server:prod": ". .env && env | grep ADDRESSR && PORT=$npm_package_config_localport babel-node server.js",
     "start:server:preinstalled": "ES_INDEX_NAME=test DEBUG=error,api,express:*,swagger-tools*,test,es  PORT=$npm_package_config_localport addressr-server",

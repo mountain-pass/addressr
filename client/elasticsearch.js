@@ -81,9 +81,16 @@ export async function initIndex(esClient, clear, synonyms) {
     });
   } else {
     // update the index
-    esClient.indices.putSettings({
+    await esClient.indices.close({
+      index: ES_INDEX_NAME,
+    });
+    await esClient.indices.putSettings({
       index: ES_INDEX_NAME,
       body: indexBody,
+    });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    await esClient.indices.open({
+      index: ES_INDEX_NAME,
     });
   }
   await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });
