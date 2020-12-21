@@ -1,3 +1,6 @@
+/* eslint-disable eslint-comments/disable-enable-pair */
+/* eslint-disable security/detect-object-injection */
+/* eslint-disable security/detect-non-literal-fs-filename */
 import { Given, Then, When } from 'cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
@@ -82,18 +85,23 @@ Then('the response will contain the following link template:', async function (
   //   });
 });
 
-When('the {string} link is followed for {string}', async function (rel, type) {
+When('the {string} link is followed for {string}', async function (
+  relationship,
+  type
+) {
   this.prev = this.current;
   expect(this.current.link).to.not.be.undefined;
-  const link = this.current.link.get('rel', rel).find((l) => l.type === type);
+  const link = this.current.link
+    .get('rel', relationship)
+    .find((l) => l.type === type);
   logger('link', link);
   this.current = await this.driver.follow(link);
 });
 
-When('the {string} link is followed', async function (rel) {
+When('the {string} link is followed', async function (relationship) {
   this.prev = this.current;
   expect(this.current.link).to.not.be.undefined;
-  const link = this.current.link.get('rel', rel);
+  const link = this.current.link.get('rel', relationship);
   logger('link', link);
   this.current = await this.driver.follow(link[0]);
 });
@@ -206,12 +214,12 @@ Then(
 );
 
 Then('the {string} link templates var-base will contain', async function (
-  rel,
+  relationship,
   expectedParameters
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
-  const link = this.current.linkTemplate.get('rel', rel);
+  const link = this.current.linkTemplate.get('rel', relationship);
   logger('link', link);
   this.current = await this.driver.followVarBase(link[0]);
   logger(JSON.stringify(this.current.json));
@@ -219,12 +227,12 @@ Then('the {string} link templates var-base will contain', async function (
 });
 
 When('the {string} link template is followed with:', async function (
-  rel,
+  relationship,
   parameters
 ) {
   this.prev = this.current;
   expect(this.current.linkTemplate).to.not.be.undefined;
-  const link = this.current.linkTemplate.get('rel', rel);
+  const link = this.current.linkTemplate.get('rel', relationship);
   logger('link', link);
   this.current = await this.driver.followTemplate(
     link[0],
@@ -235,13 +243,13 @@ When('the {string} link template is followed with:', async function (
 Then('the returned address list will include:', async function (
   documentString
 ) {
-  const e = JSON.parse(documentString);
+  const entity = JSON.parse(documentString);
   const found = this.current.json.find((a) => {
     return (
-      a.sla === e.sla &&
+      a.sla === entity.sla &&
       // SCORE is non-deterministic
       // a.score === e.score &&
-      a.links.self.href === e.links.self.href
+      a.links.self.href === entity.links.self.href
     );
   });
   expect(found).to.not.be.undefined;
@@ -250,13 +258,13 @@ Then('the returned address list will include:', async function (
 Then('the returned address list will NOT include:', async function (
   documentString
 ) {
-  const e = JSON.parse(documentString);
+  const entity = JSON.parse(documentString);
   const found = this.current.json.find((a) => {
     return (
-      a.sla === e.sla &&
+      a.sla === entity.sla &&
       // SCORE is non-deterministic
       // a.score === e.score &&
-      a.links.self.href === e.links.self.href
+      a.links.self.href === entity.links.self.href
     );
   });
   expect(found).to.be.undefined;
@@ -264,19 +272,19 @@ Then('the returned address list will NOT include:', async function (
 
 When(
   'the {string} link of the first address in the list is followed',
-  async function (rel) {
+  async function (relationship) {
     this.prev = this.current;
     logger('current', this.current);
     this.current = await this.driver.follow({
-      uri: this.current.json[0].links[rel].href,
+      uri: this.current.json[0].links[relationship].href,
     });
   }
 );
 
 Then('the response will contain:', async function (documentString) {
-  const e = JSON.parse(documentString);
+  const entity = JSON.parse(documentString);
   console.log(JSON.stringify(this.current.json));
-  expect(this.current.json).to.deep.equal(e);
+  expect(this.current.json).to.deep.equal(entity);
 });
 
 When('CORS is set to {string}', async function (string) {

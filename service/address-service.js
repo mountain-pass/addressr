@@ -1,3 +1,7 @@
+/* eslint-disable eslint-comments/disable-enable-pair */
+/* eslint-disable security/detect-non-literal-regexp */
+/* eslint-disable security/detect-object-injection */
+/* eslint-disable security/detect-non-literal-fs-filename */
 import debug from 'debug';
 import directoryExists from 'directory-exists';
 import fs from 'fs';
@@ -42,102 +46,6 @@ const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
 
-// let addresses = [
-//   {
-//     sla: 'Tower 3, Level 25, 300 Barangaroo Avenue, Sydney NSW 2000',
-//     score: 1,
-//     links: {
-//       self: {
-//         href: '/address/GANT_718592778',
-//       },
-//     },
-//   },
-//   {
-//     sla: '109 Kirribilli Ave, Kirribilli NSW 2061',
-//     score: 0.985051936618461,
-//     links: {
-//       self: {
-//         href: '/address/GANT_718592782',
-//       },
-//     },
-//   },
-// ];
-
-// async function initIndex(esClient, index, clear) {
-//   if (await esClient.indices.exists({ index })) {
-//     if (clear) {
-//       await esClient.indices.delete({ index });
-//     }
-//   }
-//   logger('checking if index exists');
-//   const exists = await esClient.indices.exists({ index });
-//   logger('index exists:', exists);
-
-//   if (!exists) {
-//     await esClient.indices.create({
-//       index,
-//       body: {
-//         settings: {
-//           index: {
-//             analysis: {
-//               analyzer: {
-//                 default: {
-//                   tokenizer: 'addressAutoCompleteTokenizer',
-//                   filter: ['lowercase', 'asciifolding'],
-//                 },
-//                 synonym: {
-//                   tokenizer: 'addressAutoCompleteTokenizer',
-//                   filter: ['lowercase', 'synonym'],
-//                 },
-//                 addressAutoCompleteAnalyzer: {
-//                   tokenizer: 'addressAutoCompleteTokenizer',
-//                   filter: ['lowercase', 'asciifolding'],
-//                 },
-//               },
-//               tokenizer: {
-//                 addressAutoCompleteTokenizer: {
-//                   type: 'edge_ngram',
-//                   min_gram: 3,
-//                   max_gram: 15,
-//                   //token_chars: ['letter', 'digit'],
-//                 },
-//               },
-//               filter: {
-//                 synonym: {
-//                   type: 'synonym',
-//                   lenient: true,
-//                   synonyms: [
-//                     // TODO: Put street abbreviations here
-//                     'SUPER, super, superannuation',
-//                     'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds',
-//                   ],
-//                 },
-//               },
-//             },
-//           },
-//         },
-//         aliases: {},
-//         mappings: {
-//           properties: {
-//             sla: {
-//               type: 'text',
-//               analyzer: 'addressAutoCompleteAnalyzer',
-//             },
-//             ssla: {
-//               type: 'text',
-//               analyzer: 'addressAutoCompleteAnalyzer',
-//             },
-//           },
-//         },
-//       },
-//     });
-//     logger('Index created');
-//   }
-//   await esClient.indices.get({ index, includeDefaults: true });
-// }
-
-//const INDEX_NAME = process.env.INDEX_NAME || 'addressr';
-
 export async function clearAddresses() {
   await initIndex(global.esClient, true);
 }
@@ -181,32 +89,38 @@ const GNAF_PACKAGE_URL =
 async function fetchPackageData() {
   const packageUrl = GNAF_PACKAGE_URL;
   // See if we have the value in cache
-  const cachedRes = await cache.get(packageUrl);
-  logger('cached gnaf package data', cachedRes);
+  const cachedResponse = await cache.get(packageUrl);
+  logger('cached gnaf package data', cachedResponse);
   let age = 0;
-  if (cachedRes !== undefined) {
-    cachedRes.headers['x-cache'] = 'HIT';
-    const created = new Date(cachedRes.headers.date);
+  if (cachedResponse !== undefined) {
+    cachedResponse.headers['x-cache'] = 'HIT';
+    const created = new Date(cachedResponse.headers.date);
     logger('created', created);
     age = Date.now() - created;
     if (age <= ONE_DAY_MS) {
-      return cachedRes;
+      return cachedResponse;
     }
   }
   // cached value was older than one day, so go fetch
   try {
-    const res = await got.get(packageUrl);
-    logger('response.isFromCache', res.fromCache);
-    logger('fresh gnaf package data', { body: res.body, headers: res.headers });
-    await cache.set(packageUrl, { body: res.body, headers: res.headers });
-    res.headers['x-cache'] = 'MISS';
-    return res;
+    const response = await got.get(packageUrl);
+    logger('response.isFromCache', response.fromCache);
+    logger('fresh gnaf package data', {
+      body: response.body,
+      headers: response.headers,
+    });
+    await cache.set(packageUrl, {
+      body: response.body,
+      headers: response.headers,
+    });
+    response.headers['x-cache'] = 'MISS';
+    return response;
   } catch (error_) {
     // we were unable to fetch. if we have cached value that isn't stale, return in
-    if (cachedRes !== undefined) {
+    if (cachedResponse !== undefined) {
       if (age < THIRTY_DAYS_MS) {
-        cachedRes.headers['warning'] = '110	custom/1.0 "Response is Stale"';
-        return cachedRes;
+        cachedResponse.headers['warning'] = '110	custom/1.0 "Response is Stale"';
+        return cachedResponse;
       }
     }
     // otherwise, throw the original network error
@@ -217,17 +131,17 @@ async function fetchPackageData() {
 const GNAF_DIR = process.env.GNAF_DIR || `target/gnaf`;
 
 export async function fetchGnafFile() {
-  const res = await fetchPackageData();
-  const pack = JSON.parse(res.body);
+  const response = await fetchPackageData();
+  const pack = JSON.parse(response.body);
   // id as of 16/07 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
   const dataResource = pack.result.resources.find(
     (r) => r.state === 'active' && r.mimetype === 'application/zip'
   );
 
   // id as of 16/07/2019 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
-  logger('dataResource', JSON.stringify(dataResource, null, 2));
+  logger('dataResource', JSON.stringify(dataResource, undefined, 2));
   logger('url', dataResource.url);
-  logger('headers', JSON.stringify(res.headers, null, 2));
+  logger('headers', JSON.stringify(response.headers, undefined, 2));
   const basename = path.basename(dataResource.url);
   logger('basename', basename);
   const complete_path = GNAF_DIR;
@@ -356,9 +270,9 @@ export async function unzipFile(file) {
           logger('finish');
           resolve();
         })
-        .on('error', (e) => {
-          logger('error unzipping data file', e);
-          reject(e);
+        .on('error', (error_) => {
+          logger('error unzipping data file', error_);
+          reject(error_);
         });
     });
     await prom;
@@ -380,7 +294,7 @@ export async function unzipFile(file) {
 
 function levelTypeCodeToName(code, context) {
   const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -391,7 +305,7 @@ function levelTypeCodeToName(code, context) {
 
 function flatTypeCodeToName(code, context) {
   const found = context['Authority_Code_FLAT_TYPE_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -402,7 +316,7 @@ function flatTypeCodeToName(code, context) {
 
 function streetTypeCodeToName(code, context) {
   const found = context['Authority_Code_STREET_TYPE_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -413,7 +327,7 @@ function streetTypeCodeToName(code, context) {
 
 function streetClassCodeToName(code, context) {
   const found = context['Authority_Code_STREET_CLASS_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -424,7 +338,7 @@ function streetClassCodeToName(code, context) {
 
 function localityClassCodeToName(code, context) {
   const found = context['Authority_Code_LOCALITY_CLASS_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -435,7 +349,7 @@ function localityClassCodeToName(code, context) {
 
 function streetSuffixCodeToName(code, context) {
   const found = context['Authority_Code_STREET_SUFFIX_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -446,7 +360,7 @@ function streetSuffixCodeToName(code, context) {
 
 function geocodeReliabilityCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODE_RELIABILITY_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -457,7 +371,7 @@ function geocodeReliabilityCodeToName(code, context) {
 
 function geocodeTypeCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODE_TYPE_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -468,7 +382,7 @@ function geocodeTypeCodeToName(code, context) {
 
 function levelGeocodedCodeToName(code, context) {
   const found = context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'].find(
-    (e) => e.CODE === code
+    (entry) => entry.CODE === code
   );
   if (found) {
     return found.NAME;
@@ -476,7 +390,7 @@ function levelGeocodedCodeToName(code, context) {
   error(
     `Unknown Geocoded Level Type Code: '${code}' in:\n${JSON.stringify(
       context['Authority_Code_GEOCODED_LEVEL_TYPE_AUT_psv'],
-      null,
+      undefined,
       2
     )}`
   );
@@ -528,19 +442,19 @@ function mapGeo(geoSite, context, geoDefault) {
     ? geoSite.map((geo) => {
         if (geo.BOUNDARY_EXTENT !== '') {
           console.log('be', geo);
-          process.exit(1);
+          throw new Error('encounterd geo.BOUNDARY_EXTENT');
         }
         if (geo.PLANIMETRIC_ACCURACY !== '') {
           console.log('pa', geo);
-          process.exit(1);
+          throw new Error('encounterd geo.PLANIMETRIC_ACCURACY');
         }
         if (geo.ELEVATION !== '') {
           console.log('e', geo);
-          process.exit(1);
+          throw new Error('encounterd geo.ELEVATION');
         }
         if (geo.GEOCODE_SITE_NAME !== '') {
           console.log('gsn', geo);
-          process.exit(1);
+          throw new Error('encounterd geo.GEOCODE_SITE_NAME');
         }
         return {
           default: false,
@@ -594,6 +508,7 @@ function mapToSla(fla) {
   return fla.join(', ');
 }
 
+// eslint-disable-next-line complexity
 function mapToMla(s) {
   const fla = [];
   if (s.level) {
@@ -646,11 +561,12 @@ function mapToMla(s) {
 
   if (fla.length > 4) {
     logger('FLA TOO LONG', fla, s);
-    process.exit(1);
+    throw new Error('FLA TOO LONG');
   }
   return fla;
 }
 
+// eslint-disable-next-line complexity
 function mapToShortMla(s) {
   const fla = [];
   if (s.level) {
@@ -691,24 +607,15 @@ function mapToShortMla(s) {
 
   if (fla.length > 4) {
     logger('FLA TOO LONG', fla, s);
-    process.exit(1);
+    throw new Error('FLA TOO LONG');
   }
   return fla;
 }
 
+// eslint-disable-next-line complexity
 export function mapAddressDetails(d, context, i, count) {
   const streetLocality = context.streetLocalityIndexed[d.STREET_LOCALITY_PID];
   const locality = context.localityIndexed[d.LOCALITY_PID];
-
-  // if (d.ADDRESS_DETAIL_PID === 'GAOT_718446632') {
-  //   // logger('geo', geo);
-  //   // logger('geo', context.geoIndexed);
-  //   logger('geo', d.ADDRESS_SITE_PID);
-  //   logger('geo', d.ADDRESS_DETAIL_PID);
-  //   logger('geo site', context.geoIndexed[d.ADDRESS_SITE_PID]);
-  //   logger('geo default', context.geoDefaultIndexed[d.ADDRESS_DETAIL_PID]);
-  //   process.exit(1);
-  // }
 
   const geoSite = context.geoIndexed
     ? context.geoIndexed[d.ADDRESS_SITE_PID]
@@ -855,7 +762,7 @@ export function mapAddressDetails(d, context, i, count) {
   }
   // process.stdout.write('.');
   if (i % Math.ceil(count / 100) === 0) {
-    logger('addr', JSON.stringify(rval, null, 2));
+    logger('addr', JSON.stringify(rval, undefined, 2));
     logger(`${(i / count) * 100}%`);
   }
 
@@ -906,6 +813,7 @@ async function loadAddressDetails(file, expectedCount, context) {
             sendIndexRequest(indexingBody)
               .then(() => {
                 parser.resume();
+                return;
               })
               .catch((error_) => {
                 error('error sending index request', error_);
@@ -1112,15 +1020,51 @@ async function getStateName(abbr, file) {
   });
 }
 
-async function loadGnafData(dir) {
+function mapAuthCodeTableToSynonymList(table) {
+  return table
+    .filter((type) => {
+      return type.CODE !== type.NAME;
+    })
+    .map((type) => {
+      return `${type.CODE}, ${type.NAME}`;
+    });
+}
+
+function buildSynonyms(context) {
+  //example synonym format [
+  //       'SUPER, super, superannuation',
+  //       'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
+  //     ]
+  const streetTypes = mapAuthCodeTableToSynonymList(
+    context['Authority_Code_STREET_TYPE_AUT_psv']
+  );
+  const flatTypes = mapAuthCodeTableToSynonymList(
+    context['Authority_Code_FLAT_TYPE_AUT_psv']
+  );
+  const levelTypes = mapAuthCodeTableToSynonymList(
+    context['Authority_Code_LEVEL_TYPE_AUT_psv']
+  );
+  const streetSuffixTypes = mapAuthCodeTableToSynonymList(
+    context['Authority_Code_STREET_SUFFIX_AUT_psv']
+  );
+  const synonyms = [
+    ...streetTypes,
+    ...flatTypes,
+    ...levelTypes,
+    ...streetSuffixTypes,
+  ];
+  return synonyms;
+}
+
+async function loadGnafData(directory) {
   const filesCounts = {};
   await new Promise((resolve, reject) => {
-    Papa.parse(fs.createReadStream(`${dir}/Counts.csv`), {
+    Papa.parse(fs.createReadStream(`${directory}/Counts.csv`), {
       header: true,
       skipEmptyLines: true,
       step: function (row) {
         if (row.errors.length > 0) {
-          error(`Errors reading '${dir}/Counts.csv': ${row.errors}`);
+          error(`Errors reading '${directory}/Counts.csv': ${row.errors}`);
         } else {
           const psvFile = row.data.File.replace(/\\/g, '/').replace(
             /\.zip$/,
@@ -1143,7 +1087,10 @@ async function loadGnafData(dir) {
   const files = Object.keys(filesCounts);
   logger('files', files);
   const loadContext = {};
-  await loadAuthFiles(files, dir, loadContext, filesCounts);
+  await loadAuthFiles(files, directory, loadContext, filesCounts);
+  // loadContext now contains all the auth files, so we can build the synonyms
+  const synonyms = buildSynonyms(loadContext);
+  await initIndex(global.esClient, false, synonyms);
   const addressDetailFiles = files.filter(
     (f) => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
   );
@@ -1154,17 +1101,17 @@ async function loadGnafData(dir) {
       .replace(/_.*/, '');
     if (COVERED_STATES.length === 0 || COVERED_STATES.includes(state)) {
       loadContext.state = state;
-      loadContext.stateName = await loadState(files, dir, state);
+      loadContext.stateName = await loadState(files, directory, state);
 
       logger('Loading streets', state);
-      const streetLocality = await loadStreetLocality(files, dir, state);
+      const streetLocality = await loadStreetLocality(files, directory, state);
       loadContext.streetLocalityIndexed = {};
       for (const sl of streetLocality) {
         loadContext.streetLocalityIndexed[sl.STREET_LOCALITY_PID] = sl;
       }
 
       logger('Loading suburbs', state);
-      const locality = await loadLocality(files, dir, state);
+      const locality = await loadLocality(files, directory, state);
       loadContext.localityIndexed = {};
       for (const l of locality) {
         loadContext.localityIndexed[l.LOCALITY_PID] = l;
@@ -1172,7 +1119,7 @@ async function loadGnafData(dir) {
 
       if (process.env.ADDRESSR_ENABLE_GEO) {
         loadContext.geoIndexed = {};
-        await loadSiteGeo(files, dir, state, loadContext, filesCounts);
+        await loadSiteGeo(files, directory, state, loadContext, filesCounts);
         // logger('indexing site geos', state, geo.length);
         // for (let index = 0; index < geo.length; index++) {
         //   if (index % 10000 === 0) {
@@ -1187,27 +1134,13 @@ async function loadGnafData(dir) {
         // }
 
         loadContext.geoDefaultIndexed = {};
-        await loadDefaultGeo(files, dir, state, loadContext, filesCounts);
-        // logger('indexing default geos', state, geoDefault.length);
-        // for (let index = 0; index < geoDefault.length; index++) {
-        //   if (index % 10000 === 0) {
-        //     logger(`${(index / geoDefault.length) * 100.0}%`);
-        //   }
-        //   const g = geoDefault[index];
-        //   if (
-        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] === undefined
-        //   ) {
-        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID] = [g];
-        //   } else {
-        //     loadContext.geoDefaultIndexed[g.ADDRESS_DETAIL_PID].push(g);
-        //   }
-        // }
+        await loadDefaultGeo(files, directory, state, loadContext, filesCounts);
       } else {
         logger(`Skipping geos. set 'ADDRESSR_ENABLE_GEO' env var to enable`);
       }
 
       await loadAddressDetails(
-        `${dir}/${detailFile}`,
+        `${directory}/${detailFile}`,
         filesCounts[detailFile],
         loadContext
       );
@@ -1215,7 +1148,7 @@ async function loadGnafData(dir) {
   }
 }
 
-async function loadState(files, dir, state) {
+async function loadState(files, directory, state) {
   const stateFile = files.find((f) =>
     f.match(new RegExp(`${state}_STATE_psv`))
   );
@@ -1223,12 +1156,12 @@ async function loadState(files, dir, state) {
     error(`Could not find state file '${state}_STATE_psv.psv'`);
     return;
   } else {
-    const name = await getStateName(state, `${dir}/${stateFile}`);
+    const name = await getStateName(state, `${directory}/${stateFile}`);
     return name;
   }
 }
 
-async function loadStreetLocality(files, dir, state) {
+async function loadStreetLocality(files, directory, state) {
   const localityFile = files.find((f) =>
     f.match(new RegExp(`${state}_STREET_LOCALITY_psv`))
   );
@@ -1239,7 +1172,7 @@ async function loadStreetLocality(files, dir, state) {
     return [];
   } else {
     return await new Promise((resolve, reject) => {
-      Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
+      Papa.parse(fs.createReadStream(`${directory}/${localityFile}`), {
         header: true,
         delimiter: '|',
         complete: (results) => {
@@ -1254,7 +1187,7 @@ async function loadStreetLocality(files, dir, state) {
   }
 }
 
-async function loadLocality(files, dir, state) {
+async function loadLocality(files, directory, state) {
   const localityFile = files.find((f) =>
     f.match(new RegExp(`${state}_LOCALITY_psv`))
   );
@@ -1263,7 +1196,7 @@ async function loadLocality(files, dir, state) {
     return [];
   } else {
     return await new Promise((resolve, reject) => {
-      Papa.parse(fs.createReadStream(`${dir}/${localityFile}`), {
+      Papa.parse(fs.createReadStream(`${directory}/${localityFile}`), {
         header: true,
         delimiter: '|',
         complete: (results) => {
@@ -1278,7 +1211,7 @@ async function loadLocality(files, dir, state) {
   }
 }
 
-async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
+async function loadSiteGeo(files, directory, state, loadContext, filesCounts) {
   logger('Loading site geos');
 
   const geoFile = files.find((f) =>
@@ -1294,13 +1227,13 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
     let count = 0;
 
     return await new Promise((resolve, reject) => {
-      Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
+      Papa.parse(fs.createReadStream(`${directory}/${geoFile}`), {
         header: true,
         delimiter: '|',
         chunk: function (chunk, parser) {
           parser.pause();
           if (chunk.errors.length > 0) {
-            error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
+            error(`Errors reading '${directory}/${geoFile}': ${chunk.errors}`);
           } else {
             chunk.data.forEach((row) => {
               if (count % Math.ceil(expectedCount / 100) === 0) {
@@ -1333,7 +1266,13 @@ async function loadSiteGeo(files, dir, state, loadContext, filesCounts) {
   }
 }
 
-async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
+async function loadDefaultGeo(
+  files,
+  directory,
+  state,
+  loadContext,
+  filesCounts
+) {
   logger('Loading default geos');
   const geoFile = files.find((f) =>
     f.match(new RegExp(`${state}_ADDRESS_DEFAULT_GEOCODE_psv`))
@@ -1348,13 +1287,13 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
     let count = 0;
 
     return await new Promise((resolve, reject) => {
-      Papa.parse(fs.createReadStream(`${dir}/${geoFile}`), {
+      Papa.parse(fs.createReadStream(`${directory}/${geoFile}`), {
         header: true,
         delimiter: '|',
         chunk: function (chunk, parser) {
           parser.pause();
           if (chunk.errors.length > 0) {
-            error(`Errors reading '${dir}/${geoFile}': ${chunk.errors}`);
+            error(`Errors reading '${directory}/${geoFile}': ${chunk.errors}`);
           } else {
             chunk.data.forEach((row) => {
               if (count % Math.ceil(expectedCount / 100) === 0) {
@@ -1391,34 +1330,34 @@ async function loadDefaultGeo(files, dir, state, loadContext, filesCounts) {
   }
 }
 
-async function loadAuthFiles(files, dir, loadContext, filesCounts) {
+async function loadAuthFiles(files, directory, loadContext, filesCounts) {
   const authCodeFiles = files.filter((f) => f.match(/Authority Code/));
   logger('authCodeFiles', authCodeFiles);
   for (const authFile of authCodeFiles) {
     const contextKey = path.basename(authFile, path.extname(authFile));
     await new Promise((resolve, reject) => {
-      Papa.parse(fs.createReadStream(`${dir}/${authFile}`), {
+      Papa.parse(fs.createReadStream(`${directory}/${authFile}`), {
         delimiter: '|',
         header: true,
         complete: function (results) {
           loadContext[contextKey] = results.data;
           if (results.data.length != filesCounts[authFile]) {
             error(
-              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
+              `Error loading '${directory}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
             );
             reject(
-              `Error loading '${dir}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
+              `Error loading '${directory}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`
             );
           } else {
             logger(
-              `loaded '${results.data.length}' rows from '${dir}/${authFile}' into key '${contextKey}'`
+              `loaded '${results.data.length}' rows from '${directory}/${authFile}' into key '${contextKey}'`
             );
             resolve();
           }
         },
         error: (error, file) => {
-          error(`Error loading '${dir}/${authFile}`, error, file);
-          reject([`Error loading '${dir}/${authFile}`, error, file]);
+          error(`Error loading '${directory}/${authFile}`, error, file);
+          reject([`Error loading '${directory}/${authFile}`, error, file]);
         },
       });
     });
@@ -1438,16 +1377,16 @@ export async function loadGnaf() {
   }
   if (contents.length == 1) {
     // before feb20, the gnaf zip had an intermediate directory
-    const mainDir = `${unzipped}/${contents[0]}`;
-    logger('1. Main Data dir', mainDir);
+    const mainDirectory = `${unzipped}/${contents[0]}`;
+    logger('1. Main Data dir', mainDirectory);
 
-    await loadGnafData(mainDir);
+    await loadGnafData(mainDirectory);
   } else if (contents.includes('Counts.csv')) {
     // feb20 doesn't have an intermediate directory
-    const mainDir = unzipped;
-    logger('2. Main Data dir', mainDir);
+    const mainDirectory = unzipped;
+    logger('2. Main Data dir', mainDirectory);
 
-    await loadGnafData(mainDir);
+    await loadGnafData(mainDirectory);
   } else {
     throw new Error(
       `Data dir '${unzipped}' has unexpected contents: ${contents}`
@@ -1555,7 +1494,7 @@ export async function getAddresses(url, swagger, q, p = 1) {
     });
   }
   const responseBody = mapToSearchAddressResponse(foundAddresses);
-  logger('responseBody', JSON.stringify(responseBody, null, 2));
+  logger('responseBody', JSON.stringify(responseBody, undefined, 2));
 
   const linkTemplate = new LinkHeader();
   const op = swagger.path.get;

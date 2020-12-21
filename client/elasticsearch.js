@@ -13,114 +13,77 @@ const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http';
 
 const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
 
-export async function initIndex(esClient, clear) {
+export async function initIndex(esClient, clear, synonyms) {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
     if (clear) {
       await esClient.indices.delete({ index: ES_INDEX_NAME });
     }
   }
   logger('checking if index exists');
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   const exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   logger('index exists:', exists);
-
-  if (!exists) {
-    await esClient.indices.create({
-      index: ES_INDEX_NAME,
-      body: {
-        // max_result_window: 8196,
-        // max_inner_result_window: 128,
-        // max_rescore_window: 8196,
-        // max_docvalue_fields_search: 128,
-        // settings: {
-        //   analysis: {
-        //     filter: {
-        //       english_poss_stemmer: {
-        //         type: 'stemmer',
-        //         name: 'possessive_english',
-        //       },
-        //       edge_ngram: {
-        //         type: 'edgeNGram',
-        //         min_gram: '2',
-        //         max_gram: '25',
-        //         token_chars: ['letter', 'digit'],
-        //       },
-        //     },
-        //     analyzer: {
-        //       edge_ngram_analyzer: {
-        //         filter: ['uppercase', 'english_poss_stemmer', 'edge_ngram'],
-        //         tokenizer: 'standard',
-        //       },
-        //       keyword_analyzer: {
-        //         filter: ['lowercase', 'english_poss_stemmer'],
-        //         tokenizer: 'standard',
-        //       },
-        //     },
-        //   },
-        // },
-
-        settings: {
-          index: {
-            analysis: {
-              analyzer: {
-                default: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-                // synonym: {
-                //   tokenizer: 'my_tokenizer',
-                //   filter: ['lowercase', 'synonym']
-                // },
-                my_analyzer: {
-                  tokenizer: 'my_tokenizer',
-                  filter: ['lowercase', 'asciifolding'],
-                },
-              },
-              tokenizer: {
-                my_tokenizer: {
-                  type: 'edge_ngram',
-                  min_gram: 3,
-                  max_gram: ADDRESSR_MAX_GRAM,
-                  //token_chars: ['letter', 'digit'],
-                },
-              },
-              // filter: {
-              //   synonym: {
-              //     type: 'synonym',
-              //     lenient: true,
-              //     synonyms: [
-              //       'SUPER, super, superannuation',
-              //       'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
-              //     ]
-              //   }
-              // }
+  const indexBody = {
+    settings: {
+      index: {
+        analysis: {
+          analyzer: {
+            default: {
+              tokenizer: 'my_tokenizer',
+              filter: ['lowercase', 'asciifolding', 'synonym'],
+            },
+            my_analyzer: {
+              tokenizer: 'my_tokenizer',
+              filter: ['lowercase', 'asciifolding', 'synonym'],
             },
           },
-        },
-        aliases: {},
-        mappings: {
-          // properties: {
-          //   sla: {
-          //     type: 'search_as_you_type',
-          //   },
-          // },
-          properties: {
-            structured: {
-              type: 'object',
-              enabled: false,
+          tokenizer: {
+            my_tokenizer: {
+              type: 'edge_ngram',
+              min_gram: 3,
+              max_gram: ADDRESSR_MAX_GRAM,
             },
-            sla: {
-              // search_analyzer: 'keyword_analyzer',
-              type: 'text',
-              analyzer: 'my_analyzer',
-            },
-            ssla: {
-              // search_analyzer: 'keyword_analyzer',
-              type: 'text',
-              analyzer: 'my_analyzer',
+          },
+          filter: {
+            synonym: {
+              type: 'synonym',
+              lenient: true,
+              synonyms,
             },
           },
         },
       },
+    },
+    aliases: {},
+    mappings: {
+      properties: {
+        structured: {
+          type: 'object',
+          enabled: false,
+        },
+        sla: {
+          type: 'text',
+          analyzer: 'my_analyzer',
+        },
+        ssla: {
+          type: 'text',
+          analyzer: 'my_analyzer',
+        },
+      },
+    },
+  };
+
+  if (!exists) {
+    await esClient.indices.create({
+      index: ES_INDEX_NAME,
+      body: indexBody,
+    });
+  } else {
+    // update the index
+    esClient.indices.putSettings({
+      index: ES_INDEX_NAME,
+      body: indexBody,
     });
   }
   await esClient.indices.get({ index: ES_INDEX_NAME, includeDefaults: true });

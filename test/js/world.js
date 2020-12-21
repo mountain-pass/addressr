@@ -18,7 +18,7 @@ import debug from 'debug';
 import Docker from 'dockerode';
 import fs from 'fs';
 import waitport from 'wait-port';
-import { esConnect, initIndex } from '../../client/elasticsearch';
+import { esConnect } from '../../client/elasticsearch';
 import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
@@ -74,7 +74,7 @@ BeforeAll({ timeout: 240000 }, async function () {
   this.containers = {};
   const docker = new Docker();
   await startElasticSearch(docker, this);
-  await initIndex(global.esClient, true);
+  //  await initIndex(global.esClient, true);
 });
 
 AfterAll({ timeout: 30000 }, async function () {

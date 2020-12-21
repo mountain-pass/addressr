@@ -428,3 +428,23 @@ Feature: Address
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
             | q | 4 COCONUT GROVE |
         Then the reponse will not have a "access-control-allow-origin" header
+
+
+    Scenario: Searching Addressed - Place
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | 5 PITCAIRN PLACE |
+        Then the returned address list will contain many addresses
+        And the returned address list will include:
+            """
+            {
+                "sla": "5 PITCAIRN PL, NORFOLK ISLAND OT 2899",
+                "score": 373.2748,
+                "links": {
+                    "self": {
+                        "href": "/addresses/GAOT_718710698"
+                    }
+                }
+            }
+            """
