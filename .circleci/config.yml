@@ -16,11 +16,6 @@ jobs:
           name: npm install
           command: |
             npm install
-      - run:
-          name: Download cc-test-reporter
-          command: |
-            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./node_modules/cc-test-reporter
-            chmod +x ./node_modules/cc-test-reporter
       - save_cache:
           paths:
             - node_modules
@@ -50,9 +45,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
             npm run cover:nodejs:nogeo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.nodejs.json coverage/nodejs/lcov.info
             npm run cover:rest:nogeo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.rest.json coverage/rest/lcov.info
       - persist_to_workspace:
           root: coverage
           paths:
@@ -95,7 +88,6 @@ jobs:
             mkdir -p NPM_CONFIG_PREFIX
             export PATH=$PATH:$NPM_CONFIG_PREFIX/bin
             npm run cover:cli:nogeo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.cli.json coverage/cli/lcov.info
       - persist_to_workspace:
           root: coverage
           paths:
@@ -135,9 +127,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
             npm run cover:nodejs:geo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.nodejs-geo.json coverage/nodejs-geo/lcov.info
             npm run cover:rest:geo
-            ./node_modules/cc-test-reporter format-coverage -t lcov -o coverage/codeclimate.rest-geo.json coverage/rest-geo/lcov.info
       - persist_to_workspace:
           root: coverage
           paths:
@@ -152,25 +142,6 @@ jobs:
           paths:
             - target/gnaf
           key: gnaf
-
-  upload-coverage:
-    docker:
-      - image: circleci/node:11.14.0
-    environment:
-      CC_TEST_REPORTER_ID: 9511827b5c714ecf56f5af3bd77ecd90731821cd8c24b11edd55ed1e99575a1f
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - dependencies-{{ checksum "package.json" }}
-            - dependencies-
-      - attach_workspace:
-          at: coverage
-      - run:
-          name: Upload coverage results to Code Climate
-          command: |
-            ./node_modules/cc-test-reporter sum-coverage coverage/codeclimate.*.json -p 5 -o coverage/codeclimate.total.json
-            ./node_modules/cc-test-reporter upload-coverage -i coverage/codeclimate.total.json
 
   build-and-release:
     docker:
@@ -232,11 +203,6 @@ workflows:
       - test-geo:
           requires:
             - deps
-      - upload-coverage:
-          requires:
-            - test
-            - test-cli
-            - test-geo
       - build-and-release:
           requires:
             - test
