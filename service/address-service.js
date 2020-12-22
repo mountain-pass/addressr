@@ -76,7 +76,7 @@ export async function setAddresses(addr) {
   // empty index
   // then index the provided addresses
 
-  logger(await searchForAddress('657 The Entrance Road')); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
+  //logger(await searchForAddress('657 The Entrance Road')); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
 // need to try proxying this to modify the headers if we want to use got's cache implementation
@@ -947,16 +947,18 @@ async function searchForAddress(searchString, p) {
 
 async function sendIndexRequest(
   indexingBody,
-  initialBackoff = Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF || '1000')
+  initialBackoff = Number.parseInt(
+    process.env.ADDRESSR_INDEX_BACKOFF || '30000'
+  )
 ) {
   let backoff = initialBackoff;
   // eslint-disable-next-line no-constant-condition
   for (let count = 0; true; count++) {
     try {
       const resp = await global.esClient.bulk({
-        refresh: true,
+        refresh: false,
         body: indexingBody,
-        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '30s',
+        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '300s',
       });
 
       if (resp.errors) {
@@ -992,10 +994,10 @@ async function sendIndexRequest(
         }, backoff);
       });
       backoff += Number.parseInt(
-        process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || '1000'
+        process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || '30000'
       );
       backoff = Math.min(
-        Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF_MAX || '30000'),
+        Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF_MAX || '600000'),
         backoff
       );
       error(`next backoff: ${backoff}ms`);
