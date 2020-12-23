@@ -244,6 +244,7 @@ Then('the returned address list will include:', async function (
   documentString
 ) {
   const entity = JSON.parse(documentString);
+  logger('FOUND', JSON.stringify(this.current.json, undefined, 2));
   const found = this.current.json.find((a) => {
     return (
       a.sla === entity.sla &&

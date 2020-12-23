@@ -961,6 +961,7 @@ async function searchForAddress(searchString, p) {
           }),
         },
       },
+      sort: ['_score', { sla: { order: 'asc' } }],
       highlight: {
         fields: {
           sla: {},

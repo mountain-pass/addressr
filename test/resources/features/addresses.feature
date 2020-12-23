@@ -322,16 +322,16 @@ Feature: Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | CHRISTMAS ISLAND |
         Then the returned address list will contain many addresses
         And the returned address list will include:
             """
             {
-                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
-                "score": 330.40973,
+                "sla": "UNIT 1, 16 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "score": 5.1195946,
                 "links": {
                     "self": {
-                        "href": "/addresses/GAOT_718446632"
+                        "href": "/addresses/GAOT_718446667"
                     }
                 }
             }
@@ -339,9 +339,9 @@ Feature: Address
         And the response will contain the following links:
             | rel         | uri                                      | title                 | type      |
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses?q=4+COCONUT+GROVE             |                       |           |
-            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
-            | next        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
+            | self        | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
+            | first       | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
+            | next        | /addresses?q=CHRISTMAS+ISLAND&p=2        |                       |           |
         And the response will contain the following link template:
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
@@ -352,17 +352,17 @@ Feature: Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | CHRISTMAS ISLAND |
         And the "next" link is followed
         Then the returned address list will contain many addresses
         And the returned address list will NOT include:
             """
             {
-                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
-                "score": 330.40973,
+                "sla": "UNIT 1, 16 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "score": 5.1195946,
                 "links": {
                     "self": {
-                        "href": "/addresses/GAOT_718446632"
+                        "href": "/addresses/GAOT_718446667"
                     }
                 }
             }
@@ -370,10 +370,10 @@ Feature: Address
         And the response will contain the following links:
             | rel         | uri                                      | title                 | type      |
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
-            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
-            | prev        | /addresses?q=4+COCONUT+GROVE             |                       |           |
-            | next        | /addresses?q=4+COCONUT+GROVE&p=3         |                       |           |
+            | self        | /addresses?q=CHRISTMAS+ISLAND&p=2        |                       |           |
+            | first       | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
+            | prev        | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
+            | next        | /addresses?q=CHRISTMAS+ISLAND&p=3        |                       |           |
         And the response will contain the following link template:
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
@@ -384,18 +384,18 @@ Feature: Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | CHRISTMAS ISLAND |
         And the "next" link is followed
         And the "next" link is followed
         Then the returned address list will contain many addresses
         And the returned address list will NOT include:
             """
             {
-                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798",
-                "score": 330.40973,
+                "sla": "UNIT 1, 16 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "score": 5.1195946,
                 "links": {
                     "self": {
-                        "href": "/addresses/GAOT_718446632"
+                        "href": "/addresses/GAOT_718446667"
                     }
                 }
             }
@@ -403,10 +403,10 @@ Feature: Address
         And the response will contain the following links:
             | rel         | uri                                      | title                 | type      |
             | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses?q=4+COCONUT+GROVE&p=3         |                       |           |
-            | first       | /addresses?q=4+COCONUT+GROVE             |                       |           |
-            | prev        | /addresses?q=4+COCONUT+GROVE&p=2         |                       |           |
-            | next        | /addresses?q=4+COCONUT+GROVE&p=4         |                       |           |
+            | self        | /addresses?q=CHRISTMAS+ISLAND&p=3        |                       |           |
+            | first       | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
+            | prev        | /addresses?q=CHRISTMAS+ISLAND&p=2        |                       |           |
+            | next        | /addresses?q=CHRISTMAS+ISLAND&p=4        |                       |           |
         And the response will contain the following link template:
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
@@ -435,7 +435,6 @@ Feature: Address
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
             | q | 5 PITCAIRN PLACE |
-        Then the returned address list will contain many addresses
         And the returned address list will include:
             """
             {
