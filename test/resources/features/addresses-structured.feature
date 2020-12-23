@@ -72,7 +72,7 @@ Feature: Structured Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | 4 COCONUT GROVE, CHRISTMAS ISLAND |
         And the "self" link of the first address in the list is followed
         Then the response will contain:
             """

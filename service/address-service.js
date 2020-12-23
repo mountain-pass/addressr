@@ -571,7 +571,7 @@ function mapToShortMla(s) {
   const fla = [];
   if (s.level) {
     fla.push(
-      `${s.level.type.name || ''} ${s.level.prefix || ''}${
+      `${s.level.type.code || ''}${s.level.prefix || ''}${
         s.level.number || ''
       }${s.level.suffix || ''}`
     );
@@ -912,21 +912,49 @@ async function searchForAddress(searchString, p) {
       size: PAGE_SIZE,
       query: {
         bool: {
-          must: [
-            {
-              exists: {
-                field: 'sla',
-              },
-            },
-          ],
+          // must: [
+          //   {
+          //     exists: {
+          //       field: 'sla'
+          //     }
+          //   }
+          // ],
           ...(searchString && {
             should: [
+              // {
+              //   fuzzy: {
+              //     sla: {
+              //       value: searchString
+              //     }
+              //   }
+              // },
+              // {
+              //   fuzzy: {
+              //     ssla: {
+              //       value: searchString
+              //     }
+              //   }
+              // }
               {
                 multi_match: {
                   fields: ['sla', 'ssla'],
                   query: searchString,
                   fuzziness: 'AUTO',
-                  auto_generate_synonyms_phrase_query: true,
+                  type: 'bool_prefix',
+                  lenient: true,
+                  auto_generate_synonyms_phrase_query: false,
+                  operator: 'AND',
+                },
+              },
+              {
+                multi_match: {
+                  fields: ['sla', 'ssla'],
+                  query: searchString,
+                  // fuzziness: 'AUTO',
+                  type: 'phrase_prefix',
+                  lenient: true,
+                  auto_generate_synonyms_phrase_query: false,
+                  operator: 'AND',
                 },
               },
             ],
@@ -1028,7 +1056,7 @@ function mapAuthCodeTableToSynonymList(table) {
       return type.CODE !== type.NAME;
     })
     .map((type) => {
-      return `${type.CODE}, ${type.NAME}`;
+      return `${type.CODE} => ${type.NAME}`;
     });
 }
 

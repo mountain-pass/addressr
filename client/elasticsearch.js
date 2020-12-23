@@ -28,14 +28,21 @@ export async function initIndex(esClient, clear, synonyms) {
     settings: {
       index: {
         analysis: {
-          analyzer: {
-            default: {
-              tokenizer: 'my_tokenizer',
-              filter: ['lowercase', 'asciifolding', 'synonym'],
+          filter: {
+            my_synonym_filter: {
+              type: 'synonym',
+              lenient: true,
+              synonyms,
             },
+          },
+          analyzer: {
+            // default: {
+            //   tokenizer: 'my_tokenizer',
+            //   filter: ['lowercase', 'asciifolding', 'synonym'],
+            // },
             my_analyzer: {
-              tokenizer: 'my_tokenizer',
-              filter: ['lowercase', 'asciifolding', 'synonym'],
+              tokenizer: 'standard',
+              filter: ['uppercase', 'asciifolding', 'my_synonym_filter'],
             },
           },
           tokenizer: {
@@ -43,13 +50,6 @@ export async function initIndex(esClient, clear, synonyms) {
               type: 'edge_ngram',
               min_gram: 3,
               max_gram: ADDRESSR_MAX_GRAM,
-            },
-          },
-          filter: {
-            synonym: {
-              type: 'synonym',
-              lenient: true,
-              synonyms,
             },
           },
         },
