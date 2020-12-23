@@ -82,13 +82,17 @@ Feature: Structured Address
                         "number": 4
                     },
                     "street": {
-                        "name": "COCONUT GROVE",
+                        "name": "COCONUT",
+                        "type": {
+                            "code": "GROVE",
+                            "name": "GR"
+                        },
                         "class": {
-                            "code": "U",
-                            "name": "UNCONFIRMED"
+                            "code": "C",
+                            "name": "CONFIRMED"
                         }
                     },
-                    "confidence": -1,
+                    "confidence": 2,
                     "locality": {
                         "name": "CHRISTMAS ISLAND",
                         "class": {
@@ -102,17 +106,17 @@ Feature: Structured Address
                         "abbreviation": "OT"
                     }
                 },
-                "pid": "GAOT_718446632",
+                "pid": "GAOT_717321166",
                 "mla": [
-                    "4 COCONUT GROVE",
+                    "4 COCONUT GR",
                     "CHRISTMAS ISLAND OT 6798"
                 ],
-                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798"
+                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
             }
             """
         And the response will contain the following links:
             | rel  | uri                       | title | type |
-            | self | /addresses/GAOT_718446632 |       |      |
+            | self | /addresses/GAOT_717321166 |       |      |
 
 
     @not-nodejs @not-cli
