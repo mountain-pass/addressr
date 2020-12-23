@@ -11,8 +11,6 @@ const ELASTIC_USERNAME = process.env.ELASTIC_USERNAME || undefined;
 const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD || undefined;
 const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http';
 
-const ADDRESSR_MAX_GRAM = process.env.ADDRESSR_MAX_GRAM || 20;
-
 export async function initIndex(esClient, clear, synonyms) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
@@ -34,6 +32,11 @@ export async function initIndex(esClient, clear, synonyms) {
               lenient: true,
               synonyms,
             },
+            comma_stripper: {
+              type: 'pattern_replace',
+              pattern: ',',
+              replacement: '',
+            },
           },
           analyzer: {
             // default: {
@@ -41,15 +44,21 @@ export async function initIndex(esClient, clear, synonyms) {
             //   filter: ['lowercase', 'asciifolding', 'synonym'],
             // },
             my_analyzer: {
-              tokenizer: 'standard',
-              filter: ['uppercase', 'asciifolding', 'my_synonym_filter'],
+              tokenizer: 'whitecomma',
+              filter: [
+                'uppercase',
+                'asciifolding',
+                'my_synonym_filter',
+                'comma_stripper',
+                'trim',
+              ],
             },
           },
           tokenizer: {
-            my_tokenizer: {
-              type: 'edge_ngram',
-              min_gram: 3,
-              max_gram: ADDRESSR_MAX_GRAM,
+            whitecomma: {
+              type: 'pattern',
+              pattern: '[\\W,]+',
+              lowercase: false,
             },
           },
         },
