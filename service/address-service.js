@@ -66,6 +66,7 @@ export async function setAddresses(addr) {
       sla,
       ssla,
       structurted,
+      confidence: structurted.structurted.confidence,
     });
   });
 
@@ -807,8 +808,10 @@ async function loadAddressDetails(file, expectedCount, context) {
               sla,
               ssla,
               structured,
+              confidence: structured.structured.confidence,
             });
           });
+
           if (indexingBody.length > 0) {
             sendIndexRequest(indexingBody)
               .then(() => {
@@ -961,7 +964,11 @@ async function searchForAddress(searchString, p) {
           }),
         },
       },
-      sort: ['_score', { sla: { order: 'asc' } }],
+      sort: [
+        '_score',
+        { confidence: { order: 'desc' } },
+        { sla: { order: 'asc' } },
+      ],
       highlight: {
         fields: {
           sla: {},

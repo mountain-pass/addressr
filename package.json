@@ -40,6 +40,7 @@
     "prestart:server:docker": "npm run build:docker",
     "start:server:docker": "docker run -it --read-only=true -e ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=* -e ES_INDEX_NAME=test -e DEBUG=error,api,express:*,swagger-tools*,test,es -e PORT=$npm_package_config_localport -p $npm_package_config_localport:$npm_package_config_localport mountainpass/addressr:${npm_package_version}",
     "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server",
+    "watch:start:server:OT": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server:OT",
     "npm-check": "npm-check  --skip-unused",
     "npm-check:interactive": "npm-check --skip-unused -u ",
     "npm-check-unused": "npm-check",

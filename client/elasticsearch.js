@@ -80,6 +80,7 @@ export async function initIndex(esClient, clear, synonyms) {
           type: 'text',
           analyzer: 'my_analyzer',
         },
+        confidence: { type: 'integer', fielddata: true },
       },
     },
   };

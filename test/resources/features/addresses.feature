@@ -327,11 +327,11 @@ Feature: Address
         And the returned address list will include:
             """
             {
-                "sla": "UNIT 1, 16 GAZE RD, CHRISTMAS ISLAND OT 6798",
-                "score": 5.1195946,
+                "sla": "UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND OT 6798",
+                "score": 5.4303637,
                 "links": {
                     "self": {
-                        "href": "/addresses/GAOT_718446667"
+                        "href": "/addresses/GAOT_717882967"
                     }
                 }
             }
