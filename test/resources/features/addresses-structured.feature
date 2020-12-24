@@ -7,7 +7,7 @@ Feature: Structured Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | 4 COCONUT GROVE, CHRISTMAS ISLAND |
         And the "self" link of the first address in the list is followed
         Then the response will contain:
             """
@@ -124,7 +124,7 @@ Feature: Structured Address
         When CORS is set to "*"
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | 4 COCONUT GROVE, CHRISTMAS ISLAND |
         And the "self" link of the first address in the list is followed
         Then the reponse will have a "access-control-allow-origin" of "*"
 
@@ -134,6 +134,6 @@ Feature: Structured Address
         When CORS is not set
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 4 COCONUT GROVE |
+            | q | 4 COCONUT GROVE, CHRISTMAS ISLAND |
         And the "self" link of the first address in the list is followed
         Then the reponse will not have a "access-control-allow-origin" header
