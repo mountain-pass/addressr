@@ -155,7 +155,7 @@ Given(
   async function () {
     if (global.gnafLoaded === undefined) {
       global.gnafLoaded = true;
-      this.dataDir = await loadGnaf();
+      this.dataDir = await loadGnaf({ refresh: true });
     }
   }
 );

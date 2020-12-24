@@ -17,13 +17,17 @@ Feature: Structured Address
                         "number": 4
                     },
                     "street": {
-                        "name": "COCONUT GROVE",
+                        "name": "COCONUT",
                         "class": {
-                            "code": "U",
-                            "name": "UNCONFIRMED"
+                            "code": "C",
+                            "name": "CONFIRMED"
+                        },
+                        "type": {
+                            "code": "GROVE",
+                            "name": "GR"
                         }
                     },
-                    "confidence": -1,
+                    "confidence": 2,
                     "locality": {
                         "name": "CHRISTMAS ISLAND",
                         "class": {
@@ -37,34 +41,47 @@ Feature: Structured Address
                         "abbreviation": "OT"
                     }
                 },
-                "pid": "GAOT_718446632",
+                "pid": "GAOT_717321166",
                 "geocoding": {
                     "geocodes": [
                         {
-                            "default": true,
-                            "latitude": -10.48549891,
-                            "longitude": 105.63584627,
+                            "default": false,
+                            "latitude": -10.4162647,
+                            "longitude": 105.67998436,
+                            "reliability": {
+                                "code": "2",
+                                "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
+                            },
                             "type": {
-                                "code": "LOC",
-                                "name": "LOCALITY"
+                                "code": "PC",
+                                "name": "PROPERTY CENTROID"
+                            }
+                        },
+                        {
+                            "default": true,
+                            "latitude": -10.4162647,
+                            "longitude": 105.67998436,
+                            "type": {
+                                "code": "PC",
+                                "name": "PROPERTY CENTROID"
                             }
                         }
                     ],
                     "level": {
-                        "code": "4",
-                        "name": "LOCALITY,NO STREET,NO ADDRESS"
+                        "code": "7",
+                        "name": "LOCALITY,STREET, ADDRESS"
                     }
                 },
                 "mla": [
-                    "4 COCONUT GROVE",
+                    "4 COCONUT GR",
                     "CHRISTMAS ISLAND OT 6798"
                 ],
-                "sla": "4 COCONUT GROVE, CHRISTMAS ISLAND OT 6798"
+                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
             }
             """
         And the response will contain the following links:
             | rel  | uri                       | title | type |
-            | self | /addresses/GAOT_718446632 |       |      |
+            | self | /addresses/GAOT_717321166 |       |      |
 
 
     @not-geo

@@ -770,7 +770,12 @@ export function mapAddressDetails(d, context, i, count) {
   return rval;
 }
 
-async function loadAddressDetails(file, expectedCount, context) {
+async function loadAddressDetails(
+  file,
+  expectedCount,
+  context,
+  { refresh = false } = {}
+) {
   let actualCount = 0;
 
   await new Promise((resolve, reject) => {
@@ -813,7 +818,7 @@ async function loadAddressDetails(file, expectedCount, context) {
           });
 
           if (indexingBody.length > 0) {
-            sendIndexRequest(indexingBody)
+            sendIndexRequest(indexingBody, undefined, { refresh })
               .then(() => {
                 parser.resume();
                 return;
@@ -985,14 +990,15 @@ async function sendIndexRequest(
   indexingBody,
   initialBackoff = Number.parseInt(
     process.env.ADDRESSR_INDEX_BACKOFF || '30000'
-  )
+  ),
+  { refresh = false } = {}
 ) {
   let backoff = initialBackoff;
   // eslint-disable-next-line no-constant-condition
   for (let count = 0; true; count++) {
     try {
       const resp = await global.esClient.bulk({
-        refresh: false,
+        refresh,
         body: indexingBody,
         timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '300s',
       });
@@ -1094,7 +1100,7 @@ function buildSynonyms(context) {
   return synonyms;
 }
 
-async function loadGnafData(directory) {
+async function loadGnafData(directory, { refresh = false } = {}) {
   const filesCounts = {};
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(`${directory}/Counts.csv`), {
@@ -1180,7 +1186,8 @@ async function loadGnafData(directory) {
       await loadAddressDetails(
         `${directory}/${detailFile}`,
         filesCounts[detailFile],
-        loadContext
+        loadContext,
+        { refresh }
       );
     }
   }
@@ -1403,7 +1410,7 @@ async function loadAuthFiles(files, directory, loadContext, filesCounts) {
   logger('AUTH', loadContext);
 }
 
-export async function loadGnaf() {
+export async function loadGnaf({ refresh = false } = {}) {
   const file = await fetchGnafFile();
   const unzipped = await unzipFile(file);
 
@@ -1418,13 +1425,13 @@ export async function loadGnaf() {
     const mainDirectory = `${unzipped}/${contents[0]}`;
     logger('1. Main Data dir', mainDirectory);
 
-    await loadGnafData(mainDirectory);
+    await loadGnafData(mainDirectory, { refresh });
   } else if (contents.includes('Counts.csv')) {
     // feb20 doesn't have an intermediate directory
     const mainDirectory = unzipped;
     logger('2. Main Data dir', mainDirectory);
 
-    await loadGnafData(mainDirectory);
+    await loadGnafData(mainDirectory, { refresh });
   } else {
     throw new Error(
       `Data dir '${unzipped}' has unexpected contents: ${contents}`
