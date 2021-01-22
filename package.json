@@ -156,7 +156,7 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-react": "^7.7.0",
     "eslint-plugin-security": "^1.4.0",
-    "eslint-plugin-unicorn": "^26.0.0",
+    "eslint-plugin-unicorn": "^27.0.0",
     "husky": "^4.2.5",
     "imagemin-lint-staged": "^0.4.0",
     "istanbul": "^0.4.5",
