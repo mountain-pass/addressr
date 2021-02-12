@@ -113,7 +113,7 @@
     "express": "^4.17.1",
     "got": "^9.6.0",
     "http-link-header": "1.0.2",
-    "js-yaml": "^3.3.0",
+    "js-yaml": "^4.0.0",
     "json-ptr": "2.0.0",
     "keyv": "^4.0.1",
     "keyv-file": "^0.2.0",
