@@ -461,3 +461,8 @@ Feature: Address
         Given an address database is not loaded from gnaf
         When "/addresses/GAOT_717321166" is requested
         Then the returned response will have a 503 status code
+
+    Scenario: Searching Addressed - Place
+        Given an address database is loaded from gnaf
+        When "/addresses/does_not_exist" is requested
+        Then the returned response will have a 404 status code

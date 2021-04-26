@@ -1472,7 +1472,9 @@ export async function getAddress(addressId) {
     return { link, json };
   } catch (error_) {
     error('error getting record from elastic search', error_);
-    if (error_.body.error.type === 'index_not_found_exception') {
+    if (error_.body.found === false) {
+      return { statusCode: 404, json: { error: 'not found' } };
+    } else if (error_.body.error.type === 'index_not_found_exception') {
       return { statusCode: 503, json: { error: 'service unavailable' } };
     } else {
       return { statusCode: 500, json: { error: 'unexpected error' } };

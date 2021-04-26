@@ -46,8 +46,8 @@ Feature: Structured Address
                     "geocodes": [
                         {
                             "default": false,
-                            "latitude": -10.4162647,
-                            "longitude": 105.67998436,
+                            "latitude": -10.41686106,
+                            "longitude": 105.68090917,
                             "reliability": {
                                 "code": "2",
                                 "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
@@ -59,8 +59,8 @@ Feature: Structured Address
                         },
                         {
                             "default": true,
-                            "latitude": -10.4162647,
-                            "longitude": 105.67998436,
+                            "latitude": -10.41686106,
+                            "longitude": 105.68090917,
                             "type": {
                                 "code": "PC",
                                 "name": "PROPERTY CENTROID"
