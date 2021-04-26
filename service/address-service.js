@@ -11,7 +11,7 @@ import Papa from 'papaparse';
 import path from 'path';
 import stream from 'stream';
 import unzip from 'unzip-stream';
-import { initIndex } from '../client/elasticsearch';
+import { initIndex, dropIndex as dropESIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './setLinkOptions';
 import Keyv from 'keyv';
@@ -45,6 +45,10 @@ const ONE_DAY_MS = 1000 * ONE_DAY_S;
 const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
+
+export async function dropIndex() {
+  await dropESIndex(global.esClient);
+}
 
 export async function clearAddresses() {
   await initIndex(global.esClient, true);
@@ -1467,18 +1471,13 @@ export async function getAddress(addressId) {
 
     return { link, json };
   } catch (error_) {
-    logger('err', error_);
-
-    throw error_;
+    error('error getting record from elastic search', error_);
+    if (error_.body.error.type === 'index_not_found_exception') {
+      return { statusCode: 503, json: { error: 'service unavailable' } };
+    } else {
+      return { statusCode: 500, json: { error: 'unexpected error' } };
+    }
   }
-  //  throw new PendingError(addressId);
-  // return new Promise(function(resolve /*, reject*/) {
-  //   if (Object.keys(examples).length > 0) {
-  //     resolve({ json: examples[Object.keys(examples)[0]] });
-  //   } else {
-  //     resolve();
-  //   }
-  // });
 }
 
 /**
@@ -1490,62 +1489,73 @@ export async function getAddress(addressId) {
  * returns List
  **/
 export async function getAddresses(url, swagger, q, p = 1) {
-  const foundAddresses = await searchForAddress(q, p);
-  logger('foundAddresses', foundAddresses);
-  const link = new LinkHeader();
-  link.set({
-    rel: 'describedby',
-    uri: `/docs/#operations-${swagger.path.get[
-      'x-swagger-router-controller'
-    ].toLowerCase()}-${swagger.path.get.operationId}`,
-    title: `${swagger.path.get.operationId} API Docs`,
-    type: 'text/html',
-  });
-  const sp = new URLSearchParams({
-    ...(q !== undefined && { q }),
-    ...(p !== 1 && { p }),
-  });
-  const spString = sp.toString();
-  link.set({
-    rel: 'self',
-    uri: `${url}${spString === '' ? '' : '?'}${spString}`,
-  });
-  link.set({
-    rel: 'first',
-    uri: `${url}${q === undefined ? '' : '?'}${new URLSearchParams({
+  try {
+    const foundAddresses = await searchForAddress(q, p);
+    logger('foundAddresses', foundAddresses);
+    const link = new LinkHeader();
+    link.set({
+      rel: 'describedby',
+      uri: `/docs/#operations-${swagger.path.get[
+        'x-swagger-router-controller'
+      ].toLowerCase()}-${swagger.path.get.operationId}`,
+      title: `${swagger.path.get.operationId} API Docs`,
+      type: 'text/html',
+    });
+    const sp = new URLSearchParams({
       ...(q !== undefined && { q }),
-    }).toString()}`,
-  });
-  if (p > 1) {
+      ...(p !== 1 && { p }),
+    });
+    const spString = sp.toString();
     link.set({
-      rel: 'prev',
-      uri: `${url}${q === undefined && p == 2 ? '' : '?'}${new URLSearchParams({
+      rel: 'self',
+      uri: `${url}${spString === '' ? '' : '?'}${spString}`,
+    });
+    link.set({
+      rel: 'first',
+      uri: `${url}${q === undefined ? '' : '?'}${new URLSearchParams({
         ...(q !== undefined && { q }),
-        ...(p > 2 && { p: p - 1 }),
       }).toString()}`,
     });
+    if (p > 1) {
+      link.set({
+        rel: 'prev',
+        uri: `${url}${
+          q === undefined && p == 2 ? '' : '?'
+        }${new URLSearchParams({
+          ...(q !== undefined && { q }),
+          ...(p > 2 && { p: p - 1 }),
+        }).toString()}`,
+      });
+    }
+    logger('TOTAL', foundAddresses.hits.total.value);
+    logger('PAGE_SIZE * p', PAGE_SIZE * p);
+    logger('next?', foundAddresses.hits.total.value > PAGE_SIZE * p);
+
+    if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
+      link.set({
+        rel: 'next',
+        uri: `${url}?${new URLSearchParams({
+          ...(q !== undefined && { q }),
+          p: p + 1,
+        }).toString()}`,
+      });
+    }
+    const responseBody = mapToSearchAddressResponse(foundAddresses);
+    logger('responseBody', JSON.stringify(responseBody, undefined, 2));
+
+    const linkTemplate = new LinkHeader();
+    const op = swagger.path.get;
+    setLinkOptions(op, url, linkTemplate);
+
+    return { link, json: responseBody, linkTemplate };
+  } catch (error_) {
+    error('error querying elastic search', error_);
+    if (error_.body.error.type === 'index_not_found_exception') {
+      return { statusCode: 503, json: { error: 'service unavailable' } };
+    } else {
+      return { statusCode: 500, json: { error: 'unexpected error' } };
+    }
   }
-  logger('TOTAL', foundAddresses.hits.total.value);
-  logger('PAGE_SIZE * p', PAGE_SIZE * p);
-  logger('next?', foundAddresses.hits.total.value > PAGE_SIZE * p);
-
-  if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
-    link.set({
-      rel: 'next',
-      uri: `${url}?${new URLSearchParams({
-        ...(q !== undefined && { q }),
-        p: p + 1,
-      }).toString()}`,
-    });
-  }
-  const responseBody = mapToSearchAddressResponse(foundAddresses);
-  logger('responseBody', JSON.stringify(responseBody, undefined, 2));
-
-  const linkTemplate = new LinkHeader();
-  const op = swagger.path.get;
-  setLinkOptions(op, url, linkTemplate);
-
-  return { link, json: responseBody, linkTemplate };
 }
 
 function mapToSearchAddressResponse(foundAddresses) {

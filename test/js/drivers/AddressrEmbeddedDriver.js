@@ -20,6 +20,10 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
     return getApiRoot();
   }
 
+  async getApi(path) {
+    return this.follow({ uri: path });
+  }
+
   async follow(link) {
     logger('FOLLOWING', link);
     switch (link.uri) {
@@ -57,7 +61,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
           try {
             return await getAddress(parameters.address_id);
           } catch (error_) {
-            error(JSON.stringify(error_));
+            error(error_);
             if (error_.code === 'ENOENT') {
               throw new PendingError('Not Found');
             }

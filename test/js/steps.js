@@ -1,11 +1,13 @@
 /* eslint-disable eslint-comments/disable-enable-pair */
 /* eslint-disable security/detect-object-injection */
 /* eslint-disable security/detect-non-literal-fs-filename */
+import { expect } from 'chai';
 import { Given, Then, When } from 'cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
 import {
   clearAddresses,
+  dropIndex,
   loadGnaf,
   mapAddressDetails,
   setAddresses,
@@ -15,6 +17,15 @@ var logger = debug('test');
 
 When('the root api is requested', async function () {
   this.current = await this.driver.getApiRoot();
+});
+
+When('{string} is requested', async function (path) {
+  try {
+    this.current = await this.driver.getApi(path);
+  } catch (error) {
+    console.error({ error: error });
+    this.current = error;
+  }
 });
 
 Then('the response will contain the following links:', async function (
@@ -160,6 +171,11 @@ Given(
   }
 );
 
+Given('an address database is not loaded from gnaf', async function () {
+  global.gnafLoaded = undefined;
+  await dropIndex();
+});
+
 Then(
   'the returned address list will contain many addresses',
   async function () {
@@ -234,10 +250,15 @@ When('the {string} link template is followed with:', async function (
   expect(this.current.linkTemplate).to.not.be.undefined;
   const link = this.current.linkTemplate.get('rel', relationship);
   logger('link', link);
-  this.current = await this.driver.followTemplate(
-    link[0],
-    parameters.rowsHash()
-  );
+  try {
+    this.current = await this.driver.followTemplate(
+      link[0],
+      parameters.rowsHash()
+    );
+  } catch (error) {
+    console.error({ error: error });
+    this.current = error;
+  }
 });
 
 Then('the returned address list will include:', async function (
@@ -254,6 +275,14 @@ Then('the returned address list will include:', async function (
     );
   });
   expect(found).to.not.be.undefined;
+});
+
+Then('the returned response will have a {int} status code', async function (
+  statusCode
+) {
+  // Write code here that turns the phrase above into concrete actions
+  console.log({ current: this.current });
+  expect(this.current.statusCode).to.equal(statusCode);
 });
 
 Then('the returned address list will NOT include:', async function (

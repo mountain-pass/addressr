@@ -11,6 +11,17 @@ const ELASTIC_USERNAME = process.env.ELASTIC_USERNAME || undefined;
 const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD || undefined;
 const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http';
 
+export async function dropIndex(esClient) {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {
+    await esClient.indices.delete({ index: ES_INDEX_NAME });
+  }
+  logger('checking if index exists');
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  const exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
+  logger('index exists:', exists);
+}
+
 export async function initIndex(esClient, clear, synonyms) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   if (await esClient.indices.exists({ index: ES_INDEX_NAME })) {

@@ -435,7 +435,7 @@ Feature: Address
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
             | q | 5 PITCAIRN PLACE |
-        And the returned address list will include:
+        Then the returned address list will include:
             """
             {
                 "sla": "5 PITCAIRN PL, NORFOLK ISLAND OT 2899",
@@ -447,3 +447,17 @@ Feature: Address
                 }
             }
             """
+
+
+
+    Scenario: Searching Address List - No Index
+        Given an address database is not loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+            | q | CHRISTMAS ISLAND |
+        Then the returned response will have a 503 status code
+
+    Scenario: Getting Address - No Index
+        Given an address database is not loaded from gnaf
+        When "/addresses/GAOT_717321166" is requested
+        Then the returned response will have a 503 status code
