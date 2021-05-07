@@ -161,7 +161,7 @@
     "imagemin-lint-staged": "^0.4.0",
     "istanbul": "^0.4.5",
     "istanbul-middleware": "^0.2.2",
-    "lint-staged": "^10.2.11",
+    "lint-staged": "^11.0.0",
     "ngrok": "^4.0.1",
     "nodemon": "^2.0.4",
     "npm-check": "^5.9.0",
