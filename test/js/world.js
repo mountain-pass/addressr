@@ -1,10 +1,10 @@
 //const logWhy = require('why-is-node-running');
 import {
   PendingError,
-  stepDefinitionWrapper,
-} from '@windyroad/cucumber-js-throwables';
-import qc from '@windyroad/quick-containers-js';
-import chai from 'chai';
+  stepDefinitionWrapper
+} from '@windyroad/cucumber-js-throwables'
+import qc from '@windyroad/quick-containers-js'
+import chai from 'chai'
 // import chaiIterator from 'chai-iterator';
 import {
   // eslint-disable-next-line indent
@@ -12,82 +12,82 @@ import {
   AfterAll,
   BeforeAll,
   setDefinitionFunctionWrapper,
-  setWorldConstructor,
-} from 'cucumber';
-import debug from 'debug';
-import Docker from 'dockerode';
-import fs from 'fs';
-import waitport from 'wait-port';
-import { esConnect } from '../../client/elasticsearch';
-import { startServer, stopServer } from '../../swagger';
-import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
-import { AddressrRestDriver } from './drivers/AddressrRestDriver';
+  setWorldConstructor
+} from 'cucumber'
+import debug from 'debug'
+import Docker from 'dockerode'
+import fs from 'fs'
+import waitport from 'wait-port'
+import { esConnect } from '../../client/elasticsearch'
+import { startServer, stopServer } from '../../swagger'
+import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver'
+import { AddressrRestDriver } from './drivers/AddressrRestDriver'
 
-const fsp = fs.promises;
+const fsp = fs.promises
 
-const logger = debug('test');
-const esLogger = debug('es');
+const logger = debug('test')
+const esLogger = debug('es')
 
-global.expect = chai.expect;
-global.PendingError = PendingError;
+global.expect = chai.expect
+global.PendingError = PendingError
 
-const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
+const TEST_PROFILE = process.env.TEST_PROFILE || 'default'
 
-const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0';
+const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.2'
 
-var serverPort = process.env.PORT || 8080;
+var serverPort = process.env.PORT || 8080
 
-async function startExternalServer() {
+async function startExternalServer () {
   await waitport({
     port: Number.parseInt(serverPort),
-    timeout: 60000,
-  });
-  return `http://localhost:${serverPort}`;
+    timeout: 60000
+  })
+  return `http://localhost:${serverPort}`
 }
 
-async function ensureDockerServerStarted() {
+async function ensureDockerServerStarted () {
   // wait till running
-  throw new PendingError();
+  throw new PendingError()
   // return `http://localhost:${serverPort}`;
 }
 
 BeforeAll({ timeout: 240000 }, async function () {
-  logger('BEFORE ALL');
+  logger('BEFORE ALL')
   switch (TEST_PROFILE) {
     case 'rest':
-      global.driver = new AddressrRestDriver(await startServer());
-      break;
+      global.driver = new AddressrRestDriver(await startServer())
+      break
     case 'cli':
-      global.driver = new AddressrRestDriver(await startExternalServer());
-      break;
+      global.driver = new AddressrRestDriver(await startExternalServer())
+      break
     case 'docker':
-      global.driver = new AddressrRestDriver(await ensureDockerServerStarted());
-      break;
+      global.driver = new AddressrRestDriver(await ensureDockerServerStarted())
+      break
     default:
-      global.driver = new AddressrEmbeddedDriver();
-      break;
+      global.driver = new AddressrEmbeddedDriver()
+      break
   }
 
-  await fsp.mkdir('./target/Elasticsearch/data', { recursive: true });
-  const cwd = process.cwd();
-  logger(`cwd`, cwd);
-  this.containers = {};
-  const docker = new Docker();
-  await startElasticSearch(docker, this);
+  await fsp.mkdir('./target/Elasticsearch/data', { recursive: true })
+  const cwd = process.cwd()
+  logger(`cwd`, cwd)
+  this.containers = {}
+  const docker = new Docker()
+  await startElasticSearch(docker, this)
   //  await initIndex(global.esClient, true);
-});
+})
 
 AfterAll({ timeout: 30000 }, async function () {
-  stopServer();
+  stopServer()
   //delete global.esClient;
   if (this.logStream) {
-    this.logStream.destroy();
+    this.logStream.destroy()
   }
-});
+})
 
-async function startElasticSearch(docker, context) {
+async function startElasticSearch (docker, context) {
   if (process.env.ES_STARTED === undefined) {
-    await qc.ensurePulled(docker, SEARCH_IMAGE, logger);
+    await qc.ensurePulled(docker, SEARCH_IMAGE, logger)
     context.containers.es = await qc.ensureStarted(
       docker,
       {
@@ -95,54 +95,54 @@ async function startElasticSearch(docker, context) {
         Tty: false,
         ExposedPorts: {
           '9200/tcp': {},
-          '9300/tcp': {},
+          '9300/tcp': {}
         },
         HostConfig: {
           PortBindings: {
             '9200/tcp': [{ HostPort: '9200' }],
-            '9300/tcp': [{ HostPort: '9300' }],
+            '9300/tcp': [{ HostPort: '9300' }]
           },
           Binds: [
             // When we used the local file system, ES freaked out about the lack of space 🤷‍♂️
             // `${cwd}/target/Elasticsearch/data:/var/data/elasticsearch`,
             // `${cwd}/target/Elasticsearch/log:/var/log/elasticsearch`,
             // `${cwd}/test/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml`,
-          ],
+          ]
         },
         Env: ['discovery.type=single-node', 'ES_JAVA_OPTS=-Xms1g -Xmx1g'],
-        name: 'qc-elasticsearch-test',
+        name: 'qc-elasticsearch-test'
       },
       () =>
         waitport({
           port: 9200,
-          timeout: 60000,
+          timeout: 60000
         })
-    );
-    const cont = docker.getContainer('qc-elasticsearch-test');
+    )
+    const cont = docker.getContainer('qc-elasticsearch-test')
     context.logStream = await cont.logs({
       stdout: true,
       stderr: true,
       follow: true,
-      tail: 50,
-    });
-    context.logStream.setEncoding('utf8');
+      tail: 50
+    })
+    context.logStream.setEncoding('utf8')
     context.logStream.on('data', function (data) {
-      esLogger(data);
-    });
+      esLogger(data)
+    })
   }
-  await esConnect();
+  await esConnect()
 }
 
-function world({ attach, parameters }) {
-  logger('IN WORLD');
-  this.attach = attach;
-  this.parameters = parameters;
-  this.driver = global.driver;
+function world ({ attach, parameters }) {
+  logger('IN WORLD')
+  this.attach = attach
+  this.parameters = parameters
+  this.driver = global.driver
 }
 
-setWorldConstructor(world);
+setWorldConstructor(world)
 
-setDefinitionFunctionWrapper(stepDefinitionWrapper);
+setDefinitionFunctionWrapper(stepDefinitionWrapper)
 
 // Before(function (testCase) {
 //   this.testCase = testCase;

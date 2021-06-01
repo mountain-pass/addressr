@@ -19,8 +19,8 @@
    NOTE: If you are running windows, you'll need to use [wsl](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
 2. Start elastic search. For example run
    ```
-   docker pull docker.elastic.co/elasticsearch/elasticsearch:7.2.0
-   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+   docker pull docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.9.2
    ```
 3. Start API server. In a second window run:
    ```
@@ -97,7 +97,7 @@
 
 ### Elastic Search:
 
-elasticsearch-oss >= 7.2.0 with 1.4GiB of memory
+elasticsearch-oss >= 7.9.2 with 1.4GiB of memory
 
 ### Addressr Loader
 
