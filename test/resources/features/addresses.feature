@@ -322,7 +322,7 @@ Feature: Address
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | CHRISTMAS ISLAND |
+            | q | MURRAY RD, CHRISTMAS ISLAND ISLAND |
         Then the returned address list will contain many addresses
         And the returned address list will include:
             """
@@ -337,11 +337,11 @@ Feature: Address
             }
             """
         And the response will contain the following links:
-            | rel         | uri                                      | title                 | type      |
-            | describedby | /docs/#operations-addresses-getAddresses | getAddresses API Docs | text/html |
-            | self        | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
-            | first       | /addresses?q=CHRISTMAS+ISLAND            |                       |           |
-            | next        | /addresses?q=CHRISTMAS+ISLAND&p=2        |                       |           |
+            | rel         | uri                                                   | title                 | type      |
+            | describedby | /docs/#operations-addresses-getAddresses              | getAddresses API Docs | text/html |
+            | self        | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND     |                       |           |
+            | first       | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND     |                       |           |
+            | next        | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND&p=2 |                       |           |
         And the response will contain the following link template:
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
