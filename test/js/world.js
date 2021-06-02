@@ -74,7 +74,6 @@ BeforeAll({ timeout: 240000 }, async function () {
   this.containers = {}
   const docker = new Docker()
   await startElasticSearch(docker, this)
-  //  await initIndex(global.esClient, true);
 })
 
 AfterAll({ timeout: 30000 }, async function () {

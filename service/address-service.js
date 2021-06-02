@@ -921,29 +921,8 @@ async function searchForAddress (searchString, p) {
       size: PAGE_SIZE,
       query: {
         bool: {
-          // must: [
-          //   {
-          //     exists: {
-          //       field: 'sla'
-          //     }
-          //   }
-          // ],
           ...(searchString && {
             should: [
-              // {
-              //   fuzzy: {
-              //     sla: {
-              //       value: searchString
-              //     }
-              //   }
-              // },
-              // {
-              //   fuzzy: {
-              //     ssla: {
-              //       value: searchString
-              //     }
-              //   }
-              // }
               {
                 multi_match: {
                   fields: ['sla', 'ssla'],
@@ -983,7 +962,7 @@ async function searchForAddress (searchString, p) {
       }
     }
   })
-  logger('hits', JSON.stringify(searchResp.hits, undefined, 2))
+  logger('hits', JSON.stringify(searchResp.body.hits, undefined, 2))
   return searchResp
 }
 
@@ -1004,7 +983,7 @@ async function sendIndexRequest (
         timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '300s'
       })
 
-      if (resp.errors) {
+      if (resp.errors || (resp.body && resp.body.errors)) {
         throw resp
         // // error(resp);
         // // error(resp.items[0].index);
@@ -1167,7 +1146,11 @@ async function loadGnafData (directory, { refresh = false } = {}) {
   await loadAuthFiles(files, directory, loadContext, filesCounts)
   // loadContext now contains all the auth files, so we can build the synonyms
   const synonyms = buildSynonyms(loadContext)
-  await initIndex(global.esClient, false, synonyms)
+  await initIndex(
+    global.esClient,
+    process.env.ES_CLEAR_INDEX || false,
+    synonyms
+  )
   const addressDetailFiles = files.filter(
     f => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//)
   )
@@ -1540,8 +1523,8 @@ export async function getAddress (addressId) {
     })
     logger('jsonX', jsonX)
     const json = {
-      ...jsonX._source.structured,
-      sla: jsonX._source.sla
+      ...jsonX.body._source.structured,
+      sla: jsonX.body._source.sla
     }
     logger('json', json)
     delete json._id
@@ -1611,11 +1594,11 @@ export async function getAddresses (url, swagger, q, p = 1) {
         }).toString()}`
       })
     }
-    logger('TOTAL', foundAddresses.hits.total.value)
+    logger('TOTAL', foundAddresses.body.hits.total.value)
     logger('PAGE_SIZE * p', PAGE_SIZE * p)
-    logger('next?', foundAddresses.hits.total.value > PAGE_SIZE * p)
+    logger('next?', foundAddresses.body.hits.total.value > PAGE_SIZE * p)
 
-    if (foundAddresses.hits.total.value > PAGE_SIZE * p) {
+    if (foundAddresses.body.hits.total.value > PAGE_SIZE * p) {
       link.set({
         rel: 'next',
         uri: `${url}?${new URLSearchParams({
@@ -1634,8 +1617,14 @@ export async function getAddresses (url, swagger, q, p = 1) {
     return { link, json: responseBody, linkTemplate }
   } catch (error_) {
     error('error querying elastic search', error_)
-    if (error_.body.error.type === 'index_not_found_exception') {
+    if (
+      error_.body &&
+      error_.body.error &&
+      error_.body.error.type === 'index_not_found_exception'
+    ) {
       return { statusCode: 503, json: { error: 'service unavailable' } }
+    } else if (error_.displayName === 'RequestTimeout') {
+      return { statusCode: 504, json: { error: 'gateway timeout' } }
     } else {
       return { statusCode: 500, json: { error: 'unexpected error' } }
     }
@@ -1643,7 +1632,7 @@ export async function getAddresses (url, swagger, q, p = 1) {
 }
 
 function mapToSearchAddressResponse (foundAddresses) {
-  return foundAddresses.hits.hits.map(h => {
+  return foundAddresses.body.hits.hits.map(h => {
     return {
       sla: h._source.sla,
       score: h._score,
