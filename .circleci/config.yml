@@ -44,6 +44,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
+            npm run genversion
             npm run cover:nodejs:nogeo
             npm run cover:rest:nogeo
       - store_test_results:
@@ -82,6 +83,7 @@ jobs:
             export NPM_CONFIG_PREFIX=$(pwd)/global-npm
             mkdir -p NPM_CONFIG_PREFIX
             export PATH=$PATH:$NPM_CONFIG_PREFIX/bin
+            npm run genversion
             npm run cover:cli:nogeo
       - store_test_results:
           path: test-results
@@ -117,6 +119,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 localhost:9200
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
+            npm run genversion
             npm run cover:nodejs:geo
             npm run cover:rest:geo
       - store_test_results:
