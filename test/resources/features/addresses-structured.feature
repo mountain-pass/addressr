@@ -136,7 +136,7 @@ Feature: Structured Address
             | self | /addresses/GAOT_717321166 |       |      |
 
 
-    @not-nodejs @not-cli
+    @not-nodejs @not-cli @not-cli2
     Scenario: Allow CORS for Root
         When CORS is set to "*"
         When the root api is requested
@@ -146,7 +146,7 @@ Feature: Structured Address
         Then the reponse will have a "access-control-allow-origin" of "*"
 
 
-    @not-nodejs @not-cli
+    @not-nodejs @not-cli @not-cli2
     Scenario: Swagger Docs No CORS
         When CORS is not set
         When the root api is requested

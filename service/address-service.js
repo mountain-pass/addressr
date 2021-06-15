@@ -16,6 +16,7 @@ import download from '../utils/stream-down'
 import { setLinkOptions } from './setLinkOptions'
 import Keyv from 'keyv'
 import { KeyvFile } from 'keyv-file'
+import crypto from 'crypto'
 
 const fsp = fs.promises
 
@@ -912,13 +913,13 @@ async function loadAddressDetails (
   //await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
-async function searchForAddress (searchString, p) {
+export async function searchForAddress (searchString, p, pageSize = PAGE_SIZE) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
   const searchResp = await global.esClient.search({
     index: ES_INDEX_NAME,
     body: {
-      from: (p - 1 || 0) * PAGE_SIZE,
-      size: PAGE_SIZE,
+      from: (p - 1 || 0) * pageSize,
+      size: pageSize,
       query: {
         bool: {
           ...(searchString && {
@@ -1533,8 +1534,13 @@ export async function getAddress (addressId) {
       rel: 'self',
       uri: `/addresses/${addressId}`
     })
+    // TODO: store hash in address
+    const hash = crypto
+      .createHash('md5')
+      .update(JSON.stringify(json))
+      .digest('hex')
 
-    return { link, json }
+    return { link, json, hash }
   } catch (error_) {
     error('error getting record from elastic search', error_)
     if (error_.body.found === false) {

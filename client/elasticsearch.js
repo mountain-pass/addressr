@@ -137,7 +137,7 @@ export async function esConnect (
   // we keep trying to connect, no matter what
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    console.log(`trying to reach elastic search on ${eshost}:${esport}...`)
+    logger(`trying to reach elastic search on ${eshost}:${esport}...`)
     try {
       const open = await waitPort({
         host: eshost,

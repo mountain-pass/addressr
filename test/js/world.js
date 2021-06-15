@@ -22,6 +22,8 @@ import { esConnect } from '../../client/elasticsearch'
 import { startServer, stopServer } from '../../swagger'
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver'
 import { AddressrRestDriver } from './drivers/AddressrRestDriver'
+import { AddressrRest2Driver } from './drivers/AddressrRest2Driver'
+import { startRest2Server } from '../../src/waycharterServer'
 
 const fsp = fs.promises
 
@@ -57,15 +59,23 @@ BeforeAll({ timeout: 240000 }, async function () {
     case 'rest':
       global.driver = new AddressrRestDriver(await startServer())
       break
+    case 'rest2':
+      global.driver = new AddressrRest2Driver(await startRest2Server())
+      break
     case 'cli':
       global.driver = new AddressrRestDriver(await startExternalServer())
+      break
+    case 'cli2':
+      global.driver = new AddressrRest2Driver(await startExternalServer())
       break
     case 'docker':
       global.driver = new AddressrRestDriver(await ensureDockerServerStarted())
       break
-    default:
+    case 'default':
       global.driver = new AddressrEmbeddedDriver()
       break
+    default:
+      throw new PendingError(`Need driver for profile: ${TEST_PROFILE}`)
   }
 
   await fsp.mkdir('./target/Elasticsearch/data', { recursive: true })
