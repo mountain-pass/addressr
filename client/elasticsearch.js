@@ -125,17 +125,26 @@ export async function initIndex (esClient, clear, synonyms) {
       body: indexBody
     })
     logger({ indexPutSettingsResult })
+    const indexPutMappingResult = await esClient.indices.putMapping({
+      index: ES_INDEX_NAME,
+      body: indexBody.mappings
+    })
+    logger({ indexPutMappingResult })
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     const indexOpenResult = await esClient.indices.open({
       index: ES_INDEX_NAME
     })
     logger({ indexOpenResult })
+    const refreshResult = await esClient.indices.refresh({
+      index: ES_INDEX_NAME
+    })
+    logger({ refreshResult })
   }
   const indexGetResult = await esClient.indices.get({
     index: ES_INDEX_NAME,
     includeDefaults: true
   })
-  logger({ indexGetResult })
+  logger(`indexGetResult:\n${JSON.stringify(indexGetResult, undefined, 2)}`)
 }
 
 export async function esConnect (
