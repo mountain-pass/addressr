@@ -36,7 +36,7 @@ export function startRest2Server () {
   app.use(waycharter.router)
 
   const addressesType = waycharter.registerCollection({
-    itemPath: ':pid',
+    itemPath: '/:pid',
     itemLoader: async ({ pid }) => {
       const { json, hash } = await getAddress(pid)
 
@@ -48,7 +48,7 @@ export function startRest2Server () {
         }
       }
     },
-    collectionPath: '/addresses/',
+    collectionPath: '/addresses',
     collectionLoader: async ({ page, q }) => {
       if (q && q.length > 2) {
         const foundAddresses = await searchForAddress(q, page + 1, PAGE_SIZE)
@@ -90,7 +90,7 @@ export function startRest2Server () {
     },
     filters: [
       {
-        rel: 'https://addressr.mountain-pass.com.au/rels/address-search',
+        rel: 'https://addressr.io/rels/address-search',
         parameters: ['q']
       }
     ]

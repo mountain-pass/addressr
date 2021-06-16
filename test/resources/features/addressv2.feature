@@ -5,16 +5,16 @@ Feature: Addresses v2
     Scenario: Root API
         When the root api is requested
         Then the response will contain the following links:
-            | rel                                                       | uri             |
-            | self                                                      | /               |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses/{?q} |
+            | rel                                     | uri            |
+            | self                                    | /              |
+            | https://addressr.io/rels/address-search | /addresses{?q} |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
 
     Scenario: Search
         When the root api is requested
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | MURRAY RD, CHRISTMAS ISLAND ISLAND |
         Then the returned address list will contain many addresses
         And the returned address list will include:
@@ -26,17 +26,17 @@ Feature: Addresses v2
             }
             """
         And the response will contain the following links:
-            | rel                                                       | uri                                                        |
-            | self                                                      | /addresses/?q=MURRAY%20RD%2C%20CHRISTMAS%20ISLAND%20ISLAND |
-            | first                                                     | /addresses/?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND         |
-            | next                                                      | /addresses/?page=1&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND  |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses/{?q}                                            |
+            | rel                                     | uri                                                       |
+            | self                                    | /addresses?q=MURRAY%20RD%2C%20CHRISTMAS%20ISLAND%20ISLAND |
+            | first                                   | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND         |
+            | next                                    | /addresses?page=1&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND  |
+            | https://addressr.io/rels/address-search | /addresses{?q}                                            |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
     Scenario: Search and next
         When the root api is requested
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | MURRAY RD, CHRISTMAS ISLAND ISLAND |
         And the "next" link is followed
         Then the returned address list will contain many addresses
@@ -49,21 +49,21 @@ Feature: Addresses v2
             }
             """
         And the response will contain the following links:
-            | rel                                                       | uri                                                       |
-            | self                                                      | /addresses/?page=1&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND |
-            | first                                                     | /addresses/?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND        |
-            | prev                                                      | /addresses/?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND        |
-            | next                                                      | /addresses/?page=2&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses/{?q}                                           |
+            | rel                                     | uri                                                      |
+            | self                                    | /addresses?page=1&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND |
+            | first                                   | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND        |
+            | prev                                    | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND        |
+            | next                                    | /addresses?page=2&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND |
+            | https://addressr.io/rels/address-search | /addresses{?q}                                           |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
 
     Scenario: Search and search
         When the root api is requested
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | MURRAY RD, CHRISTMAS ISLAND ISLAND |
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | GAZE RD, CHRISTMAS ISLAND |
         Then the returned address list will contain many addresses
         And the returned address list will include:
@@ -75,17 +75,17 @@ Feature: Addresses v2
             }
             """
         And the response will contain the following links:
-            | rel                                                       | uri                                              |
-            | self                                                      | /addresses/?q=GAZE%20RD%2C%20CHRISTMAS%20ISLAND  |
-            | first                                                     | /addresses/?q=GAZE+RD%2C+CHRISTMAS+ISLAND        |
-            | next                                                      | /addresses/?page=1&q=GAZE+RD%2C+CHRISTMAS+ISLAND |
-            | https://addressr.mountain-pass.com.au/rels/address-search | /addresses/{?q}                                  |
+            | rel                                     | uri                                             |
+            | self                                    | /addresses?q=GAZE%20RD%2C%20CHRISTMAS%20ISLAND  |
+            | first                                   | /addresses?q=GAZE+RD%2C+CHRISTMAS+ISLAND        |
+            | next                                    | /addresses?page=1&q=GAZE+RD%2C+CHRISTMAS+ISLAND |
+            | https://addressr.io/rels/address-search | /addresses{?q}                                  |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
     Scenario: Search and item
         When the root api is requested
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND |
         And the 1st "item" link is followed
         And the returned address summary will be:
@@ -105,7 +105,7 @@ Feature: Addresses v2
 
     Scenario: Search and item and canonical
         When the root api is requested
-        And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
+        And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND |
         And the 1st "item" link is followed
         And the "canonical" link is followed
