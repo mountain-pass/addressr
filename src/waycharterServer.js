@@ -4,7 +4,7 @@ import express from 'express'
 import { createServer } from 'http'
 import { WayCharter } from '@mountainpass/waycharter'
 import { searchForAddress, getAddress } from '../service/address-service'
-import version from '../version'
+import { version } from '../version'
 import crypto from 'crypto'
 
 var app = express()
@@ -55,6 +55,11 @@ export function startRest2Server () {
         const body = foundAddresses.body.hits.hits.map(h => {
           return {
             sla: h._source.sla,
+            ...(h._source.ssla && { ssla: h._source.ssla }),
+            highlight: {
+              sla: h.highlight.sla[0],
+              ...(h.highlight.ssla && { ssla: h.highlight.ssla[0] })
+            },
             score: h._score,
             pid: h._id.replace('/addresses/', '')
           }
@@ -91,7 +96,7 @@ export function startRest2Server () {
     ]
   })
 
-  const rootResource = waycharter.registerResourceType({
+  const index = waycharter.registerResourceType({
     path: '/',
     loader: async () => {
       return {

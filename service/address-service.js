@@ -953,7 +953,8 @@ export async function searchForAddress (searchString, p, pageSize = PAGE_SIZE) {
       sort: [
         '_score',
         { confidence: { order: 'desc' } },
-        { sla: { order: 'asc' } }
+        { 'ssla.raw': { order: 'asc' } },
+        { 'sla.raw': { order: 'asc' } }
       ],
       highlight: {
         fields: {
@@ -1081,7 +1082,6 @@ function buildSynonyms (context) {
   return synonyms
 }
 
-const { resolve } = require('path')
 const { readdir } = require('fs').promises
 
 async function getFiles (currentDir, baseDir) {

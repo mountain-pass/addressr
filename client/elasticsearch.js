@@ -86,11 +86,21 @@ export async function initIndex (esClient, clear, synonyms) {
         sla: {
           type: 'text',
           analyzer: 'my_analyzer',
-          fielddata: true
+          fields: {
+            raw: {
+              type: 'keyword'
+            }
+          }
+          // fielddata: true
         },
         ssla: {
           type: 'text',
-          analyzer: 'my_analyzer'
+          analyzer: 'my_analyzer',
+          fields: {
+            raw: {
+              type: 'keyword'
+            }
+          }
         },
         confidence: { type: 'integer' }
       }
