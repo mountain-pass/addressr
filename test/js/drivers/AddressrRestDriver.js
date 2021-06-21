@@ -22,6 +22,16 @@ export class AddressrRestDriver extends AddressrDriver {
     };
   }
 
+  async getApi(path) {
+    const resp = await this.requester.get(path);
+    return {
+      link: LinkHeader.parse(resp.headers.link || ''),
+      body: resp.body,
+      linkTemplate: LinkHeader.parse(resp.headers['link-template'] || ''),
+      headers: resp.headers,
+    };
+  }
+
   async follow(link) {
     const resp = await this.requester.get(link.uri);
     if (link.type === undefined || link.type === 'application/json') {

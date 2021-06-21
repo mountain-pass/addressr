@@ -40,6 +40,14 @@ paths:
               items:
                 type: string
                 pattern: '<(.*)>;(.*)'
+        503:
+          description: service unavailable
+          schema:
+            $ref: "#/definitions/Error"
+        500:
+          description: unexpected error 
+          schema:
+            $ref: "#/definitions/Error"
   /addresses:
     get:
       summary: Get List of Addresses
@@ -87,6 +95,14 @@ paths:
           description: invalid query
           schema:
             $ref: '#/definitions/ValidationError'
+        503:
+          description: service unavailable
+          schema:
+            $ref: "#/definitions/Error"
+        500:
+          description: unexpected error 
+          schema:
+            $ref: "#/definitions/Error"
   /addresses/{addressId}:
     get:
       summary: Get Address
@@ -122,6 +138,14 @@ paths:
               items:
                 type: string
                 pattern: '<(.*)>;(.*)'
+        503:
+          description: service unavailable
+          schema:
+            $ref: "#/definitions/Error"
+        500:
+          description: unexpected error 
+          schema:
+            $ref: "#/definitions/Error"
 definitions:
   Root:
     type: object
@@ -474,4 +498,9 @@ definitions:
       paramName:
         type: string
       message:
+        type: string
+  Error:
+    type: object
+    properties:
+      error:
         type: string

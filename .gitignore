@@ -73,3 +73,5 @@ deploy/.terraform/terraform.tfstate
 
 coverage
 .dockerignore
+
+version.js

@@ -6,6 +6,10 @@ export class AddressrDriver {
     throw new PendingError();
   }
 
+  async getApi(path) {
+    throw new PendingError(path);
+  }
+
   async follow(link) {
     throw new PendingError(link);
   }
