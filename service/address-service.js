@@ -27,7 +27,7 @@ const cache = new Keyv({
   store: new KeyvFile({ filename: 'target/keyv-file.msgpack' })
 })
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
 function getCoveredStates () {
   const covered = process.env.COVERED_STATES || ''
