@@ -170,8 +170,11 @@ export async function esConnect (
         // eslint-disable-next-line no-constant-condition
         while (true) {
           try {
+            const node = ELASTIC_USERNAME ? 
+              `${ELASTIC_PROTOCOL}://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${eshost}:${esport}` :
+              `${ELASTIC_PROTOCOL}://${eshost}:${esport}`
             const esClientOptions = {
-              node: `${ELASTIC_PROTOCOL}://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${eshost}:${esport}`
+              node
               // ...(ELASTIC_USERNAME &&
               //   ELASTIC_PASSWORD && {
               //     cloud: {
