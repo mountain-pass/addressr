@@ -19,7 +19,7 @@ error.log = console.error.bind(console) // eslint-disable-line no-console
 
 let server
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = process.env.PAGE_SIZE || 8
 
 export function startRest2Server () {
   app.use((request, response, next) => {
@@ -27,6 +27,12 @@ export function startRest2Server () {
       response.append(
         'Access-Control-Allow-Origin',
         process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN
+      )
+    }
+    if (process.env.ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS !== undefined) {
+      response.append(
+        'Access-Control-Expose-Headers',
+        process.env.ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS
       )
     }
     next()

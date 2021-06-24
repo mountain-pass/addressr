@@ -2,7 +2,7 @@
 
 ![Addressr](https://addressr.mountain-pass.com.au/icons/icon-144x144.png 'Addressr')
 
-[Free Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au) - [addressr.mountain-pass.com.au](https://addressr.mountain-pass.com.au)
+[Australian Address Validation, Search and Autocomplete](https://addressr.mountain-pass.com.au) - [addressr.mountain-pass.com.au](https://addressr.mountain-pass.com.au)
 
 [![GitHub license](https://img.shields.io/github/license/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/blob/master/LICENSE) [![npm](https://img.shields.io/npm/v/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![npm downloads](https://img.shields.io/npm/dm/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/mountainpass/addressr?label=image%20version)](https://hub.docker.com/r/mountainpass/addressr) [![Docker Pulls](https://img.shields.io/docker/pulls/mountainpass/addressr)](https://hub.docker.com/r/mountainpass/addressr)
 
@@ -10,7 +10,24 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/pulls) [![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/npm/@mountainpass/addressr)](https://libraries.io/npm/@mountainpass%2Faddressr)
 
-## Quick Start
+# ToC
+
+- [Addressr](#addressr)
+- [ToC](#toc)
+- [Quick Start](#quick-start)
+  - [Self Hosted](#self-hosted)
+  - [How it Works](#how-it-works)
+  - [Additional Settings](#additional-settings)
+  - [System requirements](#system-requirements)
+    - [Elastic Search:](#elastic-search)
+    - [Addressr Loader](#addressr-loader)
+      - [Default](#default)
+      - [With Geocoding enabled](#with-geocoding-enabled)
+    - [Addressr Server](#addressr-server)
+
+# Quick Start
+
+## Self Hosted
 
 1. Install addressr
    ```
@@ -26,7 +43,7 @@
    ```
    export ELASTIC_PORT=9200
    export ELASTIC_HOST=localhost
-   addressr-server
+   addressr-server-2
    ```
 4. Setup the env vars for the data loader. In a third window run:
 
@@ -71,12 +88,12 @@
    addressr-loader
    ```
 6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
-7. Search for an address
+7. Search for an address using the command line
    ```
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
-8. Wire you address form up to the address-server api.
-9. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
+8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
+9. Wire you address form up to the address-server api. The easiest way to do this is by using the [waychaser](https://waychaser.io) library as follows
 
 ## How it Works
 
@@ -92,6 +109,15 @@
 | ELASTIC_USERNAME     | _non-blank_ | Connect to elastic search with the specified username |         |
 | ELASTIC_PASSWORD     | _blank_     | Connect to elastic search without authentication      | ✅      |
 | ELASTIC_PASSWORD     | _non-blank_ | Connect to elastic search with the specified password |         |
+| ELASTIC_PASSWORD     | _non-blank_ | Connect to elastic search with the specified password |         |
+| PAGE_SIZE            | 8           | Number or records to return in a search               | ✅      |
+
+NOTE: When adjusting PAGE_SIZE, you should take into account how quickly you want the initial results returned
+to the user. In many use cases, you want this to be as fast as possible. If you need show more results to the
+user, you are often better off leaving it a 8 and using the paging links to get more results while you are
+displaying the first 8.
+
+Why is the default 8 and not 10? [Mechanical Sympathy](https://dzone.com/articles/mechanical-sympathy)
 
 ## System requirements
 

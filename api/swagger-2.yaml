@@ -1,0 +1,472 @@
+swagger: '2.0'
+info:
+  description: |
+    Australian Address Validation, Search and Autocomplete
+  version: '1.0.0'
+  title: 'Addressr by Mountain Pass'
+basePath: '/'
+tags:
+  - name: address
+schemes:
+  - 'https'
+produces:
+  - 'application/json'
+paths:
+  /:
+    get:
+      summary: Index
+      description: |
+        returns a list of available APIs within the `Link` headers
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Index'
+          headers:
+            link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+            link-template:
+              description: rfc6570 Links Templates
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+        503:
+          description: service unavailable
+        500:
+          description: unexpected error 
+  /addresses:
+    get:
+      summary: Search for a list of addresses
+      description: |
+        returns a list of addresses matching the search string
+      tags:
+        - address
+      parameters:
+        - name: q
+          in: query
+          description: search string
+          type: string
+          required: true
+      responses:
+        200:
+          description: successful query
+          schema:
+            $ref: '#/definitions/SearchResponse'
+          headers:
+            link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+            link-template:
+              description: rfc6570 Links Templates
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+        400:
+          description: invalid query
+        503:
+          description: service unavailable
+        500:
+          description: unexpected error 
+  /addresses/{addressId}:
+    get:
+      summary: Get Address
+      description: |
+        returns detailed information about a specific address
+      tags:
+        - address
+      parameters:
+        - name: addressId
+          in: path
+          description: ID of the address.
+          type: string
+          required: true
+      responses:
+        200:
+          description: successful query
+          schema:
+            $ref: '#/definitions/Address'
+          headers:
+            link:
+              description: rfc5988 Links
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+            link-template:
+              description: rfc6570 Links Templates
+              type: array
+              collectionFormat: csv
+              items:
+                type: string
+                pattern: '<(.*)>;(.*)'
+        404:
+          description: not found
+        503:
+          description: service unavailable
+        500:
+          description: unexpected error 
+definitions:
+  Index:
+    type: object
+  SearchResponse:
+    type: array
+    description: |
+      The list of addresses matching the search string. The list may be paginated.
+      A the `Link` header with a `rel` of `next` will be provided if there are additional results.
+    items:
+      type: object
+      title: Flattened Address
+      required:
+        - sla
+        - score
+        - pid
+      properties:
+        sla:
+          $ref: '#/definitions/SingleLineAddress'
+        ssla:
+          $ref: '#/definitions/SingleLineAddress'
+        highlight:
+          type: object
+          required:
+            - sla
+          properties:
+            sla:
+              type: string
+              description: The full address flattened to a single line with matching search tokens highlighted
+              example: |
+                <em>LEVEL</em> <em>25</em>, <em>TOWER</em> <em>3</em>, <em>300</em> BARANGAROO AV, BARANGAROO NSW 2000
+            ssla:
+              description: The full address flattened to a single line with matching search tokens highlighted
+              example: |
+                L25, 2512/9 <em>POWER</em> ST, SOUTHBANK VIC <em>3006</em>
+        score:
+          type: number
+          description: strength of the match relative to the other matches
+          example: 0.985051936618461
+        pid:
+          type: string
+          description: The Persistent Identifier is unique to the real world feature this record represents.
+          example: GANSW719386656
+    example:
+      - sla: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
+        highlight:
+          sla: |
+            <em>LEVEL</em> <em>25</em>, <em>TOWER</em> <em>3</em>, <em>300</em> BARANGAROO AV, BARANGAROO NSW 2000
+        score: 1
+        pid: GANSW719386656
+      - sla: |
+          UNIT 1, 109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
+        ssla: |
+          1/109 KIRRIBILLI AV, KIRRIBILLI NSW 2061
+        highlight:
+          sla: |
+            UNIT 1, <em>109</em> <em>KIRRIBILLI</em> <em>AV</em>, <em>KIRRIBILLI</em> NSW 2061
+          ssla: |
+            1/<em>109</em> <em>KIRRIBILLI</em> <em>AV</em>, <em>KIRRIBILLI</em> NSW 2061
+        score: 0.985051936618461
+        pid: GANSW717102496
+  Address:
+    type: object
+    title: Physical Australian Address
+    description: |
+      A physical Australian address in structured and unstructured formats.
+
+      If an address has a "flat" component (e.g. UNIT 12, 32 SOME ST...), then it will also have a
+      the `ssla` and `smla` fields, which are shortended versions of `sla` and `mla`. e.g. (12/32 SOME ST...)
+    required:
+      - 'pid'
+      - 'structured'
+      - 'sla'
+      - 'mla'
+    properties:
+      pid:
+        type: string
+        description: The Persistent Identifier is unique to the real world feature this record represents.
+        example: GANSW719386656
+      structured:
+        $ref: '#/definitions/StructuredAddress'
+      sla:
+        $ref: '#/definitions/SingleLineAddress'
+      ssla:
+        $ref: '#/definitions/SingleLineAddress'
+      mla:
+        $ref: '#/definitions/MultiLineAddress'
+      smla:
+        $ref: '#/definitions/MultiLineAddress'
+      geo:
+        $ref: '#/definitions/AddressGeocoding'
+  AddressGeocoding:
+    type: object
+    description: Geocoding information about the address
+    properties:
+      level:
+        type: object
+        properties:
+          code:
+            type: integer
+            maxLength: 2
+            description: |
+              Binary indicator of the level of geocoding this address has. e.g. 0 = 000 = (No geocode), 1 = 001 = (No Locality geocode, No Street geocode, Address geocode), etc.
+            example: 7
+          name:
+            type: string
+            maxLength: 50
+            description: |
+              Name of the geocode level type code.
+            example: LOCALITY,STREET, ADDRESS
+      geocodes:
+        type: array
+        items:
+          type: object
+          properties:
+            default:
+              type: boolean
+              description: |
+                Indicates if the geocode is the default or a site geocode (i.e. from *_ADDRESS_DEFAULT_GEOCODE_psv or from *_ADDRESS_SITE_GEOCODE_psv)
+            latitude:
+              type: number
+              example: -33.85351875
+            longitude:
+              type: number
+              example: 150.8947369
+            reliability:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  maxLength: 1
+                  description: |
+                    Spatial precision of the geocode expressed as number in the range, 1 (unique identification of feature) to 6 (feature associated to region i.e. postcode).
+                  example: 2
+                name:
+                  type: string
+                  maxLength: 50
+                  description: |
+                    Name of the geocode reliability code.
+                  example: WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT
+            type:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  maxLength: 1
+                  description: |
+                    Unique abbreviation for geocode feature. (e.g. "PRCL") (SAWG 7.4.1).
+                  example: 2
+                name:
+                  type: string
+                  maxLength: 50
+                  description: |
+                    Name of the geocode type code.
+                  example: PROPERTY CENTROID
+            description:
+              type: string
+              maxLength: 50
+              description: |
+                Additional textual data
+              example: REAR
+  SingleLineAddress:
+    type: string
+    title: Single Line Address
+    description: |
+      The full address flattened to a single line. The primary use is for search results and for autocomplete.
+    example: LEVEL 25, TOWER 3, 300 BARANGAROO AV, BARANGAROO NSW 2000
+  MultiLineAddress:
+    type: array
+    items:
+      type: string
+    minItems: 2
+    maxItems: 4
+    title: Multi Line Address
+    description: |
+      The full address flattened to at most four lines. The primary use is for address labels
+    example:
+      - LEVEL 25
+      - TOWER 3
+      - 300 BARANGAROO AV
+      - BARANGAROO NSW 2000
+  StructuredAddress:
+    type: object
+    properties:
+      buildingName:
+        type: string
+        maxLength: 200
+        example: Vickery Lodge
+        description: |
+          Combines both building/property name fields. (AS4590:2006 5.7).
+      lotNumber:
+        type: object
+        properties:
+          prefix:
+            type: string
+            example: A
+            maxLength: 2
+          number:
+            type: string
+            example: CP
+            maxLength: 5
+          suffix:
+            type: string
+            example: B
+            maxLength: 2
+      flat:
+        type: object
+        properties:
+          type:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Tower
+                maxLength: 50
+              code:
+                type: string
+                example: Twr
+                maxLength: 7
+          prefix:
+            type: string
+            example: CT
+            maxLength: 2
+          number:
+            type: integer
+            example: 20114
+          suffix:
+            type: string
+            example: AG
+            maxLength: 2
+      level:
+        type: object
+        properties:
+          type:
+            type: object
+            properties:
+              na,e:
+                type: string
+                example: Observation Deck
+                maxLength: 50
+              code:
+                type: string
+                example: OD
+                maxLength: 4
+          prefix:
+            type: string
+            example: A
+            maxLength: 2
+          number:
+            type: integer
+            example: '64'
+            maxLength: 5
+          suffix:
+            type: string
+            example: QG
+            maxLength: 2
+      number:
+        type: object
+        properties:
+          prefix:
+            type: string
+            example: RMB
+            maxLength: 3
+          number:
+            type: integer
+            example: '20114'
+            maxLength: 6
+          suffix:
+            type: string
+            example: 'AA'
+            maxLength: 2
+          last:
+            type: object
+            properties:
+              prefix:
+                type: string
+                example: RMB
+                maxLength: 3
+              number:
+                type: string
+                example: '20114'
+                maxLength: 6
+              suffix:
+                type: string
+                example: 'C'
+                maxLength: 2
+      street:
+        type: object
+        properties:
+          name:
+            type: string
+            example: Barangaroo
+            maxLength: 100
+          type:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Av
+                maxLength: 15
+              code:
+                type: string
+                example: Avenue
+                maxLength: 50
+          suffix:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Deviation
+                maxLength: 50
+              code:
+                type: string
+                example: De
+                maxLength: 15
+      locality:
+        type: object
+        properties:
+          name:
+            type: string
+            example: Sydney
+            maxLength: 100
+          class:
+            type: object
+            properties:
+              code:
+                type: string
+                example: G
+                maxLength: 1
+              name:
+                type: string
+                example: GAZETTED LOCALITY
+                maxLength: 50
+      state:
+        type: object
+        properties:
+          name:
+            type: string
+            example: New South Wales
+            maxLength: 50
+          abbreviation:
+            type: string
+            example: NSW
+            maxLength: 3
+      postcode:
+        type: string
+        example: '2000'
+        maxLength: 4
+      confidence:
+        type: integer
+        description: |
+          Reflects how many contributor databases this address appears in (0 = 1 database, 1 = 2 database etc.).

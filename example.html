@@ -1,0 +1,108 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Addressr local example</title>
+  <meta name="author" content="Addressr">
+
+  <script
+  type="text/javascript"
+  src="https://unpkg.com/@mountainpass/waychaser@4">
+</script>
+<script
+  type="text/javascript"
+>
+function clearChildren(id) {
+  const existing = document.getElementById(id)
+  const empty = existing.cloneNode(false);
+  existing.parentNode.replaceChild(empty, existing);
+}
+
+function displayItem(item) {
+  return function() {
+    item.invoke('canonical').then(canonical => canonical.body()).then(body => {
+      clearChildren('potentials')
+      const found = document.getElementById('found')
+      found.innerText = JSON.stringify(body, undefined, 2)
+    })
+  }
+}
+
+function createEntry(newPotentials) {
+  return function(item) {
+    const li = document.createElement('li')
+    const a = document.createElement('a')
+    a.href = "#"
+    item.body().then(body => {
+      a.innerHTML = body.highlight.sla
+    })
+    a.onclick = displayItem(item)
+    li.appendChild(a)
+    newPotentials.appendChild(li)
+  }
+}
+
+let controller = new AbortController()
+
+async function updateList(results) {
+  const potentials = document.getElementById('potentials')
+  const newPotentials = potentials.cloneNode(false);
+  clearChildren('found')
+  potentials.parentNode.replaceChild(newPotentials, potentials);
+  let next = results;
+  await Promise.all(next.operations.filter('item').map(operation => operation.invoke().then(createEntry(newPotentials))))
+  let nextOp = next.ops.find('next')
+  let count = 0
+  while( nextOp && count < 1 ) {
+    console.log({ nextOpUri: nextOp.uri })
+    next = await nextOp.invoke({},  {signal: controller.signal})
+    next.operations.filter('item').map(operation => operation.invoke().then(createEntry(newPotentials)))
+    nextOp = next.ops.find('next')
+    ++count;
+  }
+}
+
+window.addEventListener("load", function () {
+window.waychaser.waychaser
+    .load('http://localhost:8080')
+    .then((addressr) => {
+      document.getElementById('loader').innerText = 'loaded 🎉'
+
+      document.getElementById('address').oninput = function(event){
+        controller.abort();
+        document.getElementById('loading-error').style = 'display: none'
+        controller = new AbortController()
+        addressr.invoke('https://addressr.io/rels/address-search', {q: event.target.value }, {signal: controller.signal}).then(updateList).catch(error => {
+          if( error.name !== 'AbortError') {
+            console.error(error.toString())
+            document.getElementById('loading-error').innerText = error.toString()
+            document.getElementById('loading-error').style = 'display: block'
+          }
+        })
+      };
+    })
+    .catch((error) => {
+        document.getElementById('loader').innerText = 'loading failed 😭'
+        document.getElementById('loading-error').innerText = error.message
+        document.getElementById('loading-error').style = 'display: block'
+    })});
+</script>
+</head>
+
+<body>
+    <h1>Addressr local example</h1>
+    <div>To use this example, start addressr locally using the command</div>
+    <pre>ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=null ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS=* addressr-server-2</pre>
+    <div>For more details see https://github.com/mountain-pass/addressr#quick-start</div>
+    <div id="loader">Loading...</div>
+    <div id="loading-error" style="display: none;"></div>
+
+    <label for="address">Address:</label>
+    <input tabindex='1' type="text" id="address" name="address"></input>
+    <ul id="potentials">
+    </ul>
+    <pre id='found'></pre>
+</body>
+</html>

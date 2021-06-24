@@ -1,13 +1,13 @@
 {
   "name": "@mountainpass/addressr",
   "version": "1.0.251",
-  "description": "Free Australian Address Validation, Search and Autocomplete",
+  "description": "Australian Address Validation, Search and Autocomplete",
   "author": "Mountain Pass <addressr@mountain-pass.com.au>",
   "contributors": [
     "Tom Howard <tom@mountain-pass.com.au>"
   ],
   "engines": {
-    "node": ">=11.14.0"
+    "node": ">=12.11.0"
   },
   "config": {
     "localport": "6060"
@@ -41,7 +41,7 @@
     "start:server:OT": "ES_INDEX_NAME=ot  DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node server.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node server.js",
     "start:server:prod": ". .env && PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node server.js",
-    "start:server2:prod": ". .env && PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node src/server2.js",
+    "start:server2:prod": ". .env && ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=null ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS=* PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node src/server2.js",
     "start:server:OT:prod": ". .env && ES_INDEX_NAME=ot PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node server.js",
     "start:server:preinstalled": "ES_INDEX_NAME=test DEBUG=error,api,express:*,swagger-tools*,test,es  PORT=$npm_package_config_localport addressr-server",
     "start:server:prepackaged": "npm install -g mountainpass-addressr-${npm_package_version}.tgz && ES_INDEX_NAME=test PORT=$npm_package_config_localport addressr-server",
@@ -50,7 +50,7 @@
     "start:server:babel": "ES_INDEX_NAME=test DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport node lib/bin/addressr-server.js",
     "start:server:8081": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=8081 babel-node server.js",
     "prestart:server:docker": "npm run build:docker",
-    "start:server:docker": "docker run -it --read-only=true -e ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=* -e ES_INDEX_NAME=test -e DEBUG=error,api,express:*,swagger-tools*,test,es -e PORT=$npm_package_config_localport -p $npm_package_config_localport:$npm_package_config_localport mountainpass/addressr:${npm_package_version}",
+    "start:server:docker": "docker run -it --read-only=true -e ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=* -e ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS=* -e ES_INDEX_NAME=test -e DEBUG=error,api,express:*,swagger-tools*,test,es -e PORT=$npm_package_config_localport -p $npm_package_config_localport:$npm_package_config_localport mountainpass/addressr:${npm_package_version}",
     "watch:start:server": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server",
     "watch:start:server:OT": "nodemon -V  --ext \"*.js, *.json, *.yaml\" -x npm run start:server:OT",
     "start:server2": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node src/server2.js",
@@ -107,9 +107,11 @@
     "addressr-server-2": "lib/bin/addressr-server-2.js"
   },
   "files": [
+    "api/",
     "lib/",
     "scripts/check-version.js",
-    "20160226-eula-open-g-naf.pdf"
+    "20160226-eula-open-g-naf.pdf",
+    "example.html"
   ],
   "keywords": [
     "swagger",
