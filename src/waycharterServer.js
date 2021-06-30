@@ -44,14 +44,15 @@ export function startRest2Server () {
   const addressesType = waycharter.registerCollection({
     itemPath: '/:pid',
     itemLoader: async ({ pid }) => {
-      const { json, hash } = await getAddress(pid)
+      const { json, hash, statusCode } = await getAddress(pid)
 
       return {
         body: json,
         headers: {
           etag: `"${version}-${hash}"`,
           'cache-control': `public, max-age=${ONE_WEEK}`
-        }
+        },
+        status: statusCode || 200
       }
     },
     collectionPath: '/addresses',
