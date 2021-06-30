@@ -596,7 +596,7 @@ function mapToShortMla (s) {
   }
 
   const streetType = s.street.type ? ` ${s.street.type.name}` : ''
-  const streetSuffix = s.street.suffix ? ` ${s.street.suffix.name}` : ''
+  const streetSuffix = s.street.suffix ? ` ${s.street.suffix.code}` : ''
   const street = `${s.street.name}${streetType}${streetSuffix}`
 
   fla.push(`${number} ${street}`)
