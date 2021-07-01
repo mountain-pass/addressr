@@ -444,6 +444,21 @@ function mapStreetLocality (l, context) {
 }
 
 function mapGeo (geoSite, context, geoDefault) {
+  let foundDefault = false
+  if (geoSite && geoDefault) {
+    geoSite.forEach(geo => {
+      if (
+        geo.GEOCODE_TYPE_CODE === geoDefault[0].GEOCODE_TYPE_CODE &&
+        geo.LATITUDE === geoDefault[0].LATITUDE &&
+        geo.LONGITUDE === geoDefault[0].LONGITUDE
+      ) {
+        foundDefault = true
+        geo.default = true
+      } else {
+        geo.default = false
+      }
+    })
+  }
   const sites = geoSite
     ? geoSite.map(geo => {
         if (geo.BOUNDARY_EXTENT !== '') {
@@ -463,7 +478,7 @@ function mapGeo (geoSite, context, geoDefault) {
           throw new Error('encounterd geo.GEOCODE_SITE_NAME')
         }
         return {
-          default: false,
+          default: geo.default || false,
           ...(geo.GEOCODE_TYPE_CODE !== '' && {
             type: {
               code: geo.GEOCODE_TYPE_CODE,
@@ -488,25 +503,26 @@ function mapGeo (geoSite, context, geoDefault) {
         }
       })
     : []
-  const def = geoDefault
-    ? geoDefault.map(geo => {
-        return {
-          default: true,
-          ...(geo.GEOCODE_TYPE_CODE !== '' && {
-            type: {
-              code: geo.GEOCODE_TYPE_CODE,
-              name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
-            }
-          }),
-          ...(geo.LATITUDE !== '' && {
-            latitude: Number.parseFloat(geo.LATITUDE)
-          }),
-          ...(geo.LONGITUDE !== '' && {
-            longitude: Number.parseFloat(geo.LONGITUDE)
-          })
-        }
-      })
-    : []
+  const def =
+    geoDefault && !foundDefault
+      ? geoDefault.map(geo => {
+          return {
+            default: true,
+            ...(geo.GEOCODE_TYPE_CODE !== '' && {
+              type: {
+                code: geo.GEOCODE_TYPE_CODE,
+                name: geocodeTypeCodeToName(geo.GEOCODE_TYPE_CODE, context)
+              }
+            }),
+            ...(geo.LATITUDE !== '' && {
+              latitude: Number.parseFloat(geo.LATITUDE)
+            }),
+            ...(geo.LONGITUDE !== '' && {
+              longitude: Number.parseFloat(geo.LONGITUDE)
+            })
+          }
+        })
+      : []
   return sites.concat(def)
 }
 
@@ -657,21 +673,21 @@ export function mapAddressDetails (d, context, i, count) {
           ...(d.NUMBER_FIRST_SUFFIX !== '' && {
             suffix: d.NUMBER_FIRST_SUFFIX
           }),
-          ...(d.NUMBER_LAST_PREFIX !== '' &&
-            d.NUMBER_LAST !== '' &&
-            d.NUMBER_LAST_SUFFIX !== '' && {
-              last: {
-                ...(d.NUMBER_LAST_PREFIX !== '' && {
-                  prefix: d.NUMBER_LAST_PREFIX
-                }),
-                ...(d.NUMBER_LAST !== '' && {
-                  number: Number.parseInt(d.NUMBER_LAST)
-                }),
-                ...(d.NUMBER_LAST_SUFFIX !== '' && {
-                  suffix: d.NUMBER_LAST_SUFFIX
-                })
-              }
-            })
+          ...((d.NUMBER_LAST_PREFIX !== '' ||
+            d.NUMBER_LAST !== '' ||
+            d.NUMBER_LAST_SUFFIX !== '') && {
+            last: {
+              ...(d.NUMBER_LAST_PREFIX !== '' && {
+                prefix: d.NUMBER_LAST_PREFIX
+              }),
+              ...(d.NUMBER_LAST !== '' && {
+                number: Number.parseInt(d.NUMBER_LAST)
+              }),
+              ...(d.NUMBER_LAST_SUFFIX !== '' && {
+                suffix: d.NUMBER_LAST_SUFFIX
+              })
+            }
+          })
         }
       }),
       ...((d.LEVEL_TYPE_CODE !== '' ||
@@ -758,7 +774,7 @@ export function mapAddressDetails (d, context, i, count) {
     rval.smla = mapToShortMla(rval.structured)
     rval.ssla = mapToSla(rval.smla)
   }
-  // process.stdout.write('.');
+
   if (count) {
     if (i % Math.ceil(count / 100) === 0) {
       logger('addr', JSON.stringify(rval, undefined, 2))
@@ -770,7 +786,6 @@ export function mapAddressDetails (d, context, i, count) {
       logger(`${i} rows`)
     }
   }
-
   return rval
 }
 
@@ -865,8 +880,8 @@ async function loadAddressDetails (
         //     error('refresh error', err);
         //   });
       },
-      error: (error, file) => {
-        error(error, file)
+      error: (_error, file) => {
+        error(_error, file)
         reject()
       }
     })
