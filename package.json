@@ -184,7 +184,7 @@
     "eslint-plugin-security": "^1.4.0",
     "eslint-plugin-unicorn": "^34.0.1",
     "genversion": "^3.0.0",
-    "husky": "^6.0.0",
+    "husky": "^7.0.0",
     "imagemin-lint-staged": "^0.4.0",
     "istanbul": "^0.4.5",
     "istanbul-middleware": "^0.2.2",
