@@ -10,6 +10,8 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/pulls) [![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/npm/@mountainpass/addressr)](https://libraries.io/npm/@mountainpass%2Faddressr)
 
+[![Gitter](https://badges.gitter.im/mountainpass-addressr/community.svg)](https://gitter.im/mountainpass-addressr/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 # ToC
 
 - [Addressr](#addressr)
