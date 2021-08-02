@@ -1,0 +1,724 @@
+{
+  "id": "4d6e5196fbc14acca8b03a1b6d672fa7",
+  "name": "addressr",
+  "alias": "addressr",
+  "healthy": true,
+  "resources": {
+    "elasticsearch": [
+      {
+        "ref_id": "main-elasticsearch",
+        "id": "038277e501a548fc986dda008fa1b9b0",
+        "region": "ap-southeast-2",
+        "info": {
+          "cluster_id": "038277e501a548fc986dda008fa1b9b0",
+          "cluster_name": "addressr",
+          "deployment_id": "4d6e5196fbc14acca8b03a1b6d672fa7",
+          "healthy": true,
+          "status": "started",
+          "plan_info": {
+            "healthy": true,
+            "current": {
+              "plan_attempt_id": "f71141ac-c911-4e47-ba08-3310ca8e5811",
+              "healthy": true,
+              "attempt_start_time": "2021-06-16T16:59:14.750Z",
+              "attempt_end_time": "2021-06-16T17:02:38.786Z",
+              "plan": {
+                "tiebreaker_topology": {
+                  "memory_per_node": 1024
+                },
+                "cluster_topology": [
+                  {
+                    "id": "coordinating",
+                    "node_roles": ["ingest", "remote_cluster_client"],
+                    "zone_count": 2,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": []
+                    },
+                    "instance_configuration_id": "aws.coordinating.m5d",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "hot_content",
+                    "node_roles": [
+                      "master",
+                      "ingest",
+                      "transform",
+                      "data_hot",
+                      "remote_cluster_client",
+                      "data_content"
+                    ],
+                    "zone_count": 2,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": [],
+                      "node_attributes": {
+                        "data": "hot"
+                      }
+                    },
+                    "instance_configuration_id": "aws.data.highcpu.m5d",
+                    "size": {
+                      "value": 1024,
+                      "resource": "memory"
+                    },
+                    "autoscaling_max": {
+                      "value": 122880,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 1024,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "warm",
+                    "node_roles": ["data_warm", "remote_cluster_client"],
+                    "zone_count": 2,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": [],
+                      "node_attributes": {
+                        "data": "warm"
+                      }
+                    },
+                    "instance_configuration_id": "aws.data.highstorage.d2",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "autoscaling_max": {
+                      "value": 118784,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "cold",
+                    "node_roles": ["data_cold", "remote_cluster_client"],
+                    "zone_count": 1,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": [],
+                      "node_attributes": {
+                        "data": "cold"
+                      }
+                    },
+                    "instance_configuration_id": "aws.data.highstorage.d2",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "autoscaling_max": {
+                      "value": 59392,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "frozen",
+                    "node_roles": ["data_frozen"],
+                    "zone_count": 1,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": [],
+                      "node_attributes": {
+                        "data": "frozen"
+                      }
+                    },
+                    "instance_configuration_id": "aws.es.datafrozen.i3en",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "autoscaling_max": {
+                      "value": 122880,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "master",
+                    "node_roles": ["master", "remote_cluster_client"],
+                    "zone_count": 3,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": []
+                    },
+                    "instance_configuration_id": "aws.master.r5d",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "id": "ml",
+                    "node_roles": ["ml", "remote_cluster_client"],
+                    "zone_count": 1,
+                    "elasticsearch": {
+                      "system_settings": {
+                        "scripting": {
+                          "stored": {
+                            "enabled": true
+                          },
+                          "inline": {
+                            "enabled": true
+                          }
+                        },
+                        "http": {
+                          "compression": true,
+                          "cors_enabled": false,
+                          "cors_max_age": 1728000,
+                          "cors_allow_credentials": false
+                        },
+                        "reindex_whitelist": [],
+                        "use_disk_threshold": true,
+                        "auto_create_index": true,
+                        "enable_close_index": true,
+                        "destructive_requires_name": false,
+                        "monitoring_collection_interval": -1,
+                        "monitoring_history_duration": "3d"
+                      },
+                      "enabled_built_in_plugins": []
+                    },
+                    "instance_configuration_id": "aws.ml.m5d",
+                    "size": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "autoscaling_min": {
+                      "value": 0,
+                      "resource": "memory"
+                    },
+                    "autoscaling_max": {
+                      "value": 61440,
+                      "resource": "memory"
+                    },
+                    "topology_element_control": {
+                      "min": {
+                        "value": 0,
+                        "resource": "memory"
+                      }
+                    }
+                  }
+                ],
+                "elasticsearch": {
+                  "version": "7.13.2"
+                },
+                "deployment_template": {
+                  "id": "aws-compute-optimized-v2"
+                },
+                "transient": {
+                  "strategy": {
+                    "autodetect": {}
+                  }
+                },
+                "autoscaling_enabled": false
+              },
+              "plan_attempt_log": [],
+              "source": {
+                "facilitator": "adminconsole",
+                "action": "deployments.update-deployment",
+                "date": "2021-06-16T16:59:13.934Z",
+                "user_id": "1187670241",
+                "remote_addresses": ["120.150.239.143", "54.165.218.75"]
+              }
+            },
+            "history": []
+          },
+          "elasticsearch": {
+            "healthy": true,
+            "shard_info": {
+              "healthy": true,
+              "available_shards": [
+                {
+                  "instance_name": "instance-0000000003",
+                  "shard_count": 12
+                },
+                {
+                  "instance_name": "instance-0000000001",
+                  "shard_count": 12
+                },
+                {
+                  "instance_name": "tiebreaker-0000000004",
+                  "shard_count": 12
+                }
+              ],
+              "unavailable_shards": [
+                {
+                  "instance_name": "instance-0000000003",
+                  "shard_count": 0
+                },
+                {
+                  "instance_name": "instance-0000000001",
+                  "shard_count": 0
+                },
+                {
+                  "instance_name": "tiebreaker-0000000004",
+                  "shard_count": 0
+                }
+              ],
+              "unavailable_replicas": [
+                {
+                  "instance_name": "instance-0000000003",
+                  "replica_count": 0
+                },
+                {
+                  "instance_name": "instance-0000000001",
+                  "replica_count": 0
+                },
+                {
+                  "instance_name": "tiebreaker-0000000004",
+                  "replica_count": 0
+                }
+              ]
+            },
+            "master_info": {
+              "healthy": true,
+              "masters": [
+                {
+                  "master_node_id": "deQcbzPXSF-tyaFNzbYXXw",
+                  "master_instance_name": "instance-0000000001",
+                  "instances": [
+                    "instance-0000000003",
+                    "instance-0000000001",
+                    "tiebreaker-0000000004"
+                  ]
+                }
+              ],
+              "instances_with_no_master": []
+            },
+            "blocking_issues": {
+              "healthy": true,
+              "cluster_level": [],
+              "index_level": []
+            }
+          },
+          "metadata": {
+            "version": 106,
+            "last_modified": "2021-06-16T17:02:41.000Z",
+            "endpoint": "038277e501a548fc986dda008fa1b9b0.ap-southeast-2.aws.found.io",
+            "service_url": "https://038277e501a548fc986dda008fa1b9b0.ap-southeast-2.aws.found.io:9243",
+            "aliased_endpoint": "addressr.es.ap-southeast-2.aws.found.io",
+            "aliased_url": "https://addressr.es.ap-southeast-2.aws.found.io:9243",
+            "sso_deep_linking_supported": false,
+            "cloud_id": "addressr:YXAtc291dGhlYXN0LTIuYXdzLmZvdW5kLmlvJDAzODI3N2U1MDFhNTQ4ZmM5ODZkZGEwMDhmYTFiOWIwJDBlNjQ0NDUxYTExYTRlZjZhZjFjMmM1MDAzOWNjM2Fi",
+            "ccr": true,
+            "ports": {
+              "http": 9200,
+              "https": 9243,
+              "transport_passthrough": 9400
+            }
+          },
+          "topology": {
+            "healthy": true,
+            "instances": [
+              {
+                "instance_name": "instance-0000000003",
+                "instance_configuration": {
+                  "id": "aws.data.highcpu.m5d",
+                  "name": "aws.data.highcpu.m5d",
+                  "resource": "memory"
+                },
+                "service_version": "7.13.2",
+                "service_id": "zZfDYC_7TH28vhNCV0GTyw",
+                "healthy": true,
+                "container_started": true,
+                "service_running": true,
+                "maintenance_mode": false,
+                "zone": "ap-southeast-2a",
+                "allocator_id": "i-09cbb0e6444c40812",
+                "memory": {
+                  "instance_capacity": 1024,
+                  "memory_pressure": 37,
+                  "native_memory_pressure": 80
+                },
+                "disk": {
+                  "disk_space_available": 10240,
+                  "disk_space_used": 3310,
+                  "storage_multiplier": 8.0
+                },
+                "service_roles": ["ingest", "master", "data"],
+                "node_roles": [
+                  "master",
+                  "ingest",
+                  "transform",
+                  "data_hot",
+                  "remote_cluster_client",
+                  "data_content"
+                ]
+              },
+              {
+                "instance_name": "tiebreaker-0000000004",
+                "instance_configuration": {
+                  "id": "aws.master.r5d",
+                  "name": "aws.master.r5d",
+                  "resource": "memory"
+                },
+                "service_version": "7.13.2",
+                "service_id": "LSP6FN8JRQSci8XpndxleQ",
+                "healthy": true,
+                "container_started": true,
+                "service_running": true,
+                "maintenance_mode": false,
+                "zone": "ap-southeast-2c",
+                "allocator_id": "i-0a7182175e34338a5",
+                "memory": {
+                  "instance_capacity": 1024,
+                  "memory_pressure": 17,
+                  "native_memory_pressure": 90
+                },
+                "disk": {
+                  "disk_space_available": 4096,
+                  "disk_space_used": 15,
+                  "storage_multiplier": 2.0
+                },
+                "service_roles": ["master"],
+                "node_roles": ["master", "voting_only"]
+              },
+              {
+                "instance_name": "instance-0000000001",
+                "instance_configuration": {
+                  "id": "aws.data.highcpu.m5d",
+                  "name": "aws.data.highcpu.m5d",
+                  "resource": "memory"
+                },
+                "service_version": "7.13.2",
+                "service_id": "deQcbzPXSF-tyaFNzbYXXw",
+                "healthy": true,
+                "container_started": true,
+                "service_running": true,
+                "maintenance_mode": false,
+                "zone": "ap-southeast-2b",
+                "allocator_id": "i-0569a782fd073edf8",
+                "memory": {
+                  "instance_capacity": 1024,
+                  "memory_pressure": 35,
+                  "native_memory_pressure": 81
+                },
+                "disk": {
+                  "disk_space_available": 10240,
+                  "disk_space_used": 2831,
+                  "storage_multiplier": 8.0
+                },
+                "service_roles": ["ingest", "master", "data"],
+                "node_roles": [
+                  "master",
+                  "ingest",
+                  "transform",
+                  "data_hot",
+                  "remote_cluster_client",
+                  "data_content"
+                ]
+              }
+            ]
+          },
+          "associated_kibana_clusters": [
+            {
+              "kibana_id": "0e644451a11a4ef6af1c2c50039cc3ab",
+              "enabled": true,
+              "links": {}
+            }
+          ],
+          "associated_apm_clusters": [],
+          "associated_appsearch_clusters": [],
+          "associated_enterprise_search_clusters": [],
+          "snapshots": {
+            "healthy": true,
+            "count": 101,
+            "latest_successful": true,
+            "latest_status": "SUCCESS",
+            "scheduled_time": "2021-07-01T07:00:00.000Z",
+            "latest_end_time": "2021-07-01T06:30:03.761Z",
+            "latest_successful_end_time": "2021-07-01T06:30:03.761Z",
+            "recent_success": true
+          },
+          "external_links": [],
+          "links": {},
+          "region": "ap-southeast-2",
+          "locked": false
+        }
+      }
+    ],
+    "kibana": [
+      {
+        "ref_id": "main-kibana",
+        "elasticsearch_cluster_ref_id": "main-elasticsearch",
+        "id": "0e644451a11a4ef6af1c2c50039cc3ab",
+        "region": "ap-southeast-2",
+        "info": {
+          "cluster_id": "0e644451a11a4ef6af1c2c50039cc3ab",
+          "cluster_name": "addressr",
+          "elasticsearch_cluster": {
+            "elasticsearch_id": "038277e501a548fc986dda008fa1b9b0",
+            "links": {}
+          },
+          "deployment_id": "4d6e5196fbc14acca8b03a1b6d672fa7",
+          "healthy": true,
+          "status": "started",
+          "plan_info": {
+            "healthy": true,
+            "current": {
+              "plan_attempt_id": "31b201f9-7b61-4232-adc4-2f2a431ee1b6",
+              "healthy": true,
+              "attempt_start_time": "2021-06-16T16:59:15.639Z",
+              "attempt_end_time": "2021-06-16T16:59:16.073Z",
+              "plan": {
+                "cluster_topology": [
+                  {
+                    "instance_configuration_id": "aws.kibana.r5d",
+                    "size": {
+                      "value": 1024,
+                      "resource": "memory"
+                    },
+                    "zone_count": 1,
+                    "kibana": {
+                      "system_settings": {}
+                    }
+                  }
+                ],
+                "kibana": {
+                  "version": "7.13.2",
+                  "system_settings": {}
+                },
+                "transient": {
+                  "strategy": {
+                    "autodetect": {}
+                  }
+                }
+              },
+              "plan_attempt_log": [],
+              "source": {
+                "facilitator": "adminconsole",
+                "action": "deployments.update-deployment",
+                "date": "2021-06-16T16:59:13.934Z",
+                "user_id": "1187670241",
+                "remote_addresses": ["120.150.239.143", "54.165.218.75"]
+              }
+            },
+            "history": []
+          },
+          "metadata": {
+            "version": 34,
+            "last_modified": "2021-06-16T16:59:16.145Z",
+            "endpoint": "0e644451a11a4ef6af1c2c50039cc3ab.ap-southeast-2.aws.found.io",
+            "service_url": "https://0e644451a11a4ef6af1c2c50039cc3ab.ap-southeast-2.aws.found.io:9243",
+            "aliased_endpoint": "addressr.kb.ap-southeast-2.aws.found.io",
+            "aliased_url": "https://addressr.kb.ap-southeast-2.aws.found.io:9243",
+            "sso_url": "/sso/v1/go/ec:1187670241:kibana-addressr?acs=https://addressr.kb.ap-southeast-2.aws.found.io:9243/api/security/saml/callback&sp_login_url=https://addressr.kb.ap-southeast-2.aws.found.io:9243",
+            "sso_deep_linking_supported": true,
+            "sso_entity_id": "ec:1187670241:kibana-addressr",
+            "ccr": true,
+            "ports": {
+              "http": 9200,
+              "https": 9243,
+              "transport_passthrough": 9400
+            }
+          },
+          "topology": {
+            "healthy": true,
+            "instances": [
+              {
+                "instance_name": "instance-0000000001",
+                "instance_configuration": {
+                  "id": "aws.kibana.r5d",
+                  "name": "aws.kibana.r5d",
+                  "resource": "memory"
+                },
+                "service_version": "7.13.2",
+                "healthy": true,
+                "container_started": true,
+                "service_running": true,
+                "maintenance_mode": false,
+                "zone": "ap-southeast-2a",
+                "allocator_id": "i-029001f90b7dafb12",
+                "memory": {
+                  "instance_capacity": 1024,
+                  "native_memory_pressure": 23
+                }
+              }
+            ]
+          },
+          "external_links": [],
+          "links": {},
+          "region": "ap-southeast-2"
+        }
+      }
+    ],
+    "apm": [],
+    "appsearch": [],
+    "enterprise_search": [],
+    "agent": []
+  },
+  "metadata": {
+    "owner_id": "1187670241",
+    "organization_id": "1187670241",
+    "system_owned": false,
+    "hidden": false,
+    "last_modified": "2021-06-16T17:02:41.000Z",
+    "last_resource_plan_modified": "2021-06-16T17:02:38.786Z"
+  }
+}
