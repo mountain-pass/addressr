@@ -1,4 +1,3 @@
-import CFonts from 'cfonts'
 import debug from 'debug'
 import { esConnect } from './client/elasticsearch'
 import { loadGnaf } from './service/address-service'
@@ -16,17 +15,9 @@ esConnect()
     logger('es client connected')
   })
   .then(() => {
-    const bannerOptions = {
-      font: '3d',
-      align: 'center',
-      colors: ['yellowBright', 'cyan'],
-      background: 'transparent',
-      letterSpacing: 1,
-      lineHeight: 1,
-      space: true,
-      maxLength: '0'
-    }
-    CFonts.say('Addressr|Data|Loader', bannerOptions)
+    console.log('======================')
+    console.log('Addressr - Data Loader')
+    console.log('======================')
     printVersion()
   })
   .then(loadGnaf)

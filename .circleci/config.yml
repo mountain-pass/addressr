@@ -45,6 +45,7 @@ jobs:
             ./node_modules/.bin/wait-port -t 600000 http://localhost:9200/_cluster/health?wait_for_status=green
             export ES_STARTED=1
             npm run genversion
+            npm run check-licenses
             npm run cover:nodejs:nogeo
             npm run cover:rest:nogeo
       - store_test_results:
