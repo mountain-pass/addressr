@@ -45,22 +45,13 @@ Feature: Structured Address
                 "geocoding": {
                     "geocodes": [
                         {
-                            "default": false,
+                            "default": true,
                             "latitude": -10.41686106,
                             "longitude": 105.68090917,
                             "reliability": {
                                 "code": "2",
                                 "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
                             },
-                            "type": {
-                                "code": "PC",
-                                "name": "PROPERTY CENTROID"
-                            }
-                        },
-                        {
-                            "default": true,
-                            "latitude": -10.41686106,
-                            "longitude": 105.68090917,
                             "type": {
                                 "code": "PC",
                                 "name": "PROPERTY CENTROID"
