@@ -17,6 +17,7 @@ import { setLinkOptions } from './setLinkOptions'
 import Keyv from 'keyv'
 import { KeyvFile } from 'keyv-file'
 import crypto from 'crypto'
+import glob from 'glob-promise'
 
 const fsp = fs.promises
 
@@ -1102,7 +1103,7 @@ function buildSynonyms (context) {
 const { readdir } = require('fs').promises
 
 async function getFiles (currentDir, baseDir) {
-  const dir = resolve(baseDir, currentDir)
+  const dir = path.resolve(baseDir, currentDir)
   logger(`reading ${dir} (${currentDir} in ${baseDir})`)
   const dirents = await readdir(dir, { withFileTypes: true })
   const files = await Promise.all(
@@ -1507,23 +1508,14 @@ export async function loadGnaf ({ refresh = false } = {}) {
   if (contents.length == 0) {
     throw new Error(`Data dir '${unzipped}' is empty`)
   }
-  if (contents.length == 1) {
-    // before feb20, the gnaf zip had an intermediate directory
-    const mainDirectory = `${unzipped}/${contents[0]}`
-    logger('1. Main Data dir', mainDirectory)
-
-    await loadGnafData(mainDirectory, { refresh })
-  } else if (contents.includes('Counts.csv')) {
-    // feb20 doesn't have an intermediate directory
-    const mainDirectory = unzipped
-    logger('2. Main Data dir', mainDirectory)
-
-    await loadGnafData(mainDirectory, { refresh })
-  } else {
-    throw new Error(
-      `Data dir '${unzipped}' has unexpected contents: ${contents}`
-    )
+  const gnafDir = await glob('**/G-NAF/', { cwd: unzipped })
+  console.log(gnafDir)
+  if (gnafDir.length === 0) {
+    throw new Error(`Cannot find 'G-NAF' directory in Data dir '${unzipped}'`)
   }
+  const mainDirectory = path.dirname(`${unzipped}/${gnafDir[0].slice(0, -1)}`)
+  logger('Main Data dir', mainDirectory)
+  await loadGnafData(mainDirectory, { refresh })
 }
 
 /**
