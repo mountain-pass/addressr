@@ -35,7 +35,7 @@ global.PendingError = PendingError
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default'
 
-const SEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.2'
+const SEARCH_IMAGE = 'elasticsearch:7.14.2'
 
 var serverPort = process.env.PORT || 8080
 

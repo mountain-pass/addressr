@@ -115,22 +115,13 @@ Feature: Addresses v2
                 "geocoding": {
                     "geocodes": [
                         {
-                            "default": false,
+                            "default": true,
                             "latitude": -10.42554715,
                             "longitude": 105.67950505,
                             "reliability": {
                                 "code": "2",
                                 "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
                             },
-                            "type": {
-                                "code": "PC",
-                                "name": "PROPERTY CENTROID"
-                            }
-                        },
-                        {
-                            "default": true,
-                            "latitude": -10.42554715,
-                            "longitude": 105.67950505,
                             "type": {
                                 "code": "PC",
                                 "name": "PROPERTY CENTROID"

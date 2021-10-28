@@ -131,7 +131,7 @@
   "license": "Apache-2.0",
   "private": false,
   "dependencies": {
-    "@elastic/elasticsearch": "^7.13.0",
+    "@elastic/elasticsearch": "^7.15.0",
     "@mountainpass/waycharter": "^1.0.68",
     "debug": "^4.1.1",
     "directory-exists": "^2.0.1",

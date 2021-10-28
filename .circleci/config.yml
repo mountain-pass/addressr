@@ -24,7 +24,7 @@ jobs:
   test:
     docker:
       - image: circleci/node:12.11.0
-      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+      - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
@@ -61,7 +61,7 @@ jobs:
   test-cli:
     docker:
       - image: circleci/node:12.11.0
-      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+      - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
@@ -99,7 +99,7 @@ jobs:
   test-geo:
     docker:
       - image: circleci/node:12.11.0
-      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+      - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
