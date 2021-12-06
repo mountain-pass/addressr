@@ -561,7 +561,7 @@ function mapToMla (s) {
   if (s.lotNumber && s.number === undefined) {
     number = `LOT ${s.lotNumber.prefix || ''}${s.lotNumber.number || ''}${s
       .lotNumber.suffix || ''}`
-  } else {
+  } else if (s.number) {
     number = `${s.number.prefix || ''}${s.number.number || ''}${s.number
       .suffix || ''}`
     if (s.number.last) {
