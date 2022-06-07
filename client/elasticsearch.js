@@ -1,5 +1,5 @@
 const waitPort = require('wait-port')
-const elasticsearch = require('@elastic/elasticsearch')
+const elasticsearch = require('@opensearch-project/opensearch')
 import debug from 'debug'
 const logger = debug('api')
 const error = debug('error')

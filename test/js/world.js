@@ -35,11 +35,11 @@ global.PendingError = PendingError
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default'
 
-const SEARCH_IMAGE = 'elasticsearch:7.14.2'
+const SEARCH_IMAGE = 'opensearchproject/opensearch:1.2.4'
 
 var serverPort = process.env.PORT || 8080
 
-async function startExternalServer () {
+async function startExternalServer() {
   await waitport({
     port: Number.parseInt(serverPort),
     timeout: 60000
@@ -47,7 +47,7 @@ async function startExternalServer () {
   return `http://localhost:${serverPort}`
 }
 
-async function ensureDockerServerStarted () {
+async function ensureDockerServerStarted() {
   // wait till running
   throw new PendingError()
   // return `http://localhost:${serverPort}`;
@@ -94,7 +94,7 @@ AfterAll({ timeout: 30000 }, async function () {
   }
 })
 
-async function startElasticSearch (docker, context) {
+async function startElasticSearch(docker, context) {
   if (process.env.ES_STARTED === undefined) {
     await qc.ensurePulled(docker, SEARCH_IMAGE, logger)
     context.containers.es = await qc.ensureStarted(
@@ -142,7 +142,7 @@ async function startElasticSearch (docker, context) {
   await esConnect()
 }
 
-function world ({ attach, parameters }) {
+function world({ attach, parameters }) {
   logger('IN WORLD')
   this.attach = attach
   this.parameters = parameters

@@ -40,7 +40,7 @@
     "start:loader:geo:WA:prod": ". .env && COVERED_STATES=WA PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:server:OT": "ES_INDEX_NAME=ot  DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node server.js",
     "start:server": "DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport babel-node server.js",
-    "start:server:prod": ". .env && PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node server.js",
+    "start:server:prod": ". .env && PORT=$npm_package_config_localport DEBUG=error babel-node server.js",
     "start:server2:prod": ". .env && ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN=null ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS=* PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node src/server2.js",
     "start:server:OT:prod": ". .env && ES_INDEX_NAME=ot PORT=$npm_package_config_localport DEBUG=error,api,express:*,swagger-tools*,test,es babel-node server.js",
     "start:server:preinstalled": "ES_INDEX_NAME=test DEBUG=error,api,express:*,swagger-tools*,test,es  PORT=$npm_package_config_localport addressr-server",
@@ -101,7 +101,8 @@
     "docker:push": "docker push \"mountainpass/addressr:${npm_package_version}\"",
     "postdocker:push": "docker push \"mountainpass/addressr:latest\"",
     "check-licenses": "license-checker --production --onlyAllow 'MIT;Apache-2.0;ISC;Custom: http://github.com/substack/node-bufferlist;Unlicense;BSD-2-Clause;BSD-3-Clause;WTFPL;0BSD;MIT*' --summary",
-    "pre-commit": "lint-staged && npm run check-licenses"
+    "pre-commit": "lint-staged && npm run check-licenses",
+    "test:performance": "k6 run --out csv=target/stress.csv test/k6/script.js"
   },
   "bin": {
     "addressr-loader": "lib/bin/addressr-loader.js",
@@ -131,8 +132,8 @@
   "license": "Apache-2.0",
   "private": false,
   "dependencies": {
-    "@elastic/elasticsearch": "^7.15.0",
     "@mountainpass/waycharter": "^1.0.68",
+    "@opensearch-project/opensearch": "^2.0.0",
     "debug": "^4.1.1",
     "directory-exists": "^2.0.1",
     "dotenv": "^10.0.0",
