@@ -65,7 +65,7 @@ Or for peace of mind for your mission critical solutions, get commercial support
   - [How it Works](#how-it-works)
   - [Additional Settings](#additional-settings)
   - [System requirements](#system-requirements)
-    - [Elastic Search:](#elastic-search)
+    - [Open Search:](#open-search)
     - [Addressr Loader](#addressr-loader)
       - [Default](#default)
       - [With Geocoding enabled](#with-geocoding-enabled)
@@ -80,10 +80,10 @@ Or for peace of mind for your mission critical solutions, get commercial support
    npm install @mountainpass/addressr -g
    ```
    NOTE: If you are running windows, you'll need to use [wsl](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
-2. Start elastic search. For example run
+2. Start open search. For example run
    ```
-   docker pull docker.elastic.co/elasticsearch/elasticsearch:7.9.2
-   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+   docker pull opensearchproject/opensearch:1.2.4
+   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" opensearchproject/opensearch:1.2.4
    ```
 3. Start API server. In a second window run:
    ```
@@ -133,13 +133,13 @@ Or for peace of mind for your mission critical solutions, get commercial support
    ```
    addressr-loader
    ```
-6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from data.gov.au. So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from [data.gov.au](http://data.gov.au/). So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
 7. Search for an address using the command line
    ```
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
 8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
-9. Wire you address form up to the address-server api. The easiest way to do this is by using the [waychaser](https://waychaser.io) library as follows
+9. Wire you address form up to the address-server api.
 
 ## How it Works
 
@@ -149,38 +149,34 @@ Or for peace of mind for your mission critical solutions, get commercial support
 
 | Environment Variable | Value       | Description                                           | Default |
 | -------------------- | ----------- | ----------------------------------------------------- | ------- |
-| ELASTIC_PROTOCOL     | http        | Connect to elastic search over http                   | ✅      |
-| ELASTIC_PROTOCOL     | https       | Connect to elastic search over https                  |         |
-| ELASTIC_USERNAME     | _blank_     | Connect to elastic search without authentication      | ✅      |
-| ELASTIC_USERNAME     | _non-blank_ | Connect to elastic search with the specified username |         |
-| ELASTIC_PASSWORD     | _blank_     | Connect to elastic search without authentication      | ✅      |
-| ELASTIC_PASSWORD     | _non-blank_ | Connect to elastic search with the specified password |         |
-| ELASTIC_PASSWORD     | _non-blank_ | Connect to elastic search with the specified password |         |
+| ELASTIC_PROTOCOL     | http        | Connect to open search over http                   | ✅      |
+| ELASTIC_PROTOCOL     | https       | Connect to open search over https                  |         |
+| ELASTIC_USERNAME     | _blank_     | Connect to open search without authentication      | ✅      |
+| ELASTIC_USERNAME     | _non-blank_ | Connect to open search with the specified username |         |
+| ELASTIC_PASSWORD     | _blank_     | Connect to open search without authentication      | ✅      |
+| ELASTIC_PASSWORD     | _non-blank_ | Connect to open search with the specified password |         |
 | PAGE_SIZE            | 8           | Number or records to return in a search               | ✅      |
 
-NOTE: When adjusting PAGE_SIZE, you should take into account how quickly you want the initial results returned
-to the user. In many use cases, you want this to be as fast as possible. If you need show more results to the
-user, you are often better off leaving it a 8 and using the paging links to get more results while you are
-displaying the first 8.
+NOTE: When adjusting PAGE_SIZE, you should take into account how quickly you want the initial results returned to the user. In many use cases, you want this to be as fast as possible. If you need show more results to the user, you are often better off leaving it a 8 and using the paging links to get more results while you are displaying the first 8.
 
 Why is the default 8 and not 10? [Mechanical Sympathy](https://dzone.com/articles/mechanical-sympathy)
 
 ## System requirements
 
-### Elastic Search:
+### Open Search:
 
-elasticsearch-oss >= 7.9.2 with 1.4GiB of memory
+opensearch >= 1.2.4 with 1.4GiB of memory
 
 ### Addressr Loader
 
 #### Default
 
-Node JS >= 11.14.0 with 1GiB of memory
+Node.js >= 12.11.0 with 1GiB of memory
 
 #### With Geocoding enabled
 
-Node JS >= 11.14.0 with 8GiB of memory
+Node.js >= 12.11.0 with 8GiB of memory
 
 ### Addressr Server
 
-Node JS >= 11.14.0 with 64MiB of memory
+Node.js >= 12.11.0 with 64MiB of memory

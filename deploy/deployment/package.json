@@ -1,0 +1,10 @@
+{
+    "name": "@mountainpass/addressr-deployment",
+    "version": "1.0.263",
+    "dependencies": {
+        "@mountainpass/addressr": "1.0.263"
+    },
+    "scripts": {
+        "start": "addressr-server-2"
+    }
+}

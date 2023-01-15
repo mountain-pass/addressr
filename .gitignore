@@ -69,9 +69,19 @@ deploy/resolved_*
 deploy/task-definitions/addressr-server.json
 deploy/plan.out
 deploy/.terraform
-deploy/.terraform/terraform.tfstate
+**/terraform.tfstate
+**/.terraform.lock.hcl
+**/*.auto.tfvars
+
 
 coverage
 .dockerignore
 
 version.js
+
+.DS_Store
+
+# deployment generated files
+deployment/*
+*.zip
+

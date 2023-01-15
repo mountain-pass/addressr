@@ -2,39 +2,43 @@
 
 cd "$(dirname "$0")" || exit 1
 
-if test -z "${LOCAL_TF_CLI_CONFIG_FILE}"; then
-    LOCAL_TF_CLI_CONFIG_FILE=$HOME/.terraformrc
-fi
-echo "credentials \"app.terraform.io\" { token=\"${TERRAFORM_TOKEN}\" }" > "${LOCAL_TF_CLI_CONFIG_FILE}"
-LOCAL_TF_CLI_CONFIG_FILE_DIR="$( cd "$(dirname "$LOCAL_TF_CLI_CONFIG_FILE")" ; pwd -P )"
+tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
+trap "rm -f $tmpfile" 0 2 3 15
 
-DEPLOY_DIR=$(pwd)
+cat > "$tmpfile" <<- EOM
+elasticapp         = "mountainpass-addressr"
+elasticapp_version = "${npm_package_version:?required}"
+EOM
 
-alias terraform="docker run -i -t \
-    -v $DEPLOY_DIR:/workingdir -w /workingdir \
-    -v $LOCAL_TF_CLI_CONFIG_FILE_DIR:/root \
-    -v $DIGITALOCEAN_PVT_KEY_DIR:$DIGITALOCEAN_PVT_KEY_DIR \
-    -v $DIGITALOCEAN_PUB_KEY_DIR:$DIGITALOCEAN_PUB_KEY_DIR \
-    -e TF_IN_AUTOMATION=1 \
-    -e TF_LOG \
-    mountainpass/terraform-runner:1.2.0 \
-    " 
+mkdir -p deployment
+cat > "deployment/package.json" <<- EOM
+{
+    "name": "${npm_package_name:?required}-deployment",
+    "version": "${npm_package_version}",
+    "dependencies": {
+        "${npm_package_name:?required}": "${npm_package_version:?required}"
+    },
+    "scripts": {
+        "start": "addressr-server-2"
+    }
+}
+EOM
 
-export TF_WS="${TF_WS:=dev}"
+{ 
+    cd deployment
+    # npm i --production --ignore-scripts
+    zip -9 -r ../mountainpass-addressr-deployment-${npm_package_version:?required}.zip .
+    cd ..
 
-for file in ./templates/*; do
-    if test -f "$file"; then
-        BASE=$(basename "$file")
-        < "$file" envsubst > ./resolved_${BASE}
-    fi
-done
-
-terraform workspace select "${TF_WS}" || terraform workspace new ${TF_WS}
+}
 
 if test -z "$*"; then
-    terraform init # -get-plugins=false -verify-plugins=false 
-    terraform plan -refresh=true -input=false -out=plan.out 
-    terraform apply -auto-approve plan.out 
+    terraform init     
+    { terraform plan -refresh=true -detailed-exitcode; retVal="$?"; } || true
+    if [ $retVal -eq 2 ]; then
+        {  terraform apply -auto-approve; retVal="$?"; }
+    fi
+    exit $retVal    
 else
     terraform "$@"
 fi

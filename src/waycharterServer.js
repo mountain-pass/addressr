@@ -21,8 +21,8 @@ let server
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8
 
-export function startRest2Server () {
-  app.use((request, response, next) => {
+export function startRest2Server() {
+  app.use((_request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(
         'Access-Control-Allow-Origin',
@@ -130,7 +130,7 @@ export function startRest2Server () {
   })
 }
 
-export function stopServer () {
+export function stopServer() {
   if (server !== undefined) {
     server.close()
   }

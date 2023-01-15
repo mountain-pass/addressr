@@ -1,7 +1,6 @@
 import debug from 'debug'
 import { esConnect } from '../client/elasticsearch'
 import { printVersion } from '../service/printVersion'
-import { startServer } from '../swagger'
 import { startRest2Server } from './waycharterServer'
 
 const logger = debug('api')
