@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "mechatroner.rainbow-csv",
-    "eamodio.gitlens"
+    "eamodio.gitlens",
+    "adam-bender.commit-message-editor"
   ]
 }

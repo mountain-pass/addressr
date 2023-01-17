@@ -13,6 +13,8 @@
     "localport": "6060"
   },
   "scripts": {
+    "docs:build": "log4brains build",
+    "docs:preview": "log4brains preview",
     "deploy": "deploy/deploy.sh",
     "requirements-check": "scripts/check-version.js",
     "postinstall": "npm run requirements-check",
@@ -196,6 +198,7 @@
     "istanbul-middleware": "^0.2.2",
     "license-checker": "^25.0.1",
     "lint-staged": "^11.0.0",
+    "log4brains": "^1.0.1",
     "ngrok": "^4.0.1",
     "nodemon": "^2.0.4",
     "npm-check": "^5.9.0",
