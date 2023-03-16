@@ -411,7 +411,7 @@ definitions:
                 example: RMB
                 maxLength: 3
               number:
-                type: string
+                type: integer
                 example: '20114'
                 maxLength: 6
               suffix:
