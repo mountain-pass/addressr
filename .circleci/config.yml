@@ -23,7 +23,7 @@ jobs:
 
   test:
     docker:
-      - image: circleci/node:12.11.0
+      - image: circleci/node:16.13.1
       - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
@@ -60,7 +60,7 @@ jobs:
 
   test-cli:
     docker:
-      - image: circleci/node:12.11.0
+      - image: circleci/node:16.13.1
       - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
@@ -98,7 +98,7 @@ jobs:
 
   test-geo:
     docker:
-      - image: circleci/node:12.11.0
+      - image: circleci/node:16.13.1
       - image: elasticsearch:7.14.2
         environment:
           'discovery.type': 'single-node'
@@ -135,7 +135,7 @@ jobs:
 
   build-and-release:
     docker:
-      - image: circleci/node:12.11.0
+      - image: circleci/node:16.13.1
     steps:
       - queue/until_front_of_line:
           only-on-branch: master
