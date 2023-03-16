@@ -3,7 +3,6 @@
 {
 	"name": "Node.js",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	// "image": "mcr.microsoft.com/devcontainers/javascript-node:16-bullseye",
 	"dockerComposeFile": "docker-compose.yaml",
 	"remoteEnv": {
 		"TZ": "${localEnv:TZ:Australia/Sydney}"

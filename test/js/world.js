@@ -118,7 +118,10 @@ async function startElasticSearch(docker, context) {
             // `${cwd}/test/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml`,
           ]
         },
-        Env: ['discovery.type=single-node', 'ES_JAVA_OPTS=-Xms1g -Xmx1g'],
+        Env: [
+          'discovery.type=single-node',
+          'ES_JAVA_OPTS=-Xms1g -Xmx1g',
+          'plugins.security.disabled=true'],
         name: 'qc-elasticsearch-test'
       },
       () =>

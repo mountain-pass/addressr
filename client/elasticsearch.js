@@ -11,7 +11,7 @@ const ELASTIC_USERNAME = process.env.ELASTIC_USERNAME || undefined
 const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD || undefined
 const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http'
 
-export async function dropIndex (esClient) {
+export async function dropIndex(esClient) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   let exists = await esClient.indices.exists({ index: ES_INDEX_NAME })
   if (exists.body) {
@@ -26,7 +26,7 @@ export async function dropIndex (esClient) {
   logger('index exists:', exists)
 }
 
-export async function initIndex (esClient, clear, synonyms) {
+export async function initIndex(esClient, clear, synonyms) {
   if (clear) {
     await dropIndex(esClient)
   }
@@ -147,7 +147,7 @@ export async function initIndex (esClient, clear, synonyms) {
   logger(`indexGetResult:\n${JSON.stringify(indexGetResult, undefined, 2)}`)
 }
 
-export async function esConnect (
+export async function esConnect(
   esport = ELASTIC_PORT,
   eshost = ELASTIC_HOST,
   interval = 1000,
@@ -170,7 +170,7 @@ export async function esConnect (
         // eslint-disable-next-line no-constant-condition
         while (true) {
           try {
-            const node = ELASTIC_USERNAME ? 
+            const node = ELASTIC_USERNAME ?
               `${ELASTIC_PROTOCOL}://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${eshost}:${esport}` :
               `${ELASTIC_PROTOCOL}://${eshost}:${esport}`
             const esClientOptions = {
