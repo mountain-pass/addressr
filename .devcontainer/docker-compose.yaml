@@ -5,6 +5,10 @@ services:
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
+    links:
+      - opensearch
+    environment:
+      ELASTIC_HOST: "opensearch"
 
   opensearch:
     container_name: opensearch
@@ -13,13 +17,13 @@ services:
     environment:
       discovery.type: "single-node"
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"
-      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
-    # ulimits: 
-    #   memlock:
-    #     soft: -1
-    #     hard: -1
-    # volumes:
-    #   - ../../data:/usr/share/opensearch/data:cached
+      plugins.security.disabled: "true"
+    ulimits: 
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ../../data:/usr/share/opensearch/data:cached
     #   - "../../opensearch.yml:/usr/share/opensearch/config/opensearch.yml"
     #   - "./certs:/usr/share/opensearch/config/certificates:ro"
     ports:
