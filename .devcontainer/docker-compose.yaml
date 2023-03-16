@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/javascript-node:16-bullseye
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    network_mode: host
+
+  open-search:
+    restart: always
+    image: opensearchproject/opensearch:1.2.4 #opensearchproject/opensearch:2.2.0
+    environment:
+      discovery.type: "single-node"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+    # ulimits: 
+    #   memlock:
+    #     soft: -1
+    #     hard: -1
+    volumes:
+      - ../../data:/usr/share/opensearch/data:cached
+    #   - "../../opensearch.yml:/usr/share/opensearch/config/opensearch.yml"
+    #   - "./certs:/usr/share/opensearch/config/certificates:ro"
+    ports:
+      - 9200:9200
+      - 9300:9300 
+    network_mode: host
