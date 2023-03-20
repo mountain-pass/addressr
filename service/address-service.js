@@ -299,7 +299,7 @@ export async function unzipFile(file) {
 //   };
 // }
 
-function levelTypeCodeToName(code, context) {
+function levelTypeCodeToName(code, context, address) {
   const found = context['Authority_Code_LEVEL_TYPE_AUT_psv'].find(
     entry => entry.CODE === code
   )
@@ -307,10 +307,11 @@ function levelTypeCodeToName(code, context) {
     return found.NAME
   }
   error(`Unknown Level Type Code: '${code}'`)
+  error({ address })
   return
 }
 
-function flatTypeCodeToName(code, context) {
+function flatTypeCodeToName(code, context, address) {
   const found = context['Authority_Code_FLAT_TYPE_AUT_psv'].find(
     entry => entry.CODE === code
   )
@@ -318,6 +319,7 @@ function flatTypeCodeToName(code, context) {
     return found.NAME
   }
   error(`Unknown Flat Type Code: '${code}'`)
+  error({ address })
   return
 }
 
@@ -699,7 +701,7 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.LEVEL_TYPE_CODE !== '' && {
             type: {
               code: d.LEVEL_TYPE_CODE,
-              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context)
+              name: levelTypeCodeToName(d.LEVEL_TYPE_CODE, context, d)
             }
           }),
           ...(d.LEVEL_NUMBER_PREFIX !== '' && {
@@ -721,7 +723,7 @@ export function mapAddressDetails(d, context, i, count) {
           ...(d.FLAT_TYPE_CODE !== '' && {
             type: {
               code: d.FLAT_TYPE_CODE,
-              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context)
+              name: flatTypeCodeToName(d.FLAT_TYPE_CODE, context, d)
             }
           }),
           ...(d.FLAT_NUMBER_PREFIX !== '' && {
@@ -811,47 +813,48 @@ async function loadAddressDetails(
         const items = []
         if (chunk.errors.length > 0) {
           error(`Errors reading '${file}': ${chunk.errors}`)
-        } else {
-          const indexingBody = []
-          chunk.data.forEach(row => {
-            const item = mapAddressDetails(
-              row,
-              context,
-              actualCount,
-              expectedCount
-            )
-            items.push(item)
-            actualCount += 1
-            indexingBody.push({
-              index: {
-                _index: ES_INDEX_NAME,
-                _id: `/addresses/${item.pid}`
-              }
-            })
-            const { sla, ssla, ...structured } = item
-            indexingBody.push({
-              sla,
-              ssla,
-              structured,
-              confidence: structured.structured.confidence
-            })
-          })
-
-          if (indexingBody.length > 0) {
-            sendIndexRequest(indexingBody, undefined, { refresh })
-              .then(() => {
-                parser.resume()
-                return
-              })
-              .catch(error_ => {
-                error('error sending index request', error_)
-                throw error_
-              })
-          } else {
-            // nothing to process. Have reached end of file.
-            parser.resume()
-          }
+          error({ errors: chunk.errors })
         }
+        const indexingBody = []
+        for (const row in chunk.data) {
+          const item = mapAddressDetails(
+            row,
+            context,
+            actualCount,
+            expectedCount
+          )
+          items.push(item)
+          actualCount += 1
+          indexingBody.push({
+            index: {
+              _index: ES_INDEX_NAME,
+              _id: `/addresses/${item.pid}`
+            }
+          })
+          const { sla, ssla, ...structured } = item
+          indexingBody.push({
+            sla,
+            ssla,
+            structured,
+            confidence: structured.structured.confidence
+          })
+        }
+
+        if (indexingBody.length > 0) {
+          sendIndexRequest(indexingBody, undefined, { refresh })
+            .then(() => {
+              parser.resume()
+              return
+            })
+            .catch(error_ => {
+              error('error sending index request', error_)
+              throw error_
+            })
+        } else {
+          // nothing to process. Have reached end of file.
+          parser.resume()
+        }
+
       },
       // step: function(row) {
       //   if (row.errors.length > 0) {
@@ -1251,13 +1254,14 @@ async function loadFileCounts(countsFile) {
       step: function (row) {
         if (row.errors.length > 0) {
           error(`Errors reading '${countsFile}': ${row.errors}`)
-        } else {
-          const psvFile = row.data.File.replace(/\\/g, '/').replace(
-            /\.zip$/,
-            '.psv'
-          )
-          filesCounts[psvFile] = row.data.Count
+          error({ errors: row.errors })
         }
+        const psvFile = row.data.File.replace(/\\/g, '/').replace(
+          /\.zip$/,
+          '.psv'
+        )
+        filesCounts[psvFile] = row.data.Count
+
       },
       complete: function () {
         console.log('GNAF data loaded')
@@ -1365,6 +1369,7 @@ async function loadSiteGeo(files, directory, state, loadContext, filesCounts) {
           parser.pause()
           if (chunk.errors.length > 0) {
             error(`Errors reading '${directory}/${geoFile}': ${chunk.errors}`)
+            error({ errors: chunk.errors })
           } else {
             chunk.data.forEach(row => {
               if (expectedCount) {
@@ -1427,6 +1432,7 @@ async function loadDefaultGeo(
           parser.pause()
           if (chunk.errors.length > 0) {
             error(`Errors reading '${directory}/${geoFile}': ${chunk.errors}`)
+            error({ errors: chunk.errors })
           } else {
             chunk.data.forEach(row => {
               if (expectedCount) {
