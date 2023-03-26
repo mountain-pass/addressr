@@ -816,7 +816,7 @@ async function loadAddressDetails(
           error({ errors: chunk.errors })
         }
         const indexingBody = []
-        for (const row in chunk.data) {
+        chunk.data.forEach(row => {
           const item = mapAddressDetails(
             row,
             context,
@@ -838,7 +838,7 @@ async function loadAddressDetails(
             structured,
             confidence: structured.structured.confidence
           })
-        }
+        })
 
         if (indexingBody.length > 0) {
           sendIndexRequest(indexingBody, undefined, { refresh })
