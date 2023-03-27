@@ -28,6 +28,7 @@ jobs:
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
+          'plugins.security.disabled': 'true'
     steps:
       - checkout
       - restore_cache:
@@ -65,6 +66,7 @@ jobs:
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
+          'plugins.security.disabled': 'true'
     steps:
       - checkout
       - restore_cache:
@@ -103,6 +105,7 @@ jobs:
         environment:
           'discovery.type': 'single-node'
           'bootstrap.system_call_filter': 'false'
+          'plugins.security.disabled': 'true'
     steps:
       - checkout
 
