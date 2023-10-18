@@ -417,10 +417,12 @@ Then('the response will contain:', async function (documentString) {
 
 When('CORS is set to {string}', async function (string) {
   process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN = string
+  process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS = string
 })
 
 When('CORS is not set', async function () {
   delete process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN
+  delete process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS
 })
 
 Then('the reponse will have a {string} of {string}', async function (

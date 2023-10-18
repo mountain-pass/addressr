@@ -165,6 +165,12 @@ Or for peace of mind for your mission critical solutions, get commercial support
 | ELASTIC_PASSWORD     | _blank_     | Connect to open search without authentication      | ✅      |
 | ELASTIC_PASSWORD     | _non-blank_ | Connect to open search with the specified password |         |
 | PAGE_SIZE            | 8           | Number or records to return in a search               | ✅      |
+| ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN | _blank_ | An `Access-Control-Allow-Origin` response header is **not** returned | ✅      |
+| ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN | _non-blank_ | An `Access-Control-Allow-Origin` response header is returned with the value in the environment variable |       |
+| ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS | _blank_ | An `Access-Control-Expose-Headers` response header is **not** returned | ✅      |
+| ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS | _non-blank_ | An `Access-Control-Expose-Headers` response header is returned with the value in the environment variable |       |
+| ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS | _blank_ | An `Access-Control-Allow-Headers` response header is **not** returned | ✅      |
+| ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS | _non-blank_ | An `Access-Control-Allow-Headers` response header is returned with the value in the environment variable |       |
 
 NOTE: When adjusting PAGE_SIZE, you should take into account how quickly you want the initial results returned to the user. In many use cases, you want this to be as fast as possible. If you need show more results to the user, you are often better off leaving it a 8 and using the paging links to get more results while you are displaying the first 8.
 

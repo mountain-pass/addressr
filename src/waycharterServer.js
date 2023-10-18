@@ -35,6 +35,13 @@ export function startRest2Server() {
         process.env.ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS
       )
     }
+    if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS !== undefined) {
+      response.append(
+        'Access-Control-Allow-Headers',
+        process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS
+      )
+    }
+
     next()
   })
 

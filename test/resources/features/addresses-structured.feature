@@ -46,8 +46,8 @@ Feature: Structured Address
                     "geocodes": [
                         {
                             "default": true,
-                            "latitude": -10.41686106,
-                            "longitude": 105.68090917,
+                            "latitude": -10.41684836,
+                            "longitude": 105.68091885,
                             "reliability": {
                                 "code": "2",
                                 "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
@@ -135,6 +135,7 @@ Feature: Structured Address
             | q | 4 COCONUT GROVE, CHRISTMAS ISLAND |
         And the "self" link of the first address in the list is followed
         Then the reponse will have a "access-control-allow-origin" of "*"
+        Then the reponse will have a "access-control-allow-headers" of "*"
 
 
     @not-nodejs @not-cli @not-cli2

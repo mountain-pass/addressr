@@ -27,7 +27,7 @@ export var swaggerDoc = safeLoad(spec)
 
 global.swaggerDoc = swaggerDoc
 
-export function swaggerInit () {
+export function swaggerInit() {
   // Initialize the Swagger middleware
   return new Promise(resolve => {
     initializeMiddleware(swaggerDoc, function (middleware) {
@@ -93,7 +93,7 @@ export function swaggerInit () {
 
 let server
 
-export function startServer () {
+export function startServer() {
   app.use((request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(
@@ -105,6 +105,12 @@ export function startServer () {
       response.append(
         'Access-Control-Expose-Headers',
         process.env.ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS
+      )
+    }
+    if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS !== undefined) {
+      response.append(
+        'Access-Control-Allow-Headers',
+        process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS
       )
     }
 
@@ -137,7 +143,7 @@ export function startServer () {
   })
 }
 
-export function stopServer () {
+export function stopServer() {
   if (server !== undefined) {
     server.close()
   }
