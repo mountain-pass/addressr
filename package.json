@@ -155,7 +155,7 @@
     "semver": "^7.3.2",
     "swagger-tools": "^0.10.4",
     "unzip-stream": "^0.3.0",
-    "uri-template-lite": "^20.5.0",
+    "uri-template-lite": "^22.9.0",
     "wait-port": "^0.2.2"
   },
   "devDependencies": {
