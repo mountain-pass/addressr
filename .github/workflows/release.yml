@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  build:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build process
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            npm ci
+            npm run build
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          npm ci
+      - name: Create Release Pull Request or Publish to npm
+        uses: changesets/action@v1.4.5
+        with:
+          # these commands build & tests as well
+          publish: npm run turbo:ci:publish
+          version: npm run turbo:ci:version
+          commit: 'chore: release'
+          title: 'chore: release'
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
