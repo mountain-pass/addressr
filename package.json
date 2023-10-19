@@ -2,10 +2,16 @@
   "name": "@mountainpass/addressr",
   "version": "1.1.0",
   "description": "Australian Address Validation, Search and Autocomplete",
-  "author": "Mountain Pass <addressr@mountain-pass.com.au>",
+  "author": {
+    "name": "Mountain Pass",
+    "url": "https://mountain-pass.com.au"
+  },
   "contributors": [
     "Tom Howard <tom@mountain-pass.com.au>"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=14.21.2"
   },
