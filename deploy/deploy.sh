@@ -33,7 +33,7 @@ EOM
 }
 
 if test -z "$*"; then
-    terraform workspace select "${npm_lifecycle_event#deploy:}"
+    TF_WORKSPACE="${npm_lifecycle_event#deploy:}"
     terraform init -input=false 
     # if we output a plan in the release PR, we can review it
     # and apply it during the publish
