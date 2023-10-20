@@ -58,7 +58,7 @@ jobs:
           TF_VAR_elastic_username: ${{ secrets.TF_VAR_elastic_username }}
           TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
           TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
-          TERRAFORM_CLOUD_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
+          TF_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
         with:
           runCmd: |
             npm run deploy:test
@@ -70,4 +70,4 @@ jobs:
             TF_VAR_elastic_username
             TF_VAR_aws_secret_key
             TF_VAR_aws_access_key
-            TERRAFORM_CLOUD_TOKEN
+            TF_TOKEN
