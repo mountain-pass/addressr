@@ -61,7 +61,7 @@ jobs:
           TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
         with:
           runCmd: |
-            npm run deploy:test
+            npm run deploy:prod
           env: |
             TF_IN_AUTOMATION=1
             TF_VAR_elasticapp=mountainpass-addressr
