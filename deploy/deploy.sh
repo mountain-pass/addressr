@@ -33,7 +33,10 @@ EOM
 }
 
 if test -z "$*"; then
+    set -x
+
     TF_WORKSPACE="${npm_lifecycle_event#deploy:}"
+    
     backend_config=""
     if [ ! -z "$TERRAFORM_CLOUD_TOKEN" ]; then
         backend_config="-backend-config=token=$TERRAFORM_CLOUD_TOKEN"
