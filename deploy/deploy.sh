@@ -42,9 +42,9 @@ if test -z "$*"; then
     # and apply it during the publish
     { terraform plan -refresh=true -input=false -detailed-exitcode; retVal="$?"; } || true
     if [ $retVal -eq 2 ]; then
-        {  echo terraform apply -auto-approve -input=false; retVal="$?"; }
+        { terraform apply -auto-approve -input=false; retVal="$?"; }
     fi
     exit $retVal    
 else
-    echo terraform "$@"
+    terraform "$@"
 fi
