@@ -70,7 +70,6 @@ deploy/task-definitions/addressr-server.json
 deploy/plan.out
 deploy/.terraform
 **/terraform.tfstate
-**/.terraform.lock.hcl
 **/*.auto.tfvars
 
 
