@@ -39,6 +39,7 @@ if test -z "$*"; then
         backend_config="-backend-config=token=$TERRAFORM_CLOUD_TOKEN"
     fi
     terraform init -input=false $backend_config
+    terraform workspace select "${TF_WORKSPACE}"
     # if we output a plan in the release PR, we can review it
     # and apply it during the publish
     { terraform plan -refresh=true -input=false -detailed-exitcode; retVal="$?"; } || true
