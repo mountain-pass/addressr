@@ -34,7 +34,11 @@ EOM
 
 if test -z "$*"; then
     TF_WORKSPACE="${npm_lifecycle_event#deploy:}"
-    terraform init -input=false 
+    backend_config=""
+    if [[ -n "$TERRAFORM_CLOUD_TOKEN" ]]; then
+        backend_config="-backend-config=token=$TERRAFORM_CLOUD_TOKEN"
+    fi
+    terraform init -input=false $backend_config
     # if we output a plan in the release PR, we can review it
     # and apply it during the publish
     { terraform plan -refresh=true -input=false -detailed-exitcode; retVal="$?"; } || true
