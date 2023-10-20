@@ -20,6 +20,8 @@
     "SEARCH_IMAGE": "opensearchproject/opensearch:1.2.4"
   },
   "scripts": {
+    "deploy:prod": "deploy/deploy.sh",
+    "deploy:test": "deploy/deploy.sh",
     "turbo:build": "turbo run build",
     "turbo:ci:version": "turbo run ci:version",
     "turbo:ci:publish": "turbo run ci:publish",

@@ -25,20 +25,23 @@ cat > "deployment/package.json" <<- EOM
 EOM
 
 { 
-    cd deployment
+    cd deployment || exit
     # npm i --production --ignore-scripts
-    zip -9 -r ../mountainpass-addressr-deployment-${npm_package_version:?required}.zip .
+    zip -9 -r ../mountainpass-addressr-deployment-"${npm_package_version:?required}".zip .
     cd ..
 
 }
 
 if test -z "$*"; then
-    terraform init     
-    { terraform plan -refresh=true -detailed-exitcode; retVal="$?"; } || true
+    terraform workspace select "${npm_lifecycle_event#deploy:}"
+    terraform init -input=false 
+    # if we output a plan in the release PR, we can review it
+    # and apply it during the publish
+    { terraform plan -refresh=true -input=false -detailed-exitcode; retVal="$?"; } || true
     if [ $retVal -eq 2 ]; then
-        {  terraform apply -auto-approve; retVal="$?"; }
+        {  echo terraform apply -auto-approve -input=false; retVal="$?"; }
     fi
     exit $retVal    
 else
-    terraform "$@"
+    echo terraform "$@"
 fi

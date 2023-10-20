@@ -1,6 +1,7 @@
 variable "elasticapp" {
   type     = string
   nullable = false
+  default  = "mountainpass-addressr"
 }
 variable "elasticapp_version" {
   type     = string

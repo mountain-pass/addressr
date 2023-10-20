@@ -36,6 +36,7 @@ jobs:
         run: |
           npm ci
       - name: Create Release Pull Request or Publish to npm
+        id: changesets
         uses: changesets/action@v1.4.5
         with:
           # these commands build & tests as well
@@ -47,3 +48,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Deploy new version
+#        if: steps.changesets.outputs.published == 'true'
+        uses: devcontainers/ci@v0.3
+        env:
+          TF_VAR_elastic_host: ${{ secrets.TF_VAR_elastic_host }}
+          TF_VAR_elastic_password: ${{ secrets.TF_VAR_elastic_password }}
+          TF_VAR_elastic_username: ${{ secrets.TF_VAR_elastic_username }}
+          TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
+          TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
+          TERRAFORM_CLOUD_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
+        with:
+          runCmd: |
+            npm run deploy:test
+          env: |
+            TF_IN_AUTOMATION=1
+            TF_VAR_elasticapp=mountainpass-addressr
+            TF_VAR_elastic_host
+            TF_VAR_elastic_password
+            TF_VAR_elastic_username
+            TF_VAR_aws_secret_key
+            TF_VAR_aws_access_key
+            TERRAFORM_CLOUD_TOKEN

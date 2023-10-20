@@ -1,15 +1,9 @@
 resource "aws_elastic_beanstalk_application" "elasticapp" {
-  name = var.elasticapp
-
-  /* appversion_lifecycle {
-    service_role          = aws_iam_role.beanstalk_service.arn
-    max_count             = 128
-    delete_source_from_s3 = true
-  } */
+  name = terraform.workspace == "addressr-prod" ? var.elasticapp : "${terraform.workspace}-${var.elasticapp}"
 }
 
 resource "aws_s3_bucket" "elasticapp" {
-  bucket = var.elasticapp
+  bucket = aws_elastic_beanstalk_application.elasticapp.name
 }
 
 resource "aws_s3_object" "elasticapp" {
@@ -19,16 +13,16 @@ resource "aws_s3_object" "elasticapp" {
 }
 
 resource "aws_elastic_beanstalk_application_version" "elasticapp" {
-  name        = "${var.elasticapp}-v${var.elasticapp_version}"
-  application = var.elasticapp
+  name        = "${aws_elastic_beanstalk_application.elasticapp.name}-v${var.elasticapp_version}"
+  application = aws_elastic_beanstalk_application.elasticapp.name
   bucket      = aws_s3_bucket.elasticapp.id
   key         = aws_s3_object.elasticapp.id
 }
 # Create elastic beanstalk Environment
 
 resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
-  name                = var.elasticapp
-  application         = var.elasticapp
+  name                = aws_elastic_beanstalk_application.elasticapp.name
+  application         = aws_elastic_beanstalk_application.elasticapp.name
   solution_stack_name = var.solution_stack_name
   tier                = var.tier
   version_label       = aws_elastic_beanstalk_application_version.elasticapp.name
@@ -45,6 +39,14 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     // See https://github.com/terraform-providers/terraform-provider-aws/issues/1471#issuecomment-522977469
     resource = ""
   }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS"
+    value     = "*"
+    resource  = ""
+  }
+
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS"
@@ -244,7 +246,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elb:healthcheck"
     name      = "HealthyThreshold"
-    value     = "3"
+    value     = "2"
     resource  = ""
   }
   setting {
