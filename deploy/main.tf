@@ -1,5 +1,5 @@
 resource "aws_elastic_beanstalk_application" "elasticapp" {
-  name = terraform.workspace == "addressr-prod" ? var.elasticapp : "${terraform.workspace}-${var.elasticapp}"
+  name = terraform.workspace == "addressr-prod" || terraform.workspace == "prod" ? var.elasticapp : "${terraform.workspace}-${var.elasticapp}"
 }
 
 resource "aws_s3_bucket" "elasticapp" {
