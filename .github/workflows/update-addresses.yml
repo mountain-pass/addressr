@@ -25,7 +25,7 @@ jobs:
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
         with:
           runCmd: |
-            npm ci
+            npm ci --include dev
             touch .env
             npm run start:loader:geo:ACT:prod
           env: |
