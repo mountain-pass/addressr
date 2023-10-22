@@ -28,7 +28,15 @@ jobs:
             npm ci --include dev
             touch .env
             npm run build
-            npm run start:loader:geo:ACT:prod
+            npm run start:loader:geo:OT:prod || true
+            npm run start:loader:geo:ACT:prod || true
+            npm run start:loader:geo:NT:prod || true
+            npm run start:loader:geo:TAS:prod || true
+            npm run start:loader:geo:SA:prod || true
+            npm run start:loader:geo:WA:prod || true
+            npm run start:loader:geo:QLD:prod || true
+            npm run start:loader:geo:VIC:prod || true
+            npm run start:loader:geo:NSW:prod || true
           env: |
             ELASTIC_PORT=443
             ELASTIC_HOST
