@@ -50,7 +50,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Deploy new version
-#        if: steps.changesets.outputs.published == 'true'
+        if: steps.changesets.outputs.published == 'true'
         uses: devcontainers/ci@v0.3
         env:
           TF_VAR_elastic_host: ${{ secrets.TF_VAR_elastic_host }}
