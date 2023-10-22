@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  # TODO: remove and just use schedule, once this is working
+  push:
+    branches:
+      - master
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '30 5,17 * * *'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  build-and-update:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build process
+        uses: devcontainers/ci@v0.3
+        env:
+          ELASTIC_HOST: ${{ secrets.TF_VAR_elastic_host }}
+          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_elastic_password }}
+          ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
+        with:
+          runCmd: |
+            npm ci
+            npm run build
+            touch .env
+            npm run start:loader:geo:ACT:prod
+          env: |
+            ELASTIC_PORT=443
+            ELASTIC_HOST
+            ELASTIC_USERNAME
+            ELASTIC_PASSWORD
+            ELASTIC_PROTOCOL=https
+            NODE_ENV=production
+            ADDRESSR_ENABLE_GEO=1 
+            DEBUG=error,api,express:*,swagger-tools*,test,es
+
