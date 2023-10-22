@@ -43,7 +43,7 @@
     "start:loader:geo": "ADDRESSR_ENABLE_GEO=1 DEBUG=error,api,express:*,swagger-tools*,test,es PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:loader:geo:prod": ". .env && PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:loader:geo:prod:clear": ". .env && ES_CLEAR_INDEX=1 PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
-    "start:loader:geo:ACT:prod": ". .env && COVERED_STATES=ACT PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
+    "start:loader:geo:ACT:prod": "COVERED_STATES=ACT PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:loader:geo:NSW:prod": ". .env && COVERED_STATES=NSW PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:loader:geo:NT:prod": ". .env && COVERED_STATES=NT PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",
     "start:loader:geo:QLD:prod": ". .env && COVERED_STATES=QLD PORT=$npm_package_config_localport NODE_OPTIONS=--max_old_space_size=8196 babel-node loader.js ",

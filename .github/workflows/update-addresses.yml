@@ -27,7 +27,6 @@ jobs:
           runCmd: |
             npm ci
             npm run build
-            touch .env
             npm run start:loader:geo:ACT:prod
           env: |
             ELASTIC_PORT=443
