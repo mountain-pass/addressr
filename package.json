@@ -20,7 +20,7 @@
     "SEARCH_IMAGE": "opensearchproject/opensearch:1.2.4"
   },
   "scripts": {
-    "gen-install-cmd": "echo \"#!/bin/sh\n\nnpm install -g ${npm_package_name}:${npm_package_version}\" > install.sh",
+    "gen-install-cmd": "echo \"#!/bin/sh\n\nnpm install -g ${npm_package_name}@${npm_package_version}\" > install.sh",
     "deploy:prod": "deploy/deploy.sh",
     "deploy:test": "deploy/deploy.sh",
     "turbo:build": "turbo run build",
