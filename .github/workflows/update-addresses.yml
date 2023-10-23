@@ -25,7 +25,9 @@ jobs:
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
         with:
           runCmd: |
-            npm run install-globally
+            npm run gen-install-cmd
+            chmod +x ./install.sh
+            ./install.sh
             COVERED_STATES=OT NODE_OPTIONS=--max_old_space_size=8196 addressr-loader 
             # npm ci --include dev
             # touch .env

@@ -85,3 +85,4 @@ deployment/*
 *.zip
 
 .turbo
+install.sh
