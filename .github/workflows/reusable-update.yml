@@ -33,5 +33,6 @@ jobs:
           npm run gen-install-cmd
           chmod +x ./install.sh
           ./install.sh
+          env | grep -E '^(ELASTIC)_'
           COVERED_STATES=${{ inputs.state }} NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
           set +x
