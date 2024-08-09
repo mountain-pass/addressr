@@ -18,7 +18,7 @@ jobs:
 
       - name: Upload
         env:
-          ELASTIC_HOST: ${{ vars.TF_VAR_ELASTIC_HOST }}
+          ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
           ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
           ELASTIC_PORT: 443
