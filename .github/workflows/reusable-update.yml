@@ -12,27 +12,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build process
-        uses: devcontainers/ci@v0.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # Specify the Node.js version you need
+
+      - name: Upload
         env:
           ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
           ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
-        with:
-          runCmd: |
-            set -x
-            npm run gen-install-cmd
-            chmod +x ./install.sh
-            ./install.sh
-            env | grep -E '^(ELASTIC)_'
-            COVERED_STATES=${{ inputs.state }} NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
-            set +x
-          env: |
-            ELASTIC_PORT=443
-            ELASTIC_HOST=$ELASTIC_HOST
-            ELASTIC_USERNAME=$ELASTIC_USERNAME
-            ELASTIC_PASSWORD=$ELASTIC_PASSWORD
-            ELASTIC_PROTOCOL=https
-            NODE_ENV=production
-            ADDRESSR_ENABLE_GEO=1 
-            DEBUG=error,api,express:*,swagger-tools*,test,es
+          ELASTIC_PORT: 443
+          ELASTIC_PROTOCOL: https
+          NODE_ENV: production
+          ADDRESSR_ENABLE_GEO: 1
+          DEBUG: error,api,express:*,swagger-tools*,test,es
+        run: |
+          set -x
+          npm run gen-install-cmd
+          chmod +x ./install.sh
+          ./install.sh
+          COVERED_STATES=${{ inputs.state }} NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
+          set +x
