@@ -6,6 +6,13 @@ on:
       state:
         required: true
         type: string
+    secrets:
+      TF_VAR_ELASTIC_HOST:
+        required: true
+      TF_VAR_ELASTIC_PASSWORD:
+        required: true
+      TF_VAR_ELASTIC_USERNAME:
+        required: true
 
 jobs:
   update:
@@ -20,7 +27,7 @@ jobs:
 
       - name: Upload
         env:
-          ELASTIC_HOST: ${{ vars.TF_VAR_ELASTIC_HOST }}
+          ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
           ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
           ELASTIC_PORT: 443
