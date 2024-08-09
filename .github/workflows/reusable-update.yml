@@ -15,9 +15,9 @@ jobs:
       - name: Build process
         uses: devcontainers/ci@v0.3
         env:
-          ELASTIC_HOST: ${{ secrets.TF_VAR_elastic_host }}
-          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_elastic_password }}
-          ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
+          ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+          ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
         with:
           runCmd: |
             set -x
