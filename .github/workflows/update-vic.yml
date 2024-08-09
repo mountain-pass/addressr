@@ -1,0 +1,12 @@
+name: Update Data for OT
+
+on:
+  schedule:
+    - cron: '23 01 01 3,6,9,12 *'
+  workflow_dispatch:
+
+jobs:
+  call-reusable-workflow:
+    uses: ./.github/workflows/reusable-update.yml
+    with:
+      state: VIC

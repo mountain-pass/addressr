@@ -1,0 +1,35 @@
+name: Reusable Update Workflow
+
+on:
+  workflow_call:
+    inputs:
+      state:
+        required: true
+        type: string
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build process
+        uses: devcontainers/ci@v0.3
+        env:
+          ELASTIC_HOST: ${{ secrets.TF_VAR_elastic_host }}
+          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_elastic_password }}
+          ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
+        with:
+          runCmd: |
+            npm run gen-install-cmd
+            chmod +x ./install.sh
+            ./install.sh
+            COVERED_STATES=${{ inputs.state }} NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
+          env: |
+            ELASTIC_PORT=443
+            ELASTIC_HOST
+            ELASTIC_USERNAME
+            ELASTIC_PASSWORD
+            ELASTIC_PROTOCOL=https
+            NODE_ENV=production
+            ADDRESSR_ENABLE_GEO=1 
+            DEBUG=error,api,express:*,swagger-tools*,test,es
