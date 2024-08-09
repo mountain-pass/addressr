@@ -2,11 +2,15 @@ name: Update Data for NT
 
 on:
   schedule:
-    - cron: '23 01 01 3,6,9,12 *'
+    - cron: '35 01 01 3,6,9,12 *'
   workflow_dispatch:
 
 jobs:
   call-reusable-workflow:
     uses: ./.github/workflows/reusable-update.yml
+    secrets:
+      TF_VAR_ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+      TF_VAR_ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+      TF_VAR_ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
     with:
       state: NT

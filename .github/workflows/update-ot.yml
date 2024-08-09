@@ -6,36 +6,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16' # Specify the Node.js version you need
-
-      - name: Upload
-        env:
-          ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
-          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
-          ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
-          ELASTIC_PORT: 443
-          ELASTIC_PROTOCOL: https
-          NODE_ENV: production
-          ADDRESSR_ENABLE_GEO: 1
-          DEBUG: error,api,express:*,swagger-tools*,test,es
-        run: |
-          set -x
-          npm run gen-install-cmd
-          chmod +x ./install.sh
-          ./install.sh
-          env | grep -E '^(ELASTIC)_'
-          COVERED_STATES=OT NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
-          set +x
-
-  # call-reusable-workflow:
-  #   uses: ./.github/workflows/reusable-update.yml
-  #   with:
-  #     state: OT
+  call-reusable-workflow:
+    uses: ./.github/workflows/reusable-update.yml
+    secrets:
+      TF_VAR_ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+      TF_VAR_ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+      TF_VAR_ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
+    with:
+      state: OT

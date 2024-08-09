@@ -8,5 +8,9 @@ on:
 jobs:
   call-reusable-workflow:
     uses: ./.github/workflows/reusable-update.yml
+    secrets:
+      TF_VAR_ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+      TF_VAR_ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+      TF_VAR_ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
     with:
       state: VIC
