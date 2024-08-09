@@ -20,10 +20,12 @@ jobs:
           ELASTIC_USERNAME: ${{ secrets.TF_VAR_elastic_username }}
         with:
           runCmd: |
+            set -x
             npm run gen-install-cmd
             chmod +x ./install.sh
             ./install.sh
             COVERED_STATES=${{ inputs.state }} NODE_OPTIONS=--max_old_space_size=8196 addressr-loader
+            set +x
           env: |
             ELASTIC_PORT=443
             ELASTIC_HOST
