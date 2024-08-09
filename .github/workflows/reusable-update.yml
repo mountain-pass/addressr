@@ -29,9 +29,9 @@ jobs:
             set +x
           env: |
             ELASTIC_PORT=443
-            ELASTIC_HOST
-            ELASTIC_USERNAME
-            ELASTIC_PASSWORD
+            ELASTIC_HOST=$ELASTIC_HOST
+            ELASTIC_USERNAME=$ELASTIC_USERNAME
+            ELASTIC_PASSWORD=$ELASTIC_PASSWORD
             ELASTIC_PROTOCOL=https
             NODE_ENV=production
             ADDRESSR_ENABLE_GEO=1 
