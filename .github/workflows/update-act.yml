@@ -1,4 +1,4 @@
-name: Update Data for OT
+name: Update Data for ACT
 
 on:
   schedule:
