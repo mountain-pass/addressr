@@ -2,7 +2,7 @@ name: Update Data for NT
 
 on:
   schedule:
-    - cron: '35 01 01 3,6,9,12 *'
+    - cron: '35 01 01 * *'
   workflow_dispatch:
 
 jobs:

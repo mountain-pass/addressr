@@ -2,7 +2,7 @@ name: Update Data for QLD
 
 on:
   schedule:
-    - cron: '23 02 01 3,6,9,12 *'
+    - cron: '23 02 01 * *'
   workflow_dispatch:
 
 jobs:
