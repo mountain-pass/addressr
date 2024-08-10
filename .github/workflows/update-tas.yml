@@ -2,7 +2,7 @@ name: Update Data for TAS
 
 on:
   schedule:
-    - cron: '40 01 01 * *'
+    - cron: '40 01 21,28 2,5,8,11 *'
   workflow_dispatch:
 
 jobs:

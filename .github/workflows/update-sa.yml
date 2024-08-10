@@ -2,7 +2,7 @@ name: Update Data for SA
 
 on:
   schedule:
-    - cron: '48 01 01 * *'
+    - cron: '48 01 21,28 2,5,8,11 *'
   workflow_dispatch:
 
 jobs:

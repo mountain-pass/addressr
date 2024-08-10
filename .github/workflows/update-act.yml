@@ -2,7 +2,7 @@ name: Update Data for ACT
 
 on:
   schedule:
-    - cron: '28 01 01 * *'
+    - cron: '28 01 21,28 2,5,8,11 *'
   workflow_dispatch:
 
 jobs:
