@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 1.1.2
+
+### Patch Changes
+
+- c3b45b3: build(deps): bump express from 4.17.1 to 4.19.2
+
 ## 1.1.1
 
 ### Patch Changes
