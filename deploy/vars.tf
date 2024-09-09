@@ -9,7 +9,7 @@ variable "elasticapp_version" {
 }
 variable "solution_stack_name" {
   type    = string
-  default = "64bit Amazon Linux 2 v5.6.3 running Node.js 14"
+  default = "64bit Amazon Linux 2023 v6.2.0 running Node.js 18"
 }
 variable "tier" {
   type    = string
