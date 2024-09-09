@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 1.1.1
+
+### Patch Changes
+
+- 056a00c: Updated SaaS node.js to 18.x
+
 ## 1.1.0
 
 ### Minor Changes
