@@ -850,9 +850,9 @@ async function loadAddressDetails(
   context,
   { refresh = false } = {}
 ) {
-  let actualCount = 0
-  const ES_REPLACE = process.env.ES_REPLACE === 'true'
-  let existingDocs = null
+  let actualCount = 0;
+  const ES_REPLACE = process.env.ES_REPLACE === 'true';
+  let existingDocs = null;
 
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
@@ -864,34 +864,34 @@ async function loadAddressDetails(
         1024,
       chunk: async function (chunk, parser) {
         try {
-          parser.pause()
-          const items = []
+          parser.pause();
+
           if (chunk.errors.length > 0) {
-            error(`Errors reading '${file}': ${chunk.errors}`)
-            error({ errors: chunk.errors })
+            error(`Errors reading '${file}': ${chunk.errors}`);
+            error({ errors: chunk.errors });
           }
 
-          // Get existing docs only once per chunk
+          // Get existing docs only once
           if (existingDocs === null) {
-            existingDocs = await getExistingDocumentIds()
+            existingDocs = await getExistingDocumentIds();
           }
 
-          const indexingBody = []
+          const indexingBody = [];
+
           chunk.data.forEach(row => {
             const item = mapAddressDetails(
               row,
               context,
               actualCount,
               expectedCount
-            )
-            items.push(item)
-            actualCount += 1
-            const docId = `/addresses/${item.pid}`
+            );
+            actualCount += 1;
+            const docId = `/addresses/${item.pid}`;
 
-            // Skip existing documents if ES_REPLACE is not true
+            // Skip existing if ES_REPLACE is false
             if (!ES_REPLACE && existingDocs.has(docId)) {
-              logger(`Skipping existing document: ${docId}`)
-              return
+              logger(`Skipping existing document: ${docId}`);
+              return;
             }
 
             indexingBody.push({
@@ -899,106 +899,57 @@ async function loadAddressDetails(
                 _index: ES_INDEX_NAME,
                 _id: docId
               }
-            })
-            const { sla, ssla, ...structured } = item
+            });
+
+            const { sla, ssla, ...structured } = item;
+
             indexingBody.push({
               sla,
               ssla,
               structured,
               confidence: structured.structured.confidence
-            })
-          })
+            });
+          });
 
           if (indexingBody.length > 0) {
-            await global.esClient.bulk({
-              refresh,
-              body: indexingBody
-            })
-            .then(() => {
-              parser.resume()
-            })
-            .catch(error_ => {
-              error('error sending index request', error_)
-              throw error_
-            })
+            try {
+              await global.esClient.bulk({
+                refresh,
+                body: indexingBody
+              });
+              parser.resume();
+            } catch (err) {
+              error('Error sending index request', err);
+              reject(err); // ensure it halts
+            }
           } else {
-            // nothing to process. Have reached end of file.
-            parser.resume()
+            parser.resume(); // nothing to process
           }
-        } catch (error) {
-          error('Error in chunk processing:', error)
-          reject(error)
+        } catch (err) {
+          error('Error in chunk processing:', err);
+          reject(err);
         }
       },
       complete: function () {
-        logger('Address details loaded', context.state, expectedCount || '')
-        resolve()
-        // global.esClient.indices
-        //   .refresh({
-        //     index: ['addressr'],
-        //   })
-        //   .then(resp => {
-        //     logger('resp', resp);
-        //     if (resp.errors) {
-        //       error(resp);
-        //       error(resp.items[0].index);
-        //       reject();
-        //     }
-        //     resolve();
-        //   })
-        //   .catch(err => {
-        //     error('refresh error', err);
-        //   });
+        logger('Address details loaded', context.state, expectedCount || '');
+        resolve();
       },
       error: (_error, file) => {
-        error(_error, file)
-        reject()
+        error(_error, file);
+        reject(_error);
       }
-    })
-  })
-  if (expectedCount !== undefined && actualCount != expectedCount) {
+    });
+  });
+
+  if (expectedCount !== undefined && actualCount !== expectedCount) {
     error(
       `Error loading '${file}'. Expected '${expectedCount}' rows, got '${actualCount}'`
-    )
+    );
   } else {
-    logger(`loaded '${actualCount}' rows from '${file}'`)
+    logger(`Loaded '${actualCount}' rows from '${file}'`);
   }
-
-  // const BATCH_SIZE = 4096;
-  // const batches = Math.ceil(details.length / BATCH_SIZE);
-  // for (let j = 0; j < batches; j++) {
-  //   logger(`INDEXING... batch ${j} of ${batches}`);
-  //   const offset = j * BATCH_SIZE;
-  //   const indexingBody = [];
-  //   const sizeOfBatch = Math.min(BATCH_SIZE, details.length - offset);
-  //   for (let i = 0; i < sizeOfBatch; i++) {
-  //     const item = details[offset + i];
-  //     indexingBody.push({
-  //       index: {
-  //         _index: 'addressr',
-  //         _id: item.pid,
-  //       },
-  //     });
-  //     indexingBody.push({
-  //       sla: item.sla,
-  //       ...(item.ssla != undefined && { ssla: item.ssla }),
-  //     });
-  //   }
-  //   const resp = await global.esClient.bulk({
-  //     // here we are forcing an index refresh,
-  //     // otherwise we will not get any result
-  //     // in the consequent search
-  //     refresh: true,
-  //     body: indexingBody,
-  //   });
-  //   logger('resp', resp);
-  //   if (resp.errors) {
-  //     error(resp);
-  //     error(resp.items[0].index);
-  //   }
-  // }
-  //await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
+
 
 export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
@@ -1057,9 +1008,6 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
 
 async function sendIndexRequest(
   indexingBody,
-  initialBackoff = Number.parseInt(
-    process.env.ADDRESSR_INDEX_BACKOFF || '30000'
-  ),
   { refresh = false } = {}
 ) {
   // Get existing document IDs before bulk operation
