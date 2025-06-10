@@ -1,5 +1,13 @@
 # @mountainpass/addressr
 
+## 1.1.3
+
+### Patch Changes
+
+- 31a9237: build(deps-dev): bump @babel/traverse from 7.14.5 to 7.25.6
+- 779aa71: updated node.js and opensearch versions
+- c66bc7a: build(deps): bump cookie and express
+
 ## 1.1.2
 
 ### Patch Changes
