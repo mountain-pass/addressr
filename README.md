@@ -84,8 +84,8 @@ Or for peace of mind for your mission critical solutions, get commercial support
 2. Start open search. For example run
 
    ```
-   docker pull opensearchproject/opensearch:1.2.4
-   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "plugins.security.disabled=true" opensearchproject/opensearch:1.2.4
+   docker pull opensearchproject/opensearch:1.3.20
+   docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "plugins.security.disabled=true" opensearchproject/opensearch:1.3.20
    ```
 
 3. Start API server. In a second window run:

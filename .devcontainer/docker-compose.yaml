@@ -8,17 +8,17 @@ services:
     links:
       - opensearch
     environment:
-      ELASTIC_HOST: "opensearch"
+      ELASTIC_HOST: 'opensearch'
 
   opensearch:
     container_name: opensearch
     # restart: always
-    image: opensearchproject/opensearch:1.2.4 #opensearchproject/opensearch:2.2.0
+    image: opensearchproject/opensearch:1.3.20
     environment:
-      discovery.type: "single-node"
-      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
-      plugins.security.disabled: "true"
-    ulimits: 
+      discovery.type: 'single-node'
+      ES_JAVA_OPTS: '-Xms1g -Xmx1g'
+      plugins.security.disabled: 'true'
+    ulimits:
       memlock:
         soft: -1
         hard: -1
@@ -28,4 +28,4 @@ services:
     #   - "./certs:/usr/share/opensearch/config/certificates:ro"
     ports:
       - 9200:9200
-      - 9300:9300 
+      - 9300:9300
