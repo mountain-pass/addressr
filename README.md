@@ -152,7 +152,7 @@ Or for peace of mind for your mission critical solutions, get commercial support
 
 ## How it Works
 
-![How it works](https://addressr.io/static/addressr-43fb89f43718b9b9d05becd4cb045672.svg 'How it works')
+![How it works](https://addressr.io/static/addressr-fe45ac1ba82b1dd5224f1c7356dfd1ca.svg 'How it works')
 
 ## Additional Settings
 
