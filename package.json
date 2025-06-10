@@ -159,7 +159,7 @@
     "express": "^4.17.1",
     "glob": "^7.1.7",
     "glob-promise": "^4.2.0",
-    "got": "^9.6.0",
+    "got": "^11.8.5",
     "http-link-header": "1.0.2",
     "js-yaml": "^3.3.0",
     "json-ptr": "2.1.0",
