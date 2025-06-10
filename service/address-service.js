@@ -30,6 +30,47 @@ const cache = new Keyv({
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8
 
+async function getExistingDocumentIds() {
+  const existingDocs = new Set()
+  try {
+    const response = await global.esClient.search({
+      index: ES_INDEX_NAME,
+      body: {
+        _source: false,
+        size: 10000,
+        query: {
+          match_all: {}
+        }
+      }
+    })
+
+    response.body.hits.hits.forEach(hit => {
+      existingDocs.add(hit._id)
+    })
+    
+    // If there are more than 10000 documents, we need to scroll through them
+    if (response.body.hits.total.value > 10000) {
+      const scrollId = response.body._scroll_id
+      let scrollResponse
+      do {
+        scrollResponse = await global.esClient.scroll({
+          scrollId,
+          scroll: '1m'
+        })
+        scrollResponse.body.hits.hits.forEach(hit => {
+          existingDocs.add(hit._id)
+        })
+      } while (scrollResponse.body.hits.hits.length > 0)
+    }
+    
+    logger(`Found ${existingDocs.size} existing documents in index`)
+    return existingDocs
+  } catch (error) {
+    logger('Error fetching existing documents:', error)
+    return new Set()
+  }
+}
+
 function getCoveredStates() {
   const covered = process.env.COVERED_STATES || ''
   if (covered == '') {
@@ -57,14 +98,25 @@ export async function clearAddresses() {
 }
 
 export async function setAddresses(addr) {
-  await clearAddresses()
-
+  const ES_REPLACE = process.env.ES_REPLACE === 'true'
+  
+  // Get existing document IDs
+  const existingDocs = await getExistingDocumentIds()
+  
   const indexingBody = []
   addr.forEach(row => {
+    const docId = row.links.self.href
+    
+    // Skip if document exists and ES_REPLACE is not true
+    if (!ES_REPLACE && existingDocs.has(docId)) {
+      logger(`Skipping existing document: ${docId}`)
+      return
+    }
+    
     indexingBody.push({
       index: {
         _index: ES_INDEX_NAME,
-        _id: row.links.self.href
+        _id: docId
       }
     })
     const { sla, ssla, ...structurted } = row
@@ -798,7 +850,9 @@ async function loadAddressDetails(
   context,
   { refresh = false } = {}
 ) {
-  let actualCount = 0
+  let actualCount = 0;
+  const ES_REPLACE = process.env.ES_REPLACE === 'true';
+  let existingDocs = null;
 
   await new Promise((resolve, reject) => {
     Papa.parse(fs.createReadStream(file), {
@@ -808,131 +862,94 @@ async function loadAddressDetails(
         Number.parseInt(process.env.ADDRESSR_LOADING_CHUNK_SIZE || '10') *
         1024 *
         1024,
-      chunk: function (chunk, parser) {
-        parser.pause()
-        const items = []
-        if (chunk.errors.length > 0) {
-          error(`Errors reading '${file}': ${chunk.errors}`)
-          error({ errors: chunk.errors })
-        }
-        const indexingBody = []
-        chunk.data.forEach(row => {
-          const item = mapAddressDetails(
-            row,
-            context,
-            actualCount,
-            expectedCount
-          )
-          items.push(item)
-          actualCount += 1
-          indexingBody.push({
-            index: {
-              _index: ES_INDEX_NAME,
-              _id: `/addresses/${item.pid}`
+      chunk: async function (chunk, parser) {
+        try {
+          parser.pause();
+
+          if (chunk.errors.length > 0) {
+            error(`Errors reading '${file}': ${chunk.errors}`);
+            error({ errors: chunk.errors });
+          }
+
+          // Get existing docs only once
+          if (existingDocs === null) {
+            existingDocs = await getExistingDocumentIds();
+          }
+
+          const indexingBody = [];
+
+          chunk.data.forEach(row => {
+            const item = mapAddressDetails(
+              row,
+              context,
+              actualCount,
+              expectedCount
+            );
+            actualCount += 1;
+            const docId = `/addresses/${item.pid}`;
+
+            // Skip existing if ES_REPLACE is false
+            if (!ES_REPLACE && existingDocs.has(docId)) {
+              logger(`Skipping existing document: ${docId}`);
+              return;
             }
-          })
-          const { sla, ssla, ...structured } = item
-          indexingBody.push({
-            sla,
-            ssla,
-            structured,
-            confidence: structured.structured.confidence
-          })
-        })
 
-        if (indexingBody.length > 0) {
-          sendIndexRequest(indexingBody, undefined, { refresh })
-            .then(() => {
-              parser.resume()
-              return
-            })
-            .catch(error_ => {
-              error('error sending index request', error_)
-              throw error_
-            })
-        } else {
-          // nothing to process. Have reached end of file.
-          parser.resume()
+            indexingBody.push({
+              index: {
+                _index: ES_INDEX_NAME,
+                _id: docId
+              }
+            });
+
+            const { sla, ssla, ...structured } = item;
+
+            indexingBody.push({
+              sla,
+              ssla,
+              structured,
+              confidence: structured.structured.confidence
+            });
+          });
+
+          if (indexingBody.length > 0) {
+            try {
+              await global.esClient.bulk({
+                refresh,
+                body: indexingBody
+              });
+              parser.resume();
+            } catch (err) {
+              error('Error sending index request', err);
+              reject(err); // ensure it halts
+            }
+          } else {
+            parser.resume(); // nothing to process
+          }
+        } catch (err) {
+          error('Error in chunk processing:', err);
+          reject(err);
         }
-
       },
-      // step: function(row) {
-      //   if (row.errors.length > 0) {
-      //     error(`Errors reading '${file}': ${row.errors}`);
-      //   } else {
-      //     details.push(mapAddressDetails(row.data, context, i, count));
-      //     i += 1;
-      //   }
-      // },
       complete: function () {
-        logger('Address details loaded', context.state, expectedCount || '')
-        resolve()
-        // global.esClient.indices
-        //   .refresh({
-        //     index: ['addressr'],
-        //   })
-        //   .then(resp => {
-        //     logger('resp', resp);
-        //     if (resp.errors) {
-        //       error(resp);
-        //       error(resp.items[0].index);
-        //       reject();
-        //     }
-        //     resolve();
-        //   })
-        //   .catch(err => {
-        //     error('refresh error', err);
-        //   });
+        logger('Address details loaded', context.state, expectedCount || '');
+        resolve();
       },
       error: (_error, file) => {
-        error(_error, file)
-        reject()
+        error(_error, file);
+        reject(_error);
       }
-    })
-  })
-  if (expectedCount !== undefined && actualCount != expectedCount) {
+    });
+  });
+
+  if (expectedCount !== undefined && actualCount !== expectedCount) {
     error(
       `Error loading '${file}'. Expected '${expectedCount}' rows, got '${actualCount}'`
-    )
+    );
   } else {
-    logger(`loaded '${actualCount}' rows from '${file}'`)
+    logger(`Loaded '${actualCount}' rows from '${file}'`);
   }
-
-  // const BATCH_SIZE = 4096;
-  // const batches = Math.ceil(details.length / BATCH_SIZE);
-  // for (let j = 0; j < batches; j++) {
-  //   logger(`INDEXING... batch ${j} of ${batches}`);
-  //   const offset = j * BATCH_SIZE;
-  //   const indexingBody = [];
-  //   const sizeOfBatch = Math.min(BATCH_SIZE, details.length - offset);
-  //   for (let i = 0; i < sizeOfBatch; i++) {
-  //     const item = details[offset + i];
-  //     indexingBody.push({
-  //       index: {
-  //         _index: 'addressr',
-  //         _id: item.pid,
-  //       },
-  //     });
-  //     indexingBody.push({
-  //       sla: item.sla,
-  //       ...(item.ssla != undefined && { ssla: item.ssla }),
-  //     });
-  //   }
-  //   const resp = await global.esClient.bulk({
-  //     // here we are forcing an index refresh,
-  //     // otherwise we will not get any result
-  //     // in the consequent search
-  //     refresh: true,
-  //     body: indexingBody,
-  //   });
-  //   logger('resp', resp);
-  //   if (resp.errors) {
-  //     error(resp);
-  //     error(resp.items[0].index);
-  //   }
-  // }
-  //await searchForAddress('657 The Entrance Road'); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
+
 
 export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
@@ -991,63 +1008,44 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
 
 async function sendIndexRequest(
   indexingBody,
-  initialBackoff = Number.parseInt(
-    process.env.ADDRESSR_INDEX_BACKOFF || '30000'
-  ),
   { refresh = false } = {}
 ) {
-  let backoff = initialBackoff
-  // eslint-disable-next-line no-constant-condition
-  for (let count = 0; true; count++) {
-    try {
-      const resp = await global.esClient.bulk({
-        refresh,
-        body: indexingBody,
-        timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '300s'
-      })
+  // Get existing document IDs before bulk operation
+  const existingDocs = await getExistingDocumentIds()
+  const ES_REPLACE = process.env.ES_REPLACE === 'true'
 
-      if (resp.errors || (resp.body && resp.body.errors)) {
-        throw resp
-        // // error(resp);
-        // // error(resp.items[0].index);
-        // error(`backing off for ${backoff}ms`);
-        // // parser.pause();
-        // // paused = true;
-        // await new Promise(resolve => {
-        //   // eslint-disable-next-line no-undef
-        //   setTimeout(() => {
-        //     resolve();
-        //   }, backoff);
-        // });
-        // backoff = Math.max(10000, backoff * 2);
-        // continue;
-      }
-      // if (paused) {
-      //   error(`resuming`);
-      //   parser.resume();
-      // }
-      return
-    } catch (error_) {
-      error('Indexing error', JSON.stringify(error_, undefined, 2))
-      error(`backing off for ${backoff}ms`)
-      // parser.pause();
-      // paused = true;
-      await new Promise(resolve => {
-        // eslint-disable-next-line no-undef
-        setTimeout(() => {
-          resolve()
-        }, backoff)
-      })
-      backoff += Number.parseInt(
-        process.env.ADDRESSR_INDEX_BACKOFF_INCREMENT || '30000'
-      )
-      backoff = Math.min(
-        Number.parseInt(process.env.ADDRESSR_INDEX_BACKOFF_MAX || '600000'),
-        backoff
-      )
-      error(`next backoff: ${backoff}ms`)
-      error(`count: ${count}`)
+  // Filter out documents that already exist if ES_REPLACE is not true
+  const filteredIndexingBody = []
+  for (let i = 0; i < indexingBody.length; i += 2) {
+    const docId = indexingBody[i].index._id
+
+    // If document exists and ES_REPLACE is not true, skip it
+    if (existingDocs.has(docId) && !ES_REPLACE) {
+      logger(`Skipping existing document: ${docId}`)
+      continue
     }
+
+    // Add both the index operation and document to the filtered body
+    filteredIndexingBody.push(indexingBody[i])    // index operation
+    filteredIndexingBody.push(indexingBody[i + 1]) // document
+  }
+
+  if (filteredIndexingBody.length === 0) {
+    logger('No documents to index after filtering')
+    return
+  }
+
+  // Send the filtered bulk request
+  try {
+    const response = await global.esClient.bulk({
+      refresh,
+      body: filteredIndexingBody
+    })
+    logger(`Successfully indexed ${filteredIndexingBody.length / 2} documents`)
+    return response
+  } catch (error) {
+    error('Bulk indexing error:', error)
+    throw error
   }
 }
 
