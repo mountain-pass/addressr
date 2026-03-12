@@ -6,7 +6,6 @@
     "cucumber": "Migration to @cucumber/cucumber deferred - significant API changes",
     "dotenv": "Major version 17.x upgrade deferred - API changes",
     "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
-    "eslint-plugin-prettier": "Upgraded in Phase 3 PR",
     "eslint-plugin-chai-friendly": "Version 1.x requires ESLint 8+ peer dep alignment",
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
     "eslint-plugin-security": "Version 4.x requires ESLint 9 flat config migration",
@@ -23,8 +22,6 @@
     "ngrok": "Version 5.x is beta only",
     "nodemon": "Upgraded in Phase 4-6 PR",
     "nyc": "Major version 18.x upgrade deferred",
-    "prettier": "Upgraded in Phase 3 PR",
-    "prettier-config-standard": "Upgraded in Phase 3 PR",
     "uri-template-lite": "Major version 23.x upgrade deferred - API changes",
     "wait-port": "Major version 1.x upgrade deferred"
   }
