@@ -1,7 +1,5 @@
-#!/usr/bin/env node
-
-const fs = require('fs')
-const packageJson = require('../package.json')
+const fs = require('fs');
+const packageJson = require('../package.json');
 const shell = require('shelljs');
 const { zip } = require('zip-a-folder');
 /**
@@ -25,36 +23,52 @@ instead of doing an npm install. This could be even faster, but we haven't tried
 See https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/nodejs-platform-dependencies.html#nodejs-platform-nodemodules
 **/
 function createPackageJson(context, filepath) {
-    const { name, version, description, author, contributors, engines, keywords, license, private: privateKey, repository, bugs, homepage } = context;
-    const newPackageJson = {
-        "name": `${name}-deployment`,
-        version,
-        description,
-        author,
-        contributors,
-        engines,
-        keywords,
-        license,
-        private: privateKey,
-        repository,
-        bugs,
-        homepage,
-        "scripts": {
-            // TODO: see if we can use the context.main as the start script
-            "start": "addressr-server-2"
-        },
-        "dependencies": {
-            [name]: version
-        },
-    }
-    fs.writeFileSync(filepath, JSON.stringify(newPackageJson, null, 2))
+  const {
+    name,
+    version,
+    description,
+    author,
+    contributors,
+    engines,
+    keywords,
+    license,
+    private: privateKey,
+    repository,
+    bugs,
+    homepage,
+  } = context;
+  const newPackageJson = {
+    name: `${name}-deployment`,
+    version,
+    description,
+    author,
+    contributors,
+    engines,
+    keywords,
+    license,
+    private: privateKey,
+    repository,
+    bugs,
+    homepage,
+    scripts: {
+      // TODO: see if we can use the context.main as the start script
+      start: 'addressr-server-2',
+    },
+    dependencies: {
+      [name]: version,
+    },
+  };
+  fs.writeFileSync(filepath, JSON.stringify(newPackageJson, null, 2));
 }
 
 async function createDeploymentArchive(deploymentDir) {
-    shell.mkdir('-p', deploymentDir)
-    createPackageJson(packageJson, `${deploymentDir}/package.json`)
-    const archiveName = packageJson.name.replace('@', '').replace('/', '-')
-    await zip(`${deploymentDir}/`, `${archiveName}-deployment-${packageJson.version}.zip`)
+  shell.mkdir('-p', deploymentDir);
+  createPackageJson(packageJson, `${deploymentDir}/package.json`);
+  const archiveName = packageJson.name.replace('@', '').replace('/', '-');
+  await zip(
+    `${deploymentDir}/`,
+    `${archiveName}-deployment-${packageJson.version}.zip`,
+  );
 }
 
-createDeploymentArchive('./deployment')
+createDeploymentArchive('./deployment');

@@ -7,7 +7,6 @@
   "extends": [
     "eslint:recommended",
     "prettier",
-    "prettier/babel",
     "plugin:security/recommended",
     "plugin:eslint-comments/recommended",
     "plugin:unicorn/recommended",
@@ -44,6 +43,7 @@
     "unicorn/no-process-exit": "warn",
     "promise/always-return": "warn",
     "promise/catch-or-return": "warn",
+    "unicorn/prefer-module": "off",
     "node/no-unsupported-features/es-syntax": "off",
     "node/no-deprecated-api": "warn",
     "no-process-exit": "warn",

@@ -25,7 +25,7 @@ module.exports = function (url, path, size) {
           incomplete: ' ',
           width: 20,
           total: length,
-        }
+        },
       );
 
       res

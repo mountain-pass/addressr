@@ -6,7 +6,8 @@
 ## Context and Problem Statement
 
 Addressr currently uses CircleCI for build and deplopment automation, but
-- this is hard to test locally  
+
+- this is hard to test locally
 - it's jarring to go back and forth between GitHub and CircleCI
 
 ## Considered Options
