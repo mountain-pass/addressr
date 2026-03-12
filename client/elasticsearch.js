@@ -107,14 +107,7 @@ export async function initIndex(esClient, clear, synonyms) {
     },
   };
 
-  if (!exists.body) {
-    logger(`creating index: ${ES_INDEX_NAME}`);
-    const indexCreateResult = await esClient.indices.create({
-      index: ES_INDEX_NAME,
-      body: indexBody,
-    });
-    logger({ indexCreateResult });
-  } else {
+  if (exists.body) {
     // update the index
     const indexCloseResult = await esClient.indices.close({
       index: ES_INDEX_NAME,
@@ -139,6 +132,13 @@ export async function initIndex(esClient, clear, synonyms) {
       index: ES_INDEX_NAME,
     });
     logger({ refreshResult });
+  } else {
+    logger(`creating index: ${ES_INDEX_NAME}`);
+    const indexCreateResult = await esClient.indices.create({
+      index: ES_INDEX_NAME,
+      body: indexBody,
+    });
+    logger({ indexCreateResult });
   }
   const indexGetResult = await esClient.indices.get({
     index: ES_INDEX_NAME,

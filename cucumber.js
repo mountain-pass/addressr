@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 
 const FAIL_FAST = process.env.FAIL_FAST || '--fail-fast';
 const NO_STRICT = process.env.NO_STRICT || '--no-strict';
