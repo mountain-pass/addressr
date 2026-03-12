@@ -1108,7 +1108,7 @@ function buildSynonyms(context) {
   return synonyms;
 }
 
-const { readdir } = require('fs').promises;
+const { readdir } = require('node:fs').promises;
 
 async function getFiles(currentDir, baseDir) {
   const dir = path.resolve(baseDir, currentDir);
@@ -1130,7 +1130,7 @@ function countFileLines(filePath) {
     let last;
     readStream.on('data', function (chunk) {
       lines += chunk.split('\n').length - 1;
-      last = chunk[chunk.length - 1];
+      last = chunk.at(-1);
     });
 
     readStream.on('end', function () {
@@ -1261,7 +1261,7 @@ async function loadFileCounts(countsFile) {
           error(`Errors reading '${countsFile}': ${row.errors}`);
           error({ errors: row.errors });
         }
-        const psvFile = row.data.File.replace(/\\/g, '/').replace(
+        const psvFile = row.data.File.replaceAll('\\', '/').replace(
           /\.zip$/,
           '.psv',
         );
@@ -1491,18 +1491,18 @@ async function loadAuthFiles(files, directory, loadContext, filesCounts) {
         complete: function (results) {
           loadContext[contextKey] = results.data;
           if (filesCounts) {
-            if (results.data.length != filesCounts[authFile]) {
+            if (results.data.length == filesCounts[authFile]) {
+              logger(
+                `loaded '${results.data.length}' rows from '${directory}/${authFile}' into key '${contextKey}'`,
+              );
+              resolve();
+            } else {
               error(
                 `Error loading '${directory}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
               );
               reject(
                 `Error loading '${directory}/${authFile}'. Expected '${filesCounts[authFile]}' rows, got '${results.data.length}'`,
               );
-            } else {
-              logger(
-                `loaded '${results.data.length}' rows from '${directory}/${authFile}' into key '${contextKey}'`,
-              );
-              resolve();
             }
           }
         },

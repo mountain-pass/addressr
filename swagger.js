@@ -3,7 +3,7 @@ import debug from 'debug';
 import express from 'express';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { safeLoad } from 'js-yaml';
+import { load } from 'js-yaml';
 import pathUtil from 'node:path';
 import { initializeMiddleware } from 'swagger-tools';
 
@@ -23,7 +23,7 @@ var options = {
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
 var spec = readFileSync(pathUtil.join(__dirname, 'api/swagger.yaml'), 'utf8');
-export var swaggerDoc = safeLoad(spec);
+export var swaggerDoc = load(spec);
 
 global.swaggerDoc = swaggerDoc;
 

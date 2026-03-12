@@ -27,15 +27,18 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
   async follow(link) {
     logger('FOLLOWING', link);
     switch (link.uri) {
-      case '/api-docs':
+      case '/api-docs': {
         return {
           json: swaggerDocument,
           headers: { 'content-type': 'application/json' },
         };
-      case '/':
+      }
+      case '/': {
         return getApiRoot();
-      case '/addresses':
+      }
+      case '/addresses': {
         return getAddresses(link.uri, getSwagger(link.uri));
+      }
       default: {
         if (link.uri.startsWith('/addresses?')) {
           const url = new URL(
