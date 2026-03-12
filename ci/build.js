@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // Use Node 16 or above to run this script.
 // `node build.js` will run this script.
 //
@@ -24,23 +22,21 @@ actions:
 
 */
 
-import { connect } from "@dagger.io/dagger"
-
-
+import { connect } from '@dagger.io/dagger';
 
 // initialize Dagger client
-console.log('starting...')
+console.log('starting...');
 connect(async (client) => {
-    // get reference to the local project
-    const source = client.host().directory(".")
+  // get reference to the local project
+  const source = client.host().directory('.');
 
-    // get Node image
-    const node = client.container().from("node:12.11.0")
+  // get Node image
+  const node = client.container().from('node:12.11.0');
 
-    // mount cloned repository into Node image
-    const runner = client
-        .container({ id: node })
-        .withMountedDirectory("/src", source)
-        .withWorkdir("/src")
-        .withExec(["npm", "run", "hello"])
-})
+  // mount cloned repository into Node image
+  const runner = client
+    .container({ id: node })
+    .withMountedDirectory('/src', source)
+    .withWorkdir('/src')
+    .withExec(['npm', 'run', 'hello']);
+});

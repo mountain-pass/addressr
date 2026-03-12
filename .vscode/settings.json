@@ -32,10 +32,5 @@
   "cucumberautocomplete.skipDocStringsFormat": true,
   "cucumberautocomplete.syncfeatures": "src/test/**/*.feature",
   "linter_codeclimate.enabled": true,
-  "cSpell.words": [
-    "ADDRESSR",
-    "mountainpass",
-    "waycharter",
-    "waychaser"
-  ]
+  "cSpell.words": ["ADDRESSR", "mountainpass", "waycharter", "waychaser"]
 }
