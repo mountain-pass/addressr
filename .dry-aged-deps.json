@@ -6,6 +6,7 @@
     "cucumber": "Migration to @cucumber/cucumber deferred - significant API changes",
     "dotenv": "Major version 17.x upgrade deferred - API changes",
     "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
+    "eslint-plugin-prettier": "Version 5.x requires ESLint 8+, blocked until ESLint upgrade",
     "eslint-plugin-chai-friendly": "Version 1.x requires ESLint 8+ peer dep alignment",
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
     "eslint-plugin-security": "Version 4.x requires ESLint 9 flat config migration",
