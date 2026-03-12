@@ -50,7 +50,7 @@ export class AddressrRestDriver extends AddressrDriver {
     }
     const url = new URL(
       link['var-base'],
-      `http://localhost:${process.env.PORT || 8080}`
+      `http://localhost:${process.env.PORT || 8080}`,
     );
     resp.json = JsonPointer.create(url.hash).get(resp.json);
 

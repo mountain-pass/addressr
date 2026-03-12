@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-import {} from '../src/server2'
+import {} from '../src/server2';
