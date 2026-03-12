@@ -13,11 +13,11 @@ export async function getApiRoot() {
   const paths = Object.keys(global.swaggerDoc.paths).filter(
     (p) =>
       global.swaggerDoc.paths[p].get !== undefined &&
-      global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined
+      global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined,
   );
 
   const link = new LinkHeader();
-  paths.forEach((p) => {
+  for (const p of paths) {
     const op = global.swaggerDoc.paths[p].get;
     if (
       op.parameters &&
@@ -27,7 +27,7 @@ export async function getApiRoot() {
     } else {
       link.set({ rel: op['x-root-rel'], uri: p, title: op.summary });
     }
-  });
+  }
   link.set({
     rel: 'describedby',
     uri: '/docs/',
@@ -42,11 +42,11 @@ export async function getApiRoot() {
   });
 
   const linkTemplate = new LinkHeader();
-  paths.forEach((url) => {
+  for (const url of paths) {
     const op = global.swaggerDoc.paths[url].get;
     logger(op);
     setLinkOptions(op, url, linkTemplate);
-  });
+  }
 
   return { link: link, body: {}, linkTemplate: linkTemplate };
 }

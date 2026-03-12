@@ -1,5 +1,5 @@
 project:
-  name: "@mountainpass/addressr"
+  name: '@mountainpass/addressr'
   tz: Africa/Abidjan
   adrFolder: ./docs/adrs
   packages: []
