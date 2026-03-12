@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 const packageJson = require('../package.json');
 const shell = require('shelljs');
 const { zip } = require('zip-a-folder');

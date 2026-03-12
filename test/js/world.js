@@ -52,26 +52,33 @@ async function ensureDockerServerStarted() {
 BeforeAll({ timeout: 240_000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
-    case 'rest':
+    case 'rest': {
       global.driver = new AddressrRestDriver(await startServer());
       break;
-    case 'rest2':
+    }
+    case 'rest2': {
       global.driver = new AddressrRest2Driver(await startRest2Server());
       break;
-    case 'cli':
+    }
+    case 'cli': {
       global.driver = new AddressrRestDriver(await startExternalServer());
       break;
-    case 'cli2':
+    }
+    case 'cli2': {
       global.driver = new AddressrRest2Driver(await startExternalServer());
       break;
-    case 'docker':
+    }
+    case 'docker': {
       global.driver = new AddressrRestDriver(await ensureDockerServerStarted());
       break;
-    case 'default':
+    }
+    case 'default': {
       global.driver = new AddressrEmbeddedDriver();
       break;
-    default:
+    }
+    default: {
       throw new PendingError(`Need driver for profile: ${TEST_PROFILE}`);
+    }
   }
 
   await fsp.mkdir('./target/Elasticsearch/data', { recursive: true });
