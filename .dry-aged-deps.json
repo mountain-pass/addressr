@@ -2,7 +2,6 @@
   "exclude": {
     "@cucumber/cucumber": "Version 8+ removes setDefinitionFunctionWrapper used by @windyroad/cucumber-js-throwables",
     "@opensearch-project/opensearch": "Major version 3.x upgrade deferred - requires API migration",
-    "babel-plugin-istanbul": "Major version 7.x upgrade deferred - requires testing infrastructure changes",
     "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
     "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
@@ -11,8 +10,6 @@
     "express": "Major version 5.x upgrade deferred - significant API breaking changes",
     "glob": "Version 11+ requires Node >=20, staying on 10.x until engine requirement updated",
     "got": "Major version 14.x is ESM-only, consider fetch replacement",
-    "keyv": "Major version 5.x upgrade deferred - requires storage adapter changes",
-    "keyv-file": "Major version 5.x upgrade deferred - requires keyv 5.x",
     "ngrok": "Version 5.x is beta only"
   }
 }

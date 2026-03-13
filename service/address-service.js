@@ -14,7 +14,7 @@ import unzip from 'unzip-stream';
 import { initIndex, dropIndex as dropESIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './setLinkOptions';
-import Keyv from 'keyv';
+import { Keyv } from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';
 import { glob } from 'glob';
