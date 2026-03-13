@@ -17,7 +17,7 @@ import { setLinkOptions } from './setLinkOptions';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';
-import glob from 'glob-promise';
+import { glob } from 'glob';
 
 const fsp = fs.promises;
 
@@ -1125,7 +1125,7 @@ async function getFiles(currentDir, baseDir) {
 
 function countFileLines(filePath) {
   return new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(filePath, 'utf-8');
+    const readStream = fs.createReadStream(filePath, 'utf8');
     let lines = 0;
     let last;
     readStream.on('data', function (chunk) {
@@ -1279,14 +1279,6 @@ async function loadFileCounts(countsFile) {
   });
   logger('filesCounts', filesCounts);
   return filesCounts;
-}
-
-async function loadFileContents(contentsFile) {
-  const contents = await fsp.readFile(contentsFile);
-  return contents
-    .toString()
-    .split('\n')
-    .map((line) => line.trim());
 }
 
 async function loadState(files, directory, state) {
