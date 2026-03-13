@@ -24,8 +24,6 @@ function generateConfig(profile) {
       : NON_RERUN_GLOB;
   const FORMAT_OPTIONS = {
     snippetInterface: 'async-await',
-    snippetSyntax:
-      './node_modules/@windyroad/cucumber-js-throwables/lib/custom-cucumber-syntax.js',
   };
   const MODULES =
     '--require-module @babel/register --require-module @babel/polyfill';

@@ -1,21 +1,23 @@
-import { PendingError } from '@windyroad/cucumber-js-throwables/lib/pending-error';
-import { URI } from 'uri-template-lite';
+import Template from 'uri-template-lite';
 
 export class AddressrDriver {
   async getApiRoot() {
-    throw new PendingError();
+    return 'pending';
   }
 
+  // eslint-disable-next-line no-unused-vars
   async getApi(path) {
-    throw new PendingError(path);
+    return 'pending';
   }
 
+  // eslint-disable-next-line no-unused-vars
   async follow(link) {
-    throw new PendingError(link);
+    return 'pending';
   }
 
+  // eslint-disable-next-line no-unused-vars
   async followVarBase(link) {
-    throw new PendingError(link);
+    return 'pending';
   }
 
   async followTemplate(link, parameters) {
