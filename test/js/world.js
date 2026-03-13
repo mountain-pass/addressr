@@ -12,7 +12,7 @@ import {
   BeforeAll,
   setDefinitionFunctionWrapper,
   setWorldConstructor,
-} from 'cucumber';
+} from '@cucumber/cucumber';
 import debug from 'debug';
 import fs from 'node:fs';
 import waitport from 'wait-port';
@@ -26,7 +26,6 @@ import { startRest2Server } from '../../src/waycharterServer';
 const fsp = fs.promises;
 
 const logger = debug('test');
-const esLogger = debug('es');
 
 global.expect = chai.expect;
 global.PendingError = PendingError;
