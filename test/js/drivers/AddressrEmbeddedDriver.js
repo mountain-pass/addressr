@@ -1,7 +1,7 @@
 import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
 import { JsonPointer } from 'json-ptr';
-import { URI } from 'uri-template-lite';
+import Template from 'uri-template-lite';
 import { getAddress, getAddresses } from '../../../service/address-service';
 import { getApiRoot } from '../../../service/DefaultService';
 import { swaggerDoc as swaggerDocument } from '../../../swagger';
@@ -58,7 +58,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
             Number.parseInt(url.searchParams.get('p') || 1),
           );
         } else if (link.uri.startsWith('/addresses/')) {
-          var template = new URI.Template('/addresses/{address_id}');
+          var template = new Template('/addresses/{address_id}');
           const parameters = template.match(link.uri);
           logger(parameters);
           try {

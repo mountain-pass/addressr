@@ -13,11 +13,8 @@
     "glob": "Major version 13.x upgrade deferred - API changes",
     "glob-promise": "Major version 6.x upgrade deferred - follows glob major version",
     "got": "Major version 14.x is ESM-only, consider fetch replacement",
-    "json-ptr": "Major version 3.x upgrade deferred - API changes",
     "keyv": "Major version 5.x upgrade deferred - requires storage adapter changes",
     "keyv-file": "Major version 5.x upgrade deferred - requires keyv 5.x",
-    "ngrok": "Version 5.x is beta only",
-    "uri-template-lite": "Major version 23.x upgrade deferred - API changes",
-    "wait-port": "Major version 1.x upgrade deferred"
+    "ngrok": "Version 5.x is beta only"
   }
 }
