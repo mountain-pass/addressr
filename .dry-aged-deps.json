@@ -6,7 +6,6 @@
     "cucumber": "Migration to @cucumber/cucumber deferred - significant API changes",
     "dotenv": "Major version 17.x upgrade deferred - API changes",
     "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
-    "eslint-plugin-chai-friendly": "Version 1.x requires ESLint 8+ peer dep alignment",
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
     "eslint-plugin-security": "Version 4.x requires ESLint 9 flat config migration",
     "eslint-plugin-unicorn": "Version 63.x requires ESLint 9 flat config migration",
@@ -14,12 +13,10 @@
     "glob": "Major version 13.x upgrade deferred - API changes",
     "glob-promise": "Major version 6.x upgrade deferred - follows glob major version",
     "got": "Major version 14.x is ESM-only, consider fetch replacement",
-    "http-link-header": "Version 1.1.x available but low priority",
     "json-ptr": "Major version 3.x upgrade deferred - API changes",
     "keyv": "Major version 5.x upgrade deferred - requires storage adapter changes",
     "keyv-file": "Major version 5.x upgrade deferred - requires keyv 5.x",
     "ngrok": "Version 5.x is beta only",
-    "nyc": "Major version 18.x upgrade deferred",
     "uri-template-lite": "Major version 23.x upgrade deferred - API changes",
     "wait-port": "Major version 1.x upgrade deferred"
   }
