@@ -1,9 +1,9 @@
 {
   "exclude": {
+    "@cucumber/cucumber": "Version 8+ removes setDefinitionFunctionWrapper used by @windyroad/cucumber-js-throwables",
     "@opensearch-project/opensearch": "Major version 3.x upgrade deferred - requires API migration",
     "babel-plugin-istanbul": "Major version 7.x upgrade deferred - requires testing infrastructure changes",
     "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
-    "cucumber": "Migration to @cucumber/cucumber deferred - significant API changes",
     "dotenv": "Major version 17.x upgrade deferred - API changes",
     "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
