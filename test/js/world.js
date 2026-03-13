@@ -6,7 +6,6 @@ import {
 import chai from 'chai';
 // import chaiIterator from 'chai-iterator';
 import {
-  // eslint-disable-next-line indent
   //   AfterAll, Before,
   AfterAll,
   BeforeAll,

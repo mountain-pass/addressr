@@ -15,7 +15,7 @@ const ONE_WEEK = ONE_DAY * 7;
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
 var error = debug('error');
-error.log = console.error.bind(console); // eslint-disable-line no-console
+error.log = console.error.bind(console);
 
 let server;
 
@@ -110,7 +110,7 @@ export function startRest2Server() {
     ],
   });
 
-  const index = waycharter.registerResourceType({
+  waycharter.registerResourceType({
     path: '/',
     loader: async () => {
       return {
