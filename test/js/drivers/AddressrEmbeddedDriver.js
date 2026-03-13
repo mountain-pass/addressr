@@ -1,4 +1,3 @@
-import { PendingError } from '@windyroad/cucumber-js-throwables';
 import debug from 'debug';
 import { JsonPointer } from 'json-ptr';
 import Template from 'uri-template-lite';
@@ -66,12 +65,12 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
           } catch (error_) {
             error({ error_ });
             if (error_.code === 'ENOENT') {
-              throw new PendingError('Not Found');
+              return 'pending';
             }
-            throw new PendingError('501');
+            return 'pending';
           }
         }
-        throw new PendingError(link.uri);
+        return 'pending';
       }
     }
   }
@@ -87,7 +86,7 @@ export class AddressrEmbeddedDriver extends AddressrDriver {
       const jsonPtr = JsonPointer.create(url.hash);
       return { json: jsonPtr.get(swaggerDocument) };
     } else {
-      throw new PendingError(url.pathname);
+      return 'pending';
     }
   }
 }

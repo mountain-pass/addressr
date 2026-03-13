@@ -1,15 +1,10 @@
 //const logWhy = require('why-is-node-running');
-import {
-  PendingError,
-  stepDefinitionWrapper,
-} from '@windyroad/cucumber-js-throwables';
 import chai from 'chai';
 // import chaiIterator from 'chai-iterator';
 import {
   //   AfterAll, Before,
   AfterAll,
   BeforeAll,
-  setDefinitionFunctionWrapper,
   setWorldConstructor,
 } from '@cucumber/cucumber';
 import debug from 'debug';
@@ -27,7 +22,6 @@ const fsp = fs.promises;
 const logger = debug('test');
 
 global.expect = chai.expect;
-global.PendingError = PendingError;
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
@@ -43,8 +37,7 @@ async function startExternalServer() {
 
 async function ensureDockerServerStarted() {
   // wait till running
-  throw new PendingError();
-  // return `http://localhost:${serverPort}`;
+  return 'pending';
 }
 
 BeforeAll({ timeout: 240_000 }, async function () {
@@ -75,7 +68,7 @@ BeforeAll({ timeout: 240_000 }, async function () {
       break;
     }
     default: {
-      throw new PendingError(`Need driver for profile: ${TEST_PROFILE}`);
+      return 'pending';
     }
   }
 
@@ -102,8 +95,6 @@ function world({ attach, parameters }) {
 }
 
 setWorldConstructor(world);
-
-setDefinitionFunctionWrapper(stepDefinitionWrapper);
 
 // Before(function (testCase) {
 //   this.testCase = testCase;
