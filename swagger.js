@@ -12,7 +12,7 @@ var app = express();
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
 var error = debug('error');
-error.log = console.error.bind(console); // eslint-disable-line no-console
+error.log = console.error.bind(console);
 
 // swaggerRouter configuration
 var options = {
