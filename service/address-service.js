@@ -5,7 +5,6 @@
 import debug from 'debug';
 import directoryExists from 'directory-exists';
 import fs from 'node:fs';
-import got from 'got';
 import LinkHeader from 'http-link-header';
 import Papa from 'papaparse';
 import path from 'node:path';
@@ -106,18 +105,13 @@ async function fetchPackageData() {
   }
   // cached value was older than one day, so go fetch
   try {
-    const response = await got.get(packageUrl);
-    logger('response.isFromCache', response.fromCache);
-    logger('fresh gnaf package data', {
-      body: response.body,
-      headers: response.headers,
-    });
-    await cache.set(packageUrl, {
-      body: response.body,
-      headers: response.headers,
-    });
-    response.headers['x-cache'] = 'MISS';
-    return response;
+    const fetchResponse = await fetch(packageUrl);
+    const body = await fetchResponse.text();
+    const headers = Object.fromEntries(fetchResponse.headers.entries());
+    logger('fresh gnaf package data', { body, headers });
+    await cache.set(packageUrl, { body, headers });
+    headers['x-cache'] = 'MISS';
+    return { body, headers };
   } catch (error_) {
     // we were unable to fetch. if we have cached value that isn't stale, return in
     if (cachedResponse !== undefined && age < THIRTY_DAYS_MS) {

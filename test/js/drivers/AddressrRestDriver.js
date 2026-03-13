@@ -1,18 +1,23 @@
 //import debug from 'debug';
-import got from 'got';
 import LinkHeader from 'http-link-header';
 import { JsonPointer } from 'json-ptr';
 import { AddressrDriver } from './AddressrDriver';
 //var logger = debug('test');
 
+async function fetchGet(url) {
+  const resp = await fetch(url);
+  const body = await resp.text();
+  const headers = Object.fromEntries(resp.headers.entries());
+  return { body, headers };
+}
+
 export class AddressrRestDriver extends AddressrDriver {
   constructor(url) {
     super();
     this.url = url;
-    this.requester = got.extend({ baseUrl: url });
   }
   async getApiRoot() {
-    const resp = await this.requester.get('/');
+    const resp = await fetchGet(`${this.url}/`);
 
     return {
       link: LinkHeader.parse(resp.headers.link || ''),
@@ -23,7 +28,7 @@ export class AddressrRestDriver extends AddressrDriver {
   }
 
   async getApi(path) {
-    const resp = await this.requester.get(path);
+    const resp = await fetchGet(`${this.url}${path}`);
     return {
       link: LinkHeader.parse(resp.headers.link || ''),
       body: resp.body,
@@ -33,7 +38,7 @@ export class AddressrRestDriver extends AddressrDriver {
   }
 
   async follow(link) {
-    const resp = await this.requester.get(link.uri);
+    const resp = await fetchGet(`${this.url}${link.uri}`);
     if (link.type === undefined || link.type === 'application/json') {
       resp.json = JSON.parse(resp.body);
     }
@@ -44,7 +49,7 @@ export class AddressrRestDriver extends AddressrDriver {
   }
 
   async followVarBase(link) {
-    const resp = await this.requester.get(link['var-base']);
+    const resp = await fetchGet(`${this.url}${link['var-base']}`);
     if (link.type === undefined || link.type === 'application/json') {
       resp.json = JSON.parse(resp.body);
     }

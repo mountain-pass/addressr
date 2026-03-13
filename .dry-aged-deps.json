@@ -9,7 +9,6 @@
     "eslint-plugin-unicorn": "Version 63.x requires ESLint 9 flat config migration",
     "express": "Major version 5.x upgrade deferred - significant API breaking changes",
     "glob": "Version 11+ requires Node >=20, staying on 10.x until engine requirement updated",
-    "got": "Major version 14.x is ESM-only, consider fetch replacement",
     "ngrok": "Version 5.x is beta only"
   }
 }
