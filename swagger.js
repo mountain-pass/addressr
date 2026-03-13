@@ -132,12 +132,6 @@ export function startServer() {
         '📑  Swagger-ui is available on http://localhost:%d/docs',
         serverPort,
       );
-      if (process.env.NODE_ENV !== 'PRODUCTION') {
-        // ngrok.connect(serverPort).then(url => {
-        //   logger('📡  Addressr is listening at %s', url);
-        //   logger('📑  Swagger-ui is available on %s/docs/', url);
-        // });
-      }
     });
     return `http://localhost:${serverPort}`;
   });

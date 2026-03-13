@@ -7,7 +7,6 @@
     "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
     "eslint-plugin-security": "Version 4.x requires ESLint 9 flat config migration",
     "eslint-plugin-unicorn": "Version 63.x requires ESLint 9 flat config migration",
-    "express": "Major version 5.x upgrade deferred - significant API breaking changes",
-    "ngrok": "Version 5.x is beta only"
+    "express": "Major version 5.x upgrade deferred - significant API breaking changes"
   }
 }
