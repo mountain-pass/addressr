@@ -141,7 +141,7 @@ export async function initIndex(esClient, clear, synonyms) {
   }
   const indexGetResult = await esClient.indices.get({
     index: ES_INDEX_NAME,
-    includeDefaults: true,
+    include_defaults: true,
   });
   logger(`indexGetResult:\n${JSON.stringify(indexGetResult, undefined, 2)}`);
 }

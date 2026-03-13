@@ -1,7 +1,6 @@
 {
   "exclude": {
     "@eslint/js": "Version 10.x requires ESLint 10, blocked by @babel/eslint-parser peer dependency (eslint ^9)",
-    "@opensearch-project/opensearch": "Major version 3.x upgrade deferred - requires API migration",
     "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
     "express": "Major version 5.x upgrade deferred - significant API breaking changes"
   }
