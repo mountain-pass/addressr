@@ -3,10 +3,6 @@
     "@cucumber/cucumber": "Version 8+ removes setDefinitionFunctionWrapper used by @windyroad/cucumber-js-throwables",
     "@opensearch-project/opensearch": "Major version 3.x upgrade deferred - requires API migration",
     "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
-    "eslint-config-prettier": "Version 10.x requires ESLint 9 flat config migration",
-    "eslint-plugin-promise": "Version 7.x requires ESLint 9 flat config migration",
-    "eslint-plugin-security": "Version 4.x requires ESLint 9 flat config migration",
-    "eslint-plugin-unicorn": "Version 63.x requires ESLint 9 flat config migration",
     "express": "Major version 5.x upgrade deferred - significant API breaking changes"
   }
 }
