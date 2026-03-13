@@ -12,7 +12,6 @@ const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD || undefined;
 const ELASTIC_PROTOCOL = process.env.ELASTIC_PROTOCOL || 'http';
 
 export async function dropIndex(esClient) {
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   let exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   if (exists.body) {
     const deleteIndexResult = await esClient.indices.delete({
@@ -21,7 +20,7 @@ export async function dropIndex(esClient) {
     logger({ deleteIndexResult });
   }
   logger('checking if index exists');
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
+
   exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   logger('index exists:', exists);
 }
@@ -31,7 +30,7 @@ export async function initIndex(esClient, clear, synonyms) {
     await dropIndex(esClient);
   }
   logger('checking if index exists');
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
+
   const exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   logger('index exists:', exists.body);
   const indexBody = {
@@ -123,7 +122,7 @@ export async function initIndex(esClient, clear, synonyms) {
       body: indexBody.mappings,
     });
     logger({ indexPutMappingResult });
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
+
     const indexOpenResult = await esClient.indices.open({
       index: ES_INDEX_NAME,
     });
@@ -154,7 +153,7 @@ export async function esConnect(
   timeout = 0,
 ) {
   // we keep trying to connect, no matter what
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     logger(`trying to reach elastic search on ${eshost}:${esport}...`);
     try {
@@ -167,7 +166,6 @@ export async function esConnect(
       if (open) {
         logger(`...${eshost}:${esport} is reachable`);
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           try {
             const node = ELASTIC_USERNAME

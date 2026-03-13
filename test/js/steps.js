@@ -1,6 +1,6 @@
-/* eslint-disable eslint-comments/disable-enable-pair */
+/* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
 /* eslint-disable security/detect-object-injection */
-/* eslint-disable security/detect-non-literal-fs-filename */
+
 import { expect } from 'chai';
 import { Given, Then, When } from 'cucumber';
 import debug from 'debug';

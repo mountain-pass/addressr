@@ -1,4 +1,4 @@
-/* eslint-disable eslint-comments/disable-enable-pair */
+/* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
 /* eslint-disable security/detect-non-literal-regexp */
 /* eslint-disable security/detect-object-injection */
 /* eslint-disable security/detect-non-literal-fs-filename */
@@ -1032,7 +1032,6 @@ async function sendIndexRequest(
       // parser.pause();
       // paused = true;
       await new Promise((resolve) => {
-        // eslint-disable-next-line no-undef
         setTimeout(() => {
           resolve();
         }, backoff);
