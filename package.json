@@ -13,7 +13,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "config": {
     "localport": "6060",
@@ -159,7 +159,7 @@
     "directory-exists": "^2.0.1",
     "dotenv": "^17.3.1",
     "express": "^4.17.1",
-    "glob": "^10.5.0",
+    "glob": "^13.0.6",
     "http-link-header": "^1.1.3",
     "js-yaml": "^4.1.1",
     "json-ptr": "^3.1.1",
