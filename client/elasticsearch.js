@@ -158,7 +158,7 @@ export async function esConnect(
   while (true) {
     logger(`trying to reach elastic search on ${eshost}:${esport}...`);
     try {
-      const open = await waitPort({
+      const { open } = await waitPort({
         host: eshost,
         port: esport,
         interval,
