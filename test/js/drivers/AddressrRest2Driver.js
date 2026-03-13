@@ -1,8 +1,4 @@
 //import debug from 'debug';
-import got from 'got';
-import LinkHeader from 'http-link-header';
-import { JsonPointer } from 'json-ptr';
-import { AddressrDriver } from './AddressrDriver';
 //var logger = debug('test');
 import { waychaser } from '@mountainpass/waychaser';
 

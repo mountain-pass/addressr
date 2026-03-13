@@ -50,6 +50,10 @@
     "promise/always-return": "warn",
     "promise/catch-or-return": "warn",
     "n/no-unsupported-features/es-syntax": "off",
+    "n/no-unsupported-features/node-builtins": [
+      "error",
+      { "ignores": ["fetch"] }
+    ],
     "n/no-deprecated-api": "warn",
     "no-process-exit": "warn",
     "complexity": "warn",
