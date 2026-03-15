@@ -45,6 +45,7 @@ export class AddressrRestDriver extends AddressrDriver {
     return {
       link: LinkHeader.parse(resp.headers.link || ''),
       body: resp.body,
+      statusCode: resp.statusCode,
       linkTemplate: decodeLinkTemplateAttributes(
         LinkHeader.parse(resp.headers['link-template'] || ''),
       ),
