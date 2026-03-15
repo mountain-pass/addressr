@@ -193,7 +193,6 @@
     "@istanbuljs/nyc-config-babel": "^3.0.0",
     "@mountainpass/waychaser": "^5.0.11",
     "babel-plugin-istanbul": "^7.0.1",
-    "babel-preset-env": "^1.7.0",
     "chai": "^4.2.0",
     "dry-aged-deps": "^2.6.0",
     "eslint": "^9.39.4",
