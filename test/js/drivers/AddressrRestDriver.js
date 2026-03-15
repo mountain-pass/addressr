@@ -19,7 +19,7 @@ async function fetchGet(url) {
   const resp = await fetch(url);
   const body = await resp.text();
   const headers = Object.fromEntries(resp.headers.entries());
-  return { body, headers };
+  return { body, headers, statusCode: resp.status };
 }
 
 export class AddressrRestDriver extends AddressrDriver {
