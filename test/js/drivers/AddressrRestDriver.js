@@ -4,11 +4,22 @@ import { JsonPointer } from 'json-ptr';
 import { AddressrDriver } from './AddressrDriver';
 //var logger = debug('test');
 
+// http-link-header encodes attribute values in toString() but does not
+// decode them in parse(), so we need to manually decode var-base.
+function decodeLinkTemplateAttributes(linkHeader) {
+  for (const reference of linkHeader.refs) {
+    if (reference['var-base']) {
+      reference['var-base'] = decodeURIComponent(reference['var-base']);
+    }
+  }
+  return linkHeader;
+}
+
 async function fetchGet(url) {
   const resp = await fetch(url);
   const body = await resp.text();
   const headers = Object.fromEntries(resp.headers.entries());
-  return { body, headers };
+  return { body, headers, statusCode: resp.status };
 }
 
 export class AddressrRestDriver extends AddressrDriver {
@@ -22,7 +33,9 @@ export class AddressrRestDriver extends AddressrDriver {
     return {
       link: LinkHeader.parse(resp.headers.link || ''),
       body: resp.body,
-      linkTemplate: LinkHeader.parse(resp.headers['link-template'] || ''),
+      linkTemplate: decodeLinkTemplateAttributes(
+        LinkHeader.parse(resp.headers['link-template'] || ''),
+      ),
       headers: resp.headers,
     };
   }
@@ -32,7 +45,10 @@ export class AddressrRestDriver extends AddressrDriver {
     return {
       link: LinkHeader.parse(resp.headers.link || ''),
       body: resp.body,
-      linkTemplate: LinkHeader.parse(resp.headers['link-template'] || ''),
+      statusCode: resp.statusCode,
+      linkTemplate: decodeLinkTemplateAttributes(
+        LinkHeader.parse(resp.headers['link-template'] || ''),
+      ),
       headers: resp.headers,
     };
   }
@@ -43,7 +59,9 @@ export class AddressrRestDriver extends AddressrDriver {
       resp.json = JSON.parse(resp.body);
     }
     resp.link = LinkHeader.parse(resp.headers.link || '');
-    resp.linkTemplate = LinkHeader.parse(resp.headers['link-template'] || '');
+    resp.linkTemplate = decodeLinkTemplateAttributes(
+      LinkHeader.parse(resp.headers['link-template'] || ''),
+    );
 
     return resp;
   }
