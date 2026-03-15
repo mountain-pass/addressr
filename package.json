@@ -229,7 +229,6 @@
   "homepage": "https://addressr.io",
   "lint-staged": {
     "*.{js,jsx}": "eslint --fix",
-    "*.{json,css,md}": "prettier --write",
-    ".circleci/config.yml": "circleci config validate"
+    "*.{json,css,md}": "prettier --write"
   }
 }
