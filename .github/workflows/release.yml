@@ -25,8 +25,7 @@ jobs:
       - name: Check for mature dependency updates
         run: npx dry-aged-deps --check
 
-  build:
-    if: github.ref != 'refs/heads/master'
+  build-and-test:
     runs-on: ubuntu-latest
     services:
       opensearch:
@@ -53,10 +52,11 @@ jobs:
       - name: Build
         run: npm run build
       - name: Run tests
-        run: npm run test:nodejs:nogeo
+        run: npm run test:nogeo
 
   release:
     if: github.ref == 'refs/heads/master'
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Setup Node.js
@@ -71,7 +71,6 @@ jobs:
         id: changesets
         uses: changesets/action@v1.4.5
         with:
-          # these commands build & tests as well
           publish: npm run turbo:ci:publish
           version: npm run turbo:ci:version
           commit: 'chore: release'
