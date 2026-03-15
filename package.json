@@ -207,7 +207,6 @@
     "genversion": "^3.0.0",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
-    "imagemin-lint-staged": "^0.5.1",
     "istanbul": "^0.4.5",
     "istanbul-middleware": "^0.2.2",
     "license-checker": "^25.0.1",
@@ -231,7 +230,6 @@
   "lint-staged": {
     "*.{js,jsx}": "eslint --fix",
     "*.{json,css,md}": "prettier --write",
-    "*.{png,jpeg,jpg,gif,svg}": "imagemin-lint-staged",
     ".circleci/config.yml": "circleci config validate"
   }
 }
