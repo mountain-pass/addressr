@@ -1,0 +1,1582 @@
+{
+  "controls": [
+    {
+      "control_id": "C-AR0-RESIDUAL-REVIEW-DUE-DATE-GATE",
+      "description": "Governance gate fails when any agentic residual-risk Next review date is overdue or malformed.",
+      "risks": [
+        "AR0",
+        "AR6",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "AGENTIC_RISK_REGISTER.md",
+        "governance/budget.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Governance Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for residual review-date freshness checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "AGENTIC_RISK_REGISTER.md",
+        "governance/budget.json"
+      ]
+    },
+    {
+      "control_id": "C-AR0-RISK-APPETITE-GATE",
+      "description": "Governance gate fails when business risk appetite policy is missing, overdue, malformed, or missing mappings for high-consequence residual risks.",
+      "risks": [
+        "AR0",
+        "AR6",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "governance/risk-appetite-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Governance Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for appetite policy validity checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "governance/risk-appetite-policy.json"
+      ]
+    },
+    {
+      "control_id": "C-AR1-C4-ARCHITECTURE-DRIFT-GATE",
+      "description": "Generate architecture artifacts from code and enforce architecture-conformance policy rules (forbidden/required dependencies) via portable Claude skills (/c4, /c4-check) and architect agent advisory.",
+      "risks": [
+        "AR1",
+        "R15"
+      ],
+      "enforcement_locations": [
+        ".claude/skills/c4/scripts/c4-lib.mjs",
+        ".claude/skills/c4/scripts/c4-generate.mjs",
+        ".claude/skills/c4-check/scripts/c4-check.mjs",
+        "governance/architecture-conformance-policy.json",
+        "docs/architecture/C4_MODEL.md",
+        ".claude/agents/architect.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-10",
+      "effectiveness_kpi": "architecture_policy_violation_count and pass_rate for conformance checks",
+      "effectiveness_target": "architecture_policy_violation_count == 0",
+      "evidence_locations": [
+        ".claude/skills/c4/scripts/c4-lib.mjs",
+        ".claude/skills/c4-check/scripts/c4-check.mjs",
+        "governance/architecture-conformance-policy.json",
+        "docs/architecture/C4_MODEL.md"
+      ]
+    },
+    {
+      "control_id": "C-AR1-DECISION-COMPLETENESS",
+      "description": "Fail when MADR required sections are missing.",
+      "risks": [
+        "AR4"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for structural governance checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR10-SECRET-LEAK-PREVENTION",
+      "description": "Prevent auth/secrets leakage via staged-file checks, staged diff secret pattern checks, CI secret scanning, and tracked-secret-file blocking.",
+      "risks": [
+        "AR2",
+        "AR6",
+        "AR10",
+        "R10",
+        "R22"
+      ],
+      "enforcement_locations": [
+        ".gitignore",
+        ".gitleaks.toml",
+        "scripts/secrets-check.ts",
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "scripts/governance-gate.ts",
+        "governance/budget.json",
+        "package.json"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        ".gitignore",
+        ".gitleaks.toml",
+        "scripts/secrets-check.ts"
+      ],
+      "control_backup_owner": "Engineering Lead"
+    },
+    {
+      "control_id": "C-AR10-RUNTIME-ENDPOINT-AUTH-THROTTLE",
+      "description": "Runtime service enforces Google OIDC auth on projection requests when enabled (or explicit auth-off mode by environment), plus per-client request throttling and bounded request-body size to reduce exposed endpoint abuse risk.",
+      "risks": [
+        "AR2",
+        "AR10",
+        "R10",
+        "R12"
+      ],
+      "enforcement_locations": [
+        "src/hooks.server.ts",
+        "src/lib/server/runtime-protection.ts",
+        "scripts/live-ops-health-gate.ts",
+        "governance/live-ops-policy.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for unauthorized/abusive projection request blocking",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "src/hooks.server.ts",
+        "src/lib/server/runtime-protection.ts",
+        "scripts/live-ops-health-gate.ts"
+      ],
+      "control_backup_owner": "Engineering Lead"
+    },
+    {
+      "control_id": "C-AR11-AR14-RESIDUAL-TELEMETRY-GATE",
+      "description": "Trend-based telemetry gate computes rolling-window in-flight overlap block events from workflow evidence and enforces AR14 thresholds.",
+      "risks": [
+        "AR14",
+        "AR0",
+        "R26",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/governance-nightly.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Weekly",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "block_rate and false_negative_rate for AR14 threshold detection",
+      "effectiveness_target": "block_rate <= 0.30 and false_negative_rate == 0",
+      "evidence_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json"
+      ]
+    },
+    {
+      "control_id": "C-AR11-LOCAL-LINT-GATE",
+      "description": "Pre-push hook runs eslint locally so lint errors are caught before push, preventing pipeline failures and trunk breakage from code style issues.",
+      "risks": [
+        "AR2",
+        "AR11",
+        "AR14",
+        "R15"
+      ],
+      "enforcement_locations": [
+        ".githooks/pre-push",
+        "tests/governance-gate.test.ts",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and feedback_latency_seconds for local lint gate",
+      "effectiveness_target": "pass_rate >= 0.95 and feedback_latency_seconds <= 10",
+      "evidence_locations": [
+        ".githooks/pre-push",
+        "tests/governance-gate.test.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR11-RED-TRUNK-RECOVERY-GATE",
+      "description": "When trunk is red, block non-pipeline pushes and provide explicit recovery instructions for developers.",
+      "risks": [
+        "AR2",
+        "AR9",
+        "AR11",
+        "AR20",
+        "R23",
+        "R31"
+      ],
+      "enforcement_locations": [
+        "scripts/red-trunk-gate.ts",
+        ".githooks/pre-push",
+        "package.json",
+        "docs/RED_TRUNK_PLAYBOOK.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "block_rate and mean_runtime_seconds for flow-protection gate",
+      "effectiveness_target": "block_rate <= 0.30 and mean_runtime_seconds <= 30",
+      "evidence_locations": [
+        "scripts/red-trunk-gate.ts",
+        ".githooks/pre-push",
+        "package.json"
+      ]
+    },
+    {
+      "control_id": "C-AR12-ARTIFACT-SIGNATURE-PROVENANCE-VERIFY",
+      "description": "Images are keylessly signed and signature provenance is verified against GitHub OIDC issuer/identity before each deployment.",
+      "risks": [
+        "AR12",
+        "AR16",
+        "AR17",
+        "R10",
+        "R24",
+        "R28"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR12-CLOUDRUN-DEPLOY-VERIFY",
+      "description": "Deploy to Cloud Run and verify service readiness on test/release/prod environments before release progression.",
+      "risks": [
+        "AR2",
+        "AR12",
+        "AR16",
+        "R24",
+        "R28"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "docs/GCP_SETUP.md"
+      ]
+    },
+    {
+      "control_id": "C-AR12-DEPLOYED-BUILD-SHA-VERIFY",
+      "description": "Verify release/prod service /health build SHA equals workflow commit SHA after deploy to prevent wrong-revision validation.",
+      "risks": [
+        "AR12",
+        "AR15",
+        "AR17",
+        "R24"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        "src/hooks.server.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        "src/hooks.server.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR12-IMMUTABLE-ARTIFACT-PROMOTION",
+      "description": "Publish pipeline builds and signs off one immutable image digest, then deploys that exact digest to release and prod.",
+      "risks": [
+        "AR12",
+        "AR15",
+        "AR17",
+        "R24"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR12-LIVE-OPS-SYNTHETIC-MONITOR",
+      "description": "Scheduled synthetic monitoring for release/prod executes health plus deterministic end-to-end projection transaction checks and enforces failure thresholds.",
+      "risks": [
+        "AR12",
+        "R12",
+        "R16",
+        "R27",
+        "R13",
+        "R7",
+        "R34",
+        "R36"
+      ],
+      "enforcement_locations": [
+        "scripts/live-ops-health-gate.ts",
+        "governance/live-ops-policy.json",
+        "docs/LIVE_OPS_ESCALATION.md"
+      ],
+      "control_owner": "Ops Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count of live monitor threshold breaches and pass_rate of live-ops-health runs",
+      "effectiveness_target": "consecutive_failures < 2 and failures_in_window <= 4",
+      "evidence_locations": [
+        "scripts/live-ops-health-gate.ts",
+        "governance/live-ops-policy.json",
+        "docs/LIVE_OPS_ESCALATION.md"
+      ],
+      "control_backup_owner": "Engineering Lead"
+    },
+    {
+      "control_id": "C-AR12-PUBLISH-SINGLE-FLIGHT",
+      "description": "Serialize publish branch promotions so only one publish pipeline run can mutate release/prod environments at a time.",
+      "risks": [
+        "AR12",
+        "AR14",
+        "AR17",
+        "R24"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR12-RELEASE-READINESS-GATE",
+      "description": "Release submission is blocked unless all required quality/security workflows are green for the exact source SHA.",
+      "risks": [
+        "AR2",
+        "AR11",
+        "AR12",
+        "R24"
+      ],
+      "enforcement_locations": [
+        ".changeset/config.json",
+        ".changeset/README.md",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".changeset/config.json",
+        ".changeset/README.md",
+        ".github/workflows/release.yml"
+      ],
+      "control_backup_owner": "Product Lead"
+    },
+    {
+      "control_id": "C-AR12-SERVER-SIDE-RULESETS",
+      "description": "GitHub repository rulesets enforce non-destructive main updates and PR-reviewed publish updates with strict required check contexts, including release PR preview verification before merge.",
+      "risks": [
+        "AR11",
+        "AR12",
+        "AR14",
+        "AR20",
+        "R24",
+        "R31"
+      ],
+      "enforcement_locations": [
+        "docs/GITHUB_RULESETS.md",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/release-pr-preview.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "docs/GITHUB_RULESETS.md",
+        ".github/workflows/release.yml",
+        ".github/workflows/release-pr-preview.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR12-RELEASE-PREVIEW-SMOKE-TEST",
+      "description": "Release PR preview verification includes functional smoke test: root page HTML check and health endpoint verification (DB connectivity + synthetic projection probe).",
+      "risks": [
+        "AR12",
+        "R12",
+        "R13",
+        "R16",
+        "R27"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release-pr-preview.yml",
+        "governance/live-ops-policy.json",
+        "tests/governance-gate.test.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate of release preview smoke tests",
+      "effectiveness_target": "pass_rate >= 0.95",
+      "evidence_locations": [
+        ".github/workflows/release-pr-preview.yml",
+        "tests/governance-gate.test.ts"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR13-CI-DURATION-SLA-TELEMETRY-GATE",
+      "description": "Trend-based telemetry gate enforces AR13 fanout duration SLA by failing on configured consecutive release duration breaches.",
+      "risks": [
+        "AR13",
+        "AR7",
+        "R25",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Weekly",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "mean_runtime_seconds and breach_streak for release feedback loop",
+      "effectiveness_target": "mean_runtime_seconds <= 1200 and breach_streak < 3",
+      "evidence_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR13-CI-PARALLEL-CHECK-FANOUT",
+      "description": "Run independent CI checks in parallel and gate build/release steps on all fanout jobs succeeding.",
+      "risks": [
+        "AR2",
+        "AR7",
+        "AR13",
+        "R7",
+        "R25"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "block_rate and mean_runtime_seconds for flow-protection gate",
+      "effectiveness_target": "block_rate <= 0.30 and mean_runtime_seconds <= 30",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR14-INFLIGHT-PIPELINE-GATE",
+      "description": "Block pushes to main/master when the required trunk pipeline is still queued or in progress.",
+      "risks": [
+        "AR2",
+        "AR11",
+        "AR14",
+        "AR20",
+        "R26",
+        "R31"
+      ],
+      "enforcement_locations": [
+        "scripts/inflight-pipeline-gate.ts",
+        ".githooks/pre-push",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/inflight-pipeline-gate.ts",
+        ".githooks/pre-push",
+        "package.json"
+      ]
+    },
+    {
+      "control_id": "C-AR15-A11Y-WCAG-GATE",
+      "description": "Run deterministic WCAG 2 A/AA accessibility smoke checks (axe-core) against the rendered UI and fail on violations before build/release progression.",
+      "risks": [
+        "AR15",
+        "R13",
+        "R16",
+        "R32",
+        "R37"
+      ],
+      "enforcement_locations": [
+        "scripts/a11y-gate.ts",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "RISK_REGISTER.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Product Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-19",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic WCAG A/AA accessibility checks",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/a11y-gate.ts",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR15-A11Y-CONTRAST-GATE",
+      "description": "Run rendered-pixel contrast checks (axe-core color-contrast rule via Playwright headless Chromium) against the UI. Catches WCAG 1.4.3 and 1.4.11 failures that JSDOM-based checks cannot detect because they require a real rendering engine to compute inherited CSS color values.",
+      "risks": [
+        "AR15",
+        "R13",
+        "R16",
+        "R32",
+        "R37"
+      ],
+      "enforcement_locations": [
+        "scripts/a11y-contrast-gate.ts",
+        ".github/workflows/release.yml",
+        "package.json"
+      ],
+      "control_owner": "Product Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-19",
+      "effectiveness_kpi": "pass_rate for rendered contrast checks",
+      "effectiveness_target": "pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/a11y-contrast-gate.ts",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR15-APP-CORRECTNESS-UNIT-GATE",
+      "description": "Run deterministic application unit tests in main and publish pipelines before release progression.",
+      "risks": [
+        "AR2",
+        "AR12",
+        "AR15",
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R8",
+        "R12",
+        "R13",
+        "R16",
+        "R18",
+        "R27"
+      ],
+      "enforcement_locations": [
+        "package.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "src/lib/domain/projection.test.ts",
+        "src/lib/input/parse-utterance.test.ts",
+        "src/lib/domain/reconciliation.test.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "coverage_pct and false_negative_rate on changed app paths",
+      "effectiveness_target": "coverage_pct >= 0.80 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "package.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_backup_owner": "Product Lead"
+    },
+    {
+      "control_id": "C-AR15-CHANGED-LINES-COVERAGE",
+      "description": "Changed executable lines in app source must satisfy minimum coverage threshold from policy.",
+      "risks": [
+        "AR2",
+        "AR15",
+        "R16",
+        "R27"
+      ],
+      "enforcement_locations": [
+        "scripts/app-coverage-gate.ts",
+        "scripts/app-diff.ts",
+        "governance/app-coverage-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "coverage_pct and false_negative_rate on changed app paths",
+      "effectiveness_target": "coverage_pct >= 0.80 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/app-coverage-gate.ts",
+        "scripts/app-diff.ts",
+        "governance/app-coverage-policy.json"
+      ]
+    },
+    {
+      "control_id": "C-AR15-EVENT-SCHEMA-VALIDATION",
+      "description": "Projection path validates event shape before applying event-sourced transformations.",
+      "risks": [
+        "AR2",
+        "AR15",
+        "R2",
+        "R3",
+        "R4",
+        "R9",
+        "R27",
+        "R35"
+      ],
+      "enforcement_locations": [
+        "src/lib/domain/events.ts",
+        "src/lib/domain/projection.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "src/lib/domain/events.ts",
+        "src/lib/domain/projection.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR15-LIVE-PERFORMANCE-GATE",
+      "description": "Run deterministic parse+projection throughput and p95 latency benchmark gate for live-scoring utterance workloads, with fresh product-validity drill evidence for game-day trust signals.",
+      "risks": [
+        "AR15",
+        "R1",
+        "R13",
+        "R18",
+        "R33",
+        "R36",
+        "R7",
+        "R12",
+        "R16",
+        "R27"
+      ],
+      "enforcement_locations": [
+        "scripts/live-performance-gate.ts",
+        "governance/live-performance-policy.json",
+        "governance/product-validity-drill-policy.json",
+        "governance/maintenance-log.jsonl",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and mean_runtime_seconds for deterministic live-scoring performance gate",
+      "effectiveness_target": "pass_rate >= 0.95 and mean_runtime_seconds <= 180",
+      "evidence_locations": [
+        "scripts/live-performance-gate.ts",
+        "governance/live-performance-policy.json",
+        "governance/product-validity-drill-policy.json",
+        "governance/maintenance-log.jsonl",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_backup_owner": "Product Lead"
+    },
+    {
+      "control_id": "C-AR15-MIGRATION-CONTRACT-GATE",
+      "description": "Run deterministic migration contract fixtures to verify legacy event-to-stat mapping and jersey canonicalization behavior.",
+      "risks": [
+        "AR15",
+        "R4",
+        "R6",
+        "R9",
+        "R27",
+        "R17"
+      ],
+      "enforcement_locations": [
+        "scripts/migration-contract-gate.ts",
+        "src/lib/domain/migration.ts",
+        "governance/migration-contract-fixtures.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Data Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "fixture_pass_rate and mapping_false_negative_rate for migration contract tests",
+      "effectiveness_target": "fixture_pass_rate >= 0.95 and mapping_false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/migration-contract-gate.ts",
+        "src/lib/domain/migration.ts",
+        "governance/migration-contract-fixtures.json"
+      ]
+    },
+    {
+      "control_id": "C-AR15-PER-FILE-COVERAGE-RATCHET",
+      "description": "Touched app source files cannot regress below stored per-file coverage baseline.",
+      "risks": [
+        "AR0",
+        "AR2",
+        "AR15",
+        "R16",
+        "R27"
+      ],
+      "enforcement_locations": [
+        "scripts/app-coverage-gate.ts",
+        "scripts/update-app-coverage-baseline.ts",
+        "governance/app-coverage-baseline.json",
+        "governance/app-coverage-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "coverage_pct and false_negative_rate on changed app paths",
+      "effectiveness_target": "coverage_pct >= 0.80 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/app-coverage-gate.ts",
+        "scripts/update-app-coverage-baseline.ts",
+        "governance/app-coverage-baseline.json"
+      ]
+    },
+    {
+      "control_id": "C-AR15-ROSTER-IDENTITY-COLLISION-GATE",
+      "description": "Run deterministic roster assignment overlap checks to prevent same-jersey identity collisions across active intervals.",
+      "risks": [
+        "AR15",
+        "R5",
+        "R6",
+        "R13",
+        "R27"
+      ],
+      "enforcement_locations": [
+        "scripts/roster-identity-gate.ts",
+        "src/lib/domain/roster.ts",
+        "governance/roster-identity-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Data Steward",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "collision_detection_rate and false_negative_rate for roster identity overlap checks",
+      "effectiveness_target": "collision_detection_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/roster-identity-gate.ts",
+        "src/lib/domain/roster.ts",
+        "governance/roster-identity-policy.json"
+      ]
+    },
+    {
+      "control_id": "C-AR15-TEST-OBLIGATION-GATE",
+      "description": "App source changes must include changed co-located tests in the same module directory.",
+      "risks": [
+        "AR0",
+        "AR2",
+        "AR15",
+        "R15",
+        "R16",
+        "R27",
+        "R8"
+      ],
+      "enforcement_locations": [
+        "scripts/app-test-obligation-gate.ts",
+        "scripts/app-diff.ts",
+        ".githooks/pre-push",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "coverage_pct and false_negative_rate on changed app paths",
+      "effectiveness_target": "coverage_pct >= 0.80 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/app-test-obligation-gate.ts",
+        "scripts/app-diff.ts",
+        ".githooks/pre-push"
+      ]
+    },
+    {
+      "control_id": "C-AR15-WORKBOOK-PARITY-GATE",
+      "description": "Run deterministic certified workbook parity checks with a fast smoke profile on top metrics before full fixture parity and release progression.",
+      "risks": [
+        "AR15",
+        "R1",
+        "R6",
+        "R18",
+        "R27",
+        "R17"
+      ],
+      "enforcement_locations": [
+        "scripts/workbook-parity-gate.ts",
+        "governance/workbook-parity-fixtures.json",
+        "governance/workbook-parity-smoke-policy.json",
+        "Crusaders U18M2 2026 Stats.xlsx",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Product Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "parity_pass_rate and false_negative_rate on certified workbook fixture metrics",
+      "effectiveness_target": "parity_pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/workbook-parity-gate.ts",
+        "governance/workbook-parity-fixtures.json",
+        "governance/workbook-parity-smoke-policy.json",
+        "Crusaders U18M2 2026 Stats.xlsx"
+      ]
+    },
+    {
+      "control_id": "C-AR16-CI-LEAST-PRIVILEGE-PERMISSIONS",
+      "description": "Workflow token permissions default to read-only and are elevated only per job where mutation or OIDC is required.",
+      "risks": [
+        "AR10",
+        "AR16",
+        "AR17",
+        "R28"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR16-GCP-PROJECT-ISOLATION",
+      "description": "Use a dedicated GCP project for addressr workloads and enforce repo-committed cloud policy (project id/number/region) parity with GitHub vars and live GCP metadata.",
+      "risks": [
+        "AR12",
+        "AR16",
+        "R28"
+      ],
+      "enforcement_locations": [
+        "governance/cloud-policy.json",
+        "scripts/cloud-policy-gate.ts",
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "governance/cloud-policy.json",
+        "scripts/cloud-policy-gate.ts"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR16-KEYLESS-OIDC-DEPLOY-AUTH",
+      "description": "GitHub Actions deploy path uses Workload Identity Federation with short-lived credentials and no static JSON key.",
+      "risks": [
+        "AR10",
+        "AR12",
+        "AR16",
+        "R28",
+        "R22"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "docs/GCP_SETUP.md"
+      ]
+    },
+    {
+      "control_id": "C-AR17-CLOUD-GOVERNANCE-AUDIT",
+      "description": "Scheduled cloud audit checks IAM/OIDC conformance and fails on Cloud Run mutations without approved GitHub OIDC provenance claims (not principal email alone).",
+      "risks": [
+        "AR12",
+        "AR16",
+        "AR17",
+        "R29"
+      ],
+      "enforcement_locations": [
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR17-CLOUD-SERVICE-CONFORMANCE",
+      "description": "After each deploy, verify service readiness plus ingress, invoker IAM, and runtime service account conformance before promotion continues.",
+      "risks": [
+        "AR12",
+        "AR16",
+        "AR17",
+        "R29"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR17-IAM-PRIVILEGE-ALLOWLIST",
+      "description": "Scheduled cloud governance audit enforces privileged IAM role allowlists so only deploy SA and approved break-glass owner retain mutation capability.",
+      "risks": [
+        "AR16",
+        "AR17",
+        "AR18",
+        "R29",
+        "R30"
+      ],
+      "enforcement_locations": [
+        "docs/BREAK_GLASS_RUNBOOK.md",
+        "docs/GCP_SETUP.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "false_positive_rate and false_negative_rate for security policy violations",
+      "effectiveness_target": "false_positive_rate <= 0.10 and false_negative_rate == 0",
+      "evidence_locations": [
+        "docs/BREAK_GLASS_RUNBOOK.md",
+        "docs/GCP_SETUP.md"
+      ]
+    },
+    {
+      "control_id": "C-AR17-WORKFLOW-DEPLOY-PATH-GATE",
+      "description": "Block deploy-path drift by structurally parsing workflow YAML and enforcing deploy/IAM mutation policy at run-step level in approved workflows only.",
+      "risks": [
+        "AR12",
+        "AR16",
+        "AR17",
+        "R29"
+      ],
+      "enforcement_locations": [
+        "scripts/cloud-policy-gate.ts",
+        "package.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/cloud-policy-gate.ts",
+        "package.json",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR18-BREAKGLASS-RUNBOOK",
+      "description": "Break-glass runbook mandates temporary conditional grants, immediate privilege removal, and same-day reconciliation evidence with schema/timeliness enforced in maintenance log.",
+      "risks": [
+        "AR0",
+        "AR11",
+        "AR17",
+        "AR18",
+        "R30"
+      ],
+      "enforcement_locations": [
+        "docs/BREAK_GLASS_RUNBOOK.md",
+        "governance/maintenance-log.jsonl",
+        "governance/budget.json",
+        "scripts/governance-gate.ts",
+        "docs/RED_TRUNK_PLAYBOOK.md",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Security Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "docs/BREAK_GLASS_RUNBOOK.md",
+        "governance/maintenance-log.jsonl",
+        "governance/budget.json"
+      ],
+      "control_backup_owner": "Ops Lead"
+    },
+    {
+      "control_id": "C-AR2-CI-SUPPLY-CHAIN-HARDENING",
+      "description": "Pin third-party actions to immutable commit SHAs, use npm ci for immutable install resolution, and verify downloaded security-tool binaries with published checksums.",
+      "risks": [
+        "AR2",
+        "AR8",
+        "AR10",
+        "AR16",
+        "R10",
+        "R28",
+        "R20"
+      ],
+      "enforcement_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR2-LOCAL-CONTROLS-DOCTOR",
+      "description": "Local controls doctor validates Node/toolchain/hook operability and one-command bootstrap restores the local gate stack to a known-good state.",
+      "risks": [
+        "AR2",
+        "AR9",
+        "AR19",
+        "R21"
+      ],
+      "enforcement_locations": [
+        "scripts/controls-doctor.ts",
+        "scripts/bootstrap-local.sh",
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
+        "package.json",
+        "AGENTS.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and mean_runtime_seconds for local-control operability checks",
+      "effectiveness_target": "pass_rate >= 0.95 and mean_runtime_seconds <= 20",
+      "evidence_locations": [
+        "scripts/controls-doctor.ts",
+        "scripts/bootstrap-local.sh",
+        ".githooks/pre-commit",
+        ".githooks/pre-push"
+      ]
+    },
+    {
+      "control_id": "C-AR2-LOCAL-RUNTIME-PINNING",
+      "description": "Pin local developer Node runtime to a known major version and block local gate execution on mismatch before tsx/esbuild-backed controls run.",
+      "risks": [
+        "AR2",
+        "AR9"
+      ],
+      "enforcement_locations": [
+        "package.json",
+        ".nvmrc",
+        ".node-version",
+        "scripts/runtime-gate.js",
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
+        "tests/governance-gate.test.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "package.json",
+        ".nvmrc",
+        ".node-version"
+      ]
+    },
+    {
+      "control_id": "C-AR2-TEST-SOURCE-RATIO",
+      "description": "Fail when test-to-source LOC ratio is below floor.",
+      "risks": [
+        "AR0",
+        "AR2"
+      ],
+      "enforcement_locations": [
+        "governance/budget.json",
+        "scripts/governance-gate.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "coverage_pct and false_negative_rate on changed app paths",
+      "effectiveness_target": "coverage_pct >= 0.80 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "governance/budget.json",
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR20-FLOW-TELEMETRY-GATE",
+      "description": "Residual-risk telemetry gate enforces AR20 branch-divergence thresholds (PR age and changed-lines) aligned to trunk-based DORA flow risk, surfacing Gall's curse signals when integration delay and batch size increase.",
+      "risks": [
+        "AR20",
+        "R31",
+        "R19",
+        "R14"
+      ],
+      "enforcement_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count of AR20 threshold breaches and pass_rate of residual-risk telemetry runs",
+      "effectiveness_target": "prs_over_age == 0 and prs_over_lines == 0",
+      "evidence_locations": [
+        "scripts/residual-risk-gate.ts",
+        "governance/residual-risk-policy.json"
+      ]
+    },
+    {
+      "control_id": "C-AR3-ESLINT-WARNING-COMMENTS",
+      "description": "Block TODO/FIXME/HACK/XXX markers in code files.",
+      "risks": [
+        "AR3"
+      ],
+      "enforcement_locations": [
+        "eslint.config.js",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "eslint.config.js",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR4-STALE-PROPOSED-DECISIONS",
+      "description": "Fail when proposed decisions exceed staleness threshold.",
+      "risks": [
+        "AR0",
+        "AR4"
+      ],
+      "enforcement_locations": [
+        "governance/budget.json",
+        "scripts/governance-gate.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for structural governance checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "governance/budget.json",
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR5-DECISION-INDEX-INTEGRITY",
+      "description": "Fail when decision files are not indexed.",
+      "risks": [
+        "AR5",
+        "R15"
+      ],
+      "enforcement_locations": [
+        "docs/decisions/README.md",
+        "scripts/governance-gate.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for structural governance checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "docs/decisions/README.md",
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR5-RISK-ID-BRIDGE-VALIDATION",
+      "description": "Traceability validator must accept both AR* and ISO R* risk IDs so control-to-risk mapping cannot silently drop non-agentic risks.",
+      "risks": [
+        "AR5"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "AGENTIC_RISK_REGISTER.md",
+        "RISK_REGISTER.md",
+        "governance/control-traceability.json"
+      ],
+      "control_owner": "Governance Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "AGENTIC_RISK_REGISTER.md",
+        "RISK_REGISTER.md"
+      ]
+    },
+    {
+      "control_id": "C-AR5-RISK-STACK-DEPTH-GATE",
+      "description": "Traceability gate enforces minimum control depth for selected high-materiality risks to avoid brittle single-control coverage.",
+      "risks": [
+        "AR5",
+        "AR6",
+        "R14",
+        "R15",
+        "R17"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "governance/risk-stack-policy.json",
+        "governance/control-traceability.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Governance Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for risk stack depth policy checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "governance/risk-stack-policy.json",
+        "governance/control-traceability.json"
+      ]
+    },
+    {
+      "control_id": "C-AR6-INCIDENT-REHEARSAL-FRESHNESS",
+      "description": "Governance gate fails when incident/tabletop/break-glass rehearsal evidence is stale beyond policy threshold.",
+      "risks": [
+        "AR6",
+        "AR18",
+        "R12",
+        "R19",
+        "R34"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "governance/maintenance-log.jsonl",
+        "governance/budget.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml"
+      ],
+      "control_owner": "Ops Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "days_since_last_incident_rehearsal and pass_rate for rehearsal freshness gate",
+      "effectiveness_target": "days_since_last_incident_rehearsal <= 30 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "governance/maintenance-log.jsonl",
+        "governance/budget.json"
+      ]
+    },
+    {
+      "control_id": "C-AR6-LLM-REVIEWER-GATE",
+      "description": "Independent reviewer gate with provider adapter, full-diff chunk coverage, and bounded retry loop using policy max_iterations.",
+      "risks": [
+        "AR1",
+        "AR2",
+        "AR3",
+        "AR6",
+        "AR7",
+        "R11",
+        "R14",
+        "R17"
+      ],
+      "enforcement_locations": [
+        "governance/llm-review-policy.json",
+        "scripts/llm-review.ts",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/governance-nightly.yml",
+        ".githooks/pre-push"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per main/publish pipeline run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate + false_negative_rate for independent review decisions",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "governance/llm-review-policy.json",
+        "scripts/llm-review.ts",
+        ".github/workflows/release.yml"
+      ]
+    },
+    {
+      "control_id": "C-AR6-MAINTENANCE-FRESHNESS",
+      "description": "Fail when maintenance log is stale.",
+      "risks": [
+        "AR0",
+        "AR6"
+      ],
+      "enforcement_locations": [
+        "governance/budget.json",
+        "governance/maintenance-log.jsonl",
+        "scripts/governance-gate.ts"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "block_rate and mean_runtime_seconds for flow-protection gate",
+      "effectiveness_target": "block_rate <= 0.30 and mean_runtime_seconds <= 30",
+      "evidence_locations": [
+        "governance/budget.json",
+        "governance/maintenance-log.jsonl",
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR7-CONTROL-BUDGET-GATE",
+      "description": "Cap control surface area and LLM review runtime envelope with deterministic entropy budgets.",
+      "risks": [
+        "AR0",
+        "AR6",
+        "AR7",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "governance/budget.json",
+        "governance/llm-review-policy.json",
+        "scripts/governance-gate.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per governance gate run",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for structural governance checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "governance/budget.json",
+        "governance/llm-review-policy.json",
+        "scripts/governance-gate.ts"
+      ]
+    },
+    {
+      "control_id": "C-AR7-CONTROL-PRUNING-POLICY-GATE",
+      "description": "Governance gate fails when control-pruning policy is missing, overdue, malformed, or not tied to explicit delivery-metric thresholds.",
+      "risks": [
+        "AR7",
+        "AR0",
+        "AR6",
+        "R19"
+      ],
+      "enforcement_locations": [
+        "scripts/governance-gate.ts",
+        "governance/control-pruning-policy.json",
+        "governance/budget.json",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for control-pruning policy validity checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "scripts/governance-gate.ts",
+        "governance/control-pruning-policy.json",
+        "governance/budget.json"
+      ]
+    },
+    {
+      "control_id": "C-AR8-DRY-AGED-DEPS",
+      "description": "Dependency maturity/security gate to reduce stale-dependency risk without adopting rushed releases.",
+      "risks": [
+        "AR2",
+        "AR7",
+        "AR8",
+        "R20"
+      ],
+      "enforcement_locations": [
+        ".dry-aged-deps.json",
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
+        ".github/workflows/release.yml",
+        ".github/workflows/release.yml",
+        "package.json"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        ".dry-aged-deps.json",
+        ".githooks/pre-commit",
+        ".githooks/pre-push"
+      ]
+    },
+    {
+      "control_id": "C-AR9-SCRIPT-CONTRACT-CENTRALIZATION",
+      "description": "All executable controls are invoked via package.json aliases; fail on orphan scripts not referenced by package scripts.",
+      "risks": [
+        "AR0",
+        "AR7",
+        "AR9",
+        "R21"
+      ],
+      "enforcement_locations": [
+        "package.json",
+        "scripts/governance-gate.ts",
+        "governance/budget.json",
+        ".githooks/pre-commit",
+        ".githooks/pre-push"
+      ],
+      "control_owner": "Engineering Lead",
+      "verification_cadence": "Per change (hooks + CI)",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "drift_count and pass_rate for structural governance checks",
+      "effectiveness_target": "drift_count == 0 and pass_rate >= 0.95",
+      "evidence_locations": [
+        "package.json",
+        "scripts/governance-gate.ts",
+        "governance/budget.json"
+      ]
+    },
+    {
+      "control_id": "C-TRUNK-CI-OUTAGE-PLAYBOOK-QUALITY",
+      "description": "LLM reviewer assesses outage fallback quality against a concrete trunk CI outage playbook so zero-trust trunk operation remains understandable and recoverable.",
+      "risks": [
+        "AR11",
+        "R23"
+      ],
+      "enforcement_locations": [
+        "docs/OUTAGE_PLAYBOOK.md",
+        "scripts/llm-review.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ],
+      "control_owner": "Ops Lead",
+      "verification_cadence": "Per change affecting outage/recovery docs",
+      "last_verified_date": "2026-03-04",
+      "effectiveness_kpi": "pass_rate and false_negative_rate for deterministic invariant gate",
+      "effectiveness_target": "pass_rate >= 0.95 and false_negative_rate <= 0.05",
+      "evidence_locations": [
+        "docs/OUTAGE_PLAYBOOK.md",
+        "scripts/llm-review.ts",
+        "AGENTIC_RISK_REGISTER.md"
+      ]
+    }
+  ]
+}
