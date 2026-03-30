@@ -64,6 +64,10 @@ Examine the project to understand what it does and who uses it. Adapt to the pro
 
 Build a mental model of: what does this product do, who are its users, and what would hurt them?
 
+**Check repository visibility**:
+- Run `gh repo view --json isPrivate` or check for other visibility indicators
+- If the repository is **public**, confidential business metrics (revenue, user counts, pricing, traffic volumes) must not appear in any committed file. Note this for step 5 — the policy must include a "Confidential Information" section and information disclosure must be covered in the impact levels.
+
 ### 3. Check for existing policy
 
 If `RISK-POLICY.md` already exists, read it. Identify:
@@ -90,7 +94,7 @@ Use 5 levels (Negligible to Severe). Tailor descriptions to this specific produc
 
 - **Negligible**: No user impact at all
 - **Minor**: No user impact; only developer/build affected
-- **Moderate**: Deployment/publishing disrupted; users can't get updates
+- **Moderate**: Deployment/publishing disrupted; users can't get updates. For public repositories: confidential business metrics (revenue, user counts, pricing, traffic volumes) committed to the repository — an information disclosure requiring immediate remediation but not affecting service availability.
 - **Significant**: User-facing features degraded or inaccessible
 - **Severe**: Data integrity, trust, or availability destroyed
 
@@ -153,6 +157,7 @@ Write the policy using the structure derived from the agent contract (step 1). T
 
 - The ISO 31000 header and "Last reviewed" date (today's date)
 - Business context section
+- **Confidential Information section** (for public repositories): stating that business metrics must not appear in committed files, with examples of what is confidential and guidance to use generic descriptions instead
 - The risk appetite threshold confirmed by the user in step 6
 - The impact levels with project-specific descriptions from step 5
 - The likelihood levels (universal 1-5 scale)

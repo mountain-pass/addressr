@@ -45,6 +45,29 @@ if [ -n "$SESSION_ID" ]; then
     fi
 fi
 
+# --- Docs-only fast path: skip scoring for non-code changes ---
+if [ -n "$SESSION_ID" ]; then
+    FAST_DEFAULT_BRANCH=""
+    if git rev-parse --verify origin/main >/dev/null 2>&1; then
+        FAST_DEFAULT_BRANCH="origin/main"
+    elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+        FAST_DEFAULT_BRANCH="origin/master"
+    fi
+    if [ -n "$FAST_DEFAULT_BRANCH" ]; then
+        EXCL=$(_doc_exclusions)
+        NON_DOC_CHANGES=$(eval "git diff $FAST_DEFAULT_BRANCH --name-only -- $EXCL" 2>/dev/null || true)
+        if [ -z "$NON_DOC_CHANGES" ]; then
+            # All changes are docs-only — write score 1 and skip scoring
+            printf '%s' '1' > "$COMMIT_SCORE_FILE"
+            printf '%s' '1' > "$PUSH_SCORE_FILE"
+            printf '%s' '1' > "$RELEASE_SCORE_FILE"
+            printf '%s' '1' > "$CHANGESET_SCORE_FILE"
+            touch "$CLEAN_FILE"
+            exit 0
+        fi
+    fi
+fi
+
 # --- Gather full pipeline state (only runs if hash changed) ---
 PIPELINE_STATE=$("$SCRIPT_DIR/lib/pipeline-state.sh" --all 2>/dev/null || echo "(pipeline state unavailable)")
 
@@ -175,24 +198,24 @@ fi
 SCORE_INSTRUCTIONS=""
 if [ "$HAS_UNCOMMITTED" = true ]; then
     SCORE_INSTRUCTIONS="Score COMMIT risk. Write commit residual risk rating to: ${COMMIT_SCORE_FILE}
-Command: printf '%s' N > ${COMMIT_SCORE_FILE}"
+MANDATORY Bash command (execute FIRST, before reports): printf '%s' N > ${COMMIT_SCORE_FILE}"
 fi
 
 if [ "$HAS_UNPUSHED" = true ] || [ "$HAS_UNCOMMITTED" = true ]; then
     SCORE_INSTRUCTIONS="${SCORE_INSTRUCTIONS}
 
 Score PUSH risk (the accumulated unpushed changes, including any uncommitted work that would be committed). Write push residual risk rating to: ${PUSH_SCORE_FILE}
-Command: printf '%s' N > ${PUSH_SCORE_FILE}"
+MANDATORY Bash command (execute FIRST, before reports): printf '%s' N > ${PUSH_SCORE_FILE}"
 fi
 
 if [ "$HAS_UNRELEASED_SCORE" = true ]; then
     SCORE_INSTRUCTIONS="${SCORE_INSTRUCTIONS}
 
 Score RELEASE risk (the accumulated unreleased changes that would be deployed if the release PR is merged). Write release residual risk rating to: ${RELEASE_SCORE_FILE}
-Command: printf '%s' N > ${RELEASE_SCORE_FILE}
+MANDATORY Bash command (execute FIRST, before reports): printf '%s' N > ${RELEASE_SCORE_FILE}
 
 Score CHANGESET risk (the risk of creating a changeset, which would allow the accumulated changes on main to go into release preview). Write changeset residual risk rating to: ${CHANGESET_SCORE_FILE}
-Command: printf '%s' N > ${CHANGESET_SCORE_FILE}"
+MANDATORY Bash command (execute FIRST, before reports): printf '%s' N > ${CHANGESET_SCORE_FILE}"
 fi
 
 # --- Check RISK-POLICY.md existence and staleness ---

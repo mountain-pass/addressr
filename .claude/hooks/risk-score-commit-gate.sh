@@ -51,7 +51,7 @@ fi
 
 # Gate check: existence, TTL, drift, threshold
 if ! check_risk_gate "$SESSION_ID" "commit"; then
-    risk_gate_deny "Commit blocked: ${RISK_GATE_REASON}"
+    risk_gate_deny "Commit blocked: ${RISK_GATE_REASON} To proceed: (1) stage files with git add, (2) delegate to risk-scorer (subagent_type: 'risk-scorer') to assess the staged changes — it must consider the accumulated risk across uncommitted, unpushed, and unreleased changes on trunk. If risk exceeds appetite, consider: push first, release the current unreleased queue via \`npm run release:watch\`, split the commit into smaller batches, or add risk-reducing measures (tests, rollback procedures)."
     exit 0
 fi
 

@@ -69,13 +69,13 @@ if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
         # The commit gate already enforced drift detection before committing.
         PUSH_SCORE_FILE="/tmp/risk-push-${SESSION_ID}"
         if [ ! -f "$PUSH_SCORE_FILE" ]; then
-            risk_gate_deny "Push blocked: No push risk score found. The risk-scorer agent must run first."
+            risk_gate_deny "Push blocked: No push risk score found. Delegate to risk-scorer (subagent_type: 'risk-scorer') to assess the accumulated unpushed changes and their projected release risk."
             exit 0
         fi
         PUSH_NOW=$(date +%s)
         PUSH_SCORE_TIME=$(_mtime "$PUSH_SCORE_FILE")
         PUSH_AGE=$(( PUSH_NOW - PUSH_SCORE_TIME ))
-        PUSH_TTL="${RISK_TTL:-300}"
+        PUSH_TTL="${RISK_TTL:-1800}"
         if [ "$PUSH_AGE" -ge "$PUSH_TTL" ]; then
             risk_gate_deny "Push blocked: Push risk score expired (${PUSH_AGE}s old, TTL ${PUSH_TTL}s). Submit a new prompt to rescore."
             exit 0
@@ -88,7 +88,7 @@ if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
         fi
         PUSH_DENIED=$(python3 -c "print('yes' if float('${PUSH_SCORE}') >= 5 else 'no')" 2>/dev/null || echo "no")
         if [ "$PUSH_DENIED" = "yes" ]; then
-            risk_gate_deny "Push blocked: Push risk score ${PUSH_SCORE}/25 (Medium or above). Reduce unpushed changes first."
+            risk_gate_deny "Push blocked: Push risk score ${PUSH_SCORE}/25 (Medium or above). The accumulated changes would push projected release risk above appetite. To proceed, consider: (1) release the current unreleased queue first via \`npm run release:watch\`, (2) split the push into smaller batches, or (3) add risk-reducing measures (tests, rollback procedures) before pushing."
             exit 0
         fi
     fi
@@ -113,7 +113,7 @@ fi
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run release:watch(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
         if ! check_risk_gate "$SESSION_ID" "release"; then
-            risk_gate_deny "Release blocked: ${RISK_GATE_REASON}"
+            risk_gate_deny "Release blocked: ${RISK_GATE_REASON}. The accumulated unreleased changes carry risk above appetite. To proceed, consider: (1) split the release into smaller batches by reverting some changesets and releasing incrementally, (2) add risk-reducing measures (additional tests covering the riskiest changes, manual smoke tests against a local OpenSearch instance), or (3) accept the risk explicitly by re-running the risk-scorer with acknowledgement."
             exit 0
         fi
     fi

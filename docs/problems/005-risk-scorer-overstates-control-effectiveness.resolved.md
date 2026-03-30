@@ -1,6 +1,6 @@
 # Problem 005: Risk scorer overstates control effectiveness
 
-**Status**: Known Error
+**Status**: Resolved
 **Reported**: 2026-03-26
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
 

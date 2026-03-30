@@ -1,6 +1,6 @@
 # Problem 007: Non-user-facing documentation must not affect risk scores or trigger drift detection
 
-**Status**: Open
+**Status**: Resolved
 **Reported**: 2026-03-29
 **Priority**: 8 (Medium) — Impact: Minor (2) x Likelihood: Likely (4)
 

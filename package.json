@@ -120,7 +120,10 @@
     "test:performance": "k6 run --out csv=target/stress.csv test/k6/script.js",
     "add-changeset": "changeset add --open",
     "ci:version": "[ \"$CI\" = true ] && changeset version || echo \"Dry run: changeset version\"",
-    "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\""
+    "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\"",
+    "push:watch": "bash scripts/push-and-watch.sh",
+    "release:watch": "bash scripts/release-watch.sh",
+    "test:hooks": "bats .claude/hooks/test/"
   },
   "bin": {
     "addressr-loader": "lib/bin/addressr-loader.js",
@@ -192,6 +195,7 @@
     "babel-eslint": "^10.0.2",
     "babel-plugin-istanbul": "^6.0.0",
     "babel-preset-env": "^1.7.0",
+    "bats": "^1.13.0",
     "chai": "^4.2.0",
     "cucumber": "^5.1.0",
     "eslint": "^7.9.0",

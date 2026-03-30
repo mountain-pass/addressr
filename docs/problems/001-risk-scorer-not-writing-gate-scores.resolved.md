@@ -1,6 +1,6 @@
 # Problem 001: Risk Scorer Not Writing Gate Scores
 
-**Status**: Open
+**Status**: Resolved
 **Reported**: 2026-03-25
 **Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 

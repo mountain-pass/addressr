@@ -1,6 +1,6 @@
 # Problem 006: Risk score TTL too short for single-developer workflow
 
-**Status**: Known Error
+**Status**: Resolved
 **Reported**: 2026-03-26
 **Priority**: 8 (Medium) — Impact: Minor (2) x Likelihood: Likely (4)
 
