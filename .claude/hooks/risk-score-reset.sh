@@ -1,34 +1,17 @@
 #!/bin/bash
 # Stop hook: Clears risk score temp files on session end.
 
-INPUT=$(cat)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
 
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-print(data.get('session_id', ''))
-" 2>/dev/null)
+_parse_input
+
+SESSION_ID=$(_get_session_id)
 
 if [ -n "$SESSION_ID" ]; then
-    # Score files
-    rm -f "/tmp/risk-commit-${SESSION_ID}" \
-          "/tmp/risk-push-${SESSION_ID}" \
-          "/tmp/risk-release-${SESSION_ID}" \
-          "/tmp/risk-clean-${SESSION_ID}" \
-          "/tmp/risk-changeset-${SESSION_ID}" \
-          "/tmp/risk-state-hash-${SESSION_ID}" \
-          "/tmp/risk-plan-reviewed-${SESSION_ID}" \
-          "/tmp/risk-plan-verdict" \
-          "/tmp/wip-reviewed-${SESSION_ID}" \
-          "/tmp/wip-nudge-verdict" \
-          "/tmp/risk-reducing-commit-${SESSION_ID}" \
-          "/tmp/risk-reducing-push-${SESSION_ID}" \
-          "/tmp/risk-reducing-release-${SESSION_ID}" \
-          "/tmp/risk-incident-release-${SESSION_ID}" \
-          "/tmp/briefing-injected-${SESSION_ID}"
-    # Old file names (transition cleanup)
-    rm -f "/tmp/risk-score-value-${SESSION_ID}" \
-          "/tmp/risk-score-clean-${SESSION_ID}"
+    # Remove the entire session-scoped directory
+    RDIR="${TMPDIR:-/tmp}/claude-risk-${SESSION_ID}"
+    rm -rf "$RDIR"
 fi
 
 exit 0

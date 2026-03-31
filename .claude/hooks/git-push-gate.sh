@@ -10,37 +10,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/risk-gate.sh"
+_enable_err_trap
 
-INPUT=$(cat)
+_parse_input
 
-TOOL_NAME=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tool_name', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+TOOL_NAME=$(_get_tool_name)
 [ "$TOOL_NAME" = "Bash" ] || exit 0
 
-COMMAND=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tool_input', {}).get('command', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('session_id', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
+COMMAND=$(_get_command)
+SESSION_ID=$(_get_session_id)
 
 # Block git push to master/main/publish/changeset-release/*, or bare git push.
 # Allow explicit pushes to other branches (feature branches etc).
@@ -57,18 +35,17 @@ fi
 # Gate push:watch on push risk score
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
+        RDIR=$(_risk_dir "$SESSION_ID")
         # Risk-reducing/neutral bypass for push
-        REDUCING_PUSH_MARKER="/tmp/risk-reducing-push-${SESSION_ID}"
-        if [ -f "$REDUCING_PUSH_MARKER" ]; then
-            rm -f "$REDUCING_PUSH_MARKER"
+        if [ -f "${RDIR}/reducing-push" ]; then
+            rm -f "${RDIR}/reducing-push"
             exit 0
         fi
         # Clean tree bypass: if no uncommitted changes, pushing existing commits is safe
-        CLEAN_FILE="/tmp/risk-clean-${SESSION_ID}"
-        if [ -f "$CLEAN_FILE" ]; then
+        if [ -f "${RDIR}/clean" ]; then
             exit 0
         fi
-        PUSH_SCORE_FILE="/tmp/risk-push-${SESSION_ID}"
+        PUSH_SCORE_FILE="${RDIR}/push"
         if [ ! -f "$PUSH_SCORE_FILE" ]; then
             risk_gate_deny "Push blocked: No push risk score found. Delegate to risk-scorer-pipeline (subagent_type: 'risk-scorer-pipeline') to assess cumulative pipeline risk."
             exit 0
@@ -112,18 +89,17 @@ fi
 # Gate release:watch on release risk score
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run release:watch(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
+        RDIR=$(_risk_dir "$SESSION_ID")
         # Live-incident bypass: if an incident marker exists, allow release
         # regardless of risk score. Used when addressing outages, security
         # incidents, or information disclosure that requires immediate deployment.
-        INCIDENT_MARKER="/tmp/risk-incident-release-${SESSION_ID}"
-        if [ -f "$INCIDENT_MARKER" ]; then
-            rm -f "$INCIDENT_MARKER"
+        if [ -f "${RDIR}/incident-release" ]; then
+            rm -f "${RDIR}/incident-release"
             exit 0
         fi
         # Risk-reducing bypass for release
-        REDUCING_RELEASE_MARKER="/tmp/risk-reducing-release-${SESSION_ID}"
-        if [ -f "$REDUCING_RELEASE_MARKER" ]; then
-            rm -f "$REDUCING_RELEASE_MARKER"
+        if [ -f "${RDIR}/reducing-release" ]; then
+            rm -f "${RDIR}/reducing-release"
             exit 0
         fi
         if ! check_risk_gate "$SESSION_ID" "release"; then

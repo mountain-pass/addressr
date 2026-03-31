@@ -135,7 +135,7 @@ Before writing the policy file, invoke the risk-scorer agent to validate the dra
 
 Run the risk-scorer agent (subagent_type: "risk-scorer") with this prompt:
 
-> Review this draft risk policy for ISO 31000 compliance. Validate and write your verdict to /tmp/risk-policy-verdict.
+> Review this draft risk policy for ISO 31000 compliance. Validate it.
 >
 > [paste the full draft policy content here]
 
@@ -146,7 +146,7 @@ The risk-scorer will check:
 - Business context is present
 - Last reviewed date is present
 
-It writes PASS or FAIL to `/tmp/risk-policy-verdict`. The PostToolUse hook reads this verdict and sets the edit marker on PASS.
+It ends its output with `RISK_VERDICT: PASS` or `RISK_VERDICT: FAIL`. The PostToolUse hook reads this from the agent output and sets the edit marker on PASS.
 
 - **If PASS**: proceed to step 8 (write)
 - **If FAIL**: fix the issues the scorer identified, then re-run this step

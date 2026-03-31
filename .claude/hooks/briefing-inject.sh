@@ -4,21 +4,16 @@
 
 set -euo pipefail
 
-INPUT=$(cat)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
 
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('session_id', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
+_parse_input
 
+SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
 # Only inject once per session
-MARKER="/tmp/briefing-injected-${SESSION_ID}"
+MARKER="$(_risk_dir "$SESSION_ID")/briefing-injected"
 if [ -f "$MARKER" ]; then
     exit 0
 fi

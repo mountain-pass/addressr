@@ -6,17 +6,18 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/gate-helpers.sh"
 
-INPUT=$(cat)
+_parse_input
 
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty') || true
+COMMAND=$(_get_command)
 
 # Only act on commands that change git state
 echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*git (add|commit|stash|reset|checkout|restore)' || exit 0
 
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty') || true
+SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
-HASH_FILE="/tmp/risk-state-hash-${SESSION_ID}"
+RDIR=$(_risk_dir "$SESSION_ID")
+HASH_FILE="${RDIR}/state-hash"
 [ -f "$HASH_FILE" ] || exit 0  # No hash file yet — scorer hasn't run
 
 CURRENT_HASH=$("$SCRIPT_DIR/lib/pipeline-state.sh" --hash-inputs 2>/dev/null | _hashcmd | cut -d' ' -f1)

@@ -2,7 +2,6 @@
 name: risk-scorer-policy
 description: Validates RISK-POLICY.md drafts for ISO 31000 compliance.
 tools:
-  - Bash
   - Read
   - Glob
 model: inherit
@@ -21,7 +20,7 @@ You are the Risk Scorer in policy review mode. Validate a draft RISK-POLICY.md a
 
 ## Verdict
 
-Write the verdict using Bash. Do not include the file path in your output.
+End your report with `RISK_VERDICT: PASS` or `RISK_VERDICT: FAIL` on its own line. A PostToolUse hook reads this and writes the marker files — do NOT write files yourself.
 
 - PASS if the draft is compliant
 - FAIL if it has issues — list the specific issues so the caller can fix them

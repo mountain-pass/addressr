@@ -2,13 +2,16 @@
 # Stop hook: Clears risk-policy session marker.
 # Mirrors: architect-reset-marker.sh
 
-INPUT=$(cat)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
 
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty') || true
+_parse_input
+
+SESSION_ID=$(_get_session_id)
 
 if [ -n "$SESSION_ID" ]; then
-  rm -f "/tmp/risk-policy-reviewed-${SESSION_ID}" "/tmp/risk-policy-verdict" \
-        "/tmp/risk-plan-reviewed-${SESSION_ID}" "/tmp/risk-plan-verdict"
+  RDIR=$(_risk_dir "$SESSION_ID")
+  rm -f "${RDIR}/policy-reviewed" "${RDIR}/plan-reviewed"
 fi
 
 exit 0

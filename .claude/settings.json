@@ -250,11 +250,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/risk-policy-mark-reviewed.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/wip-risk-mark.sh"
+            "command": ".claude/hooks/risk-score-mark.sh"
           }
         ]
       },

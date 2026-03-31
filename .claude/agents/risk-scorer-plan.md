@@ -2,7 +2,6 @@
 name: risk-scorer-plan
 description: Reviews implementation plans for risk, including projected release risk.
 tools:
-  - Bash
   - Read
   - Glob
 model: inherit
@@ -48,7 +47,7 @@ You are the Risk Scorer in plan review mode. Assess both the plan's own risk AND
 - Overall: PASS/FAIL
 ```
 
-Write the verdict using Bash. Do not include the file path in your output.
+End your report with `RISK_VERDICT: PASS` or `RISK_VERDICT: FAIL` on its own line. A PostToolUse hook reads this and writes the marker files — do NOT write files yourself.
 
 ## Control Discovery
 

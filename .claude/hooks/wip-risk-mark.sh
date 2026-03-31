@@ -15,7 +15,7 @@ TOOL_NAME=$(_get_tool_name)
 SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
-MARKER="/tmp/wip-reviewed-${SESSION_ID}"
+MARKER="$(_risk_dir "$SESSION_ID")/wip-reviewed"
 
 case "$TOOL_NAME" in
   Edit|Write)
@@ -26,19 +26,7 @@ case "$TOOL_NAME" in
         rm -f "$MARKER"
     fi
     ;;
-
-  Agent)
-    SUBAGENT=$(_get_subagent_type)
-    case "$SUBAGENT" in
-      *risk-scorer*)
-        VERDICT_FILE="/tmp/wip-nudge-verdict"
-        if [ -f "$VERDICT_FILE" ]; then
-          rm -f "$VERDICT_FILE"
-          touch "$MARKER"
-        fi
-        ;;
-    esac
-    ;;
+  # Agent case handled by risk-score-mark.sh
 esac
 
 exit 0

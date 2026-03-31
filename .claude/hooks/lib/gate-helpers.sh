@@ -123,10 +123,34 @@ _get_tool_output() {
 import sys, json
 try:
     data = json.load(sys.stdin)
+    # PostToolUse provides tool_response (dict with content array), not tool_output
+    tr = data.get('tool_response', {})
+    if isinstance(tr, dict):
+        content = tr.get('content', [])
+        if isinstance(content, list):
+            texts = [c.get('text', '') for c in content if isinstance(c, dict) and c.get('type') == 'text']
+            if texts:
+                print('\n'.join(texts))
+                sys.exit(0)
+    # Fallback for older/different hook formats
     print(data.get('tool_output', ''))
 except:
     print('')
 " 2>/dev/null || echo ""
+}
+
+# ---------------------------------------------------------------------------
+# Session-scoped tmp directory for risk files
+# ---------------------------------------------------------------------------
+
+# Returns the session-scoped directory for risk temp files.
+# Creates the directory if it doesn't exist.
+# Usage: DIR=$(_risk_dir "$SESSION_ID"); echo "1" > "$DIR/commit"
+_risk_dir() {
+  local sid="$1"
+  local dir="${TMPDIR:-/tmp}/claude-risk-${sid}"
+  mkdir -p "$dir"
+  echo "$dir"
 }
 
 # ---------------------------------------------------------------------------

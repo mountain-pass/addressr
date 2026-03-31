@@ -2,7 +2,6 @@
 name: risk-scorer
 description: Risk scoring routing doc. Use mode-specific agents instead.
 tools:
-  - Bash
   - Read
   - Glob
 model: inherit

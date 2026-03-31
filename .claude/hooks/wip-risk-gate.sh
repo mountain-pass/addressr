@@ -27,7 +27,7 @@ fi
 SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
-MARKER="/tmp/wip-reviewed-${SESSION_ID}"
+MARKER="$(_risk_dir "$SESSION_ID")/wip-reviewed"
 if [ -f "$MARKER" ]; then
     exit 0
 fi

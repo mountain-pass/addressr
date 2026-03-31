@@ -44,15 +44,14 @@ if [ "$POLICY_STALE" = "yes" ]; then
 fi
 
 # Clean tree bypass
-CLEAN_FILE="/tmp/risk-clean-${SESSION_ID}"
-if [ -f "$CLEAN_FILE" ]; then
+RDIR=$(_risk_dir "$SESSION_ID")
+if [ -f "${RDIR}/clean" ]; then
     exit 0
 fi
 
 # Risk-reducing/neutral bypass
-REDUCING_MARKER="/tmp/risk-reducing-commit-${SESSION_ID}"
-if [ -f "$REDUCING_MARKER" ]; then
-    rm -f "$REDUCING_MARKER"
+if [ -f "${RDIR}/reducing-commit" ]; then
+    rm -f "${RDIR}/reducing-commit"
     exit 0
 fi
 

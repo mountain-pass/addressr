@@ -3,22 +3,20 @@
 
 setup() {
   HOOKS_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+  source "$HOOKS_DIR/lib/gate-helpers.sh"
   source "$HOOKS_DIR/lib/risk-gate.sh"
 
   TEST_SESSION="bats-test-$$-${BATS_TEST_NUMBER}"
-  SCORE_FILE="/tmp/risk-commit-${TEST_SESSION}"
-  HASH_FILE="/tmp/risk-state-hash-${TEST_SESSION}"
+  RDIR=$(_risk_dir "$TEST_SESSION")
+  SCORE_FILE="${RDIR}/commit"
+  HASH_FILE="${RDIR}/state-hash"
 
   export RISK_TTL=5
   rm -f "$SCORE_FILE" "$HASH_FILE"
 }
 
 teardown() {
-  rm -f "/tmp/risk-commit-${TEST_SESSION}"
-  rm -f "/tmp/risk-push-${TEST_SESSION}"
-  rm -f "/tmp/risk-release-${TEST_SESSION}"
-  rm -f "/tmp/risk-changeset-${TEST_SESSION}"
-  rm -f "/tmp/risk-state-hash-${TEST_SESSION}"
+  rm -rf "${TMPDIR:-/tmp}/claude-risk-${TEST_SESSION}"
 }
 
 # Helper: call check_risk_gate directly (not via run) so RISK_GATE_REASON is visible

@@ -5,15 +5,13 @@
 
 set -euo pipefail
 
-INPUT=$(cat)
-
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-print(data.get('session_id', ''))
-" 2>/dev/null || echo "")
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
+_enable_err_trap
+
+_parse_input
+
+SESSION_ID=$(_get_session_id)
 
 # --- Gather pipeline state summary ---
 UNRELEASED_SUMMARY=""
@@ -23,7 +21,8 @@ fi
 
 # --- Check for existing release risk score ---
 RELEASE_SCORE="not yet scored"
-RELEASE_SCORE_FILE="/tmp/risk-release-${SESSION_ID}"
+RDIR=$(_risk_dir "$SESSION_ID")
+RELEASE_SCORE_FILE="${RDIR}/release"
 if [ -n "$SESSION_ID" ] && [ -f "$RELEASE_SCORE_FILE" ]; then
   SCORE_VAL=$(cat "$RELEASE_SCORE_FILE" 2>/dev/null || echo "")
   if [[ "$SCORE_VAL" =~ ^[0-9]+$ ]]; then

@@ -6,21 +6,17 @@
 
 set -euo pipefail
 
-INPUT=$(cat)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
 
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('session_id', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
+_parse_input
 
+SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
 # Create WIP marker so first edit of the session isn't blocked
-WIP_MARKER="/tmp/wip-reviewed-${SESSION_ID}"
+RDIR=$(_risk_dir "$SESSION_ID")
+WIP_MARKER="${RDIR}/wip-reviewed"
 if [ ! -f "$WIP_MARKER" ]; then
     touch "$WIP_MARKER"
 fi

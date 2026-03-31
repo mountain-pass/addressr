@@ -5,10 +5,14 @@
 
 set -euo pipefail
 
-INPUT=$(cat)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib/gate-helpers.sh"
+_enable_err_trap
 
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty') || true
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty') || true
+_parse_input
+
+FILE_PATH=$(_get_file_path)
+SESSION_ID=$(_get_session_id)
 
 if [ -z "$SESSION_ID" ] || [ -z "$FILE_PATH" ]; then
   exit 0
@@ -21,7 +25,7 @@ if [ "$BASENAME" != "RISK-POLICY.md" ]; then
 fi
 
 # Check for marker
-MARKER="/tmp/risk-policy-reviewed-${SESSION_ID}"
+MARKER="$(_risk_dir "$SESSION_ID")/policy-reviewed"
 if [ -f "$MARKER" ]; then
   exit 0
 fi
