@@ -20,9 +20,13 @@ PUSH_SCORE_FILE="/tmp/risk-push-${SESSION_ID}"
 RELEASE_SCORE_FILE="/tmp/risk-release-${SESSION_ID}"
 CHANGESET_SCORE_FILE="/tmp/risk-changeset-${SESSION_ID}"
 CLEAN_FILE="/tmp/risk-clean-${SESSION_ID}"
+WIP_MARKER="/tmp/wip-reviewed-${SESSION_ID}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/gate-helpers.sh"
+
+# --- Create WIP marker so first edit of the session isn't blocked ---
+touch "$WIP_MARKER"
 
 # --- Rotate old risk reports (keep last 7 days) ---
 if [ -d ".risk-reports" ]; then

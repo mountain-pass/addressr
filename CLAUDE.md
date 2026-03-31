@@ -1,6 +1,10 @@
 # Claude Code
 
-Follow the instructions in [AGENTS.md](AGENTS.md).
+Follow the instructions in [AGENTS.md](AGENTS.md). 
+
+Use the planning tool and AskQuestions too liberally.
+
+Use test driven development. i.e. write the failing test first.
 
 ## Decision Management
 

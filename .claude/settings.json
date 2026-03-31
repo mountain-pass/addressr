@@ -72,6 +72,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/secret-leak-gate.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/wip-risk-gate.sh"
           }
         ]
       },
@@ -226,6 +230,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/architect-refresh-hash.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/wip-risk-mark.sh"
           }
         ]
       },
@@ -235,6 +243,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/risk-policy-mark-reviewed.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/wip-risk-mark.sh"
           }
         ]
       },

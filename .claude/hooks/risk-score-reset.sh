@@ -18,7 +18,9 @@ if [ -n "$SESSION_ID" ]; then
           "/tmp/risk-changeset-${SESSION_ID}" \
           "/tmp/risk-state-hash-${SESSION_ID}" \
           "/tmp/risk-plan-reviewed-${SESSION_ID}" \
-          "/tmp/risk-plan-verdict"
+          "/tmp/risk-plan-verdict" \
+          "/tmp/wip-reviewed-${SESSION_ID}" \
+          "/tmp/wip-nudge-verdict"
     # Old file names (transition cleanup)
     rm -f "/tmp/risk-score-value-${SESSION_ID}" \
           "/tmp/risk-score-clean-${SESSION_ID}"

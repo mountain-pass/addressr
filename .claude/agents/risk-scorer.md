@@ -333,6 +333,31 @@ Write the verdict to `/tmp/risk-plan-verdict`:
 
 If FAIL, explain which assessment failed and what the plan should include to pass (e.g., release the current queue first, split into smaller batches, add risk-reducing steps like tests or rollback procedures).
 
+## WIP Nudge Mode
+
+When prompted for a WIP nudge (not full pipeline scoring or plan review), assess cumulative pipeline risk and provide risk-reducing suggestions. This mode is triggered after each non-doc Edit/Write.
+
+1. Read the edited file path from the prompt
+2. Run `git diff --stat` to see all uncommitted changes (non-doc files)
+3. Read the most recent push risk report from `.risk-reports/` (latest `*-push.md` file)
+4. Read the most recent release risk report from `.risk-reports/` (latest `*-release.md` file)
+5. Read cached push/release scores if provided in the prompt
+6. Assess cumulative pipeline WIP risk:
+   - What uncommitted changes exist and their risk profile
+   - What the push report says the top risks are
+   - What the release report says the top risks are
+   - Does the latest edit increase, decrease, or not affect cumulative risk?
+7. If cumulative risk is within appetite (< 5):
+   Output: "Pipeline WIP within appetite. Continue."
+8. If cumulative risk exceeds appetite (>= 5):
+   Output specific suggestions referencing the risk reports:
+   - "Commit your current changes to move WIP forward"
+   - "Write tests for [risk item from push/release report]" — name the specific risk and test file
+   - "The release report flags [X] — address it before adding more changes"
+   - "Push your commits to get CI feedback"
+9. Write verdict to `/tmp/wip-nudge-verdict` (`CONTINUE` or `PAUSE`)
+10. Do NOT write score files or save reports — this mode is advisory only
+
 ## Constraints
 
 - You are a scorer, not an editor. You do not modify code.
