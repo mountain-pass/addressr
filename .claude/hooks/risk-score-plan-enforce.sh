@@ -28,7 +28,7 @@ cat <<'EOF'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "BLOCKED: Risk-scorer must review the plan before exiting plan mode. Delegate to risk-scorer (subagent_type: 'risk-scorer') to review the plan file for risk, including projected release risk."
+    "permissionDecisionReason": "BLOCKED: Risk-scorer must review the plan before exiting plan mode. Delegate to risk-scorer-plan (subagent_type: 'risk-scorer-plan') to review the plan file for risk, including projected release risk."
   }
 }
 EOF

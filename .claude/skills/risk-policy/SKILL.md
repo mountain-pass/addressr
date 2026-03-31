@@ -26,7 +26,7 @@ The risk-scorer agent, problem management skill, and any other process that need
 
 ### 1. Read the risk-scorer agent contract
 
-Read `.claude/agents/risk-scorer.md` to understand what the scorer expects from `RISK-POLICY.md`. Extract:
+Read `.claude/agents/risk-scorer-pipeline.md` to understand what the scorer expects from `RISK-POLICY.md`. Extract:
 
 - What fields the agent reads from the policy (look for "Read `RISK-POLICY.md`" in "Your Role")
 - The impact level labels used in the agent's risk matrix (look for the "Product Reference Table")

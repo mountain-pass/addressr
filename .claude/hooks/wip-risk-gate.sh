@@ -80,7 +80,7 @@ cat <<'EOF'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "WIP risk assessment required. Delegate to risk-scorer (subagent_type: 'risk-scorer') in WIP nudge mode to assess cumulative pipeline risk for changes so far."
+    "permissionDecisionReason": "WIP risk assessment required. Delegate to risk-scorer-wip (subagent_type: 'risk-scorer-wip') to assess cumulative pipeline risk for changes so far."
   }
 }
 EOF
