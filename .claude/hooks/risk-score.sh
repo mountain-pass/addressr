@@ -1,9 +1,8 @@
 #!/bin/bash
 # UserPromptSubmit hook: Delegates risk scoring to the risk-scorer agent.
 # Gathers full pipeline state via lib/pipeline-state.sh, injects instruction
-# to call risk-scorer agent for commit + push + release scoring.
+# to call risk-scorer agent for cumulative pipeline risk scoring.
 # Blocks scoring if RISK-POLICY.md is missing or stale (> 2 weeks).
-# Absorbs WIP nudge warnings (stale files, unpushed count).
 
 set -euo pipefail
 
@@ -107,64 +106,10 @@ if ! echo "$PIPELINE_STATE" | grep -q "No uncommitted changes."; then
     rm -f "$CLEAN_FILE"
 fi
 
-# --- Build WIP warnings (absorbed from wip-nudge.sh) ---
+# WIP warnings and nudges are now handled by the risk-scorer's cumulative
+# risk report (Layer 1/2/3). No separate WIP logic needed here.
 WARNINGS=""
-
-# Stale files warning (check pipeline state section, not instruction text)
-STALE_OUTPUT=$("$SCRIPT_DIR/lib/pipeline-state.sh" --stale 2>/dev/null || echo "")
-if echo "$STALE_OUTPUT" | grep -q "uncommitted for over 24h"; then
-    STALE_LINE=$(echo "$STALE_OUTPUT" | grep "uncommitted for over 24h" | head -1)
-    WARNINGS="${WARNINGS}WIP: ${STALE_LINE}\n"
-fi
-
-# Unpushed commits warning
-UNPUSHED_COUNT=$(echo "$PIPELINE_STATE" | sed -n 's/.*Unpushed commits (\([0-9]*\)).*/\1/p' | head -1)
-UNPUSHED_COUNT="${UNPUSHED_COUNT:-0}"
-if [ "$UNPUSHED_COUNT" -ge 3 ]; then
-    WARNINGS="${WARNINGS}WIP: ${UNPUSHED_COUNT} unpushed commits on master. Consider running \`npm run push:watch\`.\n"
-fi
-
-# --- Check for existing high scores (nudge) ---
 NUDGE=""
-if [ -f "$COMMIT_SCORE_FILE" ]; then
-    PREV_COMMIT=$(cat "$COMMIT_SCORE_FILE" 2>/dev/null || echo "")
-    IS_HIGH=$(python3 -c "
-try:
-    print('yes' if float('$PREV_COMMIT') >= 5 else 'no')
-except:
-    print('no')
-" 2>/dev/null || echo "no")
-    if [ "$IS_HIGH" = "yes" ]; then
-        NUDGE="${NUDGE}WARNING: Previous commit risk rating was ${PREV_COMMIT}/25. Reduce uncommitted changes before committing.\n"
-    fi
-fi
-
-if [ -f "$PUSH_SCORE_FILE" ]; then
-    PREV_PUSH=$(cat "$PUSH_SCORE_FILE" 2>/dev/null || echo "")
-    IS_HIGH=$(python3 -c "
-try:
-    print('yes' if float('$PREV_PUSH') >= 5 else 'no')
-except:
-    print('no')
-" 2>/dev/null || echo "no")
-    if [ "$IS_HIGH" = "yes" ]; then
-        NUDGE="${NUDGE}WARNING: Previous push risk rating was ${PREV_PUSH}/25. Consider pushing or reducing unpushed changes before continuing.\n"
-    fi
-fi
-
-# --- Check for existing high release score (nudge) ---
-if [ -f "$RELEASE_SCORE_FILE" ]; then
-    PREV_RELEASE=$(cat "$RELEASE_SCORE_FILE" 2>/dev/null || echo "")
-    IS_HIGH=$(python3 -c "
-try:
-    print('yes' if float('$PREV_RELEASE') >= 5 else 'no')
-except:
-    print('no')
-" 2>/dev/null || echo "no")
-    if [ "$IS_HIGH" = "yes" ]; then
-        NUDGE="${NUDGE}WARNING: Previous release risk rating was ${PREV_RELEASE}/25. Consider releasing existing changes or reducing unreleased scope before continuing.\n"
-    fi
-fi
 
 # --- Determine which actions to score ---
 HAS_UNCOMMITTED=true

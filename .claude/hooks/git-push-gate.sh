@@ -57,16 +57,17 @@ fi
 # Gate push:watch on push risk score
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
+        # Risk-reducing/neutral bypass for push
+        REDUCING_PUSH_MARKER="/tmp/risk-reducing-push-${SESSION_ID}"
+        if [ -f "$REDUCING_PUSH_MARKER" ]; then
+            rm -f "$REDUCING_PUSH_MARKER"
+            exit 0
+        fi
         # Clean tree bypass: if no uncommitted changes, pushing existing commits is safe
         CLEAN_FILE="/tmp/risk-clean-${SESSION_ID}"
         if [ -f "$CLEAN_FILE" ]; then
             exit 0
         fi
-        # Push gate: check score existence, TTL, and threshold only.
-        # Skip drift detection because a prior commit in the same prompt
-        # changes git diff origin/main (content moves from uncommitted to
-        # unpushed), and a prior push advances origin/main entirely.
-        # The commit gate already enforced drift detection before committing.
         PUSH_SCORE_FILE="/tmp/risk-push-${SESSION_ID}"
         if [ ! -f "$PUSH_SCORE_FILE" ]; then
             risk_gate_deny "Push blocked: No push risk score found. Delegate to risk-scorer (subagent_type: 'risk-scorer') to assess the accumulated unpushed changes and their projected release risk."
@@ -77,18 +78,17 @@ if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
         PUSH_AGE=$(( PUSH_NOW - PUSH_SCORE_TIME ))
         PUSH_TTL="${RISK_TTL:-1800}"
         if [ "$PUSH_AGE" -ge "$PUSH_TTL" ]; then
-            risk_gate_deny "Push blocked: Push risk score expired (${PUSH_AGE}s old, TTL ${PUSH_TTL}s). Submit a new prompt to rescore."
+            risk_gate_deny "Push blocked: Push risk score expired (${PUSH_AGE}s old, TTL ${PUSH_TTL}s). Delegate to risk-scorer to rescore."
             exit 0
         fi
         PUSH_SCORE=$(cat "$PUSH_SCORE_FILE" 2>/dev/null || echo "")
-        # Validate score is numeric (fail-closed: PENDING or invalid = deny)
         if ! echo "$PUSH_SCORE" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
-            risk_gate_deny "Push blocked: Push risk score is not yet available (scoring in progress). Wait a moment and retry, or submit a new prompt."
+            risk_gate_deny "Push blocked: Push risk score is not yet available (scoring in progress). Wait a moment and retry."
             exit 0
         fi
         PUSH_DENIED=$(python3 -c "print('yes' if float('${PUSH_SCORE}') >= 5 else 'no')" 2>/dev/null || echo "no")
         if [ "$PUSH_DENIED" = "yes" ]; then
-            risk_gate_deny "Push blocked: Push risk score ${PUSH_SCORE}/25 (Medium or above). The accumulated changes would push projected release risk above appetite. To proceed, consider: (1) release the current unreleased queue first via \`npm run release:watch\`, (2) split the push into smaller batches, or (3) add risk-reducing measures (tests, rollback procedures) before pushing."
+            risk_gate_deny "Push blocked: Push risk score ${PUSH_SCORE}/25 (Medium or above). To proceed, consider: (1) release the current unreleased queue first via \`npm run release:watch\`, (2) split the push into smaller batches, or (3) add risk-reducing measures. If this push is risk-neutral or risk-reducing, delegate to risk-scorer — it will create a bypass marker."
             exit 0
         fi
     fi
@@ -112,8 +112,22 @@ fi
 # Gate release:watch on release risk score
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run release:watch(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
+        # Live-incident bypass: if an incident marker exists, allow release
+        # regardless of risk score. Used when addressing outages, security
+        # incidents, or information disclosure that requires immediate deployment.
+        INCIDENT_MARKER="/tmp/risk-incident-release-${SESSION_ID}"
+        if [ -f "$INCIDENT_MARKER" ]; then
+            rm -f "$INCIDENT_MARKER"
+            exit 0
+        fi
+        # Risk-reducing bypass for release
+        REDUCING_RELEASE_MARKER="/tmp/risk-reducing-release-${SESSION_ID}"
+        if [ -f "$REDUCING_RELEASE_MARKER" ]; then
+            rm -f "$REDUCING_RELEASE_MARKER"
+            exit 0
+        fi
         if ! check_risk_gate "$SESSION_ID" "release"; then
-            risk_gate_deny "Release blocked: ${RISK_GATE_REASON}. The accumulated unreleased changes carry risk above appetite. To proceed, consider: (1) split the release into smaller batches by reverting some changesets and releasing incrementally, (2) add risk-reducing measures (additional tests covering the riskiest changes, manual smoke tests against a local OpenSearch instance), or (3) accept the risk explicitly by re-running the risk-scorer with acknowledgement."
+            risk_gate_deny "Release blocked: ${RISK_GATE_REASON}. To proceed: (1) split the release into smaller batches, (2) add risk-reducing measures (tests, smoke tests), or (3) if this release addresses a LIVE INCIDENT (outage, security, information disclosure), delegate to risk-scorer with incident context — it will create an incident bypass marker."
             exit 0
         fi
     fi

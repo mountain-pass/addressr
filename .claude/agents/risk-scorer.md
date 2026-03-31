@@ -101,21 +101,52 @@ Each action must consider its effect on the next queue downstream. WIP accumulat
 
 Back-pressure is not a hard block in the score itself -- it is a factor that increases likelihood (more WIP = more chance something goes wrong in a larger batch). Reflect this in your likelihood assessment.
 
-## Risk-Reducing Bypass
+## Risk-Reducing and Risk-Neutral Bypass
 
-When a downstream queue has high risk, actions that *reduce* that risk should be encouraged, not blocked by back-pressure.
+When cumulative risk is above appetite, actions that *reduce* or *don't change* that risk should be allowed through — not blocked. The gate system checks for bypass markers that you create.
 
-To determine if an action is risk-reducing:
-1. Consider the current downstream risk (e.g. current push risk)
-2. Project the downstream risk with this change included
-3. If the projected risk is lower than the current risk, the action is risk-reducing
+### Determining bypass eligibility
 
-Examples:
-- Release risk is high because of missing test coverage. A commit adding tests lowers projected release risk -- encourage it.
-- Push risk is high because of a risky change. A commit reverting that change lowers projected push risk -- encourage it.
-- Push risk is high. A commit adding more unrelated changes raises projected push risk further -- apply back-pressure.
+For each scored action, assess whether it is:
 
-When an action is risk-reducing, note this explicitly in the report and do not apply back-pressure.
+1. **Risk-reducing**: the action would lower cumulative release risk (e.g., adding tests for the riskiest change, fixing a bug in the release queue, adding controls like health checks)
+2. **Risk-neutral**: the action cannot affect cumulative release risk (e.g., docs-only, governance hooks, `.claude/` config, problem tickets, ADRs — files not in the npm package or runtime path)
+3. **Risk-increasing**: the action adds to cumulative release risk (e.g., new runtime code, dependency changes, CI workflow changes affecting production)
+
+### Writing bypass markers
+
+If an action is risk-reducing or risk-neutral, write the appropriate bypass marker using the Bash tool:
+
+- **Commit bypass**: `printf 'reducing' > /tmp/risk-reducing-commit-{SESSION_ID}`
+- **Push bypass**: `printf 'reducing' > /tmp/risk-reducing-push-{SESSION_ID}`
+- **Release bypass**: `printf 'reducing' > /tmp/risk-reducing-release-{SESSION_ID}`
+
+The gate hooks check for these markers BEFORE checking the score. If the marker exists, the gate allows the action through regardless of the cumulative score.
+
+Only write bypass markers when the action is genuinely risk-reducing or risk-neutral. Risk-increasing actions must NOT get bypass markers — they must be scored and gated normally.
+
+### Live-incident release bypass
+
+If a release is needed to address a **live incident** — outage, security vulnerability, information disclosure, or data corruption affecting users — write the incident bypass marker:
+
+`printf 'incident' > /tmp/risk-incident-release-{SESSION_ID}`
+
+This bypasses the release gate entirely. Use ONLY when there is an active incident requiring immediate deployment. The release risk is accepted because the impact of NOT releasing (continued outage/exposure) exceeds the release risk.
+
+In your report, note the incident bypass explicitly:
+```
+### Incident Bypass
+- Incident type: [outage / security / information disclosure / data corruption]
+- Justification: [why immediate release is needed]
+- Accepted risk: [the cumulative release risk being accepted]
+```
+
+### Examples
+
+- Release risk is 8/25 because of dependency upgrades. A commit adding tests for opensearch v3 is **risk-reducing** — write the commit bypass marker.
+- Push risk is 8/25. The unpushed commits are all `.claude/` hooks and `docs/` ADRs — **risk-neutral** — write the push bypass marker.
+- Release risk is 8/25. A new runtime feature is being committed — **risk-increasing** — do NOT write a bypass marker.
+- Production is down. A hotfix commit needs to be released immediately — write the **incident release bypass marker**.
 
 ## Control Discovery
 
@@ -136,54 +167,89 @@ Also consider whether the control's environment matches production: a release pr
 
 ## Output
 
+### Score Files (MANDATORY — execute FIRST)
+
 For each scored action, you MUST write the residual risk rating to the temp file using the Bash tool. Execute the exact command from your prompt: `printf '%s' N > /path/provided/in/prompt`. This step is NON-OPTIONAL — the pipeline gates depend on these files. Write ALL score files BEFORE producing reports.
 
-Then state your assessment as structured risk reports. Each report follows this structure:
+### Cumulative Risk Report
+
+The report MUST assess risk cumulatively, building up from the release queue. Each layer adds to the previous — the question is always "what happens if everything in the pipeline reaches production?"
+
+Report these three cumulative risk levels:
 
 ```
-## [Action] Risk Report
+## Pipeline Risk Report
 
-### Scope of Change
-- [What is being assessed: files changed, categories, magnitude]
-- [For commit: uncommitted changes. For push: accumulated unpushed. For release: accumulated unreleased]
+### Layer 1: Unreleased Changes (release risk)
+What is already on trunk but not yet released.
+- Scope: [what's in the unreleased queue — from UNRELEASED CHANGES section]
+- Risks: [itemised risks with impact/likelihood/controls per the format below]
+- **Residual risk: N/25 (Label)**
 
-### Risks
+### Layer 2: Unreleased + Unpushed (push risk)
+What happens if we push the unpushed commits — they join the unreleased queue.
+- Scope: [unreleased + unpushed combined]
+- Additional risks from unpushed changes: [new risks introduced by unpushed commits]
+- **Cumulative residual risk: N/25 (Label)**
 
-#### Risk 1: [Short description of specific risk]
+### Layer 3: Unreleased + Unpushed + Uncommitted (commit risk)
+What happens if we commit, push, and release everything currently in the pipeline.
+- Scope: [unreleased + unpushed + uncommitted combined]
+- Additional risks from uncommitted changes: [new risks introduced by staged/unstaged files]
+- **Cumulative residual risk: N/25 (Label)**
+
+### Pipeline Summary
+| Layer | Scope | Residual Risk |
+|-------|-------|--------------|
+| Unreleased | [brief] | N/25 (Label) |
+| + Unpushed | [brief] | N/25 (Label) |
+| + Uncommitted | [brief] | N/25 (Label) |
+```
+
+Each layer's score is the cumulative risk of everything from that layer down to the release. The commit score includes push and release risk. The push score includes release risk. This means:
+- Commit score >= push score >= release score (risk accumulates upward)
+- If release risk is already 8/25, the commit score cannot be less than 8/25
+
+### Risk Item Format
+
+For each identified risk within a layer:
+
+```
+#### Risk N: [Short description]
 - Inherent impact: N/5 (Label) - [why, referencing RISK-POLICY.md impact levels]
 - Inherent likelihood: N/5 (Label) - [why, referencing Likelihood Levels table]
 - Inherent risk: N/25 (Label)
 - Controls:
-  - [Control name] - [executed/will-execute] - reduces [impact/likelihood] from N to N because [rationale]
-  - ...
+  - [Control name: specific test file/scenario or hook name] - [executed/will-execute] - reduces [impact/likelihood] from N to N because [rationale]
 - Residual impact: N/5 (Label)
 - Residual likelihood: N/5 (Label)
 - **Residual risk: N/25 (Label)**
-
-#### Risk 2: [Short description]
-- [Same structure as above]
-
-[Continue for each identified risk. Only list controls that actually reduce impact or likelihood for that specific risk. Controls that are irrelevant to a risk should be omitted from that risk's control list.]
-
-### Overall Risk
-- Overall inherent risk: N/25 (Label) [highest individual inherent risk]
-- Overall residual risk: N/25 (Label) [highest individual residual risk]
-
-### Downstream Impact
-- Projected [next-stage] risk: [assessment]
-- Back-pressure: [none / warning / risk-reducing bypass]
 ```
 
-The residual risk rating written to the temp file should be the **overall residual risk** (the highest individual residual risk).
+Only list controls that actually reduce impact or likelihood for that specific risk. Name the specific test or control per the "Name the control" rule.
 
-The changeset report follows the same itemised risk structure as commit/push/release (Scope → Risks → Overall Risk → Downstream Impact). Additionally include batch composition, coupling analysis, and splitting recommendation as part of the Scope section. The changeset report is saved to its own file (`.risk-reports/{timestamp}-changeset.md`).
+### Score File Values
 
-If any overall residual risk >= 5 (Medium), add:
+Write the **cumulative** residual risk for each layer:
+- Commit score file: Layer 3 cumulative residual risk (highest — includes all layers)
+- Push score file: Layer 2 cumulative residual risk
+- Release score file: Layer 1 residual risk
+
+### Suggested Actions
+
+If any cumulative residual risk >= 5 (Medium), add:
 
 ```
 ### Suggested Actions
-- [Specific action to reduce the score, e.g. "push current commits before adding more", "run e2e tests", "stash unrelated files", "release before pushing more"]
+- [Specific action to reduce the score, referencing which layer is driving the risk]
+- [e.g. "Release the current unreleased queue first (Layer 1 is 8/25)"]
+- [e.g. "Push current commits to get CI feedback before adding more"]
+- [e.g. "Write tests for [specific risk] to reduce Layer 2 from 6 to 4"]
 ```
+
+### Changeset Report
+
+The changeset report follows the same cumulative structure. Additionally include batch composition, coupling analysis, and splitting recommendation as part of the Scope section. The changeset report is saved to its own file (`.risk-reports/{timestamp}-changeset.md`).
 
 ## Report History
 

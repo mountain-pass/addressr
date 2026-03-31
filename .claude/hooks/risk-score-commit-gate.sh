@@ -49,9 +49,18 @@ if [ -f "$CLEAN_FILE" ]; then
     exit 0
 fi
 
+# Risk-reducing/neutral bypass: if a risk-reducing marker exists, the
+# risk-scorer determined this commit reduces or doesn't change cumulative risk.
+# Allow it through even if the cumulative score is above appetite.
+REDUCING_MARKER="/tmp/risk-reducing-commit-${SESSION_ID}"
+if [ -f "$REDUCING_MARKER" ]; then
+    rm -f "$REDUCING_MARKER"
+    exit 0
+fi
+
 # Gate check: existence, TTL, drift, threshold
 if ! check_risk_gate "$SESSION_ID" "commit"; then
-    risk_gate_deny "Commit blocked: ${RISK_GATE_REASON} To proceed: (1) stage files with git add, (2) delegate to risk-scorer (subagent_type: 'risk-scorer') to assess the staged changes — it must consider the accumulated risk across uncommitted, unpushed, and unreleased changes on trunk. If risk exceeds appetite, consider: push first, release the current unreleased queue via \`npm run release:watch\`, split the commit into smaller batches, or add risk-reducing measures (tests, rollback procedures)."
+    risk_gate_deny "Commit blocked: ${RISK_GATE_REASON} To proceed: (1) stage files with git add, (2) delegate to risk-scorer (subagent_type: 'risk-scorer') to assess the staged changes — it must consider the accumulated risk across uncommitted, unpushed, and unreleased changes on trunk. If the commit is risk-neutral or risk-reducing (doesn't increase cumulative release risk), the scorer will create a bypass marker allowing it through."
     exit 0
 fi
 

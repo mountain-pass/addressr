@@ -85,6 +85,7 @@ Type `/` followed by a command name to invoke the corresponding specialist direc
 | `/c4-check` | c4-check (skill) | Check C4 diagram freshness against source |
 | `/risk-policy` | risk-policy (skill) | Create or update RISK-POLICY.md per ISO 31000 |
 | `/problem` | problem (skill) | Create, update, or transition problem tickets per PROBLEM-MANAGEMENT.md |
+| `/retrospective` | retrospective (skill) | Session retrospective — update BRIEFING.md and create problem tickets |
 
 ## Decision Matrix
 

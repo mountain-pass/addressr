@@ -12,6 +12,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": ".claude/hooks/briefing-inject.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": ".claude/hooks/project-health-check.sh"
           }
         ]
@@ -314,6 +322,14 @@
           {
             "type": "command",
             "command": ".claude/hooks/risk-policy-reset-marker.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/retrospective-reminder.sh"
           }
         ]
       }
