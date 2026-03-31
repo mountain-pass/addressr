@@ -49,6 +49,8 @@ case "$FILE_PATH" in
     exit 0 ;;
   */.risk-reports/*)
     exit 0 ;;
+  */docs/BRIEFING.md|docs/BRIEFING.md)
+    exit 0 ;;
   */docs/problems/*.md|docs/problems/*.md)
     exit 0 ;;
 esac
