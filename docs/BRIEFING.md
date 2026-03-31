@@ -25,4 +25,3 @@ This file is injected into every Claude Code session. It contains institutional 
 - `turbo` is used for build orchestration but this is a single-package repo — it may be over-engineering. See ADR 008.
 - PostToolUse hook input for Agent provides `tool_response` (a dict with `content` array of `{type, text}` objects), NOT `tool_output`. Use `tool_response.content[].text` to read agent output in hooks.
 - Risk scorer agents have no Bash tool — they output structured markers (`RISK_SCORES:`, `RISK_VERDICT:`, `RISK_BYPASS:`) and `risk-score-mark.sh` PostToolUse hook writes all score files deterministically. Never write score files directly.
-- All risk/wip/briefing temp files live in `$TMPDIR/claude-risk-$SESSION_ID/` (session-scoped directory), not flat files in `/tmp/`. The Stop hook does `rm -rf` on the directory.
