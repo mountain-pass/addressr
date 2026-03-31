@@ -97,18 +97,6 @@ assert_gate_allows() {
   assert_gate_allows "$TEST_SESSION" "commit"
 }
 
-@test "risk_score_exists returns 0 when file exists" {
-  printf '3' > "$SCORE_FILE"
-  run risk_score_exists "$TEST_SESSION" "commit"
-  [ "$status" -eq 0 ]
-}
-
-@test "risk_score_exists returns 1 when file missing" {
-  rm -f "$SCORE_FILE"
-  run risk_score_exists "$TEST_SESSION" "commit"
-  [ "$status" -eq 1 ]
-}
-
 @test "risk_gate_deny outputs valid JSON" {
   run risk_gate_deny "Test reason"
   [ "$status" -eq 0 ]

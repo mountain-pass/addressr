@@ -72,15 +72,13 @@ if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*npm run push:watch(\s|$)'; then
     exit 0
 fi
 
-# Gate changeset creation on changeset risk score
+# Gate changeset creation on release risk score (fail-closed).
+# Changesets feed directly into releases, so gate on the release score.
 if echo "$COMMAND" | grep -qE '(^|;|&&|\|\|)\s*(npx changeset|npm run changeset)(\s|$)'; then
     if [ -n "$SESSION_ID" ]; then
-        # Permissive on missing: only gate if changeset score exists
-        if risk_score_exists "$SESSION_ID" "changeset"; then
-            if ! check_risk_gate "$SESSION_ID" "changeset"; then
-                risk_gate_deny "Changeset blocked: ${RISK_GATE_REASON}"
-                exit 0
-            fi
+        if ! check_risk_gate "$SESSION_ID" "release"; then
+            risk_gate_deny "Changeset blocked: ${RISK_GATE_REASON}"
+            exit 0
         fi
     fi
     exit 0
