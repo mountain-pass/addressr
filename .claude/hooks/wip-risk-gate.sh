@@ -1,80 +1,37 @@
 #!/bin/bash
 # PreToolUse hook: Blocks Edit/Write on non-doc files until WIP risk
 # assessment has been completed by the risk-scorer in WIP nudge mode.
-# Mirrors the architect-enforce-edit.sh gate pattern.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/gate-helpers.sh"
+_enable_err_trap
 
-INPUT=$(cat)
+_parse_input
 
-TOOL_NAME=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tool_name', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+TOOL_NAME=$(_get_tool_name)
 case "$TOOL_NAME" in
   Edit|Write) ;;
   *) exit 0 ;;
 esac
 
-# Extract the file path being edited
-FILE_PATH=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    ti = data.get('tool_input', {})
-    print(ti.get('file_path', ti.get('path', '')))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+FILE_PATH=$(_get_file_path)
 [ -n "$FILE_PATH" ] || exit 0
 
-# Check if the file is a doc/governance file (excluded from WIP gating)
-EXCL=$(_doc_exclusions)
-IS_DOC=false
-for pattern in $EXCL; do
-  # Strip the ':!' prefix to get the path pattern
-  clean="${pattern#:!}"
-  case "$FILE_PATH" in
-    *"$clean"*) IS_DOC=true; break ;;
-  esac
-done
-
-# Also exclude .claude/ files, .risk-reports/, and plan files
-case "$FILE_PATH" in
-  *.claude/*|*.risk-reports/*|*RISK-POLICY.md) IS_DOC=true ;;
-esac
-
-if [ "$IS_DOC" = true ]; then
-  exit 0
+# Skip doc/governance files
+if _is_doc_file "$FILE_PATH"; then
+    exit 0
 fi
 
-# Check for WIP-reviewed marker
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('session_id', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
 MARKER="/tmp/wip-reviewed-${SESSION_ID}"
 if [ -f "$MARKER" ]; then
-  exit 0
+    exit 0
 fi
 
-# Block: WIP assessment required
 cat <<'EOF'
 {
   "hookSpecificOutput": {

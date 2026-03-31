@@ -7,76 +7,28 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/gate-helpers.sh"
+_enable_err_trap
 
-INPUT=$(cat)
+_parse_input
 
-TOOL_NAME=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tool_name', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
-SESSION_ID=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('session_id', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+TOOL_NAME=$(_get_tool_name)
+SESSION_ID=$(_get_session_id)
 [ -n "$SESSION_ID" ] || exit 0
 
 MARKER="/tmp/wip-reviewed-${SESSION_ID}"
 
 case "$TOOL_NAME" in
   Edit|Write)
-    # Extract the file path
-    FILE_PATH=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    ti = data.get('tool_input', {})
-    print(ti.get('file_path', ti.get('path', '')))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+    FILE_PATH=$(_get_file_path)
     [ -n "$FILE_PATH" ] || exit 0
 
-    # Check if the file is doc/governance (excluded from WIP gating)
-    IS_DOC=false
-    EXCL=$(_doc_exclusions)
-    for pattern in $EXCL; do
-      clean="${pattern#:!}"
-      case "$FILE_PATH" in
-        *"$clean"*) IS_DOC=true; break ;;
-      esac
-    done
-    case "$FILE_PATH" in
-      *.claude/*|*.risk-reports/*|*RISK-POLICY.md) IS_DOC=true ;;
-    esac
-
-    if [ "$IS_DOC" = false ]; then
-      # Non-doc edit: clear the marker so next edit is blocked
-      rm -f "$MARKER"
+    if ! _is_doc_file "$FILE_PATH"; then
+        rm -f "$MARKER"
     fi
     ;;
 
   Agent)
-    # Check if risk-scorer completed WIP nudge mode
-    SUBAGENT=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('tool_input', {}).get('subagent_type', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-
+    SUBAGENT=$(_get_subagent_type)
     case "$SUBAGENT" in
       *risk-scorer*)
         VERDICT_FILE="/tmp/wip-nudge-verdict"
