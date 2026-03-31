@@ -24,7 +24,8 @@ if [ -n "$SESSION_ID" ]; then
           "/tmp/risk-reducing-commit-${SESSION_ID}" \
           "/tmp/risk-reducing-push-${SESSION_ID}" \
           "/tmp/risk-reducing-release-${SESSION_ID}" \
-          "/tmp/risk-incident-release-${SESSION_ID}"
+          "/tmp/risk-incident-release-${SESSION_ID}" \
+          "/tmp/briefing-injected-${SESSION_ID}"
     # Old file names (transition cleanup)
     rm -f "/tmp/risk-score-value-${SESSION_ID}" \
           "/tmp/risk-score-clean-${SESSION_ID}"

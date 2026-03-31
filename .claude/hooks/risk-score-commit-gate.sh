@@ -43,6 +43,30 @@ except:
 
 [ -n "$SESSION_ID" ] || exit 0
 
+# RISK-POLICY.md must exist and not be stale (>14 days)
+if [ ! -f "RISK-POLICY.md" ] || [ ! -s "RISK-POLICY.md" ]; then
+    risk_gate_deny "Commit blocked: RISK-POLICY.md is missing. Run /risk-policy to create it before committing."
+    exit 0
+fi
+POLICY_STALE=$(python3 -c "
+from datetime import date
+import re, sys
+try:
+    text = open('RISK-POLICY.md').read()
+    m = re.search(r'Last reviewed:\*{0,2}\s*(\d{4}-\d{2}-\d{2})', text)
+    if m:
+        reviewed = date.fromisoformat(m.group(1))
+        print('yes' if (date.today() - reviewed).days > 14 else 'no')
+    else:
+        print('no')
+except:
+    print('no')
+" 2>/dev/null || echo "no")
+if [ "$POLICY_STALE" = "yes" ]; then
+    risk_gate_deny "Commit blocked: RISK-POLICY.md is stale (last reviewed over 2 weeks ago). Run /risk-policy to update it before committing."
+    exit 0
+fi
+
 # Clean tree marker means no uncommitted changes when last checked
 CLEAN_FILE="/tmp/risk-clean-${SESSION_ID}"
 if [ -f "$CLEAN_FILE" ]; then
