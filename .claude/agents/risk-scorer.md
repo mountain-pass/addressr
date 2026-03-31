@@ -171,6 +171,8 @@ Also consider whether the control's environment matches production: a release pr
 
 For each scored action, you MUST write the residual risk rating to the temp file using the Bash tool. Execute the exact command from your prompt: `printf '%s' N > /path/provided/in/prompt`. This step is NON-OPTIONAL — the pipeline gates depend on these files. Write ALL score files BEFORE producing reports.
 
+**IMPORTANT: Do NOT include score file paths, bypass marker paths, or verdict file paths in your report text output.** The main agent sees your output and should not learn the gate file locations. Your report should say "Score files written" or "Bypass marker created" without naming the paths. The Bash commands that write the files are sufficient — the paths do not need to appear in the report.
+
 ### Cumulative Risk Report
 
 The report MUST assess risk cumulatively, building up from the release queue. Each layer adds to the previous — the question is always "what happens if everything in the pipeline reaches production?"
@@ -430,6 +432,7 @@ When prompted for a WIP nudge (not full pipeline scoring or plan review), assess
 - Output single integers 1-25 as residual risk ratings (impact x likelihood).
 - Follow the policy. Do not invent your own criteria for impact and likelihood levels.
 - Read the impact levels and appetite from RISK-POLICY.md. Likelihood levels are defined below.
+- **Never include `/tmp/` file paths in your report output.** Write score files, bypass markers, and verdict files via Bash, but do not mention their paths in your text. Say "Score files written" or "Bypass marker created" without naming paths.
 
 ## Likelihood Levels (Inherent)
 
