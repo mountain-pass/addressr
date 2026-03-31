@@ -5,6 +5,10 @@
 
 set -euo pipefail
 
+# Source shared helpers for _doc_exclusions
+_PIPELINE_STATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_PIPELINE_STATE_DIR/gate-helpers.sh"
+
 # --- Parse flags ---
 SHOW_UNCOMMITTED=false
 SHOW_UNPUSHED=false
@@ -39,7 +43,6 @@ if [ "$SHOW_HASH_INPUTS" = true ]; then
     # Previous approach used git diff HEAD + git diff origin/main..HEAD which
     # broke on every commit because content shifted between the two diffs.
     # Exclude docs/governance paths from hash — they cannot affect the running application
-    local EXCL
     EXCL=$(_doc_exclusions)
     if git rev-parse --verify origin/main >/dev/null 2>&1; then
         eval "git diff origin/main --stat -- $EXCL" 2>/dev/null || true
