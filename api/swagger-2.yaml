@@ -40,7 +40,7 @@ paths:
         503:
           description: service unavailable
         500:
-          description: unexpected error
+          description: unexpected error 
   /addresses:
     get:
       summary: Search for a list of addresses
@@ -79,7 +79,7 @@ paths:
         503:
           description: service unavailable
         500:
-          description: unexpected error
+          description: unexpected error 
   /addresses/{addressId}:
     get:
       summary: Get Address
@@ -118,7 +118,7 @@ paths:
         503:
           description: service unavailable
         500:
-          description: unexpected error
+          description: unexpected error 
 definitions:
   Index:
     type: object

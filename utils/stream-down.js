@@ -1,7 +1,7 @@
-const { parse } = require('node:url');
-const http = require('node:https');
-const fs = require('node:fs');
-const pathUtil = require('node:path');
+const { parse } = require('url');
+const http = require('https');
+const fs = require('fs');
+const pathUtil = require('path');
 import ProgressBar from 'progress';
 
 module.exports = function (url, path, size) {
@@ -25,7 +25,7 @@ module.exports = function (url, path, size) {
           incomplete: ' ',
           width: 20,
           total: length,
-        },
+        }
       );
 
       res

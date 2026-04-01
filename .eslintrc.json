@@ -1,0 +1,79 @@
+{
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "plugins": ["prettier", "security", "unicorn", "promise"],
+  "extends": [
+    "eslint:recommended",
+    "prettier",
+    "prettier/babel",
+    "plugin:security/recommended",
+    "plugin:eslint-comments/recommended",
+    "plugin:unicorn/recommended",
+    "plugin:promise/recommended",
+    "plugin:node/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings"
+  ],
+  "env": {
+    "browser": false,
+    "node": true
+  },
+  "globals": {
+    "Promise": true
+  },
+  "rules": {
+    "quotes": "off",
+    "no-console": "off",
+    "comma-dangle": "off",
+    "strict": 2,
+    "prettier/prettier": "error",
+    "import/default": 0,
+    "unicorn/filename-case": [
+      "warn",
+      {
+        "cases": {
+          "kebabCase": true,
+          "pascalCase": true
+        }
+      }
+    ],
+    "unicorn/prevent-abbreviations": "warn",
+    "unicorn/no-null": "warn",
+    "unicorn/no-process-exit": "warn",
+    "promise/always-return": "warn",
+    "promise/catch-or-return": "warn",
+    "node/no-unsupported-features/es-syntax": "off",
+    "node/no-deprecated-api": "warn",
+    "no-process-exit": "warn",
+    "complexity": "warn",
+    "node/shebang": [
+      "error",
+      {
+        "convertPath": {
+          "bin/**/*.js": ["^bin/(.+?)\\.js$", "lib/bin/$1.js"]
+        }
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["test/**"],
+      "plugins": ["chai-friendly"],
+      "extends": ["plugin:chai-friendly/recommended"],
+      "globals": {
+        "expect": true
+      }
+    },
+    {
+      "files": ["scripts/check-version.js"],
+      "parserOptions": {
+        "sourceType": "script"
+      },
+      "rules": {
+        "node/shebang": "off"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+nodemodules/**/*
+target/**/*
+coverage/**
+test-results/**
+lib/**/*
+.env

@@ -4,7 +4,7 @@ export function setLinkOptions(op, url, linkTemplate) {
   if (op.parameters) {
     const parameters = op.parameters;
     const queryParameters = parameters.filter(
-      (parameter) => parameter.in === 'query',
+      (parameter) => parameter.in === 'query'
     );
     const linkOptions = {
       rel: op['x-root-rel'],

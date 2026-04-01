@@ -27,23 +27,23 @@ export function getAddresses(request, response) {
   var p = request.swagger.params['p'].value;
   const url = new URL(
     request.url,
-    `http://localhost:${process.env.port || 8080}`,
+    `http://localhost:${process.env.port || 8080}`
   );
-  _getAddresses(url.pathname, request.swagger, q, p).then(
-    function (addressesResponse) {
-      if (addressesResponse.statusCode) {
-        response.setHeader('Content-Type', 'application/json');
-        response.status(addressesResponse.statusCode);
-        response.json(addressesResponse.json);
-      } else {
-        response.setHeader('link', addressesResponse.link.toString());
-        response.setHeader(
-          'link-template',
-          addressesResponse.linkTemplate.toString(),
-        );
-        writeJson(response, addressesResponse.json);
-      }
-      return;
-    },
-  );
+  _getAddresses(url.pathname, request.swagger, q, p).then(function (
+    addressesResponse
+  ) {
+    if (addressesResponse.statusCode) {
+      response.setHeader('Content-Type', 'application/json');
+      response.status(addressesResponse.statusCode);
+      response.json(addressesResponse.json);
+    } else {
+      response.setHeader('link', addressesResponse.link.toString());
+      response.setHeader(
+        'link-template',
+        addressesResponse.linkTemplate.toString()
+      );
+      writeJson(response, addressesResponse.json);
+    }
+    return;
+  });
 }

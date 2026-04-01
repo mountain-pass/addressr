@@ -10,3 +10,4 @@ During the CI run, we want to
 6. upload the release
 7. create the deployable
 8. run terraform to do the deploy
+

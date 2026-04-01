@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Use Node 16 or above to run this script.
 // `node build.js` will run this script.
 //
@@ -22,64 +24,61 @@ actions:
 
 */
 
-import { connect } from '@dagger.io/dagger';
-import envPaths from 'env-paths';
-import fs from 'node:fs';
+import { connect } from "@dagger.io/dagger"
+import envPaths from "env-paths"
+import fs from "fs"
 
-const cacheDir = `${envPaths('', { suffix: '' }).cache}/dagger`;
+const cacheDir = `${envPaths("", { suffix: "" }).cache}/dagger`
 
-const binLocation = `${cacheDir}/dagger-0.3.9`;
+const binLocation = `${cacheDir}/dagger-0.3.9`
 
 if (!process.env._EXPERIMENTAL_DAGGER_CLI_BIN && fs.existsSync(binLocation)) {
-  process.env._EXPERIMENTAL_DAGGER_CLI_BIN = binLocation;
-  console.log(`using already downloaded '${binLocation}'`);
+    process.env._EXPERIMENTAL_DAGGER_CLI_BIN = binLocation
+    console.log(`using already downloaded '${binLocation}'`)
 }
 
-console.log('connecting...');
+console.log('connecting...')
 connect(async (client) => {
-  console.log('\t...connected');
-  // get reference to the local project
-  client.log;
-  const workspace = client.host().directory('.'); //, { exclude: ["node_modules/"] })
+    console.log('\t...connected')
+    // get reference to the local project
+    client.log
+    const workspace = client.host().directory(".")//, { exclude: ["node_modules/"] })
 
-  // get Node image
-  const node = client
-    .container()
-    .from('node:14.21.2')
-    .withMountedDirectory('/workspace', workspace)
-    .withWorkdir('/workspace');
+    // get Node image
+    const node = client.container().from("node:14.21.2")
+        .withMountedDirectory("/workspace", workspace)
+        .withWorkdir("/workspace");
 
-  console.log(await node.withExec(['npm', '--version']).stdout());
+    console.log(await node.withExec(["npm", "--version"]).stdout())
 
-  const installed = node;
-  //     .withExec(["npm", "install"])
+    const installed = node
+    //     .withExec(["npm", "install"])
 
-  // const exitCode = await installed.exitCode()
-  // console.log({ exitCode });
-  // const stdout = await installed.stdout()
-  // const stderr = await installed.stderr()
-  // const version = await node.withExec(["node", "-v"]).stdout()
+    // const exitCode = await installed.exitCode()
+    // console.log({ exitCode });
+    // const stdout = await installed.stdout()
+    // const stderr = await installed.stderr()
+    // const version = await node.withExec(["node", "-v"]).stdout()
 
-  // print output
-  // console.log("Hello from Dagger and Node " + version)
+    // print output
+    // console.log("Hello from Dagger and Node " + version)
 
-  await installed
-    .withExec(['npm', 'run', 'genversion'])
-    .file('version.js')
-    .export('dagger-version.js');
+    await installed.withExec(["npm", "run", "genversion"]).file('version.js').export('dagger-version.js')
 
-  console.log(stdout);
-  console.error(stderr);
 
-  /*
+    console.log(stdout)
+    console.error(stderr)
+
+    /*
     npm run genversion
                 npm run check-licenses
                 npm run cover:nodejs:nogeo
                 npm run cover:rest:nogeo
     */
 
-  installed.withExec(['npm', 'run', 'build']);
-  // await runner.exitCode()
-  // .directory("node_modules/")
-  // .export("./dagger_node_modules")
-});
+    installed.withExec(["npm", "run", "build"])
+    // await runner.exitCode()
+    // .directory("node_modules/")
+    // .export("./dagger_node_modules")
+
+})

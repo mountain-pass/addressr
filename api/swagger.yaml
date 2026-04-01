@@ -43,11 +43,11 @@ paths:
         503:
           description: service unavailable
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
         500:
-          description: unexpected error
+          description: unexpected error 
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
   /addresses:
     get:
       summary: Get List of Addresses
@@ -98,11 +98,11 @@ paths:
         503:
           description: service unavailable
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
         500:
-          description: unexpected error
+          description: unexpected error 
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
   /addresses/{addressId}:
     get:
       summary: Get Address
@@ -141,11 +141,11 @@ paths:
         503:
           description: service unavailable
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
         500:
-          description: unexpected error
+          description: unexpected error 
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
 definitions:
   Root:
     type: object

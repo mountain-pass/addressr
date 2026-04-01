@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   devcontainer:
-    image: mcr.microsoft.com/devcontainers/javascript-node:22-bookworm
+    image: mcr.microsoft.com/devcontainers/javascript-node:16-bullseye
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity

@@ -1,13 +1,17 @@
 //import debug from 'debug';
+import got from 'got'
+import LinkHeader from 'http-link-header'
+import { JsonPointer } from 'json-ptr'
+import { AddressrDriver } from './AddressrDriver'
 //var logger = debug('test');
-import { waychaser } from '@mountainpass/waychaser';
+import { waychaser } from '@mountainpass/waychaser'
 
 export class AddressrRest2Driver {
-  constructor(url) {
-    this.addressrApi = waychaser.load(url);
+  constructor (url) {
+    this.addressrApi = waychaser.load(url)
   }
-  async getApiRoot() {
-    return this.addressrApi;
+  async getApiRoot () {
+    return this.addressrApi
   }
 
   // async getApi (path) {
