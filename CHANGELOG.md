@@ -1,5 +1,15 @@
 # @mountainpass/addressr
 
+## 1.1.5
+
+### Patch Changes
+
+- 51d13ed: Baseline npm dependency updates within existing caret ranges
+
+  - Update dependencies to latest semver-compatible versions
+  - Add dry-aged-deps maturity checks
+  - Add build-and-test CI job with OpenSearch service container
+
 ## 1.1.4
 
 ### Patch Changes
