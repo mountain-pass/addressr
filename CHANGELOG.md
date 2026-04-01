@@ -1,11 +1,18 @@
 # @mountainpass/addressr
 
+## 1.1.7
+
+### Patch Changes
+
+- 1431e75: Upgrade Prettier v2 to v3 and reformat codebase
+  - Trailing commas now required (Prettier 3 default)
+  - Codebase reformatted for consistency
+
 ## 1.1.6
 
 ### Patch Changes
 
 - 8aff9a8: Upgrade husky v7 to v9 and lint-staged v11 to v15
-
   - Migrate from package.json hooks to `.husky/` shell scripts
   - Add `prepare` script for husky v9 initialization
 
@@ -14,7 +21,6 @@
 ### Patch Changes
 
 - 51d13ed: Baseline npm dependency updates within existing caret ranges
-
   - Update dependencies to latest semver-compatible versions
   - Add dry-aged-deps maturity checks
   - Add build-and-test CI job with OpenSearch service container
@@ -24,7 +30,6 @@
 ### Patch Changes
 
 - b12052d: Add deployment safety controls and v2 API test coverage
-
   - Add `/health` HATEOAS endpoint to v2 API (linked from root, returns status + version)
   - Add `test:rest2:nogeo` to CI pipeline (v2 API now tested in CI)
   - Enable rolling deployment with automatic rollback
