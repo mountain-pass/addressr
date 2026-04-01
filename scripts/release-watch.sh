@@ -49,8 +49,12 @@ echo ""
 echo "Checking CI status..."
 # Wait for the build check (the one that runs tests). check-deps is advisory
 # per ADR 015 and may fail when mature updates are available.
+# Note: The changeset release PR may not have CI checks if the branch was
+# pushed by GITHUB_TOKEN (which doesn't trigger workflows). In that case,
+# we proceed — the release workflow itself runs tests before publishing.
 echo "Waiting for build check to complete..."
-for i in $(seq 1 60); do
+BUILD_STATUS=""
+for i in $(seq 1 30); do
   BUILD_STATUS=$(gh pr checks "$PR_NUMBER" --json name,state --jq '.[] | select(.name == "build") | .state' 2>/dev/null)
   case "$BUILD_STATUS" in
     SUCCESS)
@@ -62,15 +66,27 @@ for i in $(seq 1 60); do
       gh pr checks "$PR_NUMBER" 2>/dev/null
       exit 1
       ;;
+    "")
+      # No build check found — changeset PR pushed by GITHUB_TOKEN won't trigger CI.
+      # Safe to proceed: the post-merge release workflow runs tests before publishing.
+      if [ "$i" -ge 6 ]; then
+        echo ""
+        echo "No build check found on PR (expected for changeset PRs). Proceeding."
+        BUILD_STATUS="SKIPPED"
+        break
+      fi
+      printf '.'
+      sleep 10
+      ;;
     *)
       printf '.'
       sleep 10
       ;;
   esac
 done
-if [ "$BUILD_STATUS" != "SUCCESS" ]; then
+if [ "$BUILD_STATUS" != "SUCCESS" ] && [ "$BUILD_STATUS" != "SKIPPED" ]; then
   echo ""
-  echo "Build check did not complete within 10 minutes." >&2
+  echo "Build check did not complete within 5 minutes." >&2
   exit 1
 fi
 echo ""
