@@ -86,7 +86,7 @@ export async function setAddresses(addr) {
 // SEE https://data.gov.au/data/dataset/19432f89-dc3a-4ef3-b943-5326ef1dbecc
 const GNAF_PACKAGE_URL =
   process.env.GNAF_PACKAGE_URL ||
-  'https://data.gov.au/api/3/action/package_show?id=19432f89-dc3a-4ef3-b943-5326ef1dbecc';
+  'https://data.gov.au/data/api/3/action/package_show?id=19432f89-dc3a-4ef3-b943-5326ef1dbecc';
 
 async function fetchPackageData() {
   const packageUrl = GNAF_PACKAGE_URL;
