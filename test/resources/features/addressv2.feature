@@ -8,8 +8,16 @@ Feature: Addresses v2
             | rel                                     | uri            |
             | self                                    | /              |
             | https://addressr.io/rels/address-search | /addresses{?q} |
+            | https://addressr.io/rels/health         | /health        |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
+
+
+    Scenario: Health Check
+        When the root api is requested
+        And the "https://addressr.io/rels/health" link is followed
+        Then the response will contain the following headers:
+            | cache-control | no-cache |
 
 
     Scenario: Search

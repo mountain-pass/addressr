@@ -72,3 +72,18 @@ jobs:
             TF_VAR_aws_secret_key
             TF_VAR_aws_access_key
             TF_TOKEN_app_terraform_io
+
+      - name: Wait for deployment to stabilize
+        if: steps.changesets.outputs.published == 'true'
+        run: sleep 120
+
+      - name: Smoke test production
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "Testing health endpoint..."
+          curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/health
+          echo ""
+          echo "Testing root API..."
+          curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/
+          echo ""
+          echo "Smoke tests passed."

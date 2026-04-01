@@ -110,12 +110,31 @@ export function startRest2Server() {
     ]
   })
 
+  const healthType = waycharter.registerResourceType({
+    path: '/health',
+    loader: async () => {
+      return {
+        body: {
+          status: 'healthy',
+          version: version,
+          timestamp: new Date().toISOString()
+        },
+        headers: {
+          'cache-control': 'no-cache'
+        }
+      }
+    }
+  })
+
   const index = waycharter.registerResourceType({
     path: '/',
     loader: async () => {
       return {
         body: {},
-        links: addressesType.additionalPaths,
+        links: [
+          ...addressesType.additionalPaths,
+          { rel: 'https://addressr.io/rels/health', path: '/health' }
+        ],
         headers: {
           etag: `"${version}"`,
           'cache-control': `public, max-age=${ONE_WEEK}`

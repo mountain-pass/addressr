@@ -190,7 +190,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:command"
     name      = "DeploymentPolicy"
-    value     = "AllAtOnce"
+    value     = "Rolling"
     resource  = ""
   }
 
@@ -450,7 +450,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:control"
     name      = "RollbackLaunchOnFailure"
-    value     = "false"
+    value     = "true"
     resource  = ""
   }
   setting {
@@ -510,7 +510,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elb:healthcheck"
     name      = "Target"
-    value     = "HTTP:80/"
+    value     = "HTTP:80/health"
     resource  = ""
   }
   setting {
