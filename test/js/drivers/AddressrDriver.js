@@ -21,7 +21,7 @@ export class AddressrDriver {
   }
 
   async followTemplate(link, parameters) {
-    var t = new URI.Template(link.uri);
+    var t = new Template(link.uri);
     const expanded = t.expand(parameters);
     return this.follow(Object.assign({}, link, { uri: expanded }));
   }
