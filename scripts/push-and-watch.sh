@@ -61,7 +61,12 @@ echo "Release workflow: $RUN_URL"
 echo ""
 
 # ── 3. Watch the workflow ───────────────────────────────────────────────────
-if ! gh run watch "$RUN_ID" --exit-status; then
+gh run watch "$RUN_ID" || true
+
+# Check the release job specifically (check-deps is advisory per ADR 015)
+RELEASE_CONCLUSION=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null)
+BUILD_CONCLUSION=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "build") | .conclusion' 2>/dev/null)
+if [ "$RELEASE_CONCLUSION" = "failure" ] || [ "$BUILD_CONCLUSION" = "failure" ]; then
   echo ""
   echo "Push pipeline failed — $RUN_URL"
   show_failure_guidance "$RUN_ID" "$RUN_URL"
