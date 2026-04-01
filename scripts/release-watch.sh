@@ -50,17 +50,28 @@ echo "Checking CI status..."
 # Wait for the build check (the one that runs tests). check-deps is advisory
 # per ADR 015 and may fail when mature updates are available.
 echo "Waiting for build check to complete..."
-if ! gh pr checks "$PR_NUMBER" --watch --fail-fast 2>/dev/null; then
-  # Check if build specifically passed (ignore advisory checks like check-deps)
+for i in $(seq 1 60); do
   BUILD_STATUS=$(gh pr checks "$PR_NUMBER" --json name,state --jq '.[] | select(.name == "build") | .state' 2>/dev/null)
-  if [ "$BUILD_STATUS" != "SUCCESS" ]; then
-    echo "Build check has not passed on the release PR. Fix CI first." >&2
-    echo "Build status: ${BUILD_STATUS:-not found}" >&2
-    exit 1
-  fi
-  echo "Build check passed (advisory checks may have failed — this is expected)."
-else
-  echo "All CI checks passed."
+  case "$BUILD_STATUS" in
+    SUCCESS)
+      echo "Build check passed."
+      break
+      ;;
+    FAILURE|ERROR)
+      echo "Build check failed on the release PR. Fix CI first." >&2
+      gh pr checks "$PR_NUMBER" 2>/dev/null
+      exit 1
+      ;;
+    *)
+      printf '.'
+      sleep 10
+      ;;
+  esac
+done
+if [ "$BUILD_STATUS" != "SUCCESS" ]; then
+  echo ""
+  echo "Build check did not complete within 10 minutes." >&2
+  exit 1
 fi
 echo ""
 
