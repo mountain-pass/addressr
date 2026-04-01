@@ -16,7 +16,7 @@ import { setLinkOptions } from './setLinkOptions';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';
-import glob from 'glob-promise';
+import { glob } from 'glob';
 
 const fsp = fs.promises;
 
