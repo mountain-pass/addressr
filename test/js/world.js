@@ -6,7 +6,7 @@ import {
   AfterAll,
   BeforeAll,
   setWorldConstructor,
-} from 'cucumber';
+} from '@cucumber/cucumber';
 import debug from 'debug';
 import fs from 'node:fs';
 import waitport from 'wait-port';

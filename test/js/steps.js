@@ -2,7 +2,7 @@
 /* eslint-disable security/detect-object-injection */
 
 import { expect } from 'chai';
-import { Given, Then, When } from 'cucumber';
+import { Given, Then, When } from '@cucumber/cucumber';
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
 import {
