@@ -110,27 +110,23 @@ export function startRest2Server() {
     ],
   });
 
-<<<<<<< HEAD
-  const healthType = waycharter.registerResourceType({
+  waycharter.registerResourceType({
     path: '/health',
     loader: async () => {
       return {
         body: {
           status: 'healthy',
           version: version,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         headers: {
-          'cache-control': 'no-cache'
-        }
-      }
-    }
-  })
+          'cache-control': 'no-cache',
+        },
+      };
+    },
+  });
 
-  const index = waycharter.registerResourceType({
-=======
   waycharter.registerResourceType({
->>>>>>> c5c7a91 (Merge pull request #422 from mountain-pass/claude/install-dependencies-s1X6q)
     path: '/',
     loader: async () => {
       return {
