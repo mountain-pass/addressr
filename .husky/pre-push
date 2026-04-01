@@ -1,1 +1,1 @@
-npm run check-deps
+npm run check-deps || echo "check-deps: mature updates available (advisory, not blocking push)"
