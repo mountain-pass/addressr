@@ -1153,7 +1153,19 @@ async function loadGnafData(directory, { refresh = false } = {}) {
   } else {
     // may21 was missing the counts file
     files = await getFiles('.', directory);
-    for (const file of files) {
+    // Only count lines for files we'll actually load (Authority Code + covered states).
+    // Counting all files (~5GB across all states) takes hours on CI runners.
+    const filesToCount =
+      COVERED_STATES.length > 0
+        ? files.filter(
+            (f) =>
+              f.match(/Authority/) ||
+              COVERED_STATES.some((s) =>
+                path.basename(f).startsWith(`${s}_`),
+              ),
+          )
+        : files;
+    for (const file of filesToCount) {
       const lines = await countFileLines(`${directory}/${file}`);
       filesCounts[file] = lines - 1;
     }
