@@ -1522,21 +1522,28 @@ async function loadAuthFiles(files, directory, loadContext, filesCounts) {
 }
 
 export async function loadGnaf({ refresh = false } = {}) {
-  const file = await fetchGnafFile();
-  const unzipped = await unzipFile(file);
+  let mainDirectory;
+  if (process.env.GNAF_TEST_FIXTURE_DIR) {
+    // Skip download, extraction, and directory scanning — use pre-prepared fixture.
+    mainDirectory = process.env.GNAF_TEST_FIXTURE_DIR;
+    logger('Using test fixture dir', mainDirectory);
+  } else {
+    const file = await fetchGnafFile();
+    const unzipped = await unzipFile(file);
 
-  logger('Data dir', unzipped);
-  const contents = await fsp.readdir(unzipped);
-  logger('Data dir contents', contents);
-  if (contents.length === 0) {
-    throw new Error(`Data dir '${unzipped}' is empty`);
+    logger('Data dir', unzipped);
+    const contents = await fsp.readdir(unzipped);
+    logger('Data dir contents', contents);
+    if (contents.length === 0) {
+      throw new Error(`Data dir '${unzipped}' is empty`);
+    }
+    const gnafDir = await glob('**/G-NAF/', { cwd: unzipped });
+    console.log(gnafDir);
+    if (gnafDir.length === 0) {
+      throw new Error(`Cannot find 'G-NAF' directory in Data dir '${unzipped}'`);
+    }
+    mainDirectory = path.dirname(`${unzipped}/${gnafDir[0].slice(0, -1)}`);
   }
-  const gnafDir = await glob('**/G-NAF/', { cwd: unzipped });
-  console.log(gnafDir);
-  if (gnafDir.length === 0) {
-    throw new Error(`Cannot find 'G-NAF' directory in Data dir '${unzipped}'`);
-  }
-  const mainDirectory = path.dirname(`${unzipped}/${gnafDir[0].slice(0, -1)}`);
   logger('Main Data dir', mainDirectory);
   await loadGnafData(mainDirectory, { refresh });
 }

@@ -59,14 +59,36 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Cache G-NAF data
+      - name: Cache G-NAF zip
         uses: actions/cache@v4
+        id: gnaf-cache
         with:
-          path: target/gnaf
-          key: gnaf-${{ hashFiles('service/address-service.js') }}
+          path: target/gnaf/*.zip
+          key: gnaf-zip-${{ hashFiles('service/address-service.js') }}
           restore-keys: |
-            gnaf-
+            gnaf-zip-
+      - name: Prepare OT test fixture
+        run: |
+          # Download G-NAF if not cached
+          npm run build
+          if [ ! -f target/gnaf/*.zip ]; then
+            node -e "
+              require('@babel/register');
+              require('@babel/polyfill');
+              require('./service/address-service').fetchGnafFile().then(f => console.log('Downloaded:', f));
+            "
+          fi
+          # Extract only OT + Authority Code files into a slim fixture
+          GNAF_ZIP=$(ls target/gnaf/*.zip | head -1)
+          FIXTURE_DIR=target/gnaf-fixture
+          mkdir -p "$FIXTURE_DIR"
+          unzip -o -j "$GNAF_ZIP" '*/Authority Code/*' -d "$FIXTURE_DIR/Authority Code/" 2>/dev/null || true
+          unzip -o -j "$GNAF_ZIP" '*/Standard/OT_*' -d "$FIXTURE_DIR/Standard/" 2>/dev/null || true
+          echo "Fixture contents:"
+          find "$FIXTURE_DIR" -type f | head -20
       - name: Run tests
+        env:
+          GNAF_TEST_FIXTURE_DIR: target/gnaf-fixture
         run: npm run test:nogeo
 
   release:
