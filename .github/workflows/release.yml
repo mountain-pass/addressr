@@ -48,10 +48,24 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22.x'
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-
       - name: Install dependencies
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Cache G-NAF data
+        uses: actions/cache@v4
+        with:
+          path: target/gnaf
+          key: gnaf-${{ hashFiles('service/address-service.js') }}
+          restore-keys: |
+            gnaf-
       - name: Run tests
         run: npm run test:nogeo
 
