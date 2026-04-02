@@ -158,7 +158,7 @@
   "private": false,
   "dependencies": {
     "@changesets/cli": "^2.26.2",
-    "@mountainpass/waycharter": "^2.0.4",
+    "@mountainpass/waycharter": "^1.0.76",
     "@opensearch-project/opensearch": "^3.5.1",
     "debug": "^4.1.1",
     "directory-exists": "^2.0.1",

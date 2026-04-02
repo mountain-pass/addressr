@@ -10,7 +10,7 @@ BREAKING: Require Node.js >= 22 (previously >= 14)
 
 ### Dependency Upgrades (Major Versions)
 
-- `@mountainpass/waycharter` v1 to v2
+- `@mountainpass/waycharter` pinned to v1 (v2 API migration deferred)
 - `@opensearch-project/opensearch` v2 to v3
 - `dotenv` v10 to v17
 - `glob` v7 to v13 (removed `glob-promise`)
