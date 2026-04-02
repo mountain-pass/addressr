@@ -20,7 +20,7 @@ BREAKING: Require Node.js >= 22 (previously >= 14)
 
 ### Dev Dependency Upgrades (Major Versions)
 
-- `@mountainpass/waychaser` v4 to v5
+- `@mountainpass/waychaser` pinned to v4 (v5 API migration deferred)
 - `@cucumber/cucumber` v5 to v12
 - `eslint` v7 to v9 (migrated to flat config)
 - `nodemon` v2 to v3
