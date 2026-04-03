@@ -111,6 +111,7 @@ Feature: Addresses v2
             | cache-control | public, max-age=604800 |
 
 
+    @geo
     Scenario: Search and item and canonical
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
