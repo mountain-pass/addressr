@@ -15,12 +15,14 @@ import { startServer, stopServer } from '../../swagger';
 import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
 import { AddressrRestDriver } from './drivers/AddressrRestDriver';
 import { AddressrRest2Driver } from './drivers/AddressrRest2Driver';
-import { startRest2Server } from '../../src/waycharterServer';
+import {
+  startRest2Server,
+  stopServer as stopRest2Server,
+} from '../../src/waycharterServer';
 
 const fsp = fs.promises;
 
 const logger = debug('test');
-const esLogger = debug('es');
 
 global.expect = chai.expect;
 
@@ -82,6 +84,7 @@ BeforeAll({ timeout: 240_000 }, async function () {
 
 AfterAll({ timeout: 30_000 }, async function () {
   stopServer();
+  stopRest2Server();
   //delete global.esClient;
   if (this.logStream) {
     this.logStream.destroy();

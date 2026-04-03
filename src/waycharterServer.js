@@ -133,7 +133,7 @@ export function startRest2Server() {
         body: {},
         links: [
           ...addressesType.additionalPaths,
-          { rel: 'https://addressr.io/rels/health', path: '/health' }
+          { rel: 'https://addressr.io/rels/health', uri: '/health' },
         ],
         headers: {
           etag: `"${version}"`,
