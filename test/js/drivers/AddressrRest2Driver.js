@@ -4,10 +4,10 @@ import { waychaser } from '@mountainpass/waychaser';
 
 export class AddressrRest2Driver {
   constructor(url) {
-    this.addressrApi = waychaser.load(url);
+    this.url = url;
   }
   async getApiRoot() {
-    return this.addressrApi;
+    return waychaser(this.url);
   }
 
   // async getApi (path) {

@@ -233,7 +233,7 @@ Then(
       expect(this.current.json).to.be.an('array').that.is.not.empty;
       expect(this.current.json.length).to.be.greaterThan(5);
     } else {
-      const body = await this.current.body();
+      const body = this.current.content;
       expect(body).to.be.an('array').that.is.not.empty;
       expect(body.length).to.be.greaterThan(5);
     }
@@ -333,7 +333,7 @@ Then(
   'the returned address list will include:',
   async function (documentString) {
     const entity = JSON.parse(documentString);
-    const responseBody = this.current.json || (await this.current.body());
+    const responseBody = this.current.json || this.current.content;
     logger('FOUND', JSON.stringify(responseBody, undefined, 2));
     const found = responseBody.find((a) => {
       return (
@@ -349,14 +349,14 @@ Then(
 
 Then('the returned address summary will be:', async function (documentString) {
   const entity = JSON.parse(documentString);
-  const responseBody = await this.current.body();
+  const responseBody = this.current.content;
   expect(responseBody.sla).to.equal(entity.sla);
   expect(responseBody.pid).to.equal(entity.pid);
 });
 
 Then('the returned address will be:', async function (documentString) {
   const entity = JSON.parse(documentString);
-  const responseBody = await this.current.body();
+  const responseBody = this.current.content;
   expect(responseBody).to.deep.equal(entity);
 });
 
@@ -364,7 +364,7 @@ Then(
   'a {int} response will be received with the following content',
   async function (status, documentString) {
     expect(this.current.response.status).to.equal(status);
-    expect(await this.current.body()).to.deep.equal(JSON.parse(documentString));
+    expect(this.current.content).to.deep.equal(JSON.parse(documentString));
   },
 );
 
@@ -422,7 +422,7 @@ Then('the response will contain:', async function (documentString) {
   if (this.current.json) {
     expect(this.current.json).to.deep.equal(entity);
   } else {
-    expect(await this.current.body()).to.deep.equal(entity);
+    expect(this.current.content).to.deep.equal(entity);
   }
 });
 
@@ -444,7 +444,7 @@ Then(
       expect(this.current.headers[headerName.toString()]).to.equal(headerValue);
     } else {
       console.log({ current: this.current.response.headers });
-      console.log({ body: await this.current.body() });
+      console.log({ body: this.current.content });
       expect(this.current.response.headers.get(headerName.toString())).to.not.be
         .undefined;
       expect(this.current.response.headers.get(headerName.toString())).to.equal(
