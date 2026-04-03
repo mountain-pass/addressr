@@ -317,10 +317,9 @@ When(
       }
     } else {
       try {
-        this.current = await this.current.invoke(
-          relationship,
-          parameters.rowsHash(),
-        );
+        this.current = await this.current.invoke(relationship, {
+          parameters: parameters.rowsHash(),
+        });
       } catch (error) {
         console.error({ error: error });
         this.current = error;
