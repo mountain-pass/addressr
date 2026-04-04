@@ -27,3 +27,4 @@ This file is injected into every Claude Code session. It contains institutional 
 - `turbo` is used for build orchestration but this is a single-package repo — it may be over-engineering. See ADR 008.
 - PostToolUse hook input for Agent provides `tool_response` (a dict with `content` array of `{type, text}` objects), NOT `tool_output`. Use `tool_response.content[].text` to read agent output in hooks.
 - Risk scorer agents have no Bash tool — they output structured markers (`RISK_SCORES:`, `RISK_VERDICT:`, `RISK_BYPASS:`) and `risk-score-mark.sh` PostToolUse hook writes all score files deterministically. Never write score files directly.
+- `release:watch` script may falsely report "no new version published" even when publish+deploy+smoke tests all succeed. Verify via `gh run view` logs or npm registry if in doubt.
