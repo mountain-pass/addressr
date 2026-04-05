@@ -13,7 +13,7 @@ import unzip from 'unzip-stream';
 import { initIndex, dropIndex as dropESIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './setLinkOptions';
-import Keyv from 'keyv';
+import { Keyv } from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';
 import { glob } from 'glob';
@@ -1118,7 +1118,7 @@ async function getFiles(currentDir, baseDir) {
 
 function countFileLines(filePath) {
   return new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(filePath, 'utf-8');
+    const readStream = fs.createReadStream(filePath, 'utf8');
     let lines = 0;
     let last;
     readStream.on('data', function (chunk) {
@@ -1160,9 +1160,7 @@ async function loadGnafData(directory, { refresh = false } = {}) {
         ? files.filter(
             (f) =>
               f.match(/Authority/) ||
-              COVERED_STATES.some((s) =>
-                path.basename(f).startsWith(`${s}_`),
-              ),
+              COVERED_STATES.some((s) => path.basename(f).startsWith(`${s}_`)),
           )
         : files;
     for (const file of filesToCount) {
@@ -1284,14 +1282,6 @@ async function loadFileCounts(countsFile) {
   });
   logger('filesCounts', filesCounts);
   return filesCounts;
-}
-
-async function loadFileContents(contentsFile) {
-  const contents = await fsp.readFile(contentsFile);
-  return contents
-    .toString()
-    .split('\n')
-    .map((line) => line.trim());
 }
 
 async function loadState(files, directory, state) {
@@ -1540,7 +1530,9 @@ export async function loadGnaf({ refresh = false } = {}) {
     const gnafDir = await glob('**/G-NAF/', { cwd: unzipped });
     console.log(gnafDir);
     if (gnafDir.length === 0) {
-      throw new Error(`Cannot find 'G-NAF' directory in Data dir '${unzipped}'`);
+      throw new Error(
+        `Cannot find 'G-NAF' directory in Data dir '${unzipped}'`,
+      );
     }
     mainDirectory = path.dirname(`${unzipped}/${gnafDir[0].slice(0, -1)}`);
   }
