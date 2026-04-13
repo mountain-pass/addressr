@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.0.3
+
+### Patch Changes
+
+- 5e0fd2d: Upgrade production dependencies (keyv v5, json-ptr v3, wait-port v1) and fix waychaser dependency (unpinned to ^5.0.50 after CJS output fix).
+
 ## 2.0.2
 
 ### Patch Changes
