@@ -67,6 +67,7 @@ export default [
           },
         },
       ],
+      // Blocked by ADR 005 (Babel/CJS — requires native ESM)
       'unicorn/prefer-module': 'off',
       // waycharter ops.find()/ops.filter() are not Array.prototype — false positives
       'unicorn/no-array-callback-reference': 'off',
