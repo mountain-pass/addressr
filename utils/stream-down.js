@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const pathUtil = require('node:path');
 import ProgressBar from 'progress';
 
-module.exports = function (url, path, size) {
+module.exports = function streamDown(url, path, size) {
   const uri = parse(url);
   if (!path) {
     path = pathUtil.basename(uri.path);

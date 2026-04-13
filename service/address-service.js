@@ -514,7 +514,7 @@ function mapGeo(geoSite, context, geoDefault) {
           };
         })
       : [];
-  return sites.concat(defaults);
+  return [...sites, ...defaults];
 }
 
 function mapToSla(fla) {
@@ -1113,7 +1113,7 @@ async function getFiles(currentDirectory, baseDirectory) {
       return dirent.isDirectory() ? getFiles(result, baseDirectory) : result;
     }),
   );
-  return Array.prototype.concat(...files);
+  return files.flat();
 }
 
 function countFileLines(filePath) {

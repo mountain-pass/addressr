@@ -72,11 +72,8 @@ export default [
       'unicorn/prefer-module': 'off',
       // waycharter ops.find()/ops.filter() are not Array.prototype — false positives
       'unicorn/no-array-callback-reference': 'off',
-      'unicorn/prefer-spread': 'off',
+      // Blocked by ADR 005 (Babel/CJS — requires native ESM)
       'unicorn/prefer-top-level-await': 'off',
-      'unicorn/require-module-specifiers': 'off',
-      'unicorn/prefer-string-raw': 'off',
-      'unicorn/no-anonymous-default-export': 'off',
       'promise/always-return': 'warn',
       'promise/catch-or-return': 'warn',
       'n/no-unsupported-features/es-syntax': 'off',
@@ -92,7 +89,7 @@ export default [
         'error',
         {
           convertPath: {
-            'bin/**/*.js': ['^bin/(.+?)\\.js$', 'lib/bin/$1.js'],
+            'bin/**/*.js': [String.raw`^bin/(.+?)\.js$`, 'lib/bin/$1.js'],
           },
         },
       ],

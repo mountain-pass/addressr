@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-import {} from '../server.js';
+import '../server.js';

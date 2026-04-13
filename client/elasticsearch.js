@@ -68,7 +68,7 @@ export async function initIndex(esClient, clear, synonyms) {
           tokenizer: {
             whitecomma: {
               type: 'pattern',
-              pattern: '[\\W,]+',
+              pattern: String.raw`[\W,]+`,
               lowercase: false,
             },
           },
