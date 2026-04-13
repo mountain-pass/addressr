@@ -62,8 +62,8 @@ export default [
       'unicorn/no-null': 'warn',
       'unicorn/no-process-exit': 'warn',
       'unicorn/prefer-module': 'off',
+      // waycharter ops.find()/ops.filter() are not Array.prototype — false positives
       'unicorn/no-array-callback-reference': 'off',
-      'unicorn/no-array-for-each': 'off',
       'unicorn/prefer-spread': 'off',
       'unicorn/prefer-top-level-await': 'off',
       'unicorn/prefer-global-this': 'off',
