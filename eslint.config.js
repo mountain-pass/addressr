@@ -58,7 +58,15 @@ export default [
           },
         },
       ],
-      'unicorn/prevent-abbreviations': 'warn',
+      'unicorn/prevent-abbreviations': [
+        'error',
+        {
+          replacements: {
+            res: { response: true },
+            dir: { directory: true },
+          },
+        },
+      ],
       'unicorn/no-null': 'warn',
       'unicorn/no-process-exit': 'warn',
       'unicorn/prefer-module': 'off',

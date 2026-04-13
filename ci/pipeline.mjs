@@ -26,9 +26,9 @@ import { connect } from '@dagger.io/dagger';
 import envPaths from 'env-paths';
 import fs from 'node:fs';
 
-const cacheDir = `${envPaths('', { suffix: '' }).cache}/dagger`;
+const cacheDirectory = `${envPaths('', { suffix: '' }).cache}/dagger`;
 
-const binLocation = `${cacheDir}/dagger-0.3.9`;
+const binLocation = `${cacheDirectory}/dagger-0.3.9`;
 
 if (!process.env._EXPERIMENTAL_DAGGER_CLI_BIN && fs.existsSync(binLocation)) {
   process.env._EXPERIMENTAL_DAGGER_CLI_BIN = binLocation;

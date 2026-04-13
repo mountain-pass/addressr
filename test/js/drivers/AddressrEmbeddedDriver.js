@@ -3,7 +3,7 @@ import { JsonPointer } from 'json-ptr';
 import Template from 'uri-template-lite';
 import { getAddress, getAddresses } from '../../../service/address-service';
 import { getApiRoot } from '../../../service/DefaultService';
-import { swaggerDoc as swaggerDocument } from '../../../swagger';
+import { swaggerDocument } from '../../../swagger';
 import { AddressrDriver } from './AddressrDriver';
 
 const logger = debug('api');

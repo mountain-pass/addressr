@@ -23,14 +23,14 @@ var options = {
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
 var spec = readFileSync(pathUtil.join(__dirname, 'api/swagger.yaml'), 'utf8');
-export var swaggerDoc = load(spec);
+export var swaggerDocument = load(spec);
 
-globalThis.swaggerDoc = swaggerDoc;
+globalThis.swaggerDocument = swaggerDocument;
 
 export function swaggerInit() {
   // Initialize the Swagger middleware
   return new Promise((resolve) => {
-    initializeMiddleware(swaggerDoc, function (middleware) {
+    initializeMiddleware(swaggerDocument, function (middleware) {
       // Interpret Swagger resources and attach metadata to request - must be first in swagger-tools middleware chain
       const metaData = middleware.swaggerMetadata();
       app.use(metaData);
@@ -55,7 +55,7 @@ export function swaggerInit() {
         }),
       );
 
-      app.use(function (error_, request, res, next) {
+      app.use(function (error_, request, response, next) {
         if (error_.failedValidation) {
           // handle validation errror
           const rehydratedError = Object.assign({}, error_);
@@ -76,7 +76,7 @@ export function swaggerInit() {
             error_.message,
             JSON.stringify(rehydratedError, undefined, 2),
           );
-          res
+          response
             .status(error_.code === 'SCHEMA_VALIDATION_FAILED' ? '500' : '400')
             .json(rehydratedError);
         } else {

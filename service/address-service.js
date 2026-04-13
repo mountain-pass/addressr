@@ -494,7 +494,7 @@ function mapGeo(geoSite, context, geoDefault) {
         };
       })
     : [];
-  const def =
+  const defaults =
     geoDefault && !foundDefault
       ? geoDefault.map((geo) => {
           return {
@@ -514,7 +514,7 @@ function mapGeo(geoSite, context, geoDefault) {
           };
         })
       : [];
-  return sites.concat(def);
+  return sites.concat(defaults);
 }
 
 function mapToSla(fla) {
@@ -1103,14 +1103,14 @@ function buildSynonyms(context) {
 
 const { readdir } = require('node:fs').promises;
 
-async function getFiles(currentDir, baseDir) {
-  const dir = path.resolve(baseDir, currentDir);
-  logger(`reading ${dir} (${currentDir} in ${baseDir})`);
-  const dirents = await readdir(dir, { withFileTypes: true });
+async function getFiles(currentDirectory, baseDirectory) {
+  const directory = path.resolve(baseDirectory, currentDirectory);
+  logger(`reading ${directory} (${currentDirectory} in ${baseDirectory})`);
+  const dirents = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(
     dirents.map((dirent) => {
-      const res = `${currentDir}/${dirent.name}`;
-      return dirent.isDirectory() ? getFiles(res, baseDir) : res;
+      const result = `${currentDirectory}/${dirent.name}`;
+      return dirent.isDirectory() ? getFiles(result, baseDirectory) : result;
     }),
   );
   return Array.prototype.concat(...files);
@@ -1527,14 +1527,16 @@ export async function loadGnaf({ refresh = false } = {}) {
     if (contents.length === 0) {
       throw new Error(`Data dir '${unzipped}' is empty`);
     }
-    const gnafDir = await glob('**/G-NAF/', { cwd: unzipped });
-    console.log(gnafDir);
-    if (gnafDir.length === 0) {
+    const gnafDirectory = await glob('**/G-NAF/', { cwd: unzipped });
+    console.log(gnafDirectory);
+    if (gnafDirectory.length === 0) {
       throw new Error(
         `Cannot find 'G-NAF' directory in Data dir '${unzipped}'`,
       );
     }
-    mainDirectory = path.dirname(`${unzipped}/${gnafDir[0].slice(0, -1)}`);
+    mainDirectory = path.dirname(
+      `${unzipped}/${gnafDirectory[0].slice(0, -1)}`,
+    );
   }
   logger('Main Data dir', mainDirectory);
   await loadGnafData(mainDirectory, { refresh });
