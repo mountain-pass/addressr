@@ -28,17 +28,15 @@ export async function createMcpClient() {
 
   // Try StreamableHTTP first, fall back to SSE
   try {
-    const transport = new StreamableHTTPClientTransport(
-      new URL(MCP_URL),
-      { requestInit: { headers } },
-    );
+    const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
+      requestInit: { headers },
+    });
     await client.connect(transport);
     return client;
   } catch {
-    const transport = new SSEClientTransport(
-      new URL(MCP_URL),
-      { requestInit: { headers } },
-    );
+    const transport = new SSEClientTransport(new URL(MCP_URL), {
+      requestInit: { headers },
+    });
     await client.connect(transport);
     return client;
   }
