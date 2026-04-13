@@ -10,15 +10,15 @@ var logger = debug('api');
  * returns Root
  **/
 export async function getApiRoot() {
-  const paths = Object.keys(global.swaggerDoc.paths).filter(
+  const paths = Object.keys(globalThis.swaggerDoc.paths).filter(
     (p) =>
-      global.swaggerDoc.paths[p].get !== undefined &&
-      global.swaggerDoc.paths[p].get['x-root-rel'] !== undefined,
+      globalThis.swaggerDoc.paths[p].get !== undefined &&
+      globalThis.swaggerDoc.paths[p].get['x-root-rel'] !== undefined,
   );
 
   const link = new LinkHeader();
   for (const p of paths) {
-    const op = global.swaggerDoc.paths[p].get;
+    const op = globalThis.swaggerDoc.paths[p].get;
     if (
       op.parameters &&
       op.parameters.some((parameter) => parameter.required === true)
@@ -43,7 +43,7 @@ export async function getApiRoot() {
 
   const linkTemplate = new LinkHeader();
   for (const url of paths) {
-    const op = global.swaggerDoc.paths[url].get;
+    const op = globalThis.swaggerDoc.paths[url].get;
     logger(op);
     setLinkOptions(op, url, linkTemplate);
   }

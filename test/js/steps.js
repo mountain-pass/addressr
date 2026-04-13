@@ -188,12 +188,12 @@ Then('the an empty address list will be returned', async function () {
 });
 
 Given('an empty address database', async function () {
-  delete global.gnafLoaded;
+  delete globalThis.gnafLoaded;
   return clearAddresses();
 });
 
 Given('an address database with:', async function (documentString) {
-  delete global.gnafLoaded;
+  delete globalThis.gnafLoaded;
   return setAddresses(JSON.parse(documentString));
 });
 
@@ -214,15 +214,15 @@ Given(
   'an address database is loaded from gnaf',
   { timeout: ONE_HOUR },
   async function () {
-    if (global.gnafLoaded === undefined) {
-      global.gnafLoaded = true;
+    if (globalThis.gnafLoaded === undefined) {
+      globalThis.gnafLoaded = true;
       this.dataDir = await loadGnaf({ refresh: true });
     }
   },
 );
 
 Given('an address database is not loaded from gnaf', async function () {
-  global.gnafLoaded = undefined;
+  globalThis.gnafLoaded = undefined;
   await dropIndex();
 });
 

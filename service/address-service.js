@@ -44,11 +44,11 @@ const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
 
 export async function dropIndex() {
-  await dropESIndex(global.esClient);
+  await dropESIndex(globalThis.esClient);
 }
 
 export async function clearAddresses() {
-  await initIndex(global.esClient, true);
+  await initIndex(globalThis.esClient, true);
 }
 
 export async function setAddresses(addr) {
@@ -935,7 +935,7 @@ async function loadAddressDetails(
 
 export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
-  const searchResp = await global.esClient.search({
+  const searchResp = await globalThis.esClient.search({
     index: ES_INDEX_NAME,
     body: {
       from: (p - 1 || 0) * pageSize,
@@ -999,7 +999,7 @@ async function sendIndexRequest(
   // eslint-disable-next-line no-constant-condition
   for (let count = 0; true; count++) {
     try {
-      const resp = await global.esClient.bulk({
+      const resp = await globalThis.esClient.bulk({
         refresh,
         body: indexingBody,
         timeout: process.env.ADDRESSR_INDEX_TIMEOUT || '300s',
@@ -1181,7 +1181,7 @@ async function loadGnafData(directory, { refresh = false } = {}) {
   // loadContext now contains all the auth files, so we can build the synonyms
   const synonyms = buildSynonyms(loadContext);
   await initIndex(
-    global.esClient,
+    globalThis.esClient,
     process.env.ES_CLEAR_INDEX || false,
     synonyms,
   );
@@ -1549,7 +1549,7 @@ export async function loadGnaf({ refresh = false } = {}) {
  **/
 export async function getAddress(addressId) {
   try {
-    const jsonX = await global.esClient.get({
+    const jsonX = await globalThis.esClient.get({
       index: ES_INDEX_NAME,
       id: `/addresses/${addressId}`,
     });

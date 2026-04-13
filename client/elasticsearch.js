@@ -200,7 +200,7 @@ export async function esConnect(
             );
             await esClient.ping();
             logger(`...connected to ${eshost}:${esport}`);
-            global.esClient = esClient;
+            globalThis.esClient = esClient;
             return esClient;
           } catch (error_) {
             error(

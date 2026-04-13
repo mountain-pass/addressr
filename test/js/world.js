@@ -24,7 +24,7 @@ const fsp = fs.promises;
 
 const logger = debug('test');
 
-global.expect = chai.expect;
+globalThis.expect = chai.expect;
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
@@ -47,27 +47,29 @@ BeforeAll({ timeout: 240_000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
     case 'rest': {
-      global.driver = new AddressrRestDriver(await startServer());
+      globalThis.driver = new AddressrRestDriver(await startServer());
       break;
     }
     case 'rest2': {
-      global.driver = new AddressrRest2Driver(await startRest2Server());
+      globalThis.driver = new AddressrRest2Driver(await startRest2Server());
       break;
     }
     case 'cli': {
-      global.driver = new AddressrRestDriver(await startExternalServer());
+      globalThis.driver = new AddressrRestDriver(await startExternalServer());
       break;
     }
     case 'cli2': {
-      global.driver = new AddressrRest2Driver(await startExternalServer());
+      globalThis.driver = new AddressrRest2Driver(await startExternalServer());
       break;
     }
     case 'docker': {
-      global.driver = new AddressrRestDriver(await ensureDockerServerStarted());
+      globalThis.driver = new AddressrRestDriver(
+        await ensureDockerServerStarted(),
+      );
       break;
     }
     case 'default': {
-      global.driver = new AddressrEmbeddedDriver();
+      globalThis.driver = new AddressrEmbeddedDriver();
       break;
     }
     default: {
@@ -95,7 +97,7 @@ function world({ attach, parameters }) {
   logger('IN WORLD');
   this.attach = attach;
   this.parameters = parameters;
-  this.driver = global.driver;
+  this.driver = globalThis.driver;
 }
 
 setWorldConstructor(world);

@@ -66,7 +66,6 @@ export default [
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/prefer-spread': 'off',
       'unicorn/prefer-top-level-await': 'off',
-      'unicorn/prefer-global-this': 'off',
       'unicorn/require-module-specifiers': 'off',
       'unicorn/prefer-string-raw': 'off',
       'unicorn/no-anonymous-default-export': 'off',

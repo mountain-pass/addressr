@@ -25,7 +25,7 @@ var options = {
 var spec = readFileSync(pathUtil.join(__dirname, 'api/swagger.yaml'), 'utf8');
 export var swaggerDoc = load(spec);
 
-global.swaggerDoc = swaggerDoc;
+globalThis.swaggerDoc = swaggerDoc;
 
 export function swaggerInit() {
   // Initialize the Swagger middleware
@@ -84,8 +84,8 @@ export function swaggerInit() {
         }
       });
 
-      global.swaggerApp = app;
-      global.swaggerMiddleware = middleware;
+      globalThis.swaggerApp = app;
+      globalThis.swaggerMiddleware = middleware;
       resolve({ app, middleware });
     });
   });

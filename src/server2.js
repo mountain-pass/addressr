@@ -8,7 +8,7 @@ const logger = debug('api');
 startRest2Server().then(() => {
   logger('connecting es client');
   const p1 = esConnect().then((esClient) => {
-    global.esClient = esClient;
+    globalThis.esClient = esClient;
     logger('es client connected');
   });
   p1.then(() => {
