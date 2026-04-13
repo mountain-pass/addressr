@@ -12,7 +12,7 @@ import stream from 'node:stream';
 import unzip from 'unzip-stream';
 import { initIndex, dropIndex as dropESIndex } from '../client/elasticsearch';
 import download from '../utils/stream-down';
-import { setLinkOptions } from './setLinkOptions';
+import { setLinkOptions } from './set-link-options';
 import { Keyv } from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';

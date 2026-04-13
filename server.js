@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { esConnect } from './client/elasticsearch';
-import { printVersion } from './service/printVersion';
+import { printVersion } from './service/print-version';
 import { startServer } from './swagger';
 
 const logger = debug('api');

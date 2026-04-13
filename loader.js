@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { esConnect } from './client/elasticsearch';
 import { loadGnaf } from './service/address-service';
-import { printVersion } from './service/printVersion';
+import { printVersion } from './service/print-version';
 const logger = debug('api');
 const error = debug('error');
 
@@ -30,7 +30,7 @@ esConnect()
   })
   .then(() => {
     logger(`Fin`);
-    process.exit();
+    process.exit(); // eslint-disable-line unicorn/no-process-exit, n/no-process-exit, no-process-exit -- CLI loader entry point
   })
   .catch((error_) => {
     error('error loading data', error_);

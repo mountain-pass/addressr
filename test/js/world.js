@@ -18,7 +18,7 @@ import { AddressrRest2Driver } from './drivers/AddressrRest2Driver';
 import {
   startRest2Server,
   stopServer as stopRest2Server,
-} from '../../src/waycharterServer';
+} from '../../src/waycharter-server';
 
 const fsp = fs.promises;
 

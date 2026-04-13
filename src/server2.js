@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { esConnect } from '../client/elasticsearch';
-import { printVersion } from '../service/printVersion';
-import { startRest2Server } from './waycharterServer';
+import { printVersion } from '../service/print-version';
+import { startRest2Server } from './waycharter-server';
 
 const logger = debug('api');
 

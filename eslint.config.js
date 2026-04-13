@@ -50,7 +50,7 @@ export default [
       'prettier/prettier': 'error',
       'import-x/default': 0,
       'unicorn/filename-case': [
-        'warn',
+        'error',
         {
           cases: {
             kebabCase: true,
@@ -67,8 +67,6 @@ export default [
           },
         },
       ],
-      'unicorn/no-null': 'warn',
-      'unicorn/no-process-exit': 'warn',
       'unicorn/prefer-module': 'off',
       // waycharter ops.find()/ops.filter() are not Array.prototype — false positives
       'unicorn/no-array-callback-reference': 'off',
