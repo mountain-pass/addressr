@@ -850,6 +850,7 @@ async function loadAddressDetails(
             ssla,
             structured,
             confidence: structured.structured.confidence,
+            locality_pid: row.LOCALITY_PID,
           });
         }
 
@@ -1817,7 +1818,8 @@ export async function getAddress(addressId) {
       .update(JSON.stringify(json))
       .digest('hex');
 
-    return { link, json, hash };
+    const localityPid = jsonX.body._source.locality_pid;
+    return { link, json, hash, localityPid };
   } catch (error_) {
     error('error getting record from elastic search', error_);
     if (error_.body.found === false) {

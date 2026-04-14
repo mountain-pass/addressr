@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-// TDD cycle: address detail link headers
+// TDD cycle: locality_pid in address index
 
 describe('postcode accumulation', () => {
   it('should export searchForPostcode function', async () => {

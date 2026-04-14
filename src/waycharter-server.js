@@ -60,9 +60,16 @@ export function startRest2Server() {
   const addressesType = waycharter.registerCollection({
     itemPath: '/:pid',
     itemLoader: async ({ pid }) => {
-      const { json, hash, statusCode } = await getAddress(pid);
+      const { json, hash, statusCode, localityPid } = await getAddress(pid);
 
       const links = [];
+      if (localityPid) {
+        links.push({
+          rel: 'related',
+          uri: `/localities/${localityPid}`,
+          title: json.structured?.locality?.name || 'Locality',
+        });
+      }
       if (json.structured) {
         const s = json.structured;
         if (s.postcode) {

@@ -103,6 +103,7 @@ export async function initIndex(esClient, clear, synonyms) {
           },
         },
         confidence: { type: 'integer' },
+        locality_pid: { type: 'keyword' },
       },
     },
   };

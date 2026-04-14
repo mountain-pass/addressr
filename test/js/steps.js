@@ -500,8 +500,8 @@ Then(
 Then('the address detail will have related links', async function () {
   const relatedOps = this.current.ops ? this.current.ops.filter('related') : [];
   logger('ADDRESS RELATED OPS', relatedOps.length);
-  // Should have at least postcode and state links
-  expect(relatedOps.length).to.be.greaterThanOrEqual(2);
+  // Should have locality, postcode, and state links
+  expect(relatedOps.length).to.be.greaterThanOrEqual(3);
 });
 
 Then('the response will contain:', async function (documentString) {
