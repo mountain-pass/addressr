@@ -155,17 +155,18 @@ jobs:
           echo ""
           echo "Smoke tests passed."
 
-      - name: Sync OpenAPI spec to RapidAPI
+      - name: Fetch OpenAPI spec from deployed instance
         if: steps.changesets.outputs.published == 'true'
         run: |
-          echo "Fetching OpenAPI spec from deployed instance..."
           curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/api-docs -o /tmp/openapi-spec.json
-          echo "Uploading to RapidAPI..."
-          curl --request PUT \
-            --url "https://openapi-provisioning.p.rapidapi.com/v1/apis/${{ secrets.RAPIDAPI_API_ID }}" \
-            --header "x-rapidapi-key: ${{ secrets.RAPIDAPI_PROVIDER_KEY }}" \
-            --header "content-type: multipart/form-data" \
-            --form "file=@/tmp/openapi-spec.json;type=application/json" \
-            --fail
-          echo ""
-          echo "RapidAPI spec sync complete."
+          echo "Fetched spec, size: $(wc -c < /tmp/openapi-spec.json) bytes"
+
+      - name: Sync OpenAPI spec to RapidAPI
+        if: steps.changesets.outputs.published == 'true'
+        uses: RapidAPI/create_or_update_rapidapi_listing@v0
+        with:
+          spec_path: /tmp/openapi-spec.json
+          owner_id: ${{ secrets.RAPIDAPI_OWNER_ID }}
+          graphql_url: https://platform-graphql.p.rapidapi.com/
+          x_rapidapi_key: ${{ secrets.RAPIDAPI_KEY }}
+          x_rapidapi_graphql_host: platform-graphql.p.rapidapi.com
