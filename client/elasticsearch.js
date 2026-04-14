@@ -5,6 +5,7 @@ const logger = debug('api');
 const error = debug('error');
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
+export const ES_LOCALITY_INDEX_NAME = `${ES_INDEX_NAME}-localities`;
 export const ELASTIC_PORT = Number.parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
 const ELASTIC_USERNAME = process.env.ELASTIC_USERNAME || undefined;
@@ -144,6 +145,118 @@ export async function initIndex(esClient, clear, synonyms) {
     include_defaults: true,
   });
   logger(`indexGetResult:\n${JSON.stringify(indexGetResult, undefined, 2)}`);
+}
+
+export async function dropLocalityIndex(esClient) {
+  let exists = await esClient.indices.exists({ index: ES_LOCALITY_INDEX_NAME });
+  if (exists.body) {
+    const deleteIndexResult = await esClient.indices.delete({
+      index: ES_LOCALITY_INDEX_NAME,
+    });
+    logger({ deleteIndexResult });
+  }
+}
+
+export async function initLocalityIndex(esClient, clear, synonyms) {
+  if (clear) {
+    await dropLocalityIndex(esClient);
+  }
+
+  const exists = await esClient.indices.exists({
+    index: ES_LOCALITY_INDEX_NAME,
+  });
+  const indexBody = {
+    settings: {
+      index: {
+        analysis: {
+          filter: {
+            my_synonym_filter: {
+              type: 'synonym',
+              lenient: true,
+              synonyms: synonyms || [],
+            },
+            comma_stripper: {
+              type: 'pattern_replace',
+              pattern: ',',
+              replacement: '',
+            },
+          },
+          analyzer: {
+            my_analyzer: {
+              tokenizer: 'whitecomma',
+              filter: [
+                'uppercase',
+                'asciifolding',
+                'my_synonym_filter',
+                'comma_stripper',
+                'trim',
+              ],
+            },
+          },
+          tokenizer: {
+            whitecomma: {
+              type: 'pattern',
+              pattern: String.raw`[\W,]+`,
+              lowercase: false,
+            },
+          },
+        },
+      },
+    },
+    aliases: {},
+    mappings: {
+      properties: {
+        locality_name: {
+          type: 'text',
+          analyzer: 'my_analyzer',
+          fields: {
+            raw: {
+              type: 'keyword',
+            },
+          },
+        },
+        locality_class_code: { type: 'keyword' },
+        locality_class_name: { type: 'keyword' },
+        primary_postcode: { type: 'keyword' },
+        state_abbreviation: { type: 'keyword' },
+        state_name: { type: 'keyword' },
+        postcodes: { type: 'keyword' },
+        locality_pid: { type: 'keyword' },
+      },
+    },
+  };
+
+  if (exists.body) {
+    const indexCloseResult = await esClient.indices.close({
+      index: ES_LOCALITY_INDEX_NAME,
+    });
+    logger({ indexCloseResult });
+    const indexPutSettingsResult = await esClient.indices.putSettings({
+      index: ES_LOCALITY_INDEX_NAME,
+      body: indexBody,
+    });
+    logger({ indexPutSettingsResult });
+    const indexPutMappingResult = await esClient.indices.putMapping({
+      index: ES_LOCALITY_INDEX_NAME,
+      body: indexBody.mappings,
+    });
+    logger({ indexPutMappingResult });
+    const indexOpenResult = await esClient.indices.open({
+      index: ES_LOCALITY_INDEX_NAME,
+    });
+    logger({ indexOpenResult });
+    const refreshResult = await esClient.indices.refresh({
+      index: ES_LOCALITY_INDEX_NAME,
+    });
+    logger({ refreshResult });
+  } else {
+    logger(`creating index: ${ES_LOCALITY_INDEX_NAME}`);
+    const indexCreateResult = await esClient.indices.create({
+      index: ES_LOCALITY_INDEX_NAME,
+      body: indexBody,
+    });
+    logger({ indexCreateResult });
+  }
 }
 
 export async function esConnect(

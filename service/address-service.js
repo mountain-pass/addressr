@@ -10,7 +10,12 @@ import Papa from 'papaparse';
 import path from 'node:path';
 import stream from 'node:stream';
 import unzip from 'unzip-stream';
-import { initIndex, dropIndex as dropESIndex } from '../client/elasticsearch';
+import {
+  initIndex,
+  dropIndex as dropESIndex,
+  initLocalityIndex,
+  ES_LOCALITY_INDEX_NAME,
+} from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { Keyv } from 'keyv';
@@ -817,6 +822,14 @@ async function loadAddressDetails(
         }
         const indexingBody = [];
         for (const row of chunk.data) {
+          // Accumulate postcodes per locality for the locality index
+          if (context.postcodesByLocality && row.LOCALITY_PID && row.POSTCODE) {
+            if (!context.postcodesByLocality[row.LOCALITY_PID]) {
+              context.postcodesByLocality[row.LOCALITY_PID] = new Set();
+            }
+            context.postcodesByLocality[row.LOCALITY_PID].add(row.POSTCODE);
+          }
+
           const item = mapAddressDetails(
             row,
             context,
@@ -985,6 +998,147 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
     },
   });
   logger('hits', JSON.stringify(searchResp.body.hits, undefined, 2));
+  return searchResp;
+}
+
+export async function searchForLocality(searchString, p, pageSize = PAGE_SIZE) {
+  const searchResp = await globalThis.esClient.search({
+    index: ES_LOCALITY_INDEX_NAME,
+    body: {
+      from: (p - 1 || 0) * pageSize,
+      size: pageSize,
+      query: {
+        bool: {
+          ...(searchString && {
+            should: [
+              {
+                multi_match: {
+                  fields: ['locality_name'],
+                  query: searchString,
+                  fuzziness: 'AUTO',
+                  type: 'bool_prefix',
+                  lenient: true,
+                  operator: 'AND',
+                },
+              },
+              {
+                multi_match: {
+                  fields: ['locality_name'],
+                  query: searchString,
+                  type: 'phrase_prefix',
+                  lenient: true,
+                  operator: 'AND',
+                },
+              },
+            ],
+          }),
+        },
+      },
+      sort: ['_score', { 'locality_name.raw': { order: 'asc' } }],
+    },
+  });
+  logger('locality hits', JSON.stringify(searchResp.body.hits, undefined, 2));
+  return searchResp;
+}
+
+export async function getLocality(pid) {
+  const resp = await globalThis.esClient.get({
+    index: ES_LOCALITY_INDEX_NAME,
+    id: `/localities/${pid}`,
+  });
+  return resp;
+}
+
+export async function searchForPostcode(searchString) {
+  const searchResp = await globalThis.esClient.search({
+    index: ES_LOCALITY_INDEX_NAME,
+    body: {
+      from: 0,
+      size: 0,
+      query: {
+        bool: {
+          filter: [
+            {
+              prefix: {
+                postcodes: searchString,
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        postcodes: {
+          terms: {
+            field: 'postcodes',
+            size: 20,
+          },
+          aggs: {
+            localities: {
+              terms: {
+                field: 'locality_name.raw',
+                size: 100,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  logger(
+    'postcode hits',
+    JSON.stringify(searchResp.body.aggregations, undefined, 2),
+  );
+  return searchResp;
+}
+
+export async function searchForState(searchString) {
+  const query = searchString
+    ? {
+        bool: {
+          should: [
+            {
+              prefix: {
+                state_abbreviation: searchString.toUpperCase(),
+              },
+            },
+            {
+              wildcard: {
+                state_name: `*${searchString.toUpperCase()}*`,
+              },
+            },
+          ],
+        },
+      }
+    : { match_all: {} };
+
+  const searchResp = await globalThis.esClient.search({
+    index: ES_LOCALITY_INDEX_NAME,
+    body: {
+      from: 0,
+      size: 0,
+      query,
+      aggs: {
+        states: {
+          terms: {
+            field: 'state_abbreviation',
+            size: 20,
+          },
+          aggs: {
+            state_name: {
+              terms: {
+                field: 'state_name',
+                size: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  logger(
+    'state hits',
+    JSON.stringify(searchResp.body.aggregations, undefined, 2),
+  );
   return searchResp;
 }
 
@@ -1176,7 +1330,7 @@ async function loadGnafData(directory, { refresh = false } = {}) {
     // }
   }
 
-  const loadContext = {};
+  const loadContext = { postcodesByLocality: {} };
   await loadAuthFiles(files, directory, loadContext, filesCounts);
   // loadContext now contains all the auth files, so we can build the synonyms
   const synonyms = buildSynonyms(loadContext);
@@ -1240,6 +1394,69 @@ async function loadGnafData(directory, { refresh = false } = {}) {
         { refresh },
       );
     }
+  }
+
+  // Phase 2: Index localities (separate post-load phase)
+  // Failures here must not affect address loading above
+  try {
+    await initLocalityIndex(
+      globalThis.esClient,
+      process.env.ES_CLEAR_INDEX || false,
+      synonyms,
+    );
+
+    const localityIndexingBody = [];
+    for (const detailFile of addressDetailFiles) {
+      const state = path
+        .basename(detailFile, path.extname(detailFile))
+        .replace(/_.*/, '');
+      if (COVERED_STATES.length === 0 || COVERED_STATES.includes(state)) {
+        const stateName = await loadState(files, directory, state);
+        const localities = await loadLocality(files, directory, state);
+
+        for (const l of localities) {
+          if (l.LOCALITY_NAME === '') continue;
+          localityIndexingBody.push({
+            index: {
+              _index: ES_LOCALITY_INDEX_NAME,
+              _id: `/localities/${l.LOCALITY_PID}`,
+            },
+          });
+          // Derive postcodes: prefer accumulated from ADDRESS_DETAIL,
+          // fall back to PRIMARY_POSTCODE from LOCALITY table
+          const accumulatedPostcodes =
+            loadContext.postcodesByLocality[l.LOCALITY_PID];
+          const postcodes = accumulatedPostcodes
+            ? [...accumulatedPostcodes]
+            : l.PRIMARY_POSTCODE
+              ? [l.PRIMARY_POSTCODE]
+              : [];
+
+          localityIndexingBody.push({
+            locality_name: l.LOCALITY_NAME,
+            locality_class_code: l.LOCALITY_CLASS_CODE,
+            locality_class_name: localityClassCodeToName(
+              l.LOCALITY_CLASS_CODE,
+              loadContext,
+            ),
+            primary_postcode: postcodes[0] || '',
+            postcodes,
+            state_abbreviation: state,
+            state_name: stateName,
+            locality_pid: l.LOCALITY_PID,
+          });
+        }
+      }
+    }
+
+    if (localityIndexingBody.length > 0) {
+      await sendIndexRequest(localityIndexingBody, undefined, {
+        refresh: true,
+      });
+    }
+    logger('Locality indexing complete');
+  } catch (error_) {
+    error('Locality indexing failed (address loading unaffected):', error_);
   }
 }
 

@@ -415,6 +415,69 @@ When(
   },
 );
 
+Then(
+  'the returned locality list will contain many localities',
+  async function () {
+    const body = this.current.json || this.current.content;
+    expect(body).to.be.an('array').that.is.not.empty;
+    expect(body.length).to.be.greaterThan(1);
+  },
+);
+
+Then(
+  'the returned locality list will include:',
+  async function (documentString) {
+    const entity = JSON.parse(documentString);
+    const responseBody = this.current.json || this.current.content;
+    logger('FOUND LOCALITIES', JSON.stringify(responseBody, undefined, 2));
+    const found = responseBody.find((a) => {
+      return a.name === entity.name;
+    });
+    expect(found).to.not.be.undefined;
+    expect(found.state).to.deep.equal(entity.state);
+    expect(found.class).to.deep.equal(entity.class);
+  },
+);
+
+Then('the returned locality list will be empty', async function () {
+  const body = this.current.json || this.current.content;
+  expect(body).to.be.an('array').that.is.empty;
+});
+
+Then(
+  'the returned postcode list will include:',
+  async function (documentString) {
+    const entity = JSON.parse(documentString);
+    const responseBody = this.current.json || this.current.content;
+    logger('FOUND POSTCODES', JSON.stringify(responseBody, undefined, 2));
+    const found = responseBody.find((a) => {
+      return a.postcode === entity.postcode;
+    });
+    expect(found).to.not.be.undefined;
+    for (const expectedLocality of entity.localities) {
+      const localityFound = found.localities.find(
+        (l) => l.name === expectedLocality.name,
+      );
+      expect(localityFound).to.not.be.undefined;
+    }
+  },
+);
+
+Then('the returned postcode list will be empty', async function () {
+  const body = this.current.json || this.current.content;
+  expect(body).to.be.an('array').that.is.empty;
+});
+
+Then('the returned state list will include:', async function (documentString) {
+  const entity = JSON.parse(documentString);
+  const responseBody = this.current.json || this.current.content;
+  logger('FOUND STATES', JSON.stringify(responseBody, undefined, 2));
+  const found = responseBody.find((a) => {
+    return a.name === entity.name && a.abbreviation === entity.abbreviation;
+  });
+  expect(found).to.not.be.undefined;
+});
+
 Then('the response will contain:', async function (documentString) {
   const entity = JSON.parse(documentString);
   console.log(JSON.stringify(this.current.json));

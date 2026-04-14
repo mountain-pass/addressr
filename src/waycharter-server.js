@@ -3,7 +3,14 @@ import debug from 'debug';
 import express from 'express';
 import { createServer } from 'node:http';
 import { WayCharter } from '@mountainpass/waycharter';
-import { searchForAddress, getAddress } from '../service/address-service';
+import {
+  searchForAddress,
+  getAddress,
+  searchForLocality,
+  getLocality,
+  searchForPostcode,
+  searchForState,
+} from '../service/address-service';
 import { version } from '../version';
 import crypto from 'node:crypto';
 
@@ -110,6 +117,152 @@ export function startRest2Server() {
     ],
   });
 
+  const localitiesType = waycharter.registerCollection({
+    itemPath: '/:pid',
+    itemLoader: async ({ pid }) => {
+      const resp = await getLocality(pid);
+      const source = resp.body._source;
+      const hash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(source))
+        .digest('hex');
+      return {
+        body: source,
+        headers: {
+          etag: `"${version}-${hash}"`,
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+        },
+        status: 200,
+      };
+    },
+    collectionPath: '/localities',
+    collectionLoader: async ({ page, q }) => {
+      if (q && q.length > 1) {
+        const foundLocalities = await searchForLocality(q, page + 1, PAGE_SIZE);
+        const body = foundLocalities.body.hits.hits.map((h) => {
+          return {
+            name: h._source.locality_name,
+            state: {
+              name: h._source.state_name,
+              abbreviation: h._source.state_abbreviation,
+            },
+            ...(h._source.locality_class_code && {
+              class: {
+                code: h._source.locality_class_code,
+                name: h._source.locality_class_name,
+              },
+            }),
+            ...(h._source.primary_postcode && {
+              postcode: h._source.primary_postcode,
+            }),
+            score: h._score,
+            pid: h._id.replace('/localities/', ''),
+          };
+        });
+        const responseHash = crypto
+          .createHash('md5')
+          .update(JSON.stringify(body))
+          .digest('hex');
+        return {
+          body,
+          hasMore: page < foundLocalities.body.hits.total.value / PAGE_SIZE - 1,
+          headers: {
+            etag: `"${version}-${responseHash}"`,
+            'cache-control': `public, max-age=${ONE_WEEK}`,
+          },
+        };
+      } else {
+        return {
+          body: [],
+          hasMore: false,
+          headers: {
+            etag: `"${version}"`,
+            'cache-control': `public, max-age=${ONE_WEEK}`,
+          },
+        };
+      }
+    },
+    filters: [
+      {
+        rel: 'https://addressr.io/rels/locality-search',
+        parameters: ['q'],
+      },
+    ],
+  });
+
+  const postcodesType = waycharter.registerCollection({
+    collectionPath: '/postcodes',
+    collectionLoader: async ({ q }) => {
+      if (q && q.length > 2) {
+        const result = await searchForPostcode(q);
+        const buckets = result.body.aggregations.postcodes.buckets;
+        const body = buckets.map((bucket) => ({
+          postcode: bucket.key,
+          localities: bucket.localities.buckets.map((l) => ({
+            name: l.key,
+          })),
+        }));
+        const responseHash = crypto
+          .createHash('md5')
+          .update(JSON.stringify(body))
+          .digest('hex');
+        return {
+          body,
+          hasMore: false,
+          headers: {
+            etag: `"${version}-${responseHash}"`,
+            'cache-control': `public, max-age=${ONE_WEEK}`,
+          },
+        };
+      } else {
+        return {
+          body: [],
+          hasMore: false,
+          headers: {
+            etag: `"${version}"`,
+            'cache-control': `public, max-age=${ONE_WEEK}`,
+          },
+        };
+      }
+    },
+    filters: [
+      {
+        rel: 'https://addressr.io/rels/postcode-search',
+        parameters: ['q'],
+      },
+    ],
+  });
+
+  const statesType = waycharter.registerCollection({
+    collectionPath: '/states',
+    collectionLoader: async ({ q }) => {
+      const result = await searchForState(q && q.length > 1 ? q : undefined);
+      const buckets = result.body.aggregations.states.buckets;
+      const body = buckets.map((bucket) => ({
+        abbreviation: bucket.key,
+        name: bucket.state_name.buckets[0]?.key || bucket.key,
+      }));
+      const responseHash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(body))
+        .digest('hex');
+      return {
+        body,
+        hasMore: false,
+        headers: {
+          etag: `"${version}-${responseHash}"`,
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+        },
+      };
+    },
+    filters: [
+      {
+        rel: 'https://addressr.io/rels/state-search',
+        parameters: ['q'],
+      },
+    ],
+  });
+
   waycharter.registerResourceType({
     path: '/health',
     loader: async () => {
@@ -133,6 +286,9 @@ export function startRest2Server() {
         body: {},
         links: [
           ...addressesType.additionalPaths,
+          ...localitiesType.additionalPaths,
+          ...postcodesType.additionalPaths,
+          ...statesType.additionalPaths,
           { rel: 'https://addressr.io/rels/health', uri: '/health' },
         ],
         headers: {
