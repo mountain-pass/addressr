@@ -30,6 +30,7 @@ const cacheDirectory = `${envPaths('', { suffix: '' }).cache}/dagger`;
 
 const binLocation = `${cacheDirectory}/dagger-0.3.9`;
 
+// eslint-disable-next-line security/detect-non-literal-fs-filename -- internal cache path
 if (!process.env._EXPERIMENTAL_DAGGER_CLI_BIN && fs.existsSync(binLocation)) {
   process.env._EXPERIMENTAL_DAGGER_CLI_BIN = binLocation;
   console.log(`using already downloaded '${binLocation}'`);

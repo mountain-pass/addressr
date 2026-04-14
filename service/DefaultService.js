@@ -10,6 +10,7 @@ var logger = debug('api');
  * returns Root
  **/
 export async function getApiRoot() {
+  /* eslint-disable security/detect-object-injection -- iterating Object.keys() of swagger spec, not user input */
   const paths = Object.keys(globalThis.swaggerDocument.paths).filter(
     (p) =>
       globalThis.swaggerDocument.paths[p].get !== undefined &&
@@ -47,6 +48,8 @@ export async function getApiRoot() {
     logger(op);
     setLinkOptions(op, url, linkTemplate);
   }
+
+  /* eslint-enable security/detect-object-injection */
 
   return { link: link, body: {}, linkTemplate: linkTemplate };
 }

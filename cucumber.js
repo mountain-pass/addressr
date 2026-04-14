@@ -4,7 +4,7 @@ const FAIL_FAST = process.env.FAIL_FAST || '--fail-fast';
 const NO_STRICT = process.env.NO_STRICT || '--no-strict';
 
 function generateConfig(profile) {
-  fs.mkdirSync(`test-results/${profile}`, { recursive: true });
+  fs.mkdirSync(`test-results/${profile}`, { recursive: true }); // eslint-disable-line security/detect-non-literal-fs-filename -- internal test output path
 
   const RERUN = `@cucumber-${profile}.rerun`;
   let TAGS = process.env.ADDRESSR_ENABLE_GEO
@@ -19,7 +19,7 @@ function generateConfig(profile) {
   TAGS = `${TAGS}'`;
   const NON_RERUN_GLOB = `test/resources/features/**/*.feature ${TAGS}`;
   const FEATURE_GLOB =
-    fs.existsSync(RERUN) && fs.statSync(RERUN).size > 0
+    fs.existsSync(RERUN) && fs.statSync(RERUN).size > 0 // eslint-disable-line security/detect-non-literal-fs-filename -- internal rerun file path
       ? RERUN
       : NON_RERUN_GLOB;
   const FORMAT_OPTIONS = {

@@ -4,7 +4,7 @@ import babelParser from '@babel/eslint-parser';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import pluginSecurity from 'eslint-plugin-security';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
-import pluginUnicorn from 'eslint-plugin-unicorn';
+import unicorn from 'eslint-plugin-unicorn';
 import pluginPromise from 'eslint-plugin-promise';
 import nodePlugin from 'eslint-plugin-n';
 import { importX } from 'eslint-plugin-import-x';
@@ -24,7 +24,7 @@ export default [
   js.configs.recommended,
   pluginSecurity.configs.recommended,
   comments.recommended,
-  pluginUnicorn.configs['flat/recommended'],
+  unicorn.configs['flat/recommended'],
   pluginPromise.configs['flat/recommended'],
   nodePlugin.configs['flat/recommended-module'],
   importX.flatConfigs.recommended,

@@ -11,7 +11,7 @@ const error = debug('error');
 
 function getSwagger(uri) {
   return {
-    path: swaggerDocument.paths[uri],
+    path: swaggerDocument.paths[uri], // eslint-disable-line security/detect-object-injection -- uri is an internal API path
   };
 }
 export class AddressrEmbeddedDriver extends AddressrDriver {

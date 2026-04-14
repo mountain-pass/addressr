@@ -1,18 +1,17 @@
-const { parse } = require('node:url');
 const http = require('node:https');
 const fs = require('node:fs');
 const pathUtil = require('node:path');
 import ProgressBar from 'progress';
 
 module.exports = function streamDown(url, path, size) {
-  const uri = parse(url);
+  const uri = new URL(url);
   if (!path) {
-    path = pathUtil.basename(uri.path);
+    path = pathUtil.basename(uri.pathname);
   }
-  const file = fs.createWriteStream(path);
+  const file = fs.createWriteStream(path); // eslint-disable-line security/detect-non-literal-fs-filename -- path is internal
 
   return new Promise(function (resolve, reject) {
-    http.get(uri.href).on('response', function (response) {
+    http.get(uri.toString()).on('response', function (response) {
       const length = response.headers['content-length']
         ? Number.parseInt(response.headers['content-length'], 10)
         : size;
@@ -44,7 +43,7 @@ module.exports = function streamDown(url, path, size) {
         })
         .on('end', function () {
           file.end();
-          console.log(`\n${uri.path} downloaded to: ${path}`);
+          console.log(`\n${uri.pathname} downloaded to: ${path}`);
           resolve(response);
         })
         .on('error', function (error) {

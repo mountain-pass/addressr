@@ -58,15 +58,15 @@ function createPackageJson(context, filepath) {
       [name]: version,
     },
   };
-  fs.writeFileSync(filepath, JSON.stringify(newPackageJson, null, 2));
+  fs.writeFileSync(filepath, JSON.stringify(newPackageJson, undefined, 2)); // eslint-disable-line security/detect-non-literal-fs-filename -- internal deployment path
 }
 
-async function createDeploymentArchive(deploymentDir) {
-  shell.mkdir('-p', deploymentDir);
-  createPackageJson(packageJson, `${deploymentDir}/package.json`);
+async function createDeploymentArchive(deploymentDirectory) {
+  shell.mkdir('-p', deploymentDirectory);
+  createPackageJson(packageJson, `${deploymentDirectory}/package.json`);
   const archiveName = packageJson.name.replace('@', '').replace('/', '-');
   await zip(
-    `${deploymentDir}/`,
+    `${deploymentDirectory}/`,
     `${archiveName}-deployment-${packageJson.version}.zip`,
   );
 }
