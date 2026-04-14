@@ -1,8 +1,10 @@
 # Addressr
 
-![Addressr](https://addressr.io/icons/icon-144x144.png ‘Addressr’)
+![Addressr](https://addressr.io/icons/icon-144x144.png 'Addressr')
 
-[Australian Address Validation, Search and Autocomplete](https://addressr.io) - [addressr.io](https://addressr.io)
+**The only open-source, free self-hosted Australian address validation API.**
+
+[Australian Address Validation, Search and Autocomplete](https://addressr.io) — [addressr.io](https://addressr.io)
 
 [![GitHub license](https://img.shields.io/github/license/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/blob/master/LICENSE) [![npm](https://img.shields.io/npm/v/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![npm downloads](https://img.shields.io/npm/dm/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr)
 
@@ -12,7 +14,27 @@
 
 # About
 
-Australian Address Validation, Search and Autocomplete powered by the Geocoded National Address File (G-NAF), Australia’s **authoritative** address database with 15+ million addresses.
+Australian Address Validation, Search and Autocomplete powered by the Geocoded National Address File (G-NAF), Australia's **authoritative** address database with 15+ million addresses.
+
+- **Validated addresses** from the official G-NAF source
+- **Real-time autocomplete** with fuzzy matching
+- **Locality, postcode, and state search** for area pickers
+- **Geocoding** to latitude/longitude (optional)
+- **Self-hosted or SaaS** — your choice, your data
+- **Open source** — audit the code, customize as needed
+
+# Why Addressr
+
+|                                    | Addressr | [Addressify](https://addressify.com.au/) | [AddressFinder](https://addressfinder.com.au/) | [Geoscape](https://geoscape.com.au/) | Google Maps |
+| ---------------------------------- | -------- | ---------------------------------------- | ---------------------------------------------- | ------------------------------------ | ----------- |
+| Self-hosted                        | ✅       | ❌                                       | ❌                                             | ❌                                   | ❌          |
+| Open source                        | ✅       | ❌                                       | ❌                                             | ❌                                   | ❌          |
+| Free tier (unlimited, self-hosted) | ✅       | ❌                                       | ❌                                             | ❌                                   | ❌          |
+| G-NAF data source                  | ✅       | ✅                                       | ✅                                             | ✅ (creator)                         | ❌          |
+| Data sovereignty                   | ✅       | ❌                                       | ❌                                             | ❌                                   | ❌          |
+| MCP integration for AI assistants  | ✅       | ❌                                       | ❌                                             | ❌                                   | ❌          |
+
+**Stop paying Google Maps for Australian addresses.** Stop locking your data into third-party SaaS. Addressr gives you unlimited address validation on your own infrastructure, or a cheap hosted API if you prefer.
 
 # Quick Start
 
@@ -85,15 +107,15 @@ Run Addressr on your own infrastructure for full control over your data.
    export ADDRESSR_INDEX_BACKOFF_MAX=10000
    ```
 
-   1. Optional - enable geocodes by setting the following env vars for the data loader. In the third window run:
-      **NOTE:** with geocodes enabled, indexing takes much longer and needs much more memory. Only use turn them on if you need them. You can always add them later.
+   1. Optional — enable geocodes by setting the following env vars for the data loader. In the third window run:
+      **NOTE:** with geocodes enabled, indexing takes much longer and needs much more memory. Only turn them on if you need them. You can always add them later.
 
    ```
    export ADDRESSR_ENABLE_GEO=1
    export NODE_OPTIONS=--max_old_space_size=8196
    ```
 
-   2. Optional - limit the addresses to a single state by setting the `COVERED_STATES` env var for the data loader.
+   2. Optional — limit the addresses to a single state by setting the `COVERED_STATES` env var for the data loader.
       This dramatically speeds up indexing. For example, in the third window run:
 
    ```
@@ -117,7 +139,8 @@ Run Addressr on your own infrastructure for full control over your data.
    addressr-loader
    ```
 
-6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 13+ million addresses from [data.gov.au](http://data.gov.au/). So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+6. OK, so we stretched the truth a bit with the "Quick Start" heading. The truth is that it takes quite a while to download, store and index the 15+ million addresses from [data.gov.au](http://data.gov.au/). So make a coffee, or tea, or find something else to do and come back in about an hour when it's done.
+
 7. Search for an address using the command line
 
    ```
@@ -125,7 +148,24 @@ Run Addressr on your own infrastructure for full control over your data.
    ```
 
 8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
-9. Wire you address form up to the address-server api.
+9. Wire your address form up to the address-server api.
+
+# API Endpoints
+
+Addressr exposes a HATEOAS REST API. Start at the root (`/`) and follow links to discover endpoints. A supplementary OpenAPI 3.x spec is available at `/api-docs`.
+
+| Endpoint                     | Purpose                                                            | Example                           |
+| ---------------------------- | ------------------------------------------------------------------ | --------------------------------- |
+| `GET /addresses?q=`          | Search and autocomplete addresses                                  | `/addresses?q=1+george+st+sydney` |
+| `GET /addresses/{pid}`       | Get full address details (with links to locality, postcode, state) | `/addresses/GAOT_717882967`       |
+| `GET /localities?q=`         | Search suburbs/localities by name                                  | `/localities?q=lilydale`          |
+| `GET /localities/{pid}`      | Get locality details (with links to postcode, state)               | `/localities/loc9984d8beb142`     |
+| `GET /postcodes?q=`          | Search postcodes (q optional)                                      | `/postcodes?q=3140`               |
+| `GET /postcodes/{postcode}`  | Get postcode with associated localities                            | `/postcodes/6798`                 |
+| `GET /states?q=`             | Search states/territories (q optional)                             | `/states?q=New`                   |
+| `GET /states/{abbreviation}` | Get state details                                                  | `/states/NSW`                     |
+| `GET /api-docs`              | OpenAPI 3.x specification                                          | `/api-docs`                       |
+| `GET /health`                | Health check                                                       | `/health`                         |
 
 ## How it Works
 
