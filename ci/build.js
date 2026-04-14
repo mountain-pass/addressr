@@ -34,7 +34,7 @@ connect(async (client) => {
   const node = client.container().from('node:12.11.0');
 
   // mount cloned repository into Node image
-  const runner = client
+  await client
     .container({ id: node })
     .withMountedDirectory('/src', source)
     .withWorkdir('/src')

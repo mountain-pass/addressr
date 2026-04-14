@@ -5,7 +5,9 @@ import { createMcpClient, hasRapidApiKey } from './mcp-client.mjs';
 // Load .env if present (safe to fail)
 try {
   await import('dotenv/config');
-} catch {}
+} catch {
+  // dotenv is optional — ignore if not installed
+}
 
 describe(
   'MCP Smoke Tests',

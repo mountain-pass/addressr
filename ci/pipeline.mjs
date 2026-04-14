@@ -68,9 +68,6 @@ connect(async (client) => {
     .file('version.js')
     .export('dagger-version.js');
 
-  console.log(stdout);
-  console.error(stderr);
-
   /*
     npm run genversion
                 npm run check-licenses

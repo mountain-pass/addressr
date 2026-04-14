@@ -120,4 +120,27 @@ export default [
       'n/hashbang': 'off',
     },
   },
+  {
+    // Dagger CI runtime — modules resolved by Dagger SDK, not Node.js
+    files: ['ci/**'],
+    rules: {
+      'import-x/no-unresolved': 'off',
+      'n/no-missing-import': 'off',
+    },
+  },
+  {
+    // k6 load testing runtime — modules resolved by k6, not Node.js
+    files: ['test/k6/**'],
+    rules: {
+      'import-x/no-unresolved': 'off',
+      'n/no-missing-import': 'off',
+    },
+  },
+  {
+    // Deploy scripts — deps installed in deployment context, not dev
+    files: ['deploy/**'],
+    rules: {
+      'n/no-missing-require': 'off',
+    },
+  },
 ];
