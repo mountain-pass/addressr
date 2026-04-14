@@ -8,8 +8,6 @@
 
 [![GitHub license](https://img.shields.io/github/license/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/blob/master/LICENSE) [![npm](https://img.shields.io/npm/v/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr) [![npm downloads](https://img.shields.io/npm/dm/@mountainpass/addressr)](https://www.npmjs.com/package/@mountainpass/addressr)
 
-[![Maintainability](https://api.codeclimate.com/v1/badges/e5117809cacb7e32eb5c/maintainability)](https://codeclimate.com/github/mountain-pass/addressr/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/e5117809cacb7e32eb5c/test_coverage)](https://codeclimate.com/github/mountain-pass/addressr/test_coverage) ![Uptime Robot ratio (30 days)](https://img.shields.io/uptimerobot/ratio/m788652244-3e35661f9886333310f4dc2f)
-
 [![GitHub issues](https://img.shields.io/github/issues/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mountain-pass/addressr)](https://github.com/mountain-pass/addressr/pulls)
 
 # About
