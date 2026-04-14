@@ -59,11 +59,13 @@ Feature: Postcodes v2
         Then the returned postcode list will be empty
 
 
-    Scenario: Get postcode detail
+    Scenario: Get postcode detail with locality links
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.io/rels/postcode-search" link template is followed with:
             | q | 6798 |
         And the 1st "item" link is followed
-        Then the response will contain the following headers:
+        And the "canonical" link is followed
+        Then the returned postcode detail will have localities with links
+        And the response will contain the following headers:
             | cache-control | public, max-age=604800 |

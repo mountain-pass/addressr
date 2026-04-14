@@ -478,6 +478,25 @@ Then('the returned state list will include:', async function (documentString) {
   expect(found).to.not.be.undefined;
 });
 
+Then(
+  'the returned postcode detail will have localities with links',
+  async function () {
+    const body = this.current.json || this.current.content;
+    logger('POSTCODE DETAIL', JSON.stringify(body, undefined, 2));
+    expect(body).to.have.property('postcode');
+    expect(body).to.have.property('localities');
+    expect(body.localities).to.be.an('array').that.is.not.empty;
+    for (const locality of body.localities) {
+      expect(locality).to.have.property('name');
+    }
+    // Locality links are in Link headers as 'related' rels
+    const relatedOps = this.current.ops
+      ? this.current.ops.filter('related')
+      : [];
+    expect(relatedOps.length).to.be.greaterThan(0);
+  },
+);
+
 Then('the response will contain:', async function (documentString) {
   const entity = JSON.parse(documentString);
   console.log(JSON.stringify(this.current.json));

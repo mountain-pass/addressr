@@ -64,5 +64,13 @@ Feature: States v2
         And the "https://addressr.io/rels/state-search" link template is followed with:
             | q | OT |
         And the 1st "item" link is followed
-        Then the response will contain the following headers:
+        And the "canonical" link is followed
+        Then the response will contain:
+            """
+            {
+                "abbreviation": "OT",
+                "name": "OTHER TERRITORIES"
+            }
+            """
+        And the response will contain the following headers:
             | cache-control | public, max-age=604800 |

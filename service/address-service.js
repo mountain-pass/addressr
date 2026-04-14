@@ -1094,13 +1094,9 @@ export async function getPostcode(postcode) {
   const searchResp = await globalThis.esClient.search({
     index: ES_LOCALITY_INDEX_NAME,
     body: {
-      size: 0,
+      size: 100,
       query: { term: { postcodes: postcode } },
-      aggs: {
-        localities: {
-          terms: { field: 'locality_name.raw', size: 100 },
-        },
-      },
+      _source: ['locality_name', 'locality_pid'],
     },
   });
   return searchResp;
@@ -1115,12 +1111,6 @@ export async function getState(abbreviation) {
       aggs: {
         state_name: {
           terms: { field: 'state_name', size: 1 },
-        },
-        localities: {
-          terms: { field: 'locality_name.raw', size: 1000 },
-        },
-        postcodes: {
-          terms: { field: 'postcodes', size: 1000 },
         },
       },
     },

@@ -124,12 +124,28 @@ export function startRest2Server() {
     itemLoader: async ({ pid }) => {
       const resp = await getLocality(pid);
       const source = resp.body._source;
+      const links = [];
+      if (source.primary_postcode) {
+        links.push({
+          rel: 'related',
+          uri: `/postcodes/${source.primary_postcode}`,
+          title: `Postcode ${source.primary_postcode}`,
+        });
+      }
+      if (source.state_abbreviation) {
+        links.push({
+          rel: 'related',
+          uri: `/states/${source.state_abbreviation}`,
+          title: source.state_name,
+        });
+      }
       const hash = crypto
         .createHash('md5')
         .update(JSON.stringify(source))
         .digest('hex');
       return {
         body: source,
+        links,
         headers: {
           etag: `"${version}-${hash}"`,
           'cache-control': `public, max-age=${ONE_WEEK}`,
@@ -196,9 +212,15 @@ export function startRest2Server() {
     itemPath: '/:postcode',
     itemLoader: async ({ postcode }) => {
       const result = await getPostcode(postcode);
-      const localities = result.body.aggregations.localities.buckets.map(
-        (l) => ({ name: l.key }),
-      );
+      const hits = result.body.hits.hits;
+      const localities = hits.map((h) => ({
+        name: h._source.locality_name,
+      }));
+      const links = hits.map((h) => ({
+        rel: 'related',
+        uri: `/localities/${h._source.locality_pid}`,
+        title: h._source.locality_name,
+      }));
       const body = { postcode, localities };
       const hash = crypto
         .createHash('md5')
@@ -206,6 +228,7 @@ export function startRest2Server() {
         .digest('hex');
       return {
         body,
+        links,
         headers: {
           etag: `"${version}-${hash}"`,
           'cache-control': `public, max-age=${ONE_WEEK}`,
@@ -251,17 +274,9 @@ export function startRest2Server() {
       const stateName =
         result.body.aggregations.state_name.buckets[0]?.key ||
         abbreviation.toUpperCase();
-      const localities = result.body.aggregations.localities.buckets.map(
-        (l) => ({ name: l.key }),
-      );
-      const postcodes = result.body.aggregations.postcodes.buckets.map(
-        (p) => p.key,
-      );
       const body = {
         abbreviation: abbreviation.toUpperCase(),
         name: stateName,
-        localities,
-        postcodes,
       };
       const hash = crypto
         .createHash('md5')
