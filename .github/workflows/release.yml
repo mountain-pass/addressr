@@ -154,3 +154,18 @@ jobs:
           curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/
           echo ""
           echo "Smoke tests passed."
+
+      - name: Sync OpenAPI spec to RapidAPI
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "Fetching OpenAPI spec from deployed instance..."
+          curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/api-docs -o /tmp/openapi-spec.json
+          echo "Uploading to RapidAPI..."
+          curl --request PUT \
+            --url "https://openapi-provisioning.p.rapidapi.com/v1/apis/${{ secrets.RAPIDAPI_API_ID }}" \
+            --header "x-rapidapi-key: ${{ secrets.RAPIDAPI_PROVIDER_KEY }}" \
+            --header "content-type: multipart/form-data" \
+            --form "file=@/tmp/openapi-spec.json;type=application/json" \
+            --fail
+          echo ""
+          echo "RapidAPI spec sync complete."
