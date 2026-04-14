@@ -42,7 +42,7 @@ function makeid(length) {
   return result;
 }
 
-export default function () {
+export default function runTest() {
   const query = `${randomIntFromInterval(1, 1000)}+${makeid(randomIntFromInterval(1, 3))}`;
   const url = http.url`http://localhost:6060/addresses?q=${query}`;
   //console.log(url)

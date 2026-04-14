@@ -1,197 +1,23 @@
 {
   "permissions": {
-    "allow": [
-      "*",
-      "Bash",
-      "Edit"
-    ]
+    "allow": ["*", "Bash", "Edit"]
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/briefing-inject.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/project-health-check.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-detect.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-score.sh"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/secret-leak-gate.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/wip-risk-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/git-push-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-score-commit-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-enforce-edit.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-policy-enforce-edit.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "EnterPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/plan-risk-guidance.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-plan-enforce.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-score-plan-enforce.sh"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-mark-reviewed.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-refresh-hash.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/wip-risk-mark.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-score-mark.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-hash-refresh.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/architect-reset-marker.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-score-reset.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/risk-policy-reset-marker.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/retrospective-reminder.sh"
-          }
-        ]
-      }
-    ]
+    "UserPromptSubmit": [],
+    "PreToolUse": [],
+    "PostToolUse": [],
+    "Stop": []
   },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
+    "wr-architect@windyroad": true,
+    "wr-risk-scorer@windyroad": true,
+    "wr-voice-tone@windyroad": true,
+    "wr-style-guide@windyroad": true,
+    "wr-jtbd@windyroad": true,
+    "wr-tdd@windyroad": true,
+    "wr-retrospective@windyroad": true,
+    "wr-problem@windyroad": true,
+    "wr-c4@windyroad": true,
+    "wr-wardley@windyroad": true
   }
 }
