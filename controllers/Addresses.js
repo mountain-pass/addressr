@@ -9,17 +9,20 @@ var logger = debug('api');
 export function getAddress(request, response) {
   logger('IN getAddress');
   var addressId = request.swagger.params['addressId'].value;
-  _getAddress(addressId).then(function (addressResponse) {
-    if (addressResponse.statusCode) {
-      response.setHeader('Content-Type', 'application/json');
-      response.status(addressResponse.statusCode);
-      response.json(addressResponse.json);
-    } else {
+  _getAddress(addressId)
+    .then(function (addressResponse) {
+      if (addressResponse.statusCode) {
+        response.setHeader('Content-Type', 'application/json');
+        response.status(addressResponse.statusCode);
+        return response.json(addressResponse.json);
+      }
+
       response.setHeader('link', addressResponse.link.toString());
-      writeJson(response, addressResponse.json);
-    }
-    return;
-  });
+      return writeJson(response, addressResponse.json);
+    })
+    .catch(function (error_) {
+      writeJson(response, error_.body || error_);
+    });
 }
 
 export function getAddresses(request, response) {
@@ -29,21 +32,22 @@ export function getAddresses(request, response) {
     request.url,
     `http://localhost:${process.env.port || 8080}`,
   );
-  _getAddresses(url.pathname, request.swagger, q, p).then(
-    function (addressesResponse) {
+  _getAddresses(url.pathname, request.swagger, q, p)
+    .then(function (addressesResponse) {
       if (addressesResponse.statusCode) {
         response.setHeader('Content-Type', 'application/json');
         response.status(addressesResponse.statusCode);
-        response.json(addressesResponse.json);
-      } else {
-        response.setHeader('link', addressesResponse.link.toString());
-        response.setHeader(
-          'link-template',
-          addressesResponse.linkTemplate.toString(),
-        );
-        writeJson(response, addressesResponse.json);
+        return response.json(addressesResponse.json);
       }
-      return;
-    },
-  );
+
+      response.setHeader('link', addressesResponse.link.toString());
+      response.setHeader(
+        'link-template',
+        addressesResponse.linkTemplate.toString(),
+      );
+      return writeJson(response, addressesResponse.json);
+    })
+    .catch(function (error_) {
+      writeJson(response, error_.body || error_);
+    });
 }

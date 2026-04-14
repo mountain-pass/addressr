@@ -5,17 +5,20 @@ import { startRest2Server } from './waycharter-server';
 
 const logger = debug('api');
 
-startRest2Server().then(() => {
-  logger('connecting es client');
-  const p1 = esConnect().then((esClient) => {
+startRest2Server()
+  .then(async () => {
+    logger('connecting es client');
+    const esClient = await esConnect();
     globalThis.esClient = esClient;
     logger('es client connected');
-  });
-  p1.then(() => {
+
     console.log('=======================');
     console.log('Addressr - API Server 2');
     console.log('=======================');
 
     printVersion();
+  })
+  .catch((error) => {
+    console.error('Failed to start server:', error);
+    throw error;
   });
-});

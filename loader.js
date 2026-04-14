@@ -12,21 +12,21 @@ if (process.env.DEBUG == undefined) {
 const start = process.hrtime();
 esConnect()
   .then(() => {
-    logger('es client connected');
+    return logger('es client connected');
   })
   .then(() => {
     console.log('======================');
     console.log('Addressr - Data Loader');
     console.log('======================');
-    printVersion();
+    return printVersion();
   })
   .then(loadGnaf)
   .then(() => {
-    logger('data loaded');
+    return logger('data loaded');
   })
   .then(() => {
     const end = process.hrtime(start);
-    logger(`Execution time: ${end[0]}s ${end[1] / 1_000_000}ms`);
+    return logger(`Execution time: ${end[0]}s ${end[1] / 1_000_000}ms`);
   })
   .then(() => {
     logger(`Fin`);

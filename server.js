@@ -5,17 +5,20 @@ import { startServer } from './swagger';
 
 const logger = debug('api');
 
-startServer().then(() => {
-  logger('connecting es client');
-  const p1 = esConnect().then((esClient) => {
+startServer()
+  .then(async () => {
+    logger('connecting es client');
+    const esClient = await esConnect();
     globalThis.esClient = esClient;
     logger('es client connected');
-  });
-  p1.then(() => {
+
     console.log('=====================');
     console.log('Addressr - API Server');
     console.log('=====================');
 
     printVersion();
+  })
+  .catch((error) => {
+    console.error('Failed to start server:', error);
+    throw error;
   });
-});
