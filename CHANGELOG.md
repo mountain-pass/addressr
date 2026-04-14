@@ -1,5 +1,15 @@
 # @mountainpass/addressr
 
+## 2.1.2
+
+### Patch Changes
+
+- Add /api-docs endpoint returning OpenAPI 3.x spec
+
+  Runtime endpoint that generates an OpenAPI spec from the registered
+  WayCharter routes. Supplementary to the HATEOAS link-driven API.
+  Enables automated RapidAPI sync via CI.
+
 ## 2.1.1
 
 ### Patch Changes
