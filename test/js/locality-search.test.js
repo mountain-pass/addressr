@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-// TDD cycle: /api-docs runtime OpenAPI spec
+// TDD cycle: /api-docs health path + CI sync
 
 describe('postcode accumulation', () => {
   it('should export searchForPostcode function', async () => {

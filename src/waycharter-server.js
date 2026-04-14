@@ -524,6 +524,18 @@ export function startRest2Server() {
               },
             },
           },
+          '/health': {
+            get: {
+              summary: 'Health Check',
+              operationId: 'healthCheck',
+              responses: {
+                200: {
+                  description:
+                    'API health status including version and timestamp',
+                },
+              },
+            },
+          },
         },
       };
       return {

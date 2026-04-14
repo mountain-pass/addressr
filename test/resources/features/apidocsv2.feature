@@ -29,3 +29,4 @@ Feature: API Docs v2
             | /postcodes/{postcode}   |
             | /states                 |
             | /states/{abbreviation}  |
+            | /health                 |
