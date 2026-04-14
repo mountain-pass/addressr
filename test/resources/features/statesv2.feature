@@ -14,7 +14,23 @@ Feature: States v2
             | https://addressr.io/rels/health          | /health           |
 
 
-    Scenario: List all states
+    Scenario: List all states - no query
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.io/rels/state-search" link template is followed with:
+            | q |  |
+        Then the returned state list will include:
+            """
+            {
+                "name": "OTHER TERRITORIES",
+                "abbreviation": "OT"
+            }
+            """
+        And the response will contain the following headers:
+            | cache-control | public, max-age=604800 |
+
+
+    Scenario: Search states by abbreviation
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.io/rels/state-search" link template is followed with:
@@ -26,8 +42,6 @@ Feature: States v2
                 "abbreviation": "OT"
             }
             """
-        And the response will contain the following headers:
-            | cache-control | public, max-age=604800 |
 
 
     Scenario: Search states by name
@@ -42,3 +56,13 @@ Feature: States v2
                 "abbreviation": "OT"
             }
             """
+
+
+    Scenario: Get state detail
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.io/rels/state-search" link template is followed with:
+            | q | OT |
+        And the 1st "item" link is followed
+        Then the response will contain the following headers:
+            | cache-control | public, max-age=604800 |

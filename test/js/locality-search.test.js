@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-// Touch to maintain TDD cycle
+// TDD cycle: postcode/state detail endpoints + optional q
 
 describe('postcode accumulation', () => {
   it('should export searchForPostcode function', async () => {

@@ -33,9 +33,37 @@ Feature: Postcodes v2
             | cache-control | public, max-age=604800 |
 
 
+    Scenario: List all postcodes - no query
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.io/rels/postcode-search" link template is followed with:
+            | q |  |
+        Then the returned postcode list will include:
+            """
+            {
+                "postcode": "6798",
+                "localities": [
+                    {
+                        "name": "CHRISTMAS ISLAND"
+                    }
+                ]
+            }
+            """
+
+
     Scenario: Search postcodes - no results
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.io/rels/postcode-search" link template is followed with:
             | q | 9999 |
         Then the returned postcode list will be empty
+
+
+    Scenario: Get postcode detail
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.io/rels/postcode-search" link template is followed with:
+            | q | 6798 |
+        And the 1st "item" link is followed
+        Then the response will contain the following headers:
+            | cache-control | public, max-age=604800 |

@@ -9,7 +9,9 @@ import {
   searchForLocality,
   getLocality,
   searchForPostcode,
+  getPostcode,
   searchForState,
+  getState,
 } from '../service/address-service';
 import { version } from '../version';
 import crypto from 'node:crypto';
@@ -191,39 +193,48 @@ export function startRest2Server() {
   });
 
   const postcodesType = waycharter.registerCollection({
+    itemPath: '/:postcode',
+    itemLoader: async ({ postcode }) => {
+      const result = await getPostcode(postcode);
+      const localities = result.body.aggregations.localities.buckets.map(
+        (l) => ({ name: l.key }),
+      );
+      const body = { postcode, localities };
+      const hash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(body))
+        .digest('hex');
+      return {
+        body,
+        headers: {
+          etag: `"${version}-${hash}"`,
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+        },
+        status: 200,
+      };
+    },
     collectionPath: '/postcodes',
     collectionLoader: async ({ q }) => {
-      if (q && q.length > 2) {
-        const result = await searchForPostcode(q);
-        const buckets = result.body.aggregations.postcodes.buckets;
-        const body = buckets.map((bucket) => ({
-          postcode: bucket.key,
-          localities: bucket.localities.buckets.map((l) => ({
-            name: l.key,
-          })),
-        }));
-        const responseHash = crypto
-          .createHash('md5')
-          .update(JSON.stringify(body))
-          .digest('hex');
-        return {
-          body,
-          hasMore: false,
-          headers: {
-            etag: `"${version}-${responseHash}"`,
-            'cache-control': `public, max-age=${ONE_WEEK}`,
-          },
-        };
-      } else {
-        return {
-          body: [],
-          hasMore: false,
-          headers: {
-            etag: `"${version}"`,
-            'cache-control': `public, max-age=${ONE_WEEK}`,
-          },
-        };
-      }
+      const result = await searchForPostcode(q || '');
+      const buckets = result.body.aggregations.postcodes.buckets;
+      const body = buckets.map((bucket) => ({
+        postcode: bucket.key,
+        localities: bucket.localities.buckets.map((l) => ({
+          name: l.key,
+        })),
+      }));
+      const responseHash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(body))
+        .digest('hex');
+      return {
+        body,
+        hasMore: false,
+        headers: {
+          etag: `"${version}-${responseHash}"`,
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+        },
+      };
     },
     filters: [
       {
@@ -234,9 +245,40 @@ export function startRest2Server() {
   });
 
   const statesType = waycharter.registerCollection({
+    itemPath: '/:abbreviation',
+    itemLoader: async ({ abbreviation }) => {
+      const result = await getState(abbreviation);
+      const stateName =
+        result.body.aggregations.state_name.buckets[0]?.key ||
+        abbreviation.toUpperCase();
+      const localities = result.body.aggregations.localities.buckets.map(
+        (l) => ({ name: l.key }),
+      );
+      const postcodes = result.body.aggregations.postcodes.buckets.map(
+        (p) => p.key,
+      );
+      const body = {
+        abbreviation: abbreviation.toUpperCase(),
+        name: stateName,
+        localities,
+        postcodes,
+      };
+      const hash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(body))
+        .digest('hex');
+      return {
+        body,
+        headers: {
+          etag: `"${version}-${hash}"`,
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+        },
+        status: 200,
+      };
+    },
     collectionPath: '/states',
     collectionLoader: async ({ q }) => {
-      const result = await searchForState(q && q.length > 1 ? q : undefined);
+      const result = await searchForState(q || undefined);
       const buckets = result.body.aggregations.states.buckets;
       const body = buckets.map((bucket) => ({
         abbreviation: bucket.key,

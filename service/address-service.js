@@ -1050,22 +1050,21 @@ export async function getLocality(pid) {
 }
 
 export async function searchForPostcode(searchString) {
+  const query =
+    searchString && searchString.length > 0
+      ? {
+          bool: {
+            filter: [{ prefix: { postcodes: searchString } }],
+          },
+        }
+      : { bool: { filter: [{ exists: { field: 'postcodes' } }] } };
+
   const searchResp = await globalThis.esClient.search({
     index: ES_LOCALITY_INDEX_NAME,
     body: {
       from: 0,
       size: 0,
-      query: {
-        bool: {
-          filter: [
-            {
-              prefix: {
-                postcodes: searchString,
-              },
-            },
-          ],
-        },
-      },
+      query,
       aggs: {
         postcodes: {
           terms: {
@@ -1088,6 +1087,44 @@ export async function searchForPostcode(searchString) {
     'postcode hits',
     JSON.stringify(searchResp.body.aggregations, undefined, 2),
   );
+  return searchResp;
+}
+
+export async function getPostcode(postcode) {
+  const searchResp = await globalThis.esClient.search({
+    index: ES_LOCALITY_INDEX_NAME,
+    body: {
+      size: 0,
+      query: { term: { postcodes: postcode } },
+      aggs: {
+        localities: {
+          terms: { field: 'locality_name.raw', size: 100 },
+        },
+      },
+    },
+  });
+  return searchResp;
+}
+
+export async function getState(abbreviation) {
+  const searchResp = await globalThis.esClient.search({
+    index: ES_LOCALITY_INDEX_NAME,
+    body: {
+      size: 0,
+      query: { term: { state_abbreviation: abbreviation.toUpperCase() } },
+      aggs: {
+        state_name: {
+          terms: { field: 'state_name', size: 1 },
+        },
+        localities: {
+          terms: { field: 'locality_name.raw', size: 1000 },
+        },
+        postcodes: {
+          terms: { field: 'postcodes', size: 1000 },
+        },
+      },
+    },
+  });
   return searchResp;
 }
 
