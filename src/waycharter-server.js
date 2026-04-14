@@ -62,8 +62,28 @@ export function startRest2Server() {
     itemLoader: async ({ pid }) => {
       const { json, hash, statusCode } = await getAddress(pid);
 
+      const links = [];
+      if (json.structured) {
+        const s = json.structured;
+        if (s.postcode) {
+          links.push({
+            rel: 'related',
+            uri: `/postcodes/${s.postcode}`,
+            title: `Postcode ${s.postcode}`,
+          });
+        }
+        if (s.state && s.state.abbreviation) {
+          links.push({
+            rel: 'related',
+            uri: `/states/${s.state.abbreviation}`,
+            title: s.state.name,
+          });
+        }
+      }
+
       return {
         body: json,
+        links,
         headers: {
           etag: `"${version}-${hash}"`,
           'cache-control': `public, max-age=${ONE_WEEK}`,

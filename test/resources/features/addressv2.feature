@@ -201,3 +201,13 @@ Feature: Addresses v2
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
+
+    Scenario: Address detail has related links to locality, postcode, and state
+        Given an address database is loaded from gnaf
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND |
+        And the 1st "item" link is followed
+        And the "canonical" link is followed
+        Then the address detail will have related links
+

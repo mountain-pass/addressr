@@ -497,6 +497,13 @@ Then(
   },
 );
 
+Then('the address detail will have related links', async function () {
+  const relatedOps = this.current.ops ? this.current.ops.filter('related') : [];
+  logger('ADDRESS RELATED OPS', relatedOps.length);
+  // Should have at least postcode and state links
+  expect(relatedOps.length).to.be.greaterThanOrEqual(2);
+});
+
 Then('the response will contain:', async function (documentString) {
   const entity = JSON.parse(documentString);
   console.log(JSON.stringify(this.current.json));
