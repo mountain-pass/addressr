@@ -21,6 +21,526 @@ var app = express();
 const ONE_DAY = 60 * 60 * 24;
 const ONE_WEEK = ONE_DAY * 7;
 
+function buildOpenApiSpec(apiVersion) {
+  const schemas = {
+    AddressSearchResult: {
+      type: 'object',
+      properties: {
+        sla: {
+          type: 'string',
+          description: 'Single line address',
+          example: 'UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND OT 6798',
+        },
+        ssla: {
+          type: 'string',
+          description: 'Short single line address (for addresses with flats)',
+          example: '1/19 MURRAY RD, CHRISTMAS ISLAND OT 6798',
+        },
+        highlight: {
+          type: 'object',
+          description: 'Search term highlights in the address',
+          properties: {
+            sla: { type: 'string' },
+            ssla: { type: 'string' },
+          },
+        },
+        score: {
+          type: 'number',
+          description: 'Search relevance score',
+          example: 5.43,
+        },
+        pid: {
+          type: 'string',
+          description: 'Persistent identifier for the address',
+          example: 'GAOT_717882967',
+        },
+      },
+    },
+    Address: {
+      type: 'object',
+      properties: {
+        sla: {
+          type: 'string',
+          example: 'UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND OT 6798',
+        },
+        structured: {
+          type: 'object',
+          properties: {
+            confidence: { type: 'integer', example: 2 },
+            flat: {
+              type: 'object',
+              properties: {
+                number: { type: 'integer', example: 1 },
+                type: {
+                  type: 'object',
+                  properties: {
+                    code: { type: 'string', example: 'UNIT' },
+                    name: { type: 'string', example: 'UNIT' },
+                  },
+                },
+              },
+            },
+            number: {
+              type: 'object',
+              properties: { number: { type: 'integer', example: 19 } },
+            },
+            street: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', example: 'MURRAY' },
+                type: {
+                  type: 'object',
+                  properties: {
+                    code: { type: 'string', example: 'ROAD' },
+                    name: { type: 'string', example: 'RD' },
+                  },
+                },
+              },
+            },
+            locality: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', example: 'CHRISTMAS ISLAND' },
+                class: {
+                  type: 'object',
+                  properties: {
+                    code: { type: 'string', example: 'U' },
+                    name: { type: 'string', example: 'UNOFFICIAL SUBURB' },
+                  },
+                },
+              },
+            },
+            postcode: { type: 'string', example: '6798' },
+            state: {
+              type: 'object',
+              properties: {
+                abbreviation: { type: 'string', example: 'OT' },
+                name: { type: 'string', example: 'OTHER TERRITORIES' },
+              },
+            },
+          },
+        },
+      },
+    },
+    LocalitySearchResult: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'LILYDALE' },
+        state: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', example: 'VICTORIA' },
+            abbreviation: { type: 'string', example: 'VIC' },
+          },
+        },
+        class: {
+          type: 'object',
+          properties: {
+            code: {
+              type: 'string',
+              description:
+                'Classification code (G=Gazetted, U=Unofficial, T=Topographic, I=Informal)',
+              example: 'G',
+            },
+            name: { type: 'string', example: 'GAZETTED LOCALITY' },
+          },
+        },
+        postcode: {
+          type: 'string',
+          description: 'Primary postcode for this locality',
+          example: '3140',
+        },
+        score: { type: 'number', example: 5.23 },
+        pid: { type: 'string', example: 'loc1234567890ab' },
+      },
+    },
+    Locality: {
+      type: 'object',
+      properties: {
+        locality_name: { type: 'string', example: 'CHRISTMAS ISLAND' },
+        locality_class_code: { type: 'string', example: 'U' },
+        locality_class_name: { type: 'string', example: 'UNOFFICIAL SUBURB' },
+        primary_postcode: { type: 'string', example: '6798' },
+        postcodes: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['6798'],
+        },
+        state_abbreviation: { type: 'string', example: 'OT' },
+        state_name: { type: 'string', example: 'OTHER TERRITORIES' },
+        locality_pid: { type: 'string', example: 'loc9984d8beb142' },
+      },
+    },
+    PostcodeSearchResult: {
+      type: 'object',
+      properties: {
+        postcode: { type: 'string', example: '3140' },
+        localities: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { name: { type: 'string', example: 'LILYDALE' } },
+          },
+        },
+      },
+    },
+    PostcodeDetail: {
+      type: 'object',
+      properties: {
+        postcode: { type: 'string', example: '6798' },
+        localities: {
+          type: 'array',
+          description:
+            'Locality names. Individual locality resources are linked via related Link headers.',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'CHRISTMAS ISLAND' },
+            },
+          },
+        },
+      },
+    },
+    State: {
+      type: 'object',
+      properties: {
+        abbreviation: { type: 'string', example: 'NSW' },
+        name: { type: 'string', example: 'NEW SOUTH WALES' },
+      },
+    },
+    Health: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'healthy' },
+        version: { type: 'string', example: '2.1.2' },
+        timestamp: {
+          type: 'string',
+          format: 'date-time',
+          example: '2026-04-14T11:17:54.637Z',
+        },
+      },
+    },
+  };
+
+  return {
+    openapi: '3.0.3',
+    info: {
+      title: 'Addressr by Mountain Pass',
+      description:
+        'Free Australian Address Validation, Search and Autocomplete. This OpenAPI spec is supplementary — the HATEOAS link-driven API is the authoritative contract. Follow `related` Link headers to navigate between addresses, localities, postcodes and states.',
+      version: apiVersion,
+    },
+    servers: [
+      { url: 'https://addressr.p.rapidapi.com', description: 'RapidAPI' },
+    ],
+    paths: {
+      '/addresses': {
+        get: {
+          summary: 'Search Addresses',
+          description:
+            'Search Australian addresses by any component — street, suburb, postcode, state. Supports fuzzy and prefix matching.',
+          operationId: 'searchAddresses',
+          tags: ['Addresses'],
+          parameters: [
+            {
+              name: 'q',
+              in: 'query',
+              required: true,
+              schema: { type: 'string', minLength: 3 },
+              example: 'UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND',
+              description: 'Address search query (min 3 characters)',
+            },
+            {
+              name: 'page',
+              in: 'query',
+              required: false,
+              schema: { type: 'integer', minimum: 0 },
+              example: 0,
+              description: 'Zero-based page number for pagination',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'List of matching addresses',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/AddressSearchResult' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/addresses/{pid}': {
+        get: {
+          summary: 'Get Address',
+          description:
+            'Get full structured details for a specific address. Response includes Link headers with `related` rels to the locality, postcode, and state.',
+          operationId: 'getAddress',
+          tags: ['Addresses'],
+          parameters: [
+            {
+              name: 'pid',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+              example: 'GAOT_717882967',
+              description: 'Address persistent identifier (G-NAF PID)',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Address details with structured data',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Address' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/localities': {
+        get: {
+          summary: 'Search Localities',
+          description:
+            'Search Australian suburbs and localities by name. Supports fuzzy and prefix matching. Returns localities with state, postcode, and classification.',
+          operationId: 'searchLocalities',
+          tags: ['Localities'],
+          parameters: [
+            {
+              name: 'q',
+              in: 'query',
+              required: true,
+              schema: { type: 'string', minLength: 2 },
+              example: 'lilydale',
+              description:
+                'Locality/suburb name search query (min 2 characters)',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'List of matching localities',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: {
+                      $ref: '#/components/schemas/LocalitySearchResult',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/localities/{pid}': {
+        get: {
+          summary: 'Get Locality',
+          description:
+            'Get details for a specific locality. Response includes Link headers with `related` rels to the postcode and state.',
+          operationId: 'getLocality',
+          tags: ['Localities'],
+          parameters: [
+            {
+              name: 'pid',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+              example: 'loc9984d8beb142',
+              description: 'Locality persistent identifier',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Locality details',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Locality' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/postcodes': {
+        get: {
+          summary: 'Search Postcodes',
+          description:
+            'Search Australian postcodes by prefix. Returns matching postcodes with their associated localities. Omit `q` to list all postcodes in ascending order.',
+          operationId: 'searchPostcodes',
+          tags: ['Postcodes'],
+          parameters: [
+            {
+              name: 'q',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              example: '314',
+              description:
+                'Postcode prefix search query (0+ characters). Omit to list all postcodes.',
+            },
+          ],
+          responses: {
+            200: {
+              description:
+                'List of matching postcodes with associated localities',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: {
+                      $ref: '#/components/schemas/PostcodeSearchResult',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/postcodes/{postcode}': {
+        get: {
+          summary: 'Get Postcode',
+          description:
+            'Get details for a specific postcode including all associated localities. Each locality is linked via a `related` Link header.',
+          operationId: 'getPostcode',
+          tags: ['Postcodes'],
+          parameters: [
+            {
+              name: 'postcode',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+              example: '6798',
+              description: 'Australian postcode',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Postcode details with associated localities',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/PostcodeDetail' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/states': {
+        get: {
+          summary: 'Search States',
+          description:
+            'Search Australian states and territories by name or abbreviation. Omit `q` to list all states alphabetically.',
+          operationId: 'searchStates',
+          tags: ['States'],
+          parameters: [
+            {
+              name: 'q',
+              in: 'query',
+              required: false,
+              schema: { type: 'string' },
+              example: 'New',
+              description:
+                'State name or abbreviation search (0+ characters). Omit to list all states.',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'List of matching states and territories',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/State' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/states/{abbreviation}': {
+        get: {
+          summary: 'Get State',
+          description:
+            'Get details for a specific state or territory. Use `/localities?q=` or `/postcodes?q=` to search within a state.',
+          operationId: 'getState',
+          tags: ['States'],
+          parameters: [
+            {
+              name: 'abbreviation',
+              in: 'path',
+              required: true,
+              schema: {
+                type: 'string',
+                enum: [
+                  'ACT',
+                  'NSW',
+                  'NT',
+                  'QLD',
+                  'SA',
+                  'TAS',
+                  'VIC',
+                  'WA',
+                  'OT',
+                ],
+              },
+              example: 'NSW',
+              description: 'State/territory abbreviation',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'State/territory details',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/State' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/health': {
+        get: {
+          summary: 'Health Check',
+          description:
+            'Check API service status. Returns version, timestamp, and health status.',
+          operationId: 'healthCheck',
+          tags: ['System'],
+          responses: {
+            200: {
+              description: 'API is healthy',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Health' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    components: { schemas },
+    tags: [
+      { name: 'Addresses', description: 'Search and retrieve addresses' },
+      {
+        name: 'Localities',
+        description: 'Search and retrieve suburbs/localities',
+      },
+      { name: 'Postcodes', description: 'Search and retrieve postcodes' },
+      { name: 'States', description: 'Search and retrieve states/territories' },
+      { name: 'System', description: 'System endpoints' },
+    ],
+  };
+}
+
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
 var error = debug('error');
@@ -366,178 +886,7 @@ export function startRest2Server() {
   waycharter.registerResourceType({
     path: '/api-docs',
     loader: async () => {
-      const spec = {
-        openapi: '3.0.3',
-        info: {
-          title: 'Addressr by Mountain Pass',
-          description:
-            'Free Australian Address Validation, Search and Autocomplete. This OpenAPI spec is supplementary — the HATEOAS link-driven API is the authoritative contract.',
-          version,
-        },
-        paths: {
-          '/addresses': {
-            get: {
-              summary: 'Search Addresses',
-              operationId: 'searchAddresses',
-              parameters: [
-                {
-                  name: 'q',
-                  in: 'query',
-                  required: true,
-                  schema: { type: 'string', minLength: 3 },
-                  description: 'Address search query',
-                },
-              ],
-              responses: { 200: { description: 'List of matching addresses' } },
-            },
-          },
-          '/addresses/{pid}': {
-            get: {
-              summary: 'Get Address',
-              operationId: 'getAddress',
-              parameters: [
-                {
-                  name: 'pid',
-                  in: 'path',
-                  required: true,
-                  schema: { type: 'string' },
-                  description: 'Address persistent identifier',
-                },
-              ],
-              responses: {
-                200: { description: 'Address details with structured data' },
-              },
-            },
-          },
-          '/localities': {
-            get: {
-              summary: 'Search Localities',
-              operationId: 'searchLocalities',
-              parameters: [
-                {
-                  name: 'q',
-                  in: 'query',
-                  required: true,
-                  schema: { type: 'string', minLength: 2 },
-                  description: 'Locality/suburb name search query',
-                },
-              ],
-              responses: {
-                200: { description: 'List of matching localities' },
-              },
-            },
-          },
-          '/localities/{pid}': {
-            get: {
-              summary: 'Get Locality',
-              operationId: 'getLocality',
-              parameters: [
-                {
-                  name: 'pid',
-                  in: 'path',
-                  required: true,
-                  schema: { type: 'string' },
-                  description: 'Locality persistent identifier',
-                },
-              ],
-              responses: { 200: { description: 'Locality details' } },
-            },
-          },
-          '/postcodes': {
-            get: {
-              summary: 'Search Postcodes',
-              operationId: 'searchPostcodes',
-              parameters: [
-                {
-                  name: 'q',
-                  in: 'query',
-                  required: false,
-                  schema: { type: 'string' },
-                  description:
-                    'Postcode prefix search query. Omit to list all postcodes.',
-                },
-              ],
-              responses: {
-                200: {
-                  description:
-                    'List of matching postcodes with associated localities',
-                },
-              },
-            },
-          },
-          '/postcodes/{postcode}': {
-            get: {
-              summary: 'Get Postcode',
-              operationId: 'getPostcode',
-              parameters: [
-                {
-                  name: 'postcode',
-                  in: 'path',
-                  required: true,
-                  schema: { type: 'string' },
-                  description: 'Australian postcode',
-                },
-              ],
-              responses: {
-                200: {
-                  description: 'Postcode details with associated localities',
-                },
-              },
-            },
-          },
-          '/states': {
-            get: {
-              summary: 'Search States',
-              operationId: 'searchStates',
-              parameters: [
-                {
-                  name: 'q',
-                  in: 'query',
-                  required: false,
-                  schema: { type: 'string' },
-                  description:
-                    'State name or abbreviation search. Omit to list all states.',
-                },
-              ],
-              responses: {
-                200: {
-                  description: 'List of matching states and territories',
-                },
-              },
-            },
-          },
-          '/states/{abbreviation}': {
-            get: {
-              summary: 'Get State',
-              operationId: 'getState',
-              parameters: [
-                {
-                  name: 'abbreviation',
-                  in: 'path',
-                  required: true,
-                  schema: { type: 'string' },
-                  description: 'State/territory abbreviation (e.g., NSW, VIC)',
-                },
-              ],
-              responses: {
-                200: { description: 'State/territory details' },
-              },
-            },
-          },
-          '/health': {
-            get: {
-              summary: 'Health Check',
-              operationId: 'healthCheck',
-              responses: {
-                200: {
-                  description:
-                    'API health status including version and timestamp',
-                },
-              },
-            },
-          },
-        },
-      };
+      const spec = buildOpenApiSpec(version);
       return {
         body: spec,
         headers: {
