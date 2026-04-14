@@ -11,6 +11,7 @@ Feature: States v2
             | https://addressr.io/rels/locality-search | /localities{?q}   |
             | https://addressr.io/rels/postcode-search | /postcodes{?q}    |
             | https://addressr.io/rels/state-search    | /states{?q}       |
+            | https://addressr.io/rels/api-docs        | /api-docs         |
             | https://addressr.io/rels/health          | /health           |
 
 

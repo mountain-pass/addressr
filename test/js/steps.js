@@ -497,6 +497,26 @@ Then(
   },
 );
 
+Then('the returned OpenAPI spec will be valid', async function () {
+  const body = this.current.json || this.current.content;
+  logger('OPENAPI SPEC', JSON.stringify(body, undefined, 2).slice(0, 500));
+  expect(body).to.have.property('openapi');
+  expect(body.openapi).to.match(/^3\./);
+  expect(body).to.have.property('info');
+  expect(body).to.have.property('paths');
+});
+
+Then(
+  'the returned OpenAPI spec will contain paths:',
+  async function (dataTable) {
+    const body = this.current.json || this.current.content;
+    const expectedPaths = dataTable.hashes().map((h) => h.path);
+    for (const path of expectedPaths) {
+      expect(body.paths).to.have.property(path);
+    }
+  },
+);
+
 Then('the address detail will have related links', async function () {
   const relatedOps = this.current.ops ? this.current.ops.filter('related') : [];
   logger('ADDRESS RELATED OPS', relatedOps.length);

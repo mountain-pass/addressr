@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-// TDD cycle: locality_pid in address index
+// TDD cycle: /api-docs runtime OpenAPI spec
 
 describe('postcode accumulation', () => {
   it('should export searchForPostcode function', async () => {

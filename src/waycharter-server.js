@@ -364,6 +364,179 @@ export function startRest2Server() {
   });
 
   waycharter.registerResourceType({
+    path: '/api-docs',
+    loader: async () => {
+      const spec = {
+        openapi: '3.0.3',
+        info: {
+          title: 'Addressr by Mountain Pass',
+          description:
+            'Free Australian Address Validation, Search and Autocomplete. This OpenAPI spec is supplementary — the HATEOAS link-driven API is the authoritative contract.',
+          version,
+        },
+        paths: {
+          '/addresses': {
+            get: {
+              summary: 'Search Addresses',
+              operationId: 'searchAddresses',
+              parameters: [
+                {
+                  name: 'q',
+                  in: 'query',
+                  required: true,
+                  schema: { type: 'string', minLength: 3 },
+                  description: 'Address search query',
+                },
+              ],
+              responses: { 200: { description: 'List of matching addresses' } },
+            },
+          },
+          '/addresses/{pid}': {
+            get: {
+              summary: 'Get Address',
+              operationId: 'getAddress',
+              parameters: [
+                {
+                  name: 'pid',
+                  in: 'path',
+                  required: true,
+                  schema: { type: 'string' },
+                  description: 'Address persistent identifier',
+                },
+              ],
+              responses: {
+                200: { description: 'Address details with structured data' },
+              },
+            },
+          },
+          '/localities': {
+            get: {
+              summary: 'Search Localities',
+              operationId: 'searchLocalities',
+              parameters: [
+                {
+                  name: 'q',
+                  in: 'query',
+                  required: true,
+                  schema: { type: 'string', minLength: 2 },
+                  description: 'Locality/suburb name search query',
+                },
+              ],
+              responses: {
+                200: { description: 'List of matching localities' },
+              },
+            },
+          },
+          '/localities/{pid}': {
+            get: {
+              summary: 'Get Locality',
+              operationId: 'getLocality',
+              parameters: [
+                {
+                  name: 'pid',
+                  in: 'path',
+                  required: true,
+                  schema: { type: 'string' },
+                  description: 'Locality persistent identifier',
+                },
+              ],
+              responses: { 200: { description: 'Locality details' } },
+            },
+          },
+          '/postcodes': {
+            get: {
+              summary: 'Search Postcodes',
+              operationId: 'searchPostcodes',
+              parameters: [
+                {
+                  name: 'q',
+                  in: 'query',
+                  required: false,
+                  schema: { type: 'string' },
+                  description:
+                    'Postcode prefix search query. Omit to list all postcodes.',
+                },
+              ],
+              responses: {
+                200: {
+                  description:
+                    'List of matching postcodes with associated localities',
+                },
+              },
+            },
+          },
+          '/postcodes/{postcode}': {
+            get: {
+              summary: 'Get Postcode',
+              operationId: 'getPostcode',
+              parameters: [
+                {
+                  name: 'postcode',
+                  in: 'path',
+                  required: true,
+                  schema: { type: 'string' },
+                  description: 'Australian postcode',
+                },
+              ],
+              responses: {
+                200: {
+                  description: 'Postcode details with associated localities',
+                },
+              },
+            },
+          },
+          '/states': {
+            get: {
+              summary: 'Search States',
+              operationId: 'searchStates',
+              parameters: [
+                {
+                  name: 'q',
+                  in: 'query',
+                  required: false,
+                  schema: { type: 'string' },
+                  description:
+                    'State name or abbreviation search. Omit to list all states.',
+                },
+              ],
+              responses: {
+                200: {
+                  description: 'List of matching states and territories',
+                },
+              },
+            },
+          },
+          '/states/{abbreviation}': {
+            get: {
+              summary: 'Get State',
+              operationId: 'getState',
+              parameters: [
+                {
+                  name: 'abbreviation',
+                  in: 'path',
+                  required: true,
+                  schema: { type: 'string' },
+                  description: 'State/territory abbreviation (e.g., NSW, VIC)',
+                },
+              ],
+              responses: {
+                200: { description: 'State/territory details' },
+              },
+            },
+          },
+        },
+      };
+      return {
+        body: spec,
+        headers: {
+          'cache-control': `public, max-age=${ONE_WEEK}`,
+          'content-type': 'application/json',
+        },
+      };
+    },
+  });
+
+  waycharter.registerResourceType({
     path: '/',
     loader: async () => {
       return {
@@ -373,6 +546,7 @@ export function startRest2Server() {
           ...localitiesType.additionalPaths,
           ...postcodesType.additionalPaths,
           ...statesType.additionalPaths,
+          { rel: 'https://addressr.io/rels/api-docs', uri: '/api-docs' },
           { rel: 'https://addressr.io/rels/health', uri: '/health' },
         ],
         headers: {

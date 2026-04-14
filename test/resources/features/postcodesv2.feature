@@ -10,6 +10,7 @@ Feature: Postcodes v2
             | https://addressr.io/rels/address-search  | /addresses{?q}    |
             | https://addressr.io/rels/locality-search | /localities{?q}   |
             | https://addressr.io/rels/postcode-search | /postcodes{?q}    |
+            | https://addressr.io/rels/api-docs        | /api-docs         |
             | https://addressr.io/rels/health          | /health           |
 
 
