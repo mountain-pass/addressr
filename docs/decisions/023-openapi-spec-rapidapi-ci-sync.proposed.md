@@ -93,6 +93,18 @@ With the addition of locality, postcode, and state endpoints (v2.1.0), manually 
 
 ## Reassessment Criteria
 
+- RapidAPI publishes a supported, stable management API for spec uploads
 - RapidAPI adds support for auto-discovering HATEOAS endpoints
 - WayCharter adds native OpenAPI spec generation (replacing custom /api-docs implementation)
 - The /api-docs endpoint causes performance or security concerns
+
+## Implementation Notes
+
+**2026-04-15: CI sync deferred.** The `/api-docs` endpoint is live at `https://backend.addressr.io/api-docs`, but automated CI sync to RapidAPI is not yet implemented. Two approaches were attempted and both failed:
+
+1. **RapidAPI OpenAPI Provisioning REST API** (`openapi-provisioning.p.rapidapi.com`) — the listing is defunct (returns NOT_FOUND on RapidAPI).
+2. **`RapidAPI/create_or_update_rapidapi_listing` GitHub Action** — the repository has no tagged releases, only a `main` branch, so `@v0` and other version references fail to resolve.
+
+**Interim workflow:** When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" feature pointing at `https://backend.addressr.io/api-docs`. This preserves the core value of the decision (accurate RapidAPI listing) without the automation.
+
+**Follow-up:** Investigate the current RapidAPI Platform GraphQL API directly, or pin the GitHub Action to a specific `main` commit SHA once it is confirmed working.

@@ -155,18 +155,8 @@ jobs:
           echo ""
           echo "Smoke tests passed."
 
-      - name: Fetch OpenAPI spec from deployed instance
-        if: steps.changesets.outputs.published == 'true'
-        run: |
-          curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/api-docs -o /tmp/openapi-spec.json
-          echo "Fetched spec, size: $(wc -c < /tmp/openapi-spec.json) bytes"
-
-      - name: Sync OpenAPI spec to RapidAPI
-        if: steps.changesets.outputs.published == 'true'
-        uses: RapidAPI/create_or_update_rapidapi_listing@v0
-        with:
-          spec_path: /tmp/openapi-spec.json
-          owner_id: ${{ secrets.RAPIDAPI_OWNER_ID }}
-          graphql_url: https://platform-graphql.p.rapidapi.com/
-          x_rapidapi_key: ${{ secrets.RAPIDAPI_KEY }}
-          x_rapidapi_graphql_host: platform-graphql.p.rapidapi.com
+      # TODO: RapidAPI OpenAPI spec sync is deferred — see ADR 023.
+      # The REST provisioning API is defunct and the GitHub Action
+      # has no tagged versions. /api-docs is live; for now, use the
+      # "Import from URL" option in RapidAPI Studio pointing at
+      # https://backend.addressr.io/api-docs when new endpoints are added.
