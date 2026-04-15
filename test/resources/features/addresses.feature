@@ -329,10 +329,10 @@ Feature: Address
         And the returned address list will include:
             """
             {
-                "sla": "19 MURRAY RD, CHRISTMAS ISLAND OT 6798",
+                "sla": "1 MURRAY RD, CHRISTMAS ISLAND OT 6798",
                 "links": {
                     "self": {
-                        "href": "/addresses/GAOT_717321355"
+                        "href": "/addresses/GAOT_717321356"
                     }
                 }
             }
