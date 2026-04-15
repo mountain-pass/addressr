@@ -79,9 +79,8 @@ Feature: Addresses v2
         And the returned address list will include:
             """
             {
-                "sla": "UNIT 1, 28 GAZE RD, CHRISTMAS ISLAND OT 6798",
-                "score": 4.818143,
-                "pid": "GAOT_717319742"
+                "sla": "101 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_717321170"
             }
             """
         And the response will contain the following links:
