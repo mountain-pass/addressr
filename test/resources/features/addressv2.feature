@@ -54,9 +54,8 @@ Feature: Addresses v2
         And the returned address list will include:
             """
             {
-                "sla": "UNIT 2, 17 MURRAY RD, CHRISTMAS ISLAND OT 6798",
-                "score": 13.012461,
-                "pid": "GAOT_717319870"
+                "sla": "1 ABBOTTS NEST, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_717321141"
             }
             """
         And the response will contain the following links:
