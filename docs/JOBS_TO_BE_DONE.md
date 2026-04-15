@@ -2,7 +2,7 @@
 
 > This document is read by the wr-jtbd:agent to review UI changes against user jobs.
 
-**Last reviewed:** 2026-04-14
+**Last reviewed:** 2026-04-15
 
 ---
 
@@ -25,6 +25,10 @@ Some operators additionally front Addressr with a commercial or self-managed API
 ### 4. AI Assistant User
 
 Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or similar AI tools. Needs address lookup grounded in authoritative data during AI-assisted workflows. Cares about natural language queries working and getting structured, reliable results. Frustrated by AI hallucinating addresses that don't exist.
+
+### 5. Addressr Contributor/Maintainer
+
+Lands code to the Addressr repo under a trunk-based workflow: commits go straight to `master`, changesets declare the intended version bump, and the changesets GitHub Action cuts releases automatically to npm, Docker, and the RapidAPI-fronted AWS deployment. Cares about the release pipeline being deterministic — if a commit says "this is a patch", a patch release must actually ship. Frustrated by commit-tooling footguns that silently drop release-critical files (e.g. lint-staged discarding staged `.changeset/*.md`), because a failed release is only discovered after push, costs a recovery commit and a wasted pipeline run, and can mask intended version bumps indefinitely.
 
 ---
 
@@ -136,6 +140,27 @@ Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or sim
 - Header name and expected value are both operator-configurable — no hard-coded gateway vendor.
 - `/health` and `/api-docs` remain reachable without the shared secret so monitors and gateway OpenAPI imports keep working.
 - Partial configuration fails at startup rather than allowing bypass.
+
+### J7: Ship releases reliably from trunk
+
+- **Type:** Non-functional (developer workflow / release integrity)
+- **Priority:** Must-have
+- **Persona:** Addressr Contributor/Maintainer
+- **Job statement:** Help contributors trust that every commit which declares a changeset will actually publish one, and that test profiles keep reporting the coverage they claim, so trunk-based releases stay deterministic, no intended version bump is silently lost, and no test coverage silently erodes.
+
+**Job stories:**
+
+- When I intend a commit to ship a version bump, I want the corresponding `.changeset/*.md` file to actually land in that commit, so the changesets GitHub Action opens a version PR and the next release ships.
+- When I forget to stage a changeset alongside the code it describes, I want a cheap local check (pre-push or post-commit) to catch it before I push, so recovery is a local re-stage rather than a failed `changeset publish` run in CI.
+- When pre-commit tooling (lint-staged, husky, license check) would drop, rewrite, or silently exclude any staged file, I want the commit to fail loudly instead of succeeding with missing content. This class of silent-drop bug is guarded by a regression test so it cannot regress unnoticed.
+- When a cucumber scenario is tagged to skip a test profile (e.g. `@not-cli2` per P010) without a `docs/problems/NNN-` cross-reference justifying the exemption, I want the commit to fail, so profile-specific coverage can never silently erode as new scenarios copy the pattern.
+
+**Desired outcomes:**
+
+- A regression test proves that a commit staging a `.changeset/*.md` plus the typical ef66d39-class fileset retains the changeset in `HEAD` after the pre-commit hook runs.
+- Authorship tooling (agents, humans) has a cheap way to verify that release-intending commits include their changeset, before push.
+- When a release-critical file is missing, the developer finds out locally, not from a failed release pipeline in GitHub Actions.
+- Motivated by P011: the P009 changeset was missing from commit `ef66d39` and caused the next release to ship no version bump. Investigation found the file was never staged, not dropped — but the failure mode (release shipped without intended bump) is what this job prevents.
 
 ---
 

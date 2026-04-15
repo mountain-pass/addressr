@@ -1,6 +1,6 @@
 # Problem 010: CLI2 cucumber profile cannot mutate the origin's environment
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-15
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Possible (2)
 
@@ -29,29 +29,29 @@ Tag any env-mutating scenario with `@not-cli2`. The `rest2` (in-process) profile
 - **Severity**: Minor. Rest2 coverage means code paths are still exercised; this is a profile-specific harness limitation, not a real regression vector.
 - **Analytics**: N/A — test-harness concern only.
 
-## Root Cause Analysis
+## Root Cause (Confirmed)
 
-### Preliminary Hypothesis
+`run-p --race start:server2:preinstalled dotest:cli2:nogeo` launches two child processes from the same shell env. Node does not share mutable env state across processes — the preinstalled binary's `process.env` is frozen at spawn, and cucumber step definitions run inside the test-runner process, not the origin. No test framework can reach into another process's env without either spawning per-scenario or exposing an admin reconfiguration endpoint that widens the production attack surface. This is an inherent cli2-profile harness limitation, not a regression to fix.
 
-`run-p --race start:server2:preinstalled dotest:cli2:nogeo` launches two child processes from the same shell env. Node does not share mutable env state across processes. The preinstalled binary's `process.env` is frozen at spawn. No test framework can reach into another process's env without spawning it per-scenario or exposing an admin reconfiguration endpoint.
+## Fix Strategy (Chosen)
 
-### Fix Strategy (to be confirmed)
+Combination of **accept + guardrail**:
 
-Potential options (not yet decided — will need ADR if non-trivial):
+1. **Accept the limitation.** `@not-cli2` remains the documented pattern for scenarios that require mid-run env mutation. `rest2` (in-process) retains full coverage of those code paths, so this is a profile-specific harness gap, not a code-coverage gap.
+2. **Guardrail against silent erosion.** Pre-commit linter at `scripts/check-not-cli2-tags.mjs` fails commit if any `@not-cli2` tag appears in a cucumber feature without a `docs/problems/NNN-` cross-reference in the file. Tags combined with `@not-cli` are exempt (those are broader profile-specific skips like CORS tests, not the P010 env-mutation class).
 
-1. **Accept the current state** — keep `@not-cli2` as the documented pattern, rely on rest2 for env-mutation coverage. Zero new code.
-2. **Per-scenario server spawn** — before each env-sensitive scenario, stop the server, re-export env vars, restart with waitport. Adds 2–5s per scenario and complicates the `run-p --race` topology.
-3. **Test-only config file hot-reload** — have the origin watch a test-only config file and re-validate proxy auth at each request. Adds production code surface for a test concern; rejected unless there is independent product value.
-4. **CI-level linter** — fail CI if the count of `@not-cli2` tags in cucumber features grows without a linked open problem ticket. Low-cost guardrail that makes the current workaround auditable.
+Rejected options:
 
-Leaning toward a combination of (1) + (4) — accept the limitation, ensure it can't silently expand.
+- **Per-scenario server spawn** — 2–5s per scenario overhead and complicates the `run-p --race` topology for a test-harness concern only.
+- **Test-only config file hot-reload** — would add production code surface for a test convenience; rejected unless there is independent product value.
 
 ### Investigation Tasks
 
-- [ ] Confirm with a short experiment whether `fs.watch` on a config file is viable without touching production code (e.g. via a dev-only wrapper).
-- [ ] Evaluate the cost of per-scenario server spawn in wall-clock terms; decide if acceptable.
-- [ ] If accepting (1): implement (4) — a lint step that greps features for `@not-cli2` and cross-references open problems.
-- [ ] Document the chosen pattern in `docs/adrs/` or in the cucumber feature file template.
+- [x] Confirm root cause (separate-process env frozen at spawn).
+- [x] Document workaround (`@not-cli2` tag + rest2 coverage).
+- [x] Implement guardrail — `scripts/check-not-cli2-tags.mjs` + regression test at `test/precommit/not-cli2-tags.test.mjs`, wired into `npm run pre-commit`.
+- [x] Cross-reference P010 from `test/resources/features/proxy-auth-enforcement.feature` (already present in feature description).
+- [ ] Retrospective note in `docs/BRIEFING.md` once this lands.
 
 ## Related
 
@@ -59,3 +59,5 @@ Leaning toward a combination of (1) + (4) — accept the limitation, ensure it c
 - [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — motivated the scenarios that exposed this harness gap.
 - `test/resources/features/proxy-auth-enforcement.feature` — current `@not-cli2` usage site.
 - `package.json` `test:cli2:nogeo` — the profile definition.
+- `scripts/check-not-cli2-tags.mjs` + `test/precommit/not-cli2-tags.test.mjs` — the guardrail.
+- [JTBD J7](../JOBS_TO_BE_DONE.md#j7-ship-releases-reliably-from-trunk) — the job this guardrail serves.
