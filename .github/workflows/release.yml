@@ -126,6 +126,8 @@ jobs:
           TF_VAR_elastic_username: ${{ secrets.TF_VAR_elastic_username }}
           TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
           TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
+          TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
+          TF_VAR_proxy_auth_value: ${{ secrets.TF_VAR_proxy_auth_value }}
           TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
         with:
           runCmd: |
@@ -138,6 +140,8 @@ jobs:
             TF_VAR_elastic_username
             TF_VAR_aws_secret_key
             TF_VAR_aws_access_key
+            TF_VAR_proxy_auth_header
+            TF_VAR_proxy_auth_value
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
@@ -147,12 +151,25 @@ jobs:
       - name: Smoke test production
         if: steps.changesets.outputs.published == 'true'
         run: |
+          set -e
           echo "Testing health endpoint..."
           curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/health
           echo ""
           echo "Testing root API..."
           curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/
           echo ""
+          echo "Testing /api-docs is reachable without gateway auth (ADR 024 allowlist)..."
+          curl -sf --retry 3 --retry-delay 10 -o /dev/null https://backend.addressr.io/api-docs
+          echo ""
+          # ADR 024 bypass probe: direct-without-header. When enforcement is off
+          # (pre-secrets) expect 200; once secrets are set and enforcement is on
+          # expect 401. Tighten to 401-only after ADR 024 is accepted.
+          echo "Probing direct bypass (ADR 024)..."
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://backend.addressr.io/addresses?q=sydney")
+          case "$status" in
+            200|401) echo "direct probe status $status (acceptable during rollout)";;
+            *) echo "unexpected status $status"; exit 1;;
+          esac
           echo "Smoke tests passed."
 
       # TODO: RapidAPI OpenAPI spec sync is deferred — see ADR 023.

@@ -52,3 +52,17 @@ variable "elastic_username" {
   sensitive = true
   nullable  = false
 }
+variable "proxy_auth_header" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR 024: gateway auth header name (e.g. X-RapidAPI-Proxy-Secret). Empty = enforcement off. Pair-completeness is enforced by a precondition on aws_elastic_beanstalk_environment.beanstalkappenv."
+}
+variable "proxy_auth_value" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
+}

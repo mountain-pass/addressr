@@ -29,6 +29,11 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
 
   lifecycle {
     create_before_destroy = true
+
+    precondition {
+      condition     = (var.proxy_auth_header == "") == (var.proxy_auth_value == "")
+      error_message = "proxy_auth_header and proxy_auth_value must both be set or both be empty (ADR 024 fail-loud)."
+    }
   }
 
   setting {
@@ -58,6 +63,24 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     name      = "ADDRESSR_ENABLE_GEO"
     value     = "1"
     resource  = ""
+  }
+  dynamic "setting" {
+    for_each = var.proxy_auth_header != "" ? [1] : []
+    content {
+      namespace = "aws:elasticbeanstalk:application:environment"
+      name      = "ADDRESSR_PROXY_AUTH_HEADER"
+      value     = var.proxy_auth_header
+      resource  = ""
+    }
+  }
+  dynamic "setting" {
+    for_each = var.proxy_auth_value != "" ? [1] : []
+    content {
+      namespace = "aws:elasticbeanstalk:application:environment"
+      name      = "ADDRESSR_PROXY_AUTH_VALUE"
+      value     = var.proxy_auth_value
+      resource  = ""
+    }
   }
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
