@@ -15,6 +15,7 @@ import {
 } from '../service/address-service';
 import { version } from '../version';
 import crypto from 'node:crypto';
+import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
 
 var app = express();
 
@@ -227,7 +228,7 @@ function buildOpenApiSpec(apiVersion) {
     info: {
       title: 'Addressr by Mountain Pass',
       description:
-        'Free Australian Address Validation, Search and Autocomplete. This OpenAPI spec is supplementary — the HATEOAS link-driven API is the authoritative contract. Follow `related` Link headers to navigate between addresses, localities, postcodes and states.',
+        'Free Australian Address Validation, Search and Autocomplete. This OpenAPI spec is supplementary — the HATEOAS link-driven API is the authoritative contract. Follow `related` Link headers to navigate between addresses, localities, postcodes and states.\n\nDirect requests to upstream hosts may be rejected when the operator has configured a gateway auth header. Consumers should always call Addressr through its published gateway endpoint; monitoring (`/health`) and spec discovery (`/api-docs`) remain openly reachable.',
       version: apiVersion,
     },
     servers: [
@@ -551,6 +552,7 @@ let server;
 const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
 export function startRest2Server() {
+  validateProxyAuthConfig();
   app.use((_request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(
@@ -573,6 +575,8 @@ export function startRest2Server() {
 
     next();
   });
+
+  app.use(proxyAuthMiddleware());
 
   const waycharter = new WayCharter();
   app.use(waycharter.router);

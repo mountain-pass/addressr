@@ -1,6 +1,6 @@
 # Problem 009: Upstream backends are openly callable, enabling bypass of RapidAPI gateway
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-15
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
@@ -90,19 +90,19 @@ Gateway-agnostic opt-in header enforcement at the Express origin:
 
 ### Investigation Tasks
 
-- [ ] Author `docs/decisions/024-origin-gateway-auth-header-enforcement.proposed.md` (MADR 4.0, minimum 2 options; gateway-agnostic, with RapidAPI/Kong/self-hosted documented as deployment profiles)
-- [ ] Update `docs/JOBS_TO_BE_DONE.md` with a "protect the chosen gateway" job (gateway-agnostic wording), or amend ADR 017 directly
-- [ ] Update `/api-docs` `info.description` text in `src/waycharter-server.js` to describe direct-URL usage
-- [ ] Create a failing cucumber test asserting that when `ADDRESSR_PROXY_AUTH_HEADER` + `ADDRESSR_PROXY_AUTH_VALUE` are set, `/addresses?q=sydney` without the header returns 401/403, and with the header returns 200
-- [ ] Create a failing test asserting that when both env vars are unset, all routes behave as today (self-hosted default)
-- [ ] Create a failing test asserting that when only one of the env var pair is set, the process fails to start with a clear error
-- [ ] Create tests confirming `/health` and `/api-docs` remain unauthenticated even when enforcement is on
-- [ ] Implement the middleware in the Express origin
+- [x] Author `docs/decisions/024-origin-gateway-auth-header-enforcement.proposed.md` — landed in commit 6fd4252 (MADR 4.0, 6 options, gateway-agnostic, 5 deployment profiles documented)
+- [x] Update `docs/JOBS_TO_BE_DONE.md` with a "protect the chosen gateway" job (gateway-agnostic wording) — added J6 and Persona 3 amendment
+- [x] Update `/api-docs` `info.description` text in `src/waycharter-server.js` to describe direct-URL usage
+- [x] Create failing cucumber scenarios covering default-off, enforcement-rejects-wrong/missing, enforcement-accepts-correct, and `/health` + `/api-docs` allowlist — `test/resources/features/proxy-auth-enforcement.feature` (6 scenarios) with step definitions in `test/js/steps-proxy-auth.js`
+- [x] Create failing unit test for partial-config startup failure (both-vars-set and neither is fine; exactly-one-set must error) — `test/js/proxy-auth.test.js`
+- [x] Create tests confirming `/health` and `/api-docs` remain unauthenticated even when enforcement is on — included in both the feature file and the unit test
+- [x] Implement the middleware in the Express origin — `src/proxy-auth.js` (`validateProxyAuthConfig`, `proxyAuthMiddleware`); wired into `src/waycharter-server.js` after CORS middleware and before `waycharter.router`
+- [x] Update `README.md` / self-hosting docs to describe the two env vars and list deployment profiles
 - [ ] Set the pair in AWS EB env for the Mountain Pass RapidAPI-fronted deployment (via `deploy/` Terraform vars or EB console) — values kept out of repo
 - [ ] Verify in production with synthetic probes (direct, with header; direct, without header; via RapidAPI; via worker)
 - [ ] Add synthetic monitoring that exercises both the via-gateway path and a direct-without-header probe — the former should 200, the latter should 401
-- [ ] Update `README.md` / self-hosting docs to describe the two env vars and list deployment profiles
-- [ ] Once deployed: transition P009 to Known Error, add `## Fix Released` section, await user verification
+- [ ] Promote ADR 024 `proposed` → `accepted` after production verification (per DECISION-MANAGEMENT.md)
+- [ ] Once deployed and verified: add `## Fix Released` section here and await user confirmation before closing
 
 ## Related
 

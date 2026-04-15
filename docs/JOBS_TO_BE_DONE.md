@@ -20,6 +20,8 @@ Works with datasets containing Australian addresses that need validation, normal
 
 Runs addressr on their own infrastructure for data sovereignty, privacy, or cost reasons. Manages OpenSearch and the G-NAF loading pipeline. Cares about operational simplicity, clear documentation, and predictable resource requirements. Frustrated by heavy infrastructure dependencies (OpenSearch RAM) and complex setup.
 
+Some operators additionally front Addressr with a commercial or self-managed API gateway (for key management, rate limiting, billing, or WAF) and need the origin to reject traffic that bypasses their chosen gateway — without being locked into any specific vendor.
+
 ### 4. AI Assistant User
 
 Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or similar AI tools. Needs address lookup grounded in authoritative data during AI-assisted workflows. Cares about natural language queries working and getting structured, reliable results. Frustrated by AI hallucinating addresses that don't exist.
@@ -114,6 +116,26 @@ Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or sim
 - Search results return both single-line and structured address formats
 - Multi-line address format available for label printing
 - Short-form addresses available (e.g., "1/25 SMITH ST" instead of "UNIT 1, 25 SMITH ST")
+
+### J6: Protect the chosen gateway boundary
+
+- **Type:** Non-functional (operational / revenue integrity)
+- **Priority:** Important
+- **Persona:** Self-Hosted Operator
+- **Job statement:** Help operators who front Addressr with any API gateway ensure that direct upstream traffic cannot bypass that gateway, without coupling the origin to a specific vendor.
+
+**Job stories:**
+
+- When I front Addressr with an API gateway (RapidAPI, Kong, Apigee, nginx, Caddy, my own Cloudflare Worker), I want the origin to reject any request that did not come through my gateway, so plan gating, rate limits, and billing cannot be circumvented by calling the upstream host directly.
+- When I self-host Addressr with no gateway in front, I want enforcement to stay off by default, so local development and existing npm/Docker deployments keep working with zero configuration.
+- When I misconfigure enforcement (set one half of the config pair and not the other), I want the process to fail loudly at startup, so I never silently ship an origin that accepts unauthenticated traffic.
+
+**Desired outcomes:**
+
+- Default behaviour (no configuration) is unchanged from prior versions — zero breaking change for self-hosters.
+- Header name and expected value are both operator-configurable — no hard-coded gateway vendor.
+- `/health` and `/api-docs` remain reachable without the shared secret so monitors and gateway OpenAPI imports keep working.
+- Partial configuration fails at startup rather than allowing bypass.
 
 ---
 

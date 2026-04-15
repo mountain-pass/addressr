@@ -186,6 +186,30 @@ Addressr exposes a HATEOAS REST API. Start at the root (`/`) and follow links to
 | ADDRESSR_ACCESS_CONTROL_EXPOSE_HEADERS | _non-blank_ | An `Access-Control-Expose-Headers` response header is returned with the value in the environment variable |         |
 | ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS  | _blank_     | An `Access-Control-Allow-Headers` response header is **not** returned                                     | ✅      |
 | ADDRESSR_ACCESS_CONTROL_ALLOW_HEADERS  | _non-blank_ | An `Access-Control-Allow-Headers` response header is returned with the value in the environment variable  |         |
+| ADDRESSR_PROXY_AUTH_HEADER             | _blank_     | No gateway auth header enforcement (self-hosted default)                                                  | ✅      |
+| ADDRESSR_PROXY_AUTH_HEADER             | _non-blank_ | Name of the header the origin requires — set alongside `ADDRESSR_PROXY_AUTH_VALUE`                        |         |
+| ADDRESSR_PROXY_AUTH_VALUE              | _blank_     | No gateway auth header enforcement (self-hosted default)                                                  | ✅      |
+| ADDRESSR_PROXY_AUTH_VALUE              | _non-blank_ | Expected value the header must carry — set alongside `ADDRESSR_PROXY_AUTH_HEADER`                         |         |
+
+### Gateway auth header (optional)
+
+By default Addressr does not enforce any proxy authentication — self-hosted npm and Docker deployments work with zero configuration.
+
+If you front Addressr with an API gateway (RapidAPI, Kong, Tyk, Apigee, AWS API Gateway, nginx, Caddy, or your own Cloudflare Worker) and want the origin to reject traffic that bypasses your gateway, set both environment variables to the header name your gateway injects and the shared secret it forwards:
+
+| Variable                     | Example                   | Notes                                       |
+| ---------------------------- | ------------------------- | ------------------------------------------- |
+| `ADDRESSR_PROXY_AUTH_HEADER` | `X-RapidAPI-Proxy-Secret` | Header name your gateway forwards           |
+| `ADDRESSR_PROXY_AUTH_VALUE`  | `<your-gateway-secret>`   | Expected value; keep out of version control |
+
+Behaviour:
+
+- Both unset → no enforcement (default).
+- Both set → requests without a matching header receive `401 Authentication required`.
+- Exactly one set → the process exits at startup with a clear error (fails loud to prevent silent bypass).
+- `/health` and `/api-docs` remain reachable without the header so uptime monitors and gateway OpenAPI imports keep working.
+
+See [ADR 024](docs/decisions/024-origin-gateway-auth-header-enforcement.proposed.md) for the decision record.
 
 NOTE: When adjusting PAGE_SIZE, you should take into account how quickly you want the initial results returned to the user. In many use cases, you want this to be as fast as possible. If you need show more results to the user, you are often better off leaving it a 8 and using the paging links to get more results while you are displaying the first 8.
 
