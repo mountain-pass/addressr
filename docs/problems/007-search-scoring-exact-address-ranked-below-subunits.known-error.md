@@ -123,5 +123,6 @@ Until the fix is released, API consumers who query a street-level address and wa
 
 ## Related
 
+- [ADR 025 — Symmetric `ssla` indexing for search ranking](../decisions/025-search-ranking-symmetric-ssla.proposed.md) — records the fix decision. Note: the implementation chose **Option B (symmetric `ssla` indexing)** rather than the `dis_max` approach originally recommended in the Fix Strategy section above. See ADR 025 for the full options comparison and rationale (primary driver: engine-agnosticism per ADR 021).
 - GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375) — original report
 - GitHub issue [#365](https://github.com/tompahoward/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; consider investigating together)

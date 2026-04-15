@@ -67,7 +67,8 @@ Feature: Structured Address
                     "4 COCONUT GR",
                     "CHRISTMAS ISLAND OT 6798"
                 ],
-                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
+                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798",
+                "ssla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
             }
             """
         And the response will contain the following links:
@@ -119,7 +120,8 @@ Feature: Structured Address
                     "4 COCONUT GR",
                     "CHRISTMAS ISLAND OT 6798"
                 ],
-                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
+                "sla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798",
+                "ssla": "4 COCONUT GR, CHRISTMAS ISLAND OT 6798"
             }
             """
         And the response will contain the following links:

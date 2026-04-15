@@ -95,12 +95,8 @@ Feature: Addresses v2
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
 
-    @not-rest2 @not-cli2
     Scenario: P007 Exact street address ranks first over sub-unit variants
-        # Known-error: exact street-level match (no flat/unit) ranks below
-        # sub-unit variants (UNIT, SHOP, FLAT) at the same address, so the
-        # first result returned to the API consumer is the wrong "best match".
-        # See docs/problems/007-*.known-error.md and GitHub issue #375.
+        # Regression guard for P007 / issue #375 — see ADR 025 for the fix rationale.
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | 19 MURRAY RD, CHRISTMAS ISLAND |

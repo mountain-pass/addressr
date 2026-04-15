@@ -175,7 +175,8 @@ Feature: Address
                     "LOT 16 AERODROME RD",
                     "APPLETHORPE QLD 4378"
                 ],
-                "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
+                "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378",
+                "ssla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
             }
             """
 
@@ -314,7 +315,8 @@ Feature: Address
                     "LOT 16 AERODROME RD",
                     "APPLETHORPE QLD 4378"
                 ],
-                "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
+                "sla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378",
+                "ssla": "LOT 16 AERODROME RD, APPLETHORPE QLD 4378"
             }
             """
 

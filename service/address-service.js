@@ -778,7 +778,11 @@ export function mapAddressDetails(d, context, index, count) {
   };
   rval.mla = mapToMla(rval.structured);
   rval.sla = mapToSla(rval.mla);
-  if (rval.structured.flat != undefined) {
+  if (rval.structured.flat == undefined) {
+    // Symmetric ssla so BM25 summation across sla+ssla does not favour
+    // sub-unit docs over exact street-level matches. See ADR 025 / P007.
+    rval.ssla = rval.sla;
+  } else {
     rval.smla = mapToShortMla(rval.structured);
     rval.ssla = mapToSla(rval.smla);
   }
