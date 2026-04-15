@@ -161,15 +161,15 @@ jobs:
           echo "Testing /api-docs is reachable without gateway auth (ADR 024 allowlist)..."
           curl -sf --retry 3 --retry-delay 10 -o /dev/null https://backend.addressr.io/api-docs
           echo ""
-          # ADR 024 bypass probe: direct-without-header. When enforcement is off
-          # (pre-secrets) expect 200; once secrets are set and enforcement is on
-          # expect 401. Tighten to 401-only after ADR 024 is accepted.
-          echo "Probing direct bypass (ADR 024)..."
+          # ADR 024 bypass probe: direct-without-header must be rejected.
+          # Any status other than 401 fails the release — enforcement is the
+          # steady state (ADR 024 accepted, P009 closed).
+          echo "Probing direct bypass (ADR 024 Confirmation criterion 5)..."
           status=$(curl -s -o /dev/null -w "%{http_code}" "https://backend.addressr.io/addresses?q=sydney")
-          case "$status" in
-            200|401) echo "direct probe status $status (acceptable during rollout)";;
-            *) echo "unexpected status $status"; exit 1;;
-          esac
+          if [ "$status" != "401" ]; then
+            echo "direct probe returned $status, expected 401 (enforcement regression)"; exit 1
+          fi
+          echo "direct probe status 401 (expected)"
           echo "Smoke tests passed."
 
       # TODO: RapidAPI OpenAPI spec sync is deferred — see ADR 023.

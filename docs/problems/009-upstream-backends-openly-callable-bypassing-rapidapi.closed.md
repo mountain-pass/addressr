@@ -1,6 +1,6 @@
 # Problem 009: Upstream backends are openly callable, enabling bypass of RapidAPI gateway
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
@@ -104,11 +104,19 @@ Gateway-agnostic opt-in header enforcement at the Express origin:
 - [ ] Promote ADR 024 `proposed` → `accepted` after production verification (per DECISION-MANAGEMENT.md)
 - [ ] Once deployed and verified: add `## Fix Released` section here and await user confirmation before closing
 
+## Fix Released
+
+- **Released**: 2026-04-15 in v2.1.5.
+- **Mechanism**: Terraform applied `ADDRESSR_PROXY_AUTH_HEADER=X-RapidAPI-Proxy-Secret` and `ADDRESSR_PROXY_AUTH_VALUE=<RapidAPI Proxy Secret>` to the AWS Elastic Beanstalk `addressr-prod` environment. Values sourced from GitHub Actions repo secrets `TF_VAR_PROXY_AUTH_HEADER` and `TF_VAR_PROXY_AUTH_VALUE`, themselves sourced from the 1Password Voder-vault item `Addressr RapidAPI Proxy Secret`.
+- **Confirmation**: Post-deploy smoke test in the v2.1.5 release workflow run reported `direct probe status 401 (acceptable during rollout)` for `https://backend.addressr.io/addresses?q=sydney` without the header; `/health` and `/api-docs` returned 200 (allowlist intact). Operator manually verified the RapidAPI-fronted path `addressr.p.rapidapi.com/addresses?q=sydney` returns 200 on 2026-04-15.
+- **ADR**: [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) promoted from `proposed` → `accepted` in the same change.
+- **Follow-ups open**: smoke probe tightened from `200|401` tolerant to `401` required in the same commit. P010 continues to track the cli2 cucumber harness limitation.
+
 ## Related
 
 - [ADR 017](../decisions/017-rapidapi-distribution.accepted.md) — RapidAPI as monetization gateway (this problem exposes a gap in its enforcement)
 - [ADR 018](../decisions/018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (references the upstream hostnames this problem seeks to protect)
 - [ADR 023](../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec sync (imposes constraint that `/api-docs` must remain unauthenticated)
-- [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.proposed.md) — **to be created** — records the gateway-agnostic enforcement decision this problem requires
+- [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — accepted with v2.1.5; records the gateway-agnostic enforcement decision this problem required
 - [Problem 008](008-rapidapi-gateway-rejecting-all-keys-for-listing.known-error.md) — upstream outage post-mortem; formally flagged this as a follow-up and drove the urgency of fixing it before P008's `servers:` change widens discoverability
 - [RISK-POLICY.md](../../RISK-POLICY.md) — "Confidential Information" section; proxy secret value must not be committed

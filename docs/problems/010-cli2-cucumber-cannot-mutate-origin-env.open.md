@@ -55,7 +55,7 @@ Leaning toward a combination of (1) + (4) — accept the limitation, ensure it c
 
 ## Related
 
-- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.known-error.md) — discovery context; proxy-auth scenarios triggered the detection.
-- [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.proposed.md) — motivated the scenarios that exposed this harness gap.
+- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.closed.md) — discovery context; proxy-auth scenarios triggered the detection.
+- [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — motivated the scenarios that exposed this harness gap.
 - `test/resources/features/proxy-auth-enforcement.feature` — current `@not-cli2` usage site.
 - `package.json` `test:cli2:nogeo` — the profile definition.

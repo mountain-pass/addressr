@@ -1,6 +1,8 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-04-15
+accepted-date: 2026-04-15
+first-released: '2026-04-15 (v2.1.5)'
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
