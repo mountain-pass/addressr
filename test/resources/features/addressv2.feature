@@ -221,5 +221,7 @@ Feature: Addresses v2
             | q | UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND |
         And the 1st "item" link is followed
         And the "canonical" link is followed
-        Then the address detail will have related links
+        Then the address detail will have a related link to its locality
+        And the address detail will have a related link to its postcode
+        And the address detail will have a related link to its state
 

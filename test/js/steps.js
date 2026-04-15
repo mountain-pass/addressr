@@ -517,12 +517,34 @@ Then(
   },
 );
 
-Then('the address detail will have related links', async function () {
-  const relatedOps = this.current.ops ? this.current.ops.filter('related') : [];
-  logger('ADDRESS RELATED OPS', relatedOps.length);
-  // Should have locality, postcode, and state links
-  expect(relatedOps.length).to.be.greaterThanOrEqual(3);
-});
+Then(
+  'the address detail will have a related link to its {word}',
+  async function (resourceType) {
+    const resourcePathByType = {
+      locality: '/localities/',
+      postcode: '/postcodes/',
+      state: '/states/',
+    };
+    const resourcePath = resourcePathByType[resourceType];
+    expect(
+      resourcePath,
+      `unknown related-resource type "${resourceType}" (expected one of: ${Object.keys(resourcePathByType).join(', ')})`,
+    ).to.not.be.undefined;
+    expect(
+      this.current.ops,
+      'response has no HATEOAS ops — cannot check related links',
+    ).to.not.be.undefined;
+    const relatedOps = this.current.ops.filter('related');
+    const matchingUris = relatedOps
+      .map((op) => op.uri)
+      .filter((uri) => typeof uri === 'string' && uri.includes(resourcePath));
+    expect(
+      matchingUris,
+      `expected a related link whose URI contains "${resourcePath}" ` +
+        `(got related URIs: ${relatedOps.map((op) => op.uri).join(', ') || '<none>'})`,
+    ).to.have.lengthOf.at.least(1);
+  },
+);
 
 Then('the response will contain:', async function (documentString) {
   const entity = JSON.parse(documentString);
