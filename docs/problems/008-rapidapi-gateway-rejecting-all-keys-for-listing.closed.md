@@ -1,8 +1,9 @@
 # Problem 008: RapidAPI gateway returns 401 "Invalid API key" for every key on the Addressr listing
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
-**Resolved (pending verification)**: 2026-04-15
+**Resolved**: 2026-04-15
+**Closed**: 2026-04-16
 **Priority**: 25 (Very High) — Impact: Severe (5) x Likelihood: Almost certain (5)
 
 ## Description
@@ -98,7 +99,7 @@ The exact field that triggered the auth rejection was not isolated during recove
 - [ ] Reconsider OAS3 sync strategy — see P006 / ADR 023; sync must include human-reviewed diff before push
 - [ ] Add synthetic monitoring that calls `addressr.p.rapidapi.com` with the owner key (not via the worker) so future listing-auth breaks alert immediately rather than being masked as RapidAPI noise
 - [ ] Address P009 candidate — make Express origin require `X-RapidAPI-Proxy-Secret` so `backend.addressr.io` is not openly bypassable
-- [ ] User to confirm fix sustained for 24h before transitioning to Closed
+- [x] User to confirm fix sustained for 24h before transitioning to Closed — confirmed 2026-04-16; RapidAPI gateway has remained healthy for paying consumers and UptimeRobot since recovery on 2026-04-15.
 
 ### Reproduction
 

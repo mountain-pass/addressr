@@ -1,7 +1,8 @@
 # Problem 011: P009 changeset missing from commit ef66d39
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
+**Closed**: 2026-04-16
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (2)
 
 ## Description
@@ -55,7 +56,7 @@ Permanent guardrails (ordered by cost):
 - [x] Write regression test at `test/precommit/changeset-preservation.test.mjs` — done; passes on current codebase.
 - [x] Correct the root-cause diagnosis in this ticket.
 - [x] Wire the regression test into `npm run test:precommit`.
-- [ ] Update `docs/BRIEFING.md` to reflect the corrected diagnosis (retrospective).
+- [x] Update `docs/BRIEFING.md` to reflect the corrected diagnosis (retrospective) — landed in commit `f2b8602`.
 
 ## Related
 
