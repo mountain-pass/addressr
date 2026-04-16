@@ -10,6 +10,6 @@ describe('steps.js', () => {
     // The module defines Cucumber step bindings as side effects at import
     // time. We do not invoke it here (it requires Cucumber's World binding);
     // just asserting the file exists keeps the gate satisfied.
-    assert.ok(true);
+    assert.ok(true, 'placeholder — real coverage via Cucumber');
   });
 });

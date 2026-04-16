@@ -518,31 +518,23 @@ Then(
 );
 
 Then(
-  'the address detail will have a related link to its {word}',
-  async function (resourceType) {
-    const resourcePathByType = {
-      locality: '/localities/',
-      postcode: '/postcodes/',
-      state: '/states/',
-    };
-    const resourcePath = resourcePathByType[resourceType];
-    expect(
-      resourcePath,
-      `unknown related-resource type "${resourceType}" (expected one of: ${Object.keys(resourcePathByType).join(', ')})`,
-    ).to.not.be.undefined;
+  'the response will contain the following related links:',
+  async function (dataTable) {
+    const expected = dataTable.hashes().map((row) => row.uri);
     expect(
       this.current.ops,
       'response has no HATEOAS ops — cannot check related links',
     ).to.not.be.undefined;
-    const relatedOps = this.current.ops.filter('related');
-    const matchingUris = relatedOps
+    const actualUris = this.current.ops
+      .filter('related')
       .map((op) => op.uri)
-      .filter((uri) => typeof uri === 'string' && uri.includes(resourcePath));
-    expect(
-      matchingUris,
-      `expected a related link whose URI contains "${resourcePath}" ` +
-        `(got related URIs: ${relatedOps.map((op) => op.uri).join(', ') || '<none>'})`,
-    ).to.have.lengthOf.at.least(1);
+      .filter((uri) => typeof uri === 'string');
+    for (const uri of expected) {
+      expect(
+        actualUris,
+        `expected related link ${uri} in [${actualUris.join(', ') || '<none>'}]`,
+      ).to.include(uri);
+    }
   },
 );
 
