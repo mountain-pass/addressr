@@ -3,7 +3,8 @@ id: '005'
 title: TDD hook does not recognise Cucumber feature files
 status: open
 created: 2026-04-14
-severity: low
+severity: medium
+priority: 8
 ---
 
 # Problem: TDD hook does not recognise Cucumber feature files

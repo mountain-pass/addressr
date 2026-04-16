@@ -2,7 +2,7 @@
 
 **Status**: Known Error
 **Reported**: 2026-04-15
-**Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Possible (2)
+**Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 
 ## Description
 
