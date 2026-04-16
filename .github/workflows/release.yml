@@ -170,6 +170,32 @@ jobs:
             echo "direct probe returned $status, expected 401 (enforcement regression)"; exit 1
           fi
           echo "direct probe status 401 (expected)"
+
+          # ADR 025 / P007 ranking probes: exact street-level address must
+          # rank first when sub-unit variants share the address. Any other
+          # top-hit fails the release.
+          auth_header="${{ secrets.TF_VAR_proxy_auth_header }}: ${{ secrets.TF_VAR_proxy_auth_value }}"
+
+          echo "Probing ranking for 278 ROSS RIVER RD AITKENVALE QLD 4814 (issue #375)..."
+          top_sla=$(curl -sf --retry 3 --retry-delay 10 -H "$auth_header" \
+            "https://backend.addressr.io/addresses?q=278%20ROSS%20RIVER%20RD%20AITKENVALE%20QLD%204814" \
+            | jq -r '.[0].sla')
+          if [[ "$top_sla" != "278 ROSS RIVER RD,"* ]]; then
+            echo "ranking regression: expected top hit to start with '278 ROSS RIVER RD,', got '$top_sla'"
+            exit 1
+          fi
+          echo "top hit '$top_sla' (street-level, expected)"
+
+          echo "Probing ranking for 19 MURRAY RD CHRISTMAS ISLAND OT 6798..."
+          top_sla=$(curl -sf --retry 3 --retry-delay 10 -H "$auth_header" \
+            "https://backend.addressr.io/addresses?q=19%20MURRAY%20RD%20CHRISTMAS%20ISLAND%20OT%206798" \
+            | jq -r '.[0].sla')
+          if [[ "$top_sla" != "19 MURRAY RD, CHRISTMAS ISLAND OT 6798" ]]; then
+            echo "ranking regression: expected top hit '19 MURRAY RD, CHRISTMAS ISLAND OT 6798', got '$top_sla'"
+            exit 1
+          fi
+          echo "top hit '$top_sla' (street-level, expected)"
+
           echo "Smoke tests passed."
 
       # TODO: RapidAPI OpenAPI spec sync is deferred — see ADR 023.

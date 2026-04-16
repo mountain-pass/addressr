@@ -106,6 +106,21 @@ Feature: Addresses v2
             }
             """
 
+    Scenario: P007 Exact street address ranks first over sub-unit variants (GAZE RD)
+        # Second topology regression guard for P007 / issue #375 — see ADR 025.
+        # 16 GAZE RD coexists with UNIT 1/2/3/6, 16 GAZE RD on street locality OT677705.
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | 16 GAZE RD, CHRISTMAS ISLAND |
+        And the 1st "item" link is followed
+        Then the returned address summary will be:
+            """
+            {
+                "sla": "16 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_718447105"
+            }
+            """
+
     Scenario: Search and item
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
