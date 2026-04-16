@@ -1,6 +1,6 @@
 # Problem 013: Loader second run fails on cloud-managed clusters
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-04-16
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
 
@@ -29,7 +29,7 @@ Drop the index and re-run the full loader. This restores function but requires f
 
 ## Impact Assessment
 
-- **Who is affected**: Self-hosted users deploying against cloud-managed OpenSearch/Elasticsearch (e.g., elastic.co, Elastic Cloud, AWS OpenSearch Service). RapidAPI consumers unaffected (server-side only).
+- **Who is affected**: Self-hosted users deploying against elastic.co specifically. AWS OpenSearch (the supported managed config) is confirmed unaffected — CI pipelines run repeated loader invocations against AWS OpenSearch without error. RapidAPI consumers unaffected (server-side only).
 - **Frequency**: Every loader re-run after the initial load. Affects anyone who updates G-NAF data or recovers from an incomplete load.
 - **Severity**: Significant — loader is completely unusable for re-indexing without a full index drop.
 - **Analytics**: N/A
@@ -69,6 +69,14 @@ The same pattern likely exists for the locality index at `client/elasticsearch.j
 - [ ] Create a failing integration test that runs the loader twice against a test cluster and asserts no error on 2nd run
 - [ ] Implement the fix
 - [ ] Verify fix against elastic.co if possible (or document that it was validated locally)
+
+## Parked
+
+**Reason**: Cannot reproduce on our supported managed configuration. AWS OpenSearch is confirmed unaffected (CI runs the loader repeatedly against it without error). The issue is elastic.co-specific and we have no elastic.co account to reproduce, debug, or verify a fix against.
+
+**Un-park trigger**: Reporter confirms the issue reproduces on AWS OpenSearch, OR provides the elastic.co Elasticsearch version and a way to reproduce in a CI-accessible environment, OR we obtain an elastic.co account.
+
+**Date parked**: 2026-04-17
 
 ## Related
 
