@@ -121,6 +121,12 @@ Apply the same treatment to the `phrase_prefix` clause.
 
 Until the fix is released, API consumers who query a street-level address and want the non-sub-unit result can filter locally: ignore hits where the `sla` contains a `FLAT`/`UNIT`/`SHOP`/`LEVEL` token if the query did not contain one. This is client-side work but unblocks the wrong-"best-match" symptom.
 
+## Fix Released
+
+Deployed in v2.2.0 (released 2026-04-16, PR #451). Awaiting user verification against the live RapidAPI endpoint.
+
+Verification probe: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against `https://addressr.p.rapidapi.com/addresses` — the first result should be `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix).
+
 ## Related
 
 - [ADR 025 — Symmetric `ssla` indexing for search ranking](../decisions/025-search-ranking-symmetric-ssla.proposed.md) — records the fix decision. Note: the implementation chose **Option B (symmetric `ssla` indexing)** rather than the `dis_max` approach originally recommended in the Fix Strategy section above. See ADR 025 for the full options comparison and rationale (primary driver: engine-agnosticism per ADR 021).
