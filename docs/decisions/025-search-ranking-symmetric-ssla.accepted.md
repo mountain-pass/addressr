@@ -1,6 +1,7 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-04-16
+accepted-date: 2026-04-17
 decision-makers: [Tom Howard]
 consulted: []
 informed: []

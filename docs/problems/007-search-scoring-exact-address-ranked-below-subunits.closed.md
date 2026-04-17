@@ -1,6 +1,6 @@
 # Problem 007: Search scoring ranks exact address below sub-unit variants
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)
 
@@ -123,12 +123,12 @@ Until the fix is released, API consumers who query a street-level address and wa
 
 ## Fix Released
 
-Deployed in v2.2.0 (released 2026-04-16, PR #451). Awaiting user verification against the live RapidAPI endpoint.
+Deployed in v2.2.0 (released 2026-04-16, PR #451). Verified in production 2026-04-17.
 
-Verification probe: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against `https://addressr.p.rapidapi.com/addresses` — the first result should be `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix).
+Verification: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against the live RapidAPI endpoint — first result is now `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix). Confirmed by user.
 
 ## Related
 
-- [ADR 025 — Symmetric `ssla` indexing for search ranking](../decisions/025-search-ranking-symmetric-ssla.proposed.md) — records the fix decision. Note: the implementation chose **Option B (symmetric `ssla` indexing)** rather than the `dis_max` approach originally recommended in the Fix Strategy section above. See ADR 025 for the full options comparison and rationale (primary driver: engine-agnosticism per ADR 021).
+- [ADR 025 — Symmetric `ssla` indexing for search ranking](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — records the fix decision. Note: the implementation chose **Option B (symmetric `ssla` indexing)** rather than the `dis_max` approach originally recommended in the Fix Strategy section above. See ADR 025 for the full options comparison and rationale (primary driver: engine-agnosticism per ADR 021).
 - GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375) — original report
 - GitHub issue [#365](https://github.com/tompahoward/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; consider investigating together)
