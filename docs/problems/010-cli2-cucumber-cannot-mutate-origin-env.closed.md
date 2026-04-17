@@ -1,6 +1,6 @@
 # Problem 010: CLI2 cucumber profile cannot mutate the origin's environment
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
 **Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 
@@ -51,7 +51,11 @@ Rejected options:
 - [x] Document workaround (`@not-cli2` tag + rest2 coverage).
 - [x] Implement guardrail — `scripts/check-not-cli2-tags.mjs` + regression test at `test/precommit/not-cli2-tags.test.mjs`, wired into `npm run pre-commit`.
 - [x] Cross-reference P010 from `test/resources/features/proxy-auth-enforcement.feature` (already present in feature description).
-- [ ] Retrospective note in `docs/BRIEFING.md` once this lands.
+- [x] Retrospective note in `docs/BRIEFING.md` once this lands.
+
+## Fix Released
+
+Deployed in v2.2.0 (released 2026-04-16). This is an "accept + guardrail" resolution — the harness limitation is intentionally accepted; the guardrail (`scripts/check-not-cli2-tags.mjs`) prevents silent erosion. All investigation tasks complete including retrospective note in `docs/BRIEFING.md`. Awaiting user confirmation to close.
 
 ## Related
 
