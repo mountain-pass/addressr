@@ -1,8 +1,33 @@
 # Problem 017: HATEOAS root missing postcode/locality/state search rels on RapidAPI
 
-**Status**: Open
+**Status**: Closed
 **Reported**: 2026-04-17
+**Closed**: 2026-04-17
 **Priority**: 15 (High) — Impact: Significant (4) x Likelihood: Almost certain (5)
+
+## Resolution
+
+**Root cause: stale RapidAPI edge cache.** Diagnosis completed 2026-04-17. Evidence:
+
+| Path                                                      | etag      | age                   | cf-cache-status    | rels in Link    |
+| --------------------------------------------------------- | --------- | --------------------- | ------------------ | --------------- |
+| `backend.addressr.io/` (Mountain Pass CF, via proxy-auth) | `"2.2.0"` | fresh                 | HIT/MISS (current) | all 7 (correct) |
+| `addressr.p.rapidapi.com/` (RapidAPI CF)                  | `"2.0.4"` | ~268,787s (~3.1 days) | HIT                | 3 (stale)       |
+| `addressr.p.rapidapi.com/?cachebust=…` (bypass edge)      | `"2.2.0"` | fresh                 | DYNAMIC            | all 7 (correct) |
+
+The RapidAPI edge cached a v2.0.4 response for `GET /` ~3 days ago. Our origin sets `cache-control: public, max-age=604800` (7 days) at `src/waycharter-server.js:919`, which CF honors. Every subsequent deploy (v2.1.0 → v2.2.0) added rels at the origin but the cached response predates them and won't naturally expire for ~4 more days.
+
+Our own Cloudflare zone in front of `backend.addressr.io` is serving the fresh v2.2.0 response correctly, so the bug is isolated to RapidAPI's edge.
+
+**Closed without shipping a fix** at user direction. The stale RapidAPI CF entry will expire naturally within ~4 days. Consumers needing the new rels sooner can use direct path access (`/postcodes?q=`, `/localities?q=`, `/states?q=`) — those endpoints are live on the backend and reachable via RapidAPI using the documented paths; only HATEOAS root discovery is affected.
+
+**Investigation notes** (for future reference, not action items):
+
+- RapidAPI does not document a client-bypass header, a `PURGE` endpoint, or any provider-side gateway cache invalidation. See `gateway-configuration` and `api-caching-with-http-headers` — no cache control section.
+- Query-string cache-busting works because CF includes the query in the cache key.
+- A future permanent fix candidate: lower `cache-control` max-age on the root `/` from 7 days to a short value (e.g. 60s + `must-revalidate`). Would flush both our CF and RapidAPI's CF within ~60s of every deploy. Not shipped in this ticket — would be a fresh problem if the issue recurs after the natural expiry.
+
+**Reopen trigger**: the same symptom observed against `addressr.p.rapidapi.com/` after 2026-04-21 (approximate natural expiry of the stale entry), or any future deploy where the advertised rels at root drift from the deployed code.
 
 ## Description
 
