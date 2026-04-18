@@ -53,8 +53,20 @@ For a state like QLD with ~2M addresses, that's ~2,000 full JSON dumps × ~30 li
 
 - [x] Locate the verbose output source (`service/address-service.js:790-799`)
 - [x] Confirm the debug namespace enabling it (`DEBUG=...api...` in workflow env)
-- [ ] Create reproduction test
-- [ ] Implement fix
+- [x] Create reproduction test — `test/js/__tests__/address-service.test.mjs` asserts `JSON.stringify(rval` is absent from `mapAddressDetails`. Source-level regression test, runs under `npm run test:js` in pre-commit.
+- [x] Implement fix — Option 1 (remove the two `logger('addr', JSON.stringify(rval, ...))` calls). Progress logging (`%` / `rows`) preserved.
+
+## Fix Released
+
+**Date**: 2026-04-19
+
+Removed the two `logger('addr', JSON.stringify(rval, undefined, 2))` calls at `service/address-service.js:792,797`. The per-1% and per-10k-row progress indicators remain — operators still see reindex progress, just without the ~60K lines of JSON noise.
+
+**Verification path**: The next `update-<state>.yml` workflow run should produce logs with only `%` and row progress lines, no embedded JSON address objects. Verify by running one reindex workflow (e.g., `update-act.yml` manually via `workflow_dispatch`) and grepping the job log — expect zero hits for `"sla":` as a payload field.
+
+**Regression protection**: `test/js/__tests__/address-service.test.mjs` fails if anyone re-introduces `JSON.stringify(rval` inside `mapAddressDetails`. Runs in pre-commit.
+
+Awaiting user verification via the next scheduled or manually-triggered state reindex.
 
 ## Fix Strategy
 

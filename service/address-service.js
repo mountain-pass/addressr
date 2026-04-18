@@ -789,12 +789,10 @@ export function mapAddressDetails(d, context, index, count) {
 
   if (count) {
     if (index % Math.ceil(count / 100) === 0) {
-      logger('addr', JSON.stringify(rval, undefined, 2));
       logger(`${(index / count) * 100}%`);
     }
   } else {
     if (index % 10_000 === 0) {
-      logger('addr', JSON.stringify(rval, undefined, 2));
       logger(`${index} rows`);
     }
   }
