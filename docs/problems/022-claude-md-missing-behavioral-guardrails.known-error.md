@@ -62,15 +62,30 @@ Text is short and reinforces invariants the user already wants enforced. Redunda
 ## Investigation Tasks
 
 - [ ] Decide placement: `CLAUDE.md` at project root, or `AGENTS.md` (currently referenced by CLAUDE.md). Keep both in sync or pick one canonical.
-- [ ] Confirm the exact wording — thin to ~4 bullets each section.
-- [ ] Check for conflicts with existing CLAUDE.md rules (accessibility, decision management).
-- [ ] Verify the rule does not contradict any ADR.
-- [ ] Commit with a clear message so the addition is auditable.
+- [x] Confirm the exact wording — thin to ~4 bullets each section.
+- [x] Check for conflicts with existing CLAUDE.md rules (accessibility, decision management) — architect review 2026-04-19 confirmed no conflicts.
+- [x] Verify the rule does not contradict any ADR — reinforces ADR-001 (Risk-Gated Release Process).
+- [x] Commit with a clear message so the addition is auditable.
+
+## Fix Released
+
+**Date**: 2026-04-19
+
+Added "Risk & Release Gates" and "Verification Ownership" sections to `AGENTS.md` (placed between "Controls and Safety" and "Completion Protocol"). Text incorporates architect-reviewed tweaks:
+
+- Risk & Release Gates cross-references ADR-001 and RISK-POLICY.md explicitly.
+- CI-green bullet reworded to avoid overlap with the existing Completion Protocol ("verify the latest master CI run is green — do not rely on assumed-green").
+- Verification Ownership clarifies "show the output" as "prefer piping actual output over summarising it when the user asked for evidence".
+
+CLAUDE.md was not edited — it delegates to AGENTS.md and the canonical agent guidance lives there.
+
+Awaiting user verification (observe the new sections take effect across future sessions; verify no contradiction with in-session behaviour).
 
 ## Related
 
-- [P021: git push origin master is not risk-gated](021-git-push-master-not-risk-gated.open.md) — hook-layer enforcement this ticket mirrors at the prompt layer.
+- [P021: git push origin master is not risk-gated](021-git-push-master-not-risk-gated.known-error.md) — hook-layer enforcement this ticket mirrors at the prompt layer.
 - [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.open.md) — voice/tone corner of the same family. Already covered by docs/VOICE-AND-TONE.md + hook.
+- ADR-001 (Risk-Gated Release Process) — decision record this section reinforces at the prompt layer.
 - Usage-data report 2026-03-17 → 2026-04-16 — source of the recurring-pattern evidence.
 - `CLAUDE.md`, `AGENTS.md` — target docs for the additions.
 - RISK-POLICY.md — appetite threshold referenced by the Risk Gates section.

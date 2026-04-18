@@ -3,6 +3,7 @@
 ## Operating Alignment
 
 All agent work in this repo must align with:
+
 - `PRINCIPLES.md` (especially locality/simplicity, flow/feedback speed, customer focus, and deterministic vs LLM split)
 - `AGENTIC_RISK_REGISTER.md`
 - `governance/control-traceability.json`
@@ -34,6 +35,20 @@ Apply Gall's law in delivery decisions: start from a working simple slice, then 
   - `AGENTIC_RISK_REGISTER.md`
   - `governance/control-traceability.json`
 
+## Risk & Release Gates
+
+_Codifies the prompt-layer expectations that back ADR-001 (Risk-Gated Release Process) and `RISK-POLICY.md`. Prompt layer + tool layer are defense-in-depth; neither replaces the other._
+
+- NEVER attempt `git push origin master`, a release workflow, or any publish when the risk scorer reports a residual score above the `RISK-POLICY.md` appetite (currently 5; see ADR-001). Stop and escalate.
+- Before proposing a release, verify the latest master CI run is green (lint, coverage, licenses, tests, risk gates) — do not rely on assumed-green.
+- If a risk gate blocks, report the score and wait for explicit user approval before retrying. Do not silently rescore or re-run to try to get a different number.
+
+## Verification Ownership
+
+- Run verification commands (curl, gh, git, npm, test runners) yourself and show the output. Prefer piping the actual output into the response over summarising it when the user asked for evidence.
+- Do not ask the user to run commands unless they require credentials or resources you lack (1Password, production consoles, interactive auth).
+- If a command could be constructed and run safely, construct it and run it; don't offload the shell to the user.
+
 ## Completion Protocol (Default)
 
 - Unless explicitly told otherwise, when a task is complete:
@@ -51,6 +66,7 @@ Apply Gall's law in delivery decisions: start from a working simple slice, then 
 - For release-relevant work, add changesets regularly (do not batch too much scope between changesets).
 
 Good changesets:
+
 - Scoped: one product/behavior slice per changeset.
 - User-impact first: describe what changed for users/operators, not only file-level edits.
 - Specific and verifiable: mention concrete behavior, API, workflow, or control changes.
@@ -58,6 +74,7 @@ Good changesets:
 - Small and reviewable: easy to map from diff -> changeset -> release decision.
 
 Bad changesets:
+
 - Vague text ("misc fixes", "updates", "cleanup").
 - Mechanical restatement of file edits without behavior impact.
 - Overloaded scope mixing unrelated changes into one entry.
@@ -65,5 +82,6 @@ Bad changesets:
 - Overly noisy churn changesets for non-release/internal-only edits.
 
 Quick examples:
+
 - Good: "Persist Google sign-in across reload and auto-project on input/sign-in changes; remove false unauthenticated startup error in reviewer UI."
 - Bad: "Updated ui files and tests."
