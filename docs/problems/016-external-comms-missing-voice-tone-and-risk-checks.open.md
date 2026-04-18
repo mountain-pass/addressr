@@ -37,7 +37,21 @@ User manually reviews and requests corrections after the fact.
 - [ ] Add a pre-comms checklist to the agent workflow: (1) voice/tone check, (2) risk/reputational assessment, (3) user review for anything posted publicly
 - [ ] Consider whether a `manage-external-comms` skill or hook is warranted to gate GitHub comments the same way `wr-risk-scorer:pipeline` gates commits
 
+## Month-wide Evidence
+
+The 2026-04-18 usage-data report (1,464 messages, 86 sessions, 2026-03-17 → 2026-04-16) shows this pattern recurring across multiple sessions, not just issue #388:
+
+- Direct quote from the report: "Claude's GitHub comments used AI-sounding language (em dashes, hedging, 'keep ticket open' on a 2024 issue) triggering your 'FFS' frustration response because no voice/tone check ran before posting."
+- The report categorises this under "Missing voice/risk checks on external output" and recommends "Adding a mandatory voice-and-tone and risk pass before any external comms or outage conclusions."
+- The report's "FFS" frustration signal appears in multiple sessions, not a single isolated incident.
+- Issue age check ("keep ticket open" on a 2024 issue) is an adjacent failure mode in the same family — external comms produced without context awareness.
+
+This evidence raises the realism of the Likelihood score and should inform the next WSJF review of P016.
+
 ## Related
 
-- GitHub issue [#388](https://github.com/mountain-pass/addressr/issues/388) — the incident that surfaced this problem
-- `wr-voice-tone:update-guide` skill — would create `docs/VOICE-AND-TONE.md`
+- GitHub issue [#388](https://github.com/mountain-pass/addressr/issues/388) — the incident that first surfaced this problem
+- Usage-data report 2026-03-17 → 2026-04-16 — month-wide evidence that this pattern recurs
+- `wr-voice-tone:update-guide` skill — created `docs/VOICE-AND-TONE.md` (now exists)
+- [P021: git push origin master is not risk-gated](021-git-push-master-not-risk-gated.open.md) — adjacent family: missing process gate on release actions
+- [P022: CLAUDE.md missing behavioral guardrails](022-claude-md-missing-behavioral-guardrails.open.md) — adjacent family: prompt-layer behavioral gaps
