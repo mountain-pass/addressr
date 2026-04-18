@@ -30,24 +30,25 @@ Users must enter the exact range form (e.g., `"495-503 Maroondah Hwy"`) to find 
 
 ## Root Cause Analysis
 
-### Preliminary Hypothesis
+### Confirmed Hypothesis (2026-04-19, user direction)
 
-G-NAF stores range-number addresses with a hyphenated `NUMBER_FIRST`–`NUMBER_LAST` pair. When indexed, the `sla` field is set to the canonical form (e.g., `225-245 DRUMMOND ST, CARLTON VIC 3053`). The tokenizer (`whitecomma` pattern `[\W,]+` at `client/elasticsearch.js:69-76`) splits on non-word characters including `-`, so `225-245` tokenises to `225` and `245` as separate tokens.
+The indexing pipeline does **not** expand hyphenated ranges into individual findable forms. G-NAF provides both `NUMBER_FIRST` and `NUMBER_LAST` per address record (`service/address-service.js:671-696` captures both into `structured.number` and `structured.number.last`). When `mapToMla` stringifies the address (`service/address-service.js:557-571`), any range becomes `"<first>-<last>"` (e.g., `225-245`), and `mapToSla` joins the full address into the hyphenated canonical form. This is the only form written to the `sla` / `ssla` fields.
 
-However, the query for `"225 drummond st"` uses `bool_prefix` match which may not score the document highly enough relative to other results, or `225` may not boost correctly when it appears as a fragment of the range token rather than a standalone token.
+`searchForAddress` (`service/address-service.js:952-1001`) queries exclusively against `sla` and `ssla` using `bool_prefix` + `phrase_prefix` match, so the only way to hit a range record via number is to type the full hyphenated form. Any number that falls within the range but is not the `NUMBER_FIRST` or `NUMBER_LAST` token simply doesn't index.
 
-The `138 Whitehorse Rd` case partially working suggests the issue is scoring (the address appears but ranked low) rather than missing tokens. The `225 Drummond St` case not appearing at all suggests something else — possibly the range token `-` is not split at index time (pattern: `[\W,]+` splits on `\W` which includes `-`), but at query time the analyser tokenises `225` differently.
+**User direction**: G-NAF provides start+stop, so we can make every number in the range findable — either by expanding into an indexed-field array (e.g., `sla_numbers: [225, 226, ..., 245]`) or by emitting a parallel text alias per number (e.g., `225 DRUMMOND ST, CARLTON`, `226 DRUMMOND ST, CARLTON`, ..., `245 DRUMMOND ST, CARLTON`) on the record. The first option keeps document size contained; the second option aligns with the existing text-matching approach used by `sla`/`ssla` and ADR 025's symmetric indexing pattern for P007.
 
-Owner comment on issue: "I think we can solve this by indexing `225 DRUMMOND ST...` as well as `225-245 DRUMMOND ST`" — suggesting a secondary index field with the expanded base-number form, similar to the `ssla` field added for P007.
+The earlier issue-comment ("index `225 DRUMMOND ST...` as well as `225-245 DRUMMOND ST`") is a subset of this — only the base number. The confirmed hypothesis broadens that to cover every number in the range, which resolves the `138 Whitehorse Rd Blackburn` case (138 is the base = NUMBER_FIRST) and the `140 Whitehorse Rd Blackburn` case (140 is mid-range and currently unreachable) alike.
 
 ### Investigation Tasks
 
-- [ ] Confirm tokenisation behaviour: does `225-245` tokenise to `225` + `245` at index time?
-- [ ] Query OpenSearch explain API for `"225 drummond st"` against the Carlton record to see score breakdown
-- [ ] Determine if the issue is missing tokens, wrong scores, or both
-- [ ] Investigate adding a `sla_base` field that stores the address with the base number only (e.g., `225 DRUMMOND ST, CARLTON VIC 3053`) to allow clean matching
-- [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`
-- [ ] Consider whether fix should extend the `ssla` symmetric-indexing approach (ADR 025) or requires a separate ADR
+- [x] Confirm range addresses are not expanded in the index — verified in `service/address-service.js:557-571` (`mapToMla` produces only the hyphenated string).
+- [x] Confirm G-NAF provides `NUMBER_FIRST` and `NUMBER_LAST` — verified in `service/address-service.js:671-696`.
+- [ ] Query OpenSearch explain API for `"225 drummond st"` against the Carlton record to confirm zero match (not just low score) for the base number.
+- [ ] Decide index shape — `sla_numbers` numeric array field, or per-number text alias entries in a new text field (e.g., `sla_range_expanded`). Decision depends on whether we want numeric range matching (cheaper) vs. text-matching parity with `sla` (more consistent with existing ranking).
+- [ ] Estimate document-size impact on a typical state (QLD ~2M addresses). Ranges tend to be short (<10 numbers) but a few corner cases like shopping-centre strips can span 50+ numbers — worth measuring before committing to index shape.
+- [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`.
+- [ ] Decide whether this fix extends ADR 025 (symmetric `ssla` indexing for P007) or warrants a new ADR — a new ADR is likely since the fix introduces a new index field and reindex pass.
 
 ## Related
 
