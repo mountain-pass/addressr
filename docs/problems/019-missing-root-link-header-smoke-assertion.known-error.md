@@ -1,6 +1,6 @@
 # Problem 019: No deploy-time smoke check for root `Link` header rel completeness
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-18
 **Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 
@@ -44,11 +44,32 @@ For the RapidAPI probe: cache-bust with `?cachebust=$(date +%s)` so we assert on
 
 ## Investigation Tasks
 
-- [ ] Decide curl-+-grep vs node-test approach.
-- [ ] Inventory the canonical rel set — pull from `src/waycharter-server.js` or `test/resources/features/addressv2.feature:10-15`.
-- [ ] Add the probe step(s) to `.github/workflows/release.yml` after the existing smoke test.
-- [ ] Decide on RapidAPI probe inclusion — requires `X-RapidAPI-Key` secret access in the release job.
-- [ ] Add a failing test or a dry-run of the probe against current master to confirm it passes before relying on it in CI.
+- [x] Decide curl-+-grep vs node-test approach — went with curl+grep per fix-strategy Option 1.
+- [x] Inventory the canonical rel set — pulled from `test/resources/features/addressv2.feature:8-15`.
+- [x] Add the probe step(s) to `.github/workflows/release.yml` — appended within the existing "Smoke test production" step, after the ADR 024 auth_header is set up.
+- [ ] Decide on RapidAPI probe inclusion — **Deferred**: no `X-RapidAPI-Key` secret in release.yml, adding one expands scope. Origin-only probe lands first; the gateway probe can be a later follow-up if stale-cache (P017) recurs.
+- [x] Add a failing test or a dry-run of the probe against current master to confirm it passes before relying on it in CI — dry-ran the bash probe logic locally: PASS when all 6 rels present, FAIL loudly with actionable error when any is missing.
+
+## Fix Released
+
+**Date**: 2026-04-19
+
+Appended a curl+grep rel-completeness probe to the existing "Smoke test production" step in `.github/workflows/release.yml`. The probe uses the ADR 024 auth_header (same one the ranking probes use) to GET root `/`, captures the `Link` response header, and fails the job with an explicit "missing rel" message if any of the 6 expected rels is absent.
+
+Expected rels list (per `test/resources/features/addressv2.feature:10-15`):
+
+- `https://addressr.io/rels/address-search`
+- `https://addressr.io/rels/locality-search`
+- `https://addressr.io/rels/postcode-search`
+- `https://addressr.io/rels/state-search`
+- `https://addressr.io/rels/api-docs`
+- `https://addressr.io/rels/health`
+
+**Also fixed** (architect-recommended): the pre-existing `curl -sf https://backend.addressr.io/` at line 159 was latently broken — root `/` requires ADR 024 proxy-auth, and that line did not send the auth header. Removed it; the new P019 probe subsumes it (same target, asserts more than 2xx).
+
+**Verification path**: The next release that actually publishes a new version (i.e., triggers `steps.changesets.outputs.published == 'true'`) will run this probe. If the origin drops any rel, the release job fails with a clear "root Link header missing rel: <uri>" message.
+
+**Out of scope**: RapidAPI-gateway-fronted probe. Would have caught P017 (stale cache) but requires an `X-RapidAPI-Key` secret in the release job that is not currently provisioned.
 
 ## Related
 

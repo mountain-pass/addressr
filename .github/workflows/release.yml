@@ -155,9 +155,6 @@ jobs:
           echo "Testing health endpoint..."
           curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/health
           echo ""
-          echo "Testing root API..."
-          curl -sf --retry 3 --retry-delay 10 https://backend.addressr.io/
-          echo ""
           echo "Testing /api-docs is reachable without gateway auth (ADR 024 allowlist)..."
           curl -sf --retry 3 --retry-delay 10 -o /dev/null https://backend.addressr.io/api-docs
           echo ""
@@ -171,10 +168,37 @@ jobs:
           fi
           echo "direct probe status 401 (expected)"
 
-          # ADR 025 / P007 ranking probes: exact street-level address must
-          # rank first when sub-unit variants share the address. Any other
-          # top-hit fails the release.
+          # ADR 025 / P007 ranking probes + P019 Link header rel probe: exact
+          # street-level address must rank first when sub-unit variants share
+          # the address; root / must advertise every rel in the contract.
           auth_header="${{ secrets.TF_VAR_proxy_auth_header }}: ${{ secrets.TF_VAR_proxy_auth_value }}"
+
+          # P019: rel completeness on root /. The rel list is the HATEOAS
+          # contract from test/resources/features/addressv2.feature:8-15 (ADR
+          # 012). Root / requires ADR 024 auth, so we use $auth_header here.
+          # This probe replaces the pre-ADR-024 "curl -sf /" line that was
+          # latently broken under proxy-auth enforcement.
+          echo "Probing root / Link header rel completeness (P019)..."
+          link_header=$(curl -sf --retry 3 --retry-delay 10 -D - -o /dev/null \
+            -H "$auth_header" https://backend.addressr.io/ \
+            | grep -i '^link:' | tr -d '\r' || true)
+          expected_rels=(
+            "https://addressr.io/rels/address-search"
+            "https://addressr.io/rels/locality-search"
+            "https://addressr.io/rels/postcode-search"
+            "https://addressr.io/rels/state-search"
+            "https://addressr.io/rels/api-docs"
+            "https://addressr.io/rels/health"
+          )
+          for rel in "${expected_rels[@]}"; do
+            if ! echo "$link_header" | grep -qF "$rel"; then
+              echo "root Link header missing rel: $rel"
+              echo "actual link header: $link_header"
+              exit 1
+            fi
+          done
+          echo "root / Link header contains all ${#expected_rels[@]} expected rels."
+
 
           echo "Probing ranking for 278 ROSS RIVER RD AITKENVALE QLD 4814 (issue #375)..."
           top_sla=$(curl -sf --retry 3 --retry-delay 10 -H "$auth_header" \
