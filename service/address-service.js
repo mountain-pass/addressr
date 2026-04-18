@@ -1824,10 +1824,16 @@ export async function getAddress(addressId) {
     return { link, json, hash, localityPid };
   } catch (error_) {
     error('error getting record from elastic search', error_);
-    if (error_.body.found === false) {
+    if (error_.body && error_.body.found === false) {
       return { statusCode: 404, json: { error: 'not found' } };
-    } else if (error_.body.error.type === 'index_not_found_exception') {
+    } else if (
+      error_.body &&
+      error_.body.error &&
+      error_.body.error.type === 'index_not_found_exception'
+    ) {
       return { statusCode: 503, json: { error: 'service unavailable' } };
+    } else if (error_.displayName === 'RequestTimeout') {
+      return { statusCode: 504, json: { error: 'gateway timeout' } };
     } else {
       return { statusCode: 500, json: { error: 'unexpected error' } };
     }

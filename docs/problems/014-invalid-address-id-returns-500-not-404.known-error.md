@@ -1,6 +1,6 @@
 # Problem 014: Invalid address ID returns 500 instead of 404
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-16
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
@@ -59,10 +59,25 @@ status: statusCode || 200,
 
 ### Investigation Tasks
 
-- [ ] Write an integration test: `GET /addresses/ddfgdfgdfgdfg` → assert HTTP 404
-- [ ] Write an integration test: with index dropped, `GET /addresses/anything` → assert HTTP 503
-- [ ] Add defensive null-checks in the catch block at `service/address-service.js:1827`
-- [ ] Verify the `getAddresses` search path (`service/address-service.js:1918`) has similar protection
+- [x] Write an integration test: `GET /addresses/ddfgdfgdfgdfg` → assert HTTP 404 — existing cucumber scenario in `test/resources/features/addresses.feature:466-469`
+- [x] Write an integration test: with index dropped, `GET /addresses/anything` → assert HTTP 503 — existing cucumber scenario in `test/resources/features/addresses.feature:461-464`
+- [x] Add defensive null-checks in the catch block at `service/address-service.js:1827`
+- [x] Verify the `getAddresses` search path (`service/address-service.js:1918`) has similar protection — it already has `error_.body && error_.body.error &&` guards at line 1907-1911
+
+## Fix Released
+
+**Date**: 2026-04-19
+
+Added defensive null-checks to the `getAddress` catch block in `service/address-service.js:1825-1840` so:
+
+- `GET /addresses/<nonexistent-id>` returns **404 Not Found** (was crashing to 500 when `error_.body` was undefined on non-OpenSearch errors).
+- OpenSearch index-not-found returns **503 Service Unavailable**.
+- Request timeouts return **504 Gateway Timeout** (new — aligns with sibling `getAddresses` at `service/address-service.js:1913-1914`).
+- Other errors fall through to **500 Internal Server Error**.
+
+Added source-level regression tests to `test/js/__tests__/address-service.test.mjs` following the P012 pattern. Tests assert the catch block contains `error_.body &&` guards before dereferencing `.found` and `.error.type`, and that `RequestTimeout` maps to 504.
+
+Awaiting user verification on next deploy via the existing cucumber scenarios in `test/resources/features/addresses.feature:461-469`.
 
 ## Related
 
