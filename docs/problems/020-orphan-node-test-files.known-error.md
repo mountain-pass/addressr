@@ -1,6 +1,6 @@
 # Problem 020: Orphan `test/js/*.test.js` — no npm script runs them
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-18
 **Priority**: 3 (Low) — Impact: Negligible (1) x Likelihood: Possible (3)
 

@@ -1,6 +1,6 @@
 # Problem 006: RapidAPI CI sync deferred — no working API
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-15
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 

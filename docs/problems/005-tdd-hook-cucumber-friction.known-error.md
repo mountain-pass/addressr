@@ -1,7 +1,7 @@
 ---
 id: '005'
 title: TDD hook does not recognise Cucumber feature files
-status: open
+status: known-error
 created: 2026-04-14
 severity: medium
 priority: 8

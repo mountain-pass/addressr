@@ -1,6 +1,6 @@
 # Problem 021: `git push origin master` is not risk-gated — risk scorer is advisory only
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-18
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
