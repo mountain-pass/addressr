@@ -29,24 +29,26 @@ Self-hosted consumers need a containerized deployment option for addressr.
 
 **Option 1: Alpine with dumb-init.** Published to Docker Hub as `mountainpass/addressr`. Runs as `node` user, installs package globally via npm.
 
-**STATUS: STALE.** The Dockerfile currently references `node:16.3.0-alpine3.13` while the project requires Node >= 22. The CMD runs `addressr-server` (v1) while production deploys `addressr-server-2` (v2). This Dockerfile needs updating.
+As of 2026-04-19 (P001), Dockerfile uses `node:22-alpine` and the v2 binary `addressr-server-2` — matches the `engines: ">=22"` constraint and the live AWS API version.
 
 ### Consequences
 
 - Good: Small image size
 - Good: dumb-init handles zombie processes and signal forwarding
 - Good: Non-root execution
-- Bad: **Dockerfile is out of sync** -- wrong Node version, wrong server binary
+- Good: Dockerfile tracks the production Node version and v2 binary (P001 resolved 2026-04-19)
 - Bad: Alpine can have compatibility issues with native modules
+- Open: No Docker-build CI workflow exists; image is only built by consumers running `docker build` manually. Docker Hub image currency depends on manual builds — separate design question (not in ADR-013 scope).
 
 ### Confirmation
 
 - `Dockerfile` exists at project root
 - Docker Hub: `mountainpass/addressr`
 - `package.json` has `build:docker` and `start:server:docker` scripts
+- `Dockerfile` `ARG BASE_IMAGE=node:22-alpine` and `CMD "addressr-server-2"` (2026-04-19)
 
 ### Reassessment Criteria
 
-- **Immediate**: Update to Node 22 and addressr-server-2
 - Alpine compatibility with native dependencies
 - Distroless for reduced attack surface
+- Docker-build CI workflow — if the image becomes a supported channel rather than a manual-build option

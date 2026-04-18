@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=node:16.3.0-alpine3.13
+ARG BASE_IMAGE=node:22-alpine
 FROM ${BASE_IMAGE}
 ARG MAINTAINER
 LABEL maintainer="${MAINTAINER}"
@@ -40,4 +40,4 @@ ENV ADDRESSR_INDEX_BACKOFF_MAX="10000"
 
 WORKDIR "/home/${USER}"
 
-CMD "addressr-server"
+CMD "addressr-server-2"
