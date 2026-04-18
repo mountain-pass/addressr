@@ -916,6 +916,12 @@ export function startRest2Server() {
         ],
         headers: {
           etag: `"${version}"`,
+          // Long-lived by design (P018 parked). New rels are added
+          // infrequently and every client page load fetches this for
+          // HATEOAS discovery; a short TTL would cost an origin
+          // round-trip per request. When the rel set does change,
+          // request a RapidAPI CF purge (natural expiry up to 7 days
+          // per P017 close notes).
           'cache-control': `public, max-age=${ONE_WEEK}`,
         },
       };
