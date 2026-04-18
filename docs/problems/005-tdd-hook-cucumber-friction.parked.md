@@ -1,7 +1,7 @@
 ---
 id: '005'
 title: TDD hook does not recognise Cucumber feature files
-status: known-error
+status: parked
 created: 2026-04-14
 severity: medium
 priority: 8
@@ -38,3 +38,11 @@ esac
 ```
 
 This is a change to the windyroad TDD plugin, not to the addressr project itself.
+
+## Parked
+
+**Parked since**: 2026-04-19
+
+**Reason**: The fix must be applied to the upstream windyroad TDD plugin (`tdd_classify_file()` in `tdd-gate.sh`). No path to resolution exists inside the addressr repo. The workaround (wrapper `*.test.js` file) is in place and effective.
+
+**Un-park trigger**: When the upstream plugin ships `*.feature` recognition (or when a maintainer opens an upstream PR for it), un-park and close this problem — at that point only addressr-side cleanup remains (removing the wrapper `*.test.js` file created as a workaround).
