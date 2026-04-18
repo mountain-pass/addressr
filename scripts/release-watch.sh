@@ -135,17 +135,24 @@ if [ "$RELEASE_CONCLUSION" = "failure" ]; then
 fi
 
 # ── 6. Report results ───────────────────────────────────────────────────────
-# Check if the release job published (changesets.outputs.published == 'true')
+# Release is a single job; the Deploy and Smoke steps inside it are gated on
+# steps.changesets.outputs.published == 'true'. Query step-level conclusions
+# to distinguish "skipped (no publish)" from "success (actually shipped)".
 RELEASE_JOB=$(gh run view "$RUN_ID" --json jobs \
   --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null || echo "unknown")
 
-DEPLOY_JOB=$(gh run view "$RUN_ID" --json jobs \
-  --jq '.jobs[] | select(.name | contains("Deploy")) | .conclusion' 2>/dev/null || echo "skipped")
+# Deploy step status: success = publish + terraform apply, skipped = no changeset published
+DEPLOY_STATUS=$(gh run view "$RUN_ID" --json jobs \
+  --jq '.jobs[] | select(.name == "release") | .steps[] | select(.name == "Deploy new version") | .conclusion' 2>/dev/null || echo "")
 
 echo ""
 echo "Release workflow completed successfully."
 echo "  Release job: $RELEASE_JOB"
-echo "  Deploy job: ${DEPLOY_JOB:-skipped (no new version published)}"
+case "$DEPLOY_STATUS" in
+  success) echo "  Deploy step: success (Terraform applied, smoke test passed)";;
+  skipped) echo "  Deploy step: skipped (no new version published by changesets)";;
+  *)       echo "  Deploy step: ${DEPLOY_STATUS:-unknown}";;
+esac
 echo ""
 
 # ── 7. Run post-release hooks ───────────────────────────────────────────────
@@ -178,8 +185,10 @@ fi
 
 echo ""
 echo "CLAUDE: The release workflow completed. Report the results above to the user."
-if [ "$DEPLOY_JOB" = "success" ]; then
+if [ "$DEPLOY_STATUS" = "success" ]; then
   echo "The new version has been published to npm and deployed to AWS."
+elif [ "$DEPLOY_STATUS" = "skipped" ]; then
+  echo "No new version published (no actionable changesets). The release job completed but no deploy occurred."
 else
-  echo "The release job ran but no deploy was triggered (changesets may not have published a new version)."
+  echo "Deploy step status: ${DEPLOY_STATUS:-unknown} — check the workflow logs."
 fi

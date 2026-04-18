@@ -17,7 +17,7 @@
 | 12.0 | P019 | No deploy-time smoke check for root Link header rels  | 6 (Medium) | Known Error | S      | Fix released 2026-04-19; awaiting verify on next publish |
 | 6.0  | P020 | Orphan `test/js/*.test.js` — no npm script runs them  | 3 (Low)    | Known Error | S      | Add `test:js` script, wire to pre-commit                 |
 | 4.5  | P014 | Invalid address ID returns 500 not 404                | 9 (Medium) | Open        | M      | Error handling exists but untested; null-check gap       |
-| 4.0  | P004 | release:watch script reports false negative           | 4 (Low)    | Open        | S      | Cosmetic; workaround documented                          |
+| 8.0  | P004 | release:watch script reports false negative           | 4 (Low)    | Known Error | S      | Fix released 2026-04-19; awaiting verify on next release |
 | 4.0  | P024 | Architect agent misses performance implications       | 8 (Medium) | Open        | M      | Governance tooling blind spot                            |
 | 3.0  | P015 | Range-number addresses not findable by base number    | 12 (High)  | Open        | L      | Hypothesis only; needs OpenSearch explain investigation  |
 | 2.5  | P023 | Cross-origin root `/` not browser-cached              | 10 (High)  | Open        | L      | Multi-layer (origin CORS + RapidAPI gateway + SDK)       |
