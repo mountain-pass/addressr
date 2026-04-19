@@ -993,7 +993,14 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
               },
               {
                 multi_match: {
-                  fields: ['sla', 'ssla'],
+                  // ADR 026: sla_range_expanded added HERE ONLY (not in the
+                  // bool_prefix clause above). phrase_prefix uses best_fields
+                  // max with tie_breaker default 0.0, so an absent field on
+                  // non-range docs contributes 0 to the max — no P007-shape
+                  // asymmetry. Adding sla_range_expanded to the bool_prefix
+                  // fields would reintroduce the summation asymmetry ADR 025
+                  // resolved. DO NOT move this field into the clause above.
+                  fields: ['sla', 'ssla', 'sla_range_expanded'],
                   query: searchString,
                   // fuzziness: 'AUTO',
                   type: 'phrase_prefix',

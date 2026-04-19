@@ -146,3 +146,103 @@ describe('service/address-service.js — sla_range_expanded attachment (ADR 026)
     );
   });
 });
+
+// ADR 026: query-side wiring for sla_range_expanded. The new field is added
+// ONLY to the phrase_prefix multi_match clause of searchForAddress. It is
+// deliberately excluded from the bool_prefix clause because bool_prefix sums
+// scores across fields — adding a field populated only on range docs would
+// reintroduce the P007-shape asymmetry that ADR 025 resolved. Additionally,
+// phrase_prefix tie_breaker must remain at the OpenSearch default of 0.0:
+// with best_fields max combination and tie_breaker=0, an absent field
+// contributes 0 to the max and non-range docs are unaffected. This invariant
+// is load-bearing per ADR 026 Consequences > Bad.
+describe('service/address-service.js — searchForAddress query clauses (ADR 026)', () => {
+  it('phrase_prefix multi_match fields includes sla_range_expanded', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const fnStart = source.indexOf('export async function searchForAddress(');
+    assert.notEqual(fnStart, -1, 'searchForAddress must exist');
+    const nextFnIndex = source.indexOf(
+      '\nexport async function ',
+      fnStart + 1,
+    );
+    const fnBody =
+      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+
+    // Find the phrase_prefix multi_match and confirm its fields array
+    // contains sla_range_expanded. Use a non-greedy match against the
+    // multi_match block surrounding `type: 'phrase_prefix'`.
+    const phrasePrefixBlock = fnBody.match(
+      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
+    );
+    assert.notEqual(
+      phrasePrefixBlock,
+      null,
+      'phrase_prefix multi_match block must be parseable',
+    );
+    assert.match(
+      phrasePrefixBlock[0],
+      /fields\s*:\s*\[[^\]]*['"]sla_range_expanded['"][^\]]*\]/,
+      'phrase_prefix multi_match fields array must include sla_range_expanded per ADR 026',
+    );
+  });
+
+  it('bool_prefix multi_match fields does NOT include sla_range_expanded (protects ADR 025)', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const fnStart = source.indexOf('export async function searchForAddress(');
+    const nextFnIndex = source.indexOf(
+      '\nexport async function ',
+      fnStart + 1,
+    );
+    const fnBody =
+      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+
+    const boolPrefixBlock = fnBody.match(
+      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
+    );
+    assert.notEqual(
+      boolPrefixBlock,
+      null,
+      'bool_prefix multi_match block must be parseable',
+    );
+    assert.doesNotMatch(
+      boolPrefixBlock[0],
+      /sla_range_expanded/,
+      'bool_prefix multi_match MUST NOT reference sla_range_expanded — bool_prefix sums across fields and would reintroduce P007-shape asymmetry (see ADR 025 and ADR 026)',
+    );
+  });
+
+  it('phrase_prefix multi_match must not declare an explicit tie_breaker (must stay at default 0.0)', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const fnStart = source.indexOf('export async function searchForAddress(');
+    const nextFnIndex = source.indexOf(
+      '\nexport async function ',
+      fnStart + 1,
+    );
+    const fnBody =
+      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+
+    const phrasePrefixBlock = fnBody.match(
+      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
+    );
+    // Strip block and line comments before matching so a prose mention of
+    // tie_breaker in a guardrail comment does not trigger the assertion.
+    // Only a real key declaration `tie_breaker: <value>` should fail.
+    const decommented = phrasePrefixBlock[0]
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '');
+    assert.doesNotMatch(
+      decommented,
+      /\btie_breaker\s*:/,
+      'phrase_prefix multi_match MUST NOT declare tie_breaker — raising it above 0.0 would let absent sla_range_expanded on non-range docs act as a malus, reintroducing the P007 asymmetry pattern. Any change here must either switch to ADR 026 Option C (symmetric population) first, or re-evaluate ADR 026.',
+    );
+  });
+});
