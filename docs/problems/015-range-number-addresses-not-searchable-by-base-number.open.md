@@ -63,7 +63,8 @@ The earlier issue-comment ("index `225 DRUMMOND ST...` as well as `225-245 DRUMM
 ## Related
 
 - GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367) — original report
-- [ADR 025](../decisions/025-search-ranking-symmetric-ssla.proposed.md) — symmetric ssla indexing (P007 fix) — related approach
+- [ADR 025](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — symmetric ssla indexing (P007 fix) — related approach
+- [ADR 026](../decisions/026-range-number-address-expansion.proposed.md) — range-number expansion via multi-valued text alias field — proposed fix
 - [P007](./007-search-scoring-exact-address-ranked-below-subunits.known-error.md) — search scoring (different but related query-builder issue)
 - [`client/elasticsearch.js:58-76`](../../client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
 - [`service/address-service.js:950-1003`](../../service/address-service.js) — `searchForAddress` query builder
