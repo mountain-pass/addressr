@@ -102,6 +102,14 @@ export async function initIndex(esClient, clear, synonyms) {
             },
           },
         },
+        // ADR 026: range-number address expansion. Multi-valued text field
+        // populated with one expanded address per in-range number for range-
+        // numbered G-NAF docs (span cap 20). Absent on non-range docs
+        // (asymmetric population). No .raw sub-field — never sorted on.
+        sla_range_expanded: {
+          type: 'text',
+          analyzer: 'my_analyzer',
+        },
         confidence: { type: 'integer' },
         locality_pid: { type: 'keyword' },
       },
