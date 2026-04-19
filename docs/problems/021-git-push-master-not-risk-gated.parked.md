@@ -1,8 +1,17 @@
 # Problem 021: `git push origin master` is not risk-gated — risk scorer is advisory only
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-04-18
+**Parked**: 2026-04-19
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
+
+## Parked
+
+**Reason**: The systemic fix belongs upstream in the `windyroad/wr-risk-scorer` plugin, not in addressr. A PreToolUse:Bash hook that blocks `git push origin master` on risk-above-appetite is a general pattern that every project using the plugin would want; duplicating it per project is the wrong shape. The user explicitly chose this disposition on 2026-04-19 ("we need to flag P021 with the risk scorer maintainers").
+
+**Trigger to un-park**: Upstream `wr-risk-scorer` plugin ships a release that adds push-blocking enforcement. At that point the addressr memory (`feedback_push_without_confirm.md` — "Risk-scorer is the safety net; do not add a human-gate on top of it") still applies as the chosen control until the hook exists; once it does, this ticket can close on user verification.
+
+**Until then**: The risk-scorer's prominent transcript output (per `feedback_push_without_confirm.md`) remains the control. No local hook-layer gate will be built.
 
 ## Description
 

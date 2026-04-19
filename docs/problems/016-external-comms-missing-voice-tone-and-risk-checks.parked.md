@@ -1,8 +1,17 @@
 # Problem 016: External comms posted without voice/tone check or risk assessment
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-04-17
+**Parked**: 2026-04-19
 **Priority**: 15 (High) — Impact: Moderate (3) x Likelihood: Almost certain (5)
+
+## Parked
+
+**Reason**: The systemic fix lands upstream in the `windyroad/wr-voice-tone` plugin (extend hook scope to cover `gh issue|pr|release` Bash commands and `.md` files). This is the disposition chosen by the user 2026-04-19 and mirrors the pattern used for P024 — governance tooling gaps land in the shared plugin, not in the addressr repo.
+
+**Trigger to un-park**: Upstream voice-tone plugin ships a release that adds Bash-matcher coverage for `gh` external-comms commands. At that point the workaround (manual user review + per-session reinforcement) can be dropped and this ticket can close on user verification.
+
+**Until then**: The author-level per-session reinforcement and the explicit Root Cause section in this ticket remain the controls.
 
 ## Description
 

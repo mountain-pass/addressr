@@ -1,8 +1,17 @@
 # Problem 024: `wr-architect:agent` misses per-request performance / load implications on high-traffic endpoints
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-04-18
+**Parked**: 2026-04-19
 **Priority**: 8 (Medium) — Impact: Minor (2) x Likelihood: Likely (4)
+
+## Parked
+
+**Reason**: The systemic fix lands upstream per [windyroad/agent-plugins P046 (architect-agent-misses-performance-implications)](https://github.com/windyroad/agent-plugins/blob/main/docs/problems/046-architect-agent-misses-performance-implications.open.md). The user chose this disposition on 2026-04-19 — governance tooling gaps land in the shared `@windyroad/architect` plugin, not in this repo.
+
+**Trigger to un-park**: Upstream `wr-architect` plugin ships a release with a performance / load / latency review step in its prompt. At that point, the memory guardrail (`feedback_ask_before_ops_tradeoffs.md`) can be deprecated and this ticket can close on user verification.
+
+**Until then**: The per-session memory guardrail remains the only downstream control. This addressr ticket stays as the local record of the pattern — useful for cross-referencing if other architect misses surface on high-traffic endpoints before the upstream fix lands.
 
 ## Description
 
@@ -61,4 +70,5 @@ The 2026-04-18 P018 architect review explicitly said "Load is genuinely negligib
 - [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.open.md) — adjacent family: governance tooling has blind spots for output-quality and now performance-cost dimensions.
 - Memory: `~/.claude/projects/-Users-tomhoward-Projects-addressr/memory/feedback_ask_before_ops_tradeoffs.md` — per-session wrapper guardrail added 2026-04-18.
 - Usage-data report 2026-03-17 → 2026-04-16 — noted "shipping prematurely" as a recurring Claude pattern, which aligns with this ticket's concern.
-- `wr-architect` plugin definition (upstream) — likely location of the systemic fix.
+- **Upstream ticket (systemic fix)**: [windyroad/agent-plugins P046 (architect-agent-misses-performance-implications)](https://github.com/windyroad/agent-plugins/blob/main/docs/problems/046-architect-agent-misses-performance-implications.open.md) — the fix lands in the `@windyroad/architect` plugin. Addressr retains this ticket as the local record of the pattern and any downstream workaround (memory guardrail, project-specific performance-budget ADR).
+- `wr-architect` plugin definition (upstream) — likely location of the systemic fix; see upstream ticket above.
