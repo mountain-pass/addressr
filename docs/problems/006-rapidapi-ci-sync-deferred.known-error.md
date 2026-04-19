@@ -37,16 +37,17 @@ When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" featu
 
 - [x] Try REST Provisioning API — defunct
 - [x] Try official GitHub Action — no tagged versions
-- [ ] Investigate direct GraphQL calls to `platform-graphql.p.rapidapi.com`
-- [ ] Check if pinning the Action to a `main` commit SHA works
-- [ ] Confirm which RapidAPI key scope is needed (the subscribed `X-RapidAPI-Key` vs a separate management key)
+- [x] Investigate direct GraphQL calls to `platform-graphql.p.rapidapi.com` — **endpoint is live**. Probed 2026-04-19: `GET https://platform-graphql.p.rapidapi.com/` returns 401 (auth required), `POST` with a GraphQL introspection query returns 429 (rate-limited without a key). Confirms the GraphQL-direct path is viable if a key with the correct scope is obtained.
+- [x] Check if pinning the Action to a `main` commit SHA works — the repo's `main` HEAD is `4590a109931fe324ceaa8144b8d9f58df226a7b3` (last commit 2023-04-17, no activity since). `action.yml` uses `using: node16`, which GitHub Actions now emits a deprecation warning for and will eventually remove. **SHA-pin is feasible short-term** but carries deprecation risk — the GraphQL-direct path (option 2 in Fix Strategy) is more durable.
+- [ ] Confirm which RapidAPI key scope is needed (the subscribed `X-RapidAPI-Key` vs a separate management key) — **blocked on user**: requires subscribing to the GraphQL Platform API on RapidAPI, which is an account-level action.
+- [x] Action inputs catalogued (from `action.yml` at SHA `4590a10`): `owner_id`, `x_rapidapi_key`, `x_rapidapi_identity_key` (optional), `x_rapidapi_graphql_host`, `spec_path`, `graphql_url`. Outputs: `api_id`, `api_version_name`, `api_version_id`.
 
 ## Fix Strategy (proposed)
 
 Either:
 
-1. Pin `RapidAPI/create_or_update_rapidapi_listing` to a specific commit SHA from `main` once tested, OR
-2. Implement a direct `curl` call to the GraphQL Platform API with the `updateApisFromRapidOas` mutation
+1. Pin `RapidAPI/create_or_update_rapidapi_listing` to SHA `4590a109931fe324ceaa8144b8d9f58df226a7b3` (current `main` HEAD, dormant since 2023-04-17). **Short-term only** — the action uses `node16`, which GitHub Actions has deprecated and will remove.
+2. Implement a direct `curl` call to the GraphQL Platform API with the `updateApisFromRapidOas` mutation. Endpoint verified live at `https://platform-graphql.p.rapidapi.com/` (2026-04-19 probe). **Preferred** — no deprecated runtime dependency.
 
 Both require:
 

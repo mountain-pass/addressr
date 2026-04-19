@@ -46,7 +46,17 @@ The earlier issue-comment ("index `225 DRUMMOND ST...` as well as `225-245 DRUMM
 - [x] Confirm G-NAF provides `NUMBER_FIRST` and `NUMBER_LAST` — verified in `service/address-service.js:671-696`.
 - [ ] Query OpenSearch explain API for `"225 drummond st"` against the Carlton record to confirm zero match (not just low score) for the base number.
 - [ ] Decide index shape — `sla_numbers` numeric array field, or per-number text alias entries in a new text field (e.g., `sla_range_expanded`). Decision depends on whether we want numeric range matching (cheaper) vs. text-matching parity with `sla` (more consistent with existing ranking).
-- [ ] Estimate document-size impact on a typical state (QLD ~2M addresses). Ranges tend to be short (<10 numbers) but a few corner cases like shopping-centre strips can span 50+ numbers — worth measuring before committing to index shape.
+- [x] Estimate document-size impact across states — measured 2026-04-19 against G-NAF Feb 2026 local cache:
+  - OT: 4,335 addrs, **1.25%** range (54), avg span 7.0, max 24
+  - ACT: 281,457 addrs, **1.27%** range (3,572), avg span 6.3, max 116
+  - NT: 117,410 addrs, **1.98%** range (2,329), avg span 3.0, max 48
+  - TAS: 374,088 addrs, **3.66%** range (13,691), avg span 4.6, max 2,000 (outlier — likely data-quality issue)
+  - NSW: 5,165,723 addrs, **11.64%** range (601,186), avg span 6.4, max 111,014 (extreme outlier)
+  - VIC: 4,370,944 addrs, **6.22%** range (271,693), avg span 7.3, max 9,364 (outlier)
+  - QLD: 3,352,604 addrs, **8.25%** range (276,607), avg span 8.1, max 2,940 (outlier) — the reporter's stated target state
+  - **Implication**: expanding every number in range into indexed aliases inflates sparse states (OT/ACT/NT) by ~6-13% (tolerable) but NSW by ~70%+ before outlier cap. A cap (e.g., skip expansion when `span > 100`) is required to avoid pathological docs. The `sla_numbers` numeric-array option has lower per-alias cost than the text-alias option; for NSW at 6.4 avg span this is ~3.8M extra keyword values, manageable for OpenSearch.
+  - **Verification commands**: `awk -F'|' 'NR>1 && $18!="" && $21!="" && $18!=$21' <STATE>_ADDRESS_DETAIL_psv.psv | wc -l` against `target/gnaf/g-naf_feb26_allstates_gda94_psv_1022/G-NAF/G-NAF FEBRUARY 2026/Standard/`.
+- [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`. For OT fixture, an equivalent is: `"104 GAZE RD CHRISTMAS ISLAND"` → should return `103-107 GAZE RD, CHRISTMAS ISLAND OT 6798` (record `GAOT_717321171`, range 103→107).
 - [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`.
 - [ ] Decide whether this fix extends ADR 025 (symmetric `ssla` indexing for P007) or warrants a new ADR — a new ADR is likely since the fix introduces a new index field and reindex pass.
 
