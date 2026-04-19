@@ -148,8 +148,8 @@ Primary drivers: engine-agnosticism (ADR 021 alignment), correct ranking by cons
 
 Implementation compliance is verified by:
 
-- **Unit test** in `test/js/__tests__/address-service.test.mjs`: `expandRangeAliases` produces one alias per in-range number up to `SPAN_CAP=20`; returns an empty array for `span > 20`; preserves street/locality/state/postcode tokens verbatim.
-- **Unit test** (same file): `mapToMla` attaches `sla_range_expanded` only when `s.number.last` is set and `(last - first) <= SPAN_CAP`.
+- **Unit test** in `test/js/__tests__/range-expansion.test.mjs` (new, behavioural test of the pure helper `service/range-expansion.js`): `expandRangeAliases` produces one alias per in-range number up to `SPAN_CAP=20`; returns an empty array for `span > 20`; preserves street/locality/state/postcode tokens verbatim; rejects reverse ranges, non-positive numbers, and non-integer inputs. The helper is a sibling module (following the `service/set-link-options.js` precedent) so it can be invoked directly without importing the OpenSearch-dependent `address-service.js`.
+- **Unit test** in `test/js/__tests__/address-service.test.mjs` (source-pattern, P012 / P014 style): `mapToMla` attaches `sla_range_expanded` only when `s.number.last` is set and `(last - first) <= SPAN_CAP`.
 - **Index-mapping test**: OT-fixture reindex produces documents with `sla_range_expanded` populated for `GAOT_717321171` (5 aliases) and absent for non-range OT records.
 - **Cucumber scenario — J1 recall** in `test/resources/features/addresses.feature`: `"104 GAZE RD CHRISTMAS ISLAND"` returns `GAOT_717321171` in the result list with `sla: "103-107 GAZE RD, CHRISTMAS ISLAND OT 6798"`.
 - **Cucumber scenario — ranking invariant**: for a street with both a non-range doc and a range doc that includes the same number, the non-range doc ranks first. Pins `tie_breaker === 0.0` via an assertion on the query builder's output.
