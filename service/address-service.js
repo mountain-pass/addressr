@@ -18,6 +18,7 @@ import {
 } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
+import { expandRangeAliases } from './range-expansion';
 import { Keyv } from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import crypto from 'node:crypto';
@@ -785,6 +786,25 @@ export function mapAddressDetails(d, context, index, count) {
   } else {
     rval.smla = mapToShortMla(rval.structured);
     rval.ssla = mapToSla(rval.smla);
+  }
+  // ADR 026: asymmetric population of sla_range_expanded — one expanded
+  // alias per in-range number for range-numbered records up to SPAN_CAP.
+  // Non-range docs leave the field absent. expandRangeAliases returns []
+  // for span>cap or invalid inputs; in that case we keep the field absent
+  // rather than storing an empty array so OpenSearch _source stays clean.
+  if (rval.structured.number?.last?.number !== undefined) {
+    const s = rval.structured;
+    const streetType = s.street.type ? ` ${s.street.type.name}` : '';
+    const streetSuffix = s.street.suffix ? ` ${s.street.suffix.name}` : '';
+    rval.sla_range_expanded = expandRangeAliases(
+      Number(s.number.number),
+      Number(s.number.last.number),
+      `${s.street.name}${streetType}${streetSuffix}`,
+      `${s.locality.name} ${s.state.abbreviation} ${s.postcode}`,
+    );
+    if (rval.sla_range_expanded.length === 0) {
+      delete rval.sla_range_expanded;
+    }
   }
 
   if (count) {

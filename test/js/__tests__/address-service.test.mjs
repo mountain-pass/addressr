@@ -96,3 +96,53 @@ describe('service/address-service.js — getAddress catch block (P014)', () => {
     );
   });
 });
+
+// ADR 026: range-number address expansion. mapAddressDetails must attach
+// `sla_range_expanded` to the indexed document when the G-NAF address is
+// range-numbered (`structured.number.last.number` set). Non-range docs
+// leave the field absent (asymmetric population per ADR 026). The helper
+// is imported from `./range-expansion` as a pure sibling module.
+describe('service/address-service.js — sla_range_expanded attachment (ADR 026)', () => {
+  it('imports expandRangeAliases from ./range-expansion', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    assert.match(
+      source,
+      /import\s*\{[^}]*\bexpandRangeAliases\b[^}]*\}\s*from\s*['"]\.\/range-expansion(?:\.js)?['"]/,
+      'address-service.js must import expandRangeAliases from ./range-expansion per ADR 026',
+    );
+  });
+
+  it('attaches rval.sla_range_expanded using expandRangeAliases', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    assert.match(
+      source,
+      /rval\.sla_range_expanded\s*=\s*expandRangeAliases\(/,
+      'mapAddressDetails must attach rval.sla_range_expanded via expandRangeAliases per ADR 026',
+    );
+  });
+
+  it('gates the attachment on structured.number.last being set (range addresses only)', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    // The attachment must appear inside a guard that references
+    // `structured.number.last` (or an equivalent check on the last-number
+    // field). Non-range docs MUST NOT receive the field per ADR 026's
+    // asymmetric-population rule.
+    const match = source.match(
+      /(if\s*\([^)]*structured\.number[^)]*\.last[^)]*\)[\s\S]{0,400}rval\.sla_range_expanded)|(rval\.structured\.number\?\.last[^;]*\?[\s\S]{0,200}expandRangeAliases)/,
+    );
+    assert.notEqual(
+      match,
+      null,
+      'rval.sla_range_expanded assignment must be gated on structured.number.last being set per ADR 026 (asymmetric population)',
+    );
+  });
+});
