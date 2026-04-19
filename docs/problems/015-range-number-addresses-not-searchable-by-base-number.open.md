@@ -4,6 +4,8 @@
 **Reported**: 2026-04-16
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
 
+> **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](./026-numeric-fuzziness-inflates-ranking.open.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1.
+
 ## Description
 
 Addresses with hyphenated street number ranges (e.g., `225-245 DRUMMOND ST`) do not appear in search results when a user queries only the base number (e.g., `"225 drummond st"`). The G-NAF data assigns a single range number to properties like multi-tenanted buildings and commercial strips; consumers typically know only one number (the one on the sign, or the one their customer provided) and expect it to resolve.
