@@ -1,5 +1,29 @@
 # @mountainpass/addressr
 
+## 2.3.0
+
+### Minor Changes
+
+- ecf836a: feat(address-service): range-number addresses findable by any in-range number (ADR 026)
+
+  G-NAF range-numbered addresses (e.g. `103-107 GAZE RD, CHRISTMAS ISLAND OT 6798`) are now searchable by any number in the documented range, not just the canonical hyphenated form. Queries like `"104 GAZE RD"` that previously returned zero results now return the range address. Roughly 7.5% of all Australian addresses are range-numbered; in dense urban states (NSW, QLD, VIC) the figure approaches 10%.
+
+  **Consumer-visible impact**: `GET /addresses?q=<mid-range-number> <street> <locality>` now returns the range document in the result list where it was previously absent. Non-range exact matches for the same number continue to rank at or above range documents (BM25 field-length normalisation + best_fields max). Canonical hyphenated-form queries (`"103-107 GAZE RD"`) are unaffected.
+
+  **Implementation**: new `sla_range_expanded` multi-valued text field populated asymmetrically on range docs only (span cap 20 excludes data-quality outliers). Added only to the `phrase_prefix` clause of `searchForAddress`, leaving the `bool_prefix` clause unchanged so ADR 025's summation-symmetry property is preserved. Indexed field populates on next deploy reindex.
+
+  Resolves [#367](https://github.com/mountain-pass/addressr/issues/367) (covers reporter's `495 Maroondah Hwy`, `138 Whitehorse Rd`, and `225 Drummond St` cases). See ADR 026 and P015.
+
+### Patch Changes
+
+- fda4e3b: fix(address-service): invalid address ID returns 404 not 500
+
+  `GET /addresses/<invalid-id>` now returns `404 Not Found` as documented, instead of `500 Internal Server Error`. The `getAddress` catch block in `service/address-service.js` previously dereferenced `error_.body.found` and `error_.body.error.type` without guarding `error_.body` — on non-OpenSearch errors (network timeouts, connection refused) `error_.body` is `undefined`, so the catch block itself threw a `TypeError` and the request fell through to a generic 500.
+
+  **Consumer-visible impact**: API consumers can now reliably distinguish a missing address (404) from a backend fault (500) or a missing index (503). Request timeouts now map to `504 Gateway Timeout`, matching the sibling `getAddresses` search endpoint. Response bodies unchanged; only HTTP status codes are affected.
+
+  Fixes [#95](https://github.com/mountain-pass/addressr/issues/95) and [#81](https://github.com/mountain-pass/addressr/issues/81). See P014.
+
 ## 2.2.0
 
 ### Minor Changes
