@@ -1,7 +1,8 @@
 # Problem 022: CLAUDE.md missing Risk Gate and Verification Ownership guardrails
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-18
+**Closed**: 2026-04-19
 **Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 
 ## Description

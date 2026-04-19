@@ -1,7 +1,8 @@
 # Problem 012: G-NAF loader dumps full JSON address documents to CI logs
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-16
+**Closed**: 2026-04-19
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
 
 ## Description
