@@ -121,6 +121,85 @@ Feature: Addresses v2
             }
             """
 
+    Scenario: P015 Range-number address findable by base (first) number
+        # ADR 026 / issue #367 — mid-range recall. Base number 103 equals
+        # NUMBER_FIRST of the 103-107 GAZE RD range record GAOT_717321171.
+        # Pre-ADR-026: 103 was a token in the range doc's sla but phrase
+        # "103 GAZE RD" did not match cleanly (sla sequence is "103 107
+        # GAZE RD"). After ADR 026 the phrase matches sla_range_expanded[0]
+        # directly. The non-range docs at 103 GAZE RD still rank above
+        # (see ranking-invariant scenario below); this scenario asserts
+        # recall — that the range doc appears in the result list.
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | 103 GAZE RD, CHRISTMAS ISLAND |
+        Then the returned address list will include:
+            """
+            {
+                "sla": "103-107 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_717321171"
+            }
+            """
+
+    Scenario: P015 Range-number address findable by mid-range number
+        # ADR 026 / issue #367 — the core mid-range recall fix. Before ADR 026
+        # the token "106" was absent from both sla and ssla of the range doc
+        # (the `whitecomma` tokeniser splits "103-107" into tokens 103 and
+        # 107; 106 is neither), so "106 GAZE RD" returned zero for the range
+        # doc. After ADR 026, sla_range_expanded[3] = "106 GAZE RD, CHRISTMAS
+        # ISLAND OT 6798" matches phrase_prefix cleanly. Mirrors #367 reporter's
+        # "225 drummond st, carlton" → "225-245 DRUMMOND ST" case.
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | 106 GAZE RD, CHRISTMAS ISLAND |
+        Then the returned address list will include:
+            """
+            {
+                "sla": "103-107 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_717321171"
+            }
+            """
+
+    Scenario: P015 Non-range exact match outranks range doc for same mid-range number
+        # ADR 026 Confirmation — load-bearing ranking invariant. For a street
+        # with both a non-range doc (GAOT_718446687 at 104 GAZE RD) AND a range
+        # doc that covers the same number (GAOT_717321171 at 103-107 GAZE RD),
+        # the non-range doc must rank first. Asserts (non-)regression of
+        # tie_breaker = 0.0 on the phrase_prefix clause (also unit-pinned at
+        # test/js/__tests__/address-service.test.mjs).
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | 104 GAZE RD, CHRISTMAS ISLAND |
+        And the 1st "item" link is followed
+        Then the returned address summary will be:
+            """
+            {
+                "sla": "104 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_718446687"
+            }
+            """
+
+    Scenario: P015 Canonical hyphenated range form still ranks first (ADR 026 non-regression)
+        # ADR 026 — range-form queries using the canonical hyphenated syntax
+        # must not regress. The range doc has both 103 and 107 as tokens in
+        # sla (whitecomma splits on `-`), so bool_prefix AND matches; and
+        # phrase_prefix matches the positional sequence in sla. No other doc
+        # in the OT fixture has both 103 AND 107 in its sla, so the range
+        # doc is the unique bool_prefix-AND-passing hit. sla_range_expanded
+        # contributes zero on this query (no single alias contains both 103
+        # and 107 in sequence), so ranking behaviour matches pre-ADR-026.
+        When the root api is requested
+        And the "https://addressr.io/rels/address-search" link template is followed with:
+            | q | 103-107 GAZE RD, CHRISTMAS ISLAND |
+        And the 1st "item" link is followed
+        Then the returned address summary will be:
+            """
+            {
+                "sla": "103-107 GAZE RD, CHRISTMAS ISLAND OT 6798",
+                "pid": "GAOT_717321171"
+            }
+            """
+
     Scenario: Search and item
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
