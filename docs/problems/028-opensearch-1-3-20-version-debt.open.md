@@ -64,14 +64,45 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 
 ### Investigation Tasks
 
-- [ ] Confirm OpenSearch 1.3.x official EOL / retirement date and the AWS EB retirement schedule. Record in this ticket.
-- [ ] Audit open CVEs against OpenSearch 1.3.x that are patched in 2.x/3.x. Publish the list in this ticket.
+- [x] Confirm OpenSearch 1.3.x official EOL / retirement date and the AWS EB retirement schedule. Record in this ticket. _(see "Upstream and AWS EOL findings" below, 2026-04-21)_
+- [ ] Audit open CVEs against OpenSearch 1.3.x that are patched in 2.x/3.x. Publish the list in this ticket. _(partial — see "CVE status" below; full enumeration still pending a direct NVD / OpenSearch advisory scrape)_
 - [ ] Scope the upgrade path: direct 1.3 → 2.x upgrade via snapshot/restore on AWS EB vs blue/green cluster swap vs reindex from G-NAF source. Document the migration plan options.
 - [ ] Spin up `opensearchproject/opensearch:2.19` locally (shared with P027 investigation). Run the Cucumber suite and the 14-query baseline against it. Note any behavioural deltas.
 - [ ] Enumerate OpenSearch 2.x features that would unlock addressr product value (vector / knn, point_in_time, improved aggregations, bulk indexing ergonomics). Quantify the value where possible.
-- [ ] Check `@opensearch-project/opensearch` client's stated 1.x deprecation timeline.
+- [x] Check `@opensearch-project/opensearch` client's stated 1.x deprecation timeline. _(see "Client library status" below, 2026-04-21)_
 - [ ] Create an INVEST story / ADR for the upgrade once the plan options are scoped. Supersede or amend ADR 021's "retain 1.x" posture.
 - [ ] Create a reproduction test that catches regressions during the upgrade — baseline the Cucumber + unit suite on 1.3.20, diff against 2.x locally.
+
+### Research findings (2026-04-21)
+
+#### Upstream and AWS EOL findings
+
+- **Upstream OpenSearch 1.x**: deprecated 2025-05-06 per [endoflife.date/opensearch](https://endoflife.date/opensearch). **No more upstream security patches or bug fixes ship for the 1.x line as of that date.** We are 11 months past deprecation as of this ticket update. Active development on 1.x ended 2022-05-26 (per the same source); 2025-05-06 was the end of maintenance support.
+- **Final 1.3.x release**: 1.3.20, published 2024-12-11. This is the version we run. No further 1.3.x releases are expected.
+- **AWS OpenSearch Service** per the [AWS Big Data Blog support-dates announcement (Nov 2024)](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-announces-standard-and-extended-support-dates-for-elasticsearch-and-opensearch-versions/):
+  - OpenSearch **1.0–1.2**: End of Standard Support **2025-11-07**, End of Extended Support **2026-11-07**.
+  - OpenSearch **1.3**: support dates **"Not announced"** at time of writing — AWS recommends 1.2 users upgrade to 1.3 as an interim step.
+  - OpenSearch versions supported in 2026: 3.5, 3.3, 3.1, 2.19, 2.17, 2.15, 2.13, 2.11, 2.9, 2.7, 2.5, 2.3, and 1.3.
+- **Applicability caveat**: addressr is **self-hosted** on AWS Elastic Beanstalk using the public `opensearchproject/opensearch:1.3.20` Docker image (see `package.json` `SEARCH_IMAGE`), not AWS-managed OpenSearch Service. The AWS retirement schedule therefore doesn't force our hand directly — but the AWS announcement is the most reliable leading indicator of when 1.3.x stops being treated as "supported" by a major vendor, and the upstream EOL already eliminates security-patch access regardless of hosting model.
+
+#### Client library status
+
+- `@opensearch-project/opensearch` latest: **3.5.1** (2025-04-04) per [opensearch-project/opensearch-js releases](https://github.com/opensearch-project/opensearch-js/releases). We pin `^3.5.1`, so we are current on the client.
+- **3.0 was the breaking rewrite** (January 2025): over 100 new API functions generated from the spec; dropped Node.js 10/12 (requires 14+); HTTP method overrides removed.
+- **1.x server compatibility**: per the opensearch-js COMPATIBILITY matrix, client 2.x is compatible with OpenSearch 1.x; the client direction is spec-driven and the spec increasingly reflects 2.x/3.x-only features. **No published 1.x-drop date exists for the client today**, but the risk is embedded: when a 2.x/3.x-only API is exercised, the client will expose it regardless of whether the server supports it.
+- **Risk we did not find evidence for**: we have not seen a published deprecation timeline for 1.x-server support in the client. This is a soft risk, not a dated one — but given upstream 1.x is already EOL, it is plausible that a future client major will formally drop 1.x-server validation without a long notice period.
+
+#### CVE status (partial)
+
+- Comprehensive 2024–2026 CVE enumeration deferred (cvedetails.com returned 403 on automated fetch; needs a different data source — OpenSearch project security advisories on GitHub or NVD direct search).
+- Verified so far:
+  - CVE-2023-31419 (StackOverflow DoS in `_search`): fixed in 1.3.14 and 2.11.1 — 1.3.20 carries this fix.
+  - CVE-2023-45807 / GHSA-8wx3-324g-w4qq: fixed in 1.3.14 and 2.11.0 — 1.3.20 carries this fix.
+- **Implication of upstream EOL (2025-05-06)**: any CVE disclosed against OpenSearch code paths **after** 2025-05-06 will not have a 1.3.x patch unless a third party (e.g., AWS for managed service customers) issues one. For self-hosted `opensearchproject/opensearch:1.3.20`, we are on our own for any post-2025-05-06 CVE.
+
+#### Implications for priority
+
+Current priority line reads: **12 (High) — Impact: Moderate (3) × Likelihood: Likely (4)**. Findings strengthen the Likelihood reasoning: the "trigger visible" framing underestimates reality — the **security-patch drought** trigger already fired 11 months ago. The Impact rating (Moderate, 3) remains right for today because no user-visible failure has materialised, but the Likelihood of a material consequence arriving before any planned upgrade is now closer to **Almost certain (5)** than Likely (4). **Recommend re-scoring at the next `problem review` pass** once an upgrade ADR exists to anchor the comparison. Not unilaterally bumping in this update.
 
 ## Related
 
