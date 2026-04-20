@@ -86,3 +86,6 @@ deployment/*
 
 .turbo
 install.sh
+
+# risk-scorer generated reports
+.risk-reports/
