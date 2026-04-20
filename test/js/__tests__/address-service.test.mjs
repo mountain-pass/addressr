@@ -246,3 +246,41 @@ describe('service/address-service.js — searchForAddress query clauses (ADR 026
     );
   });
 });
+
+// ADR 027: `fuzziness: 'AUTO:5,8'` on the bool_prefix clause. The default
+// `AUTO` (= `AUTO:3,6`) allows 1 edit for 3-5 char tokens, which causes
+// adjacent street numbers to fuzzy-match each other (e.g. `138` matches
+// `137`, `135`, `128`, `132`). Tightening to `AUTO:5,8` pushes the
+// "0 edits" boundary up to 4-char tokens inclusive, killing numeric fuzz
+// on 3-4 digit street numbers and postcodes while preserving typo tolerance
+// on 5+ character street/locality names (`Muray` → `Murray` still works).
+describe('service/address-service.js — bool_prefix fuzziness (ADR 027)', () => {
+  it('bool_prefix multi_match declares fuzziness: "AUTO:5,8"', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const fnStart = source.indexOf('export async function searchForAddress(');
+    assert.notEqual(fnStart, -1, 'searchForAddress must exist');
+    const nextFnIndex = source.indexOf(
+      '\nexport async function ',
+      fnStart + 1,
+    );
+    const fnBody =
+      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+
+    const boolPrefixBlock = fnBody.match(
+      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
+    );
+    assert.notEqual(
+      boolPrefixBlock,
+      null,
+      'bool_prefix multi_match block must be parseable',
+    );
+    assert.match(
+      boolPrefixBlock[0],
+      /fuzziness\s*:\s*['"]AUTO:5,8['"]/,
+      'bool_prefix multi_match fuzziness MUST be "AUTO:5,8" per ADR 027. Do not revert to plain "AUTO" (numeric fuzz reintroduced) or tighten further to "AUTO:6,8" (loses 5-char typo tolerance — see baseline query 8).',
+    );
+  });
+});

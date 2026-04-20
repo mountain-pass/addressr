@@ -1,6 +1,8 @@
 ---
-status: 'proposed'
+status: 'superseded'
 date: 2026-04-19
+superseded-date: 2026-04-19
+superseded-by: [028-range-number-endpoint-only]
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
@@ -8,6 +10,10 @@ reassessment-date: 2026-07-19
 ---
 
 # ADR 026: Range-Number Address Expansion via Multi-Valued Text Alias Field
+
+> **SUPERSEDED 2026-04-19 by [ADR 028](028-range-number-endpoint-only.proposed.md).** This ADR shipped in v2.3.0 with a full-interpolation semantic: for a G-NAF range like `103-107 GAZE RD`, `sla_range_expanded` contained five aliases (103, 104, 105, 106, 107). Post-deploy smoke revealed this produces **false positives**: under Australian addressing convention, `104` and `106` belong to the opposite side of the street; `105` may not belong to the property at all. ADR 028 corrects the semantic to **endpoint-only** (aliases for NUMBER_FIRST and NUMBER_LAST only). See ADR 028 Context section for the full rationale and [P026 / #367](../problems/026-numeric-fuzziness-inflates-ranking.open.md) for the sibling ranking-problem ticket.
+>
+> The body below describes the SUPERSEDED ADR 026 decision as originally authored. Do not implement from this document.
 
 ## Context and Problem Statement
 

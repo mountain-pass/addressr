@@ -984,7 +984,13 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
                 multi_match: {
                   fields: ['sla', 'ssla'],
                   query: searchString,
-                  fuzziness: 'AUTO',
+                  // ADR 027: AUTO:5,8 (not default AUTO / AUTO:3,6) so that
+                  // 3-4 digit street numbers and postcodes require exact
+                  // match. Default AUTO lets `138` fuzzy-match `137`, `135`
+                  // etc., which tf-inflates adjacent-number docs above the
+                  // actual target (P026). 5+ char tokens still get 1 edit
+                  // (Muray → Murray), 8+ char tokens get 2 edits.
+                  fuzziness: 'AUTO:5,8',
                   type: 'bool_prefix',
                   lenient: true,
                   auto_generate_synonyms_phrase_query: false,

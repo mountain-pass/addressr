@@ -1,21 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  expandRangeAliases,
-  SPAN_CAP,
-} from '../../../service/range-expansion.js';
+import { expandRangeAliases } from '../../../service/range-expansion.js';
 
-// ADR 026: range-number address expansion via multi-valued text alias field.
-// `expandRangeAliases(first, last, streetPart, localityPart)` returns one
-// fully-expanded address string per in-range number up to `SPAN_CAP`, or an
-// empty array when the span exceeds the cap / inputs are invalid. Pure
-// function, no I/O, no OpenSearch dependency — invoked from `mapToMla`.
-describe('service/range-expansion.js — expandRangeAliases (ADR 026)', () => {
-  it('exposes SPAN_CAP = 20 per ADR 026 Decision Outcome', () => {
-    assert.equal(SPAN_CAP, 20, 'SPAN_CAP must be 20 per ADR 026');
-  });
-
-  it('produces one alias per in-range number for a typical range', () => {
+// ADR 028 (supersedes ADR 026): endpoint-only expansion. For a G-NAF range
+// address like `103-107 GAZE RD` (where NUMBER_FIRST=103 and NUMBER_LAST=107),
+// only the two endpoints are actual addresses of the property — interpolating
+// (emitting 104/105/106) produces false positives because those numbers
+// either live on the opposite side of the street or are separate properties
+// we can't prove belong to this record. See ADR 028 and #367 2022-06-24 +
+// 2022-07-10 comments from reporter `hirani89`.
+describe('service/range-expansion.js — expandRangeAliases (ADR 028, endpoint-only)', () => {
+  it('produces exactly two aliases for a typical range (first and last only)', () => {
     const aliases = expandRangeAliases(
       103,
       107,
@@ -24,45 +19,57 @@ describe('service/range-expansion.js — expandRangeAliases (ADR 026)', () => {
     );
     assert.deepEqual(aliases, [
       '103 GAZE RD, CHRISTMAS ISLAND OT 6798',
-      '104 GAZE RD, CHRISTMAS ISLAND OT 6798',
-      '105 GAZE RD, CHRISTMAS ISLAND OT 6798',
-      '106 GAZE RD, CHRISTMAS ISLAND OT 6798',
       '107 GAZE RD, CHRISTMAS ISLAND OT 6798',
     ]);
   });
 
-  it('returns aliases at the exact span cap (first=1, last=21 → span=20, 21 aliases)', () => {
-    const aliases = expandRangeAliases(1, 21, 'X ST', 'Y LOC STATE 1234');
-    assert.equal(
-      aliases.length,
-      21,
-      'span == SPAN_CAP must produce (span+1) aliases, not be cap-rejected',
-    );
-    assert.equal(aliases[0], '1 X ST, Y LOC STATE 1234');
-    assert.equal(aliases[20], '21 X ST, Y LOC STATE 1234');
-  });
-
-  it('returns empty array when span exceeds cap (first=1, last=22 → span=21)', () => {
-    const aliases = expandRangeAliases(1, 22, 'X ST', 'Y LOC STATE 1234');
-    assert.deepEqual(
-      aliases,
-      [],
-      'span > SPAN_CAP must return empty — the hyphenated canonical form remains findable',
-    );
-  });
-
-  it('returns empty array for the NSW 111,014-span data-quality outlier', () => {
+  it('does NOT interpolate mid-range numbers (prevents ADR 026 false positives)', () => {
     const aliases = expandRangeAliases(
+      103,
+      107,
+      'GAZE RD',
+      'CHRISTMAS ISLAND OT 6798',
+    );
+    assert.equal(aliases.length, 2, 'expected exactly 2 aliases, got more');
+    // Explicitly assert mid-range numbers are absent — regression guard
+    // against re-introducing interpolation.
+    for (const midRange of ['104', '105', '106']) {
+      const hit = aliases.find((a) => a.startsWith(`${midRange} `));
+      assert.equal(
+        hit,
+        undefined,
+        `mid-range ${midRange} must NOT appear in aliases — see ADR 028`,
+      );
+    }
+  });
+
+  it('produces two endpoint aliases regardless of range span (no SPAN_CAP needed)', () => {
+    // Under ADR 026 a 100-span range produced 101 aliases and hit the
+    // SPAN_CAP=20 guard. Under ADR 028 only endpoints matter so span is
+    // irrelevant — a 1000-span range still produces exactly 2 aliases.
+    const bigRange = expandRangeAliases(
+      1,
+      1000,
+      'LARGE RD',
+      'SOMEWHERE STATE 1000',
+    );
+    assert.equal(bigRange.length, 2);
+    assert.equal(bigRange[0], '1 LARGE RD, SOMEWHERE STATE 1000');
+    assert.equal(bigRange[1], '1000 LARGE RD, SOMEWHERE STATE 1000');
+  });
+
+  it('handles data-quality outliers (span > 10000) without storage inflation', () => {
+    // Previously SPAN_CAP=20 excluded outliers. Now every range — including
+    // the measured NSW span 111,014 outlier — produces 2 aliases cleanly.
+    const outlier = expandRangeAliases(
       1,
       111_015,
       'PATHOLOGICAL RD',
       'SOMEWHERE NSW 2000',
     );
-    assert.deepEqual(
-      aliases,
-      [],
-      'extreme G-NAF outliers must not trigger unbounded expansion',
-    );
+    assert.equal(outlier.length, 2);
+    assert.equal(outlier[0], '1 PATHOLOGICAL RD, SOMEWHERE NSW 2000');
+    assert.equal(outlier[1], '111015 PATHOLOGICAL RD, SOMEWHERE NSW 2000');
   });
 
   it('returns empty array for reversed ranges (first > last, G-NAF data error)', () => {
@@ -85,17 +92,6 @@ describe('service/range-expansion.js — expandRangeAliases (ADR 026)', () => {
     assert.deepEqual(expandRangeAliases(1, 0, 'X ST', 'Y'), []);
   });
 
-  it('preserves street and locality tokens verbatim — no re-casing, no trimming', () => {
-    const aliases = expandRangeAliases(
-      5,
-      7,
-      'st geoRGES tce',
-      'perth WA 6000',
-    );
-    assert.equal(aliases[0], '5 st geoRGES tce, perth WA 6000');
-    assert.equal(aliases[2], '7 st geoRGES tce, perth WA 6000');
-  });
-
   it('rejects non-integer first/last (G-NAF NUMBER_FIRST is always integer)', () => {
     assert.deepEqual(
       expandRangeAliases(1.5, 5, 'X ST', 'Y'),
@@ -103,5 +99,16 @@ describe('service/range-expansion.js — expandRangeAliases (ADR 026)', () => {
       'non-integer number must not drive expansion',
     );
     assert.deepEqual(expandRangeAliases(1, 5.5, 'X ST', 'Y'), []);
+  });
+
+  it('preserves street and locality tokens verbatim in both endpoints', () => {
+    const aliases = expandRangeAliases(
+      5,
+      7,
+      'st geoRGES tce',
+      'perth WA 6000',
+    );
+    assert.equal(aliases[0], '5 st geoRGES tce, perth WA 6000');
+    assert.equal(aliases[1], '7 st geoRGES tce, perth WA 6000');
   });
 });

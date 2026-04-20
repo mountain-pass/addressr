@@ -468,16 +468,16 @@ Feature: Address
         When "/addresses/does_not_exist" is requested
         Then the returned response will have a 404 status code
 
-    Scenario: P015 Range-number address findable by mid-range number (v1)
-        # ADR 026 / issue #367 — mirrors the v2 mid-range recall scenario to
-        # extend CI coverage across nodejs/rest/cli profiles (v2 version at
-        # addressv2.feature runs under rest2/cli2). Pre-ADR-026: zero results
-        # for "106 GAZE RD". After ADR 026: range doc GAOT_717321171 appears
-        # in the result list via sla_range_expanded[3].
+    Scenario: P015 Range-number address findable by first-endpoint number (v1, ADR 028)
+        # ADR 028 (supersedes ADR 026) / issue #367 — mirrors the v2 endpoint
+        # recall scenario to extend CI coverage across nodejs/rest/cli
+        # profiles (v2 version at addressv2.feature runs under rest2/cli2).
+        # Query uses `103` (first endpoint). Under ADR 028 mid-range numbers
+        # (104, 105, 106) do NOT resolve to the range doc.
         Given an address database is loaded from gnaf
         When the root api is requested
         And the "https://addressr.mountain-pass.com.au/rels/address-search" link template is followed with:
-            | q | 106 GAZE RD, CHRISTMAS ISLAND |
+            | q | 103 GAZE RD, CHRISTMAS ISLAND |
         Then the returned address list will include:
             """
             {
