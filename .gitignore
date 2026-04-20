@@ -89,3 +89,6 @@ install.sh
 
 # risk-scorer generated reports
 .risk-reports/
+
+# Claude Code local per-machine settings
+.claude/settings.local.json
