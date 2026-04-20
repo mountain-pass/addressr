@@ -6,7 +6,7 @@
 
 ## Description
 
-addressr runs `opensearchproject/opensearch:1.3.20` in production and pins the Node.js client at `@opensearch-project/opensearch@^3.5.1`. OpenSearch 1.3 is the final release of the 1.x major line and is past its support horizon; 2.x is the current stable major (2.19+ as of Q1 2026) and 3.x is also available upstream. Staying on 1.3.20 is accumulating a set of negatives that are independent of any single defect.
+addressr's production search backend is an **AWS-managed OpenSearch Service** domain (`search-addressr3-….aos.ap-southeast-2.on.aws`) running the **OpenSearch 1.3 engine family** (believed to be 1.3.x — exact engine version still to be confirmed via the AWS console / API; local Docker and the npm client are pinned to 1.3.20). Local development and CI use the `opensearchproject/opensearch:1.3.20` Docker image (see `package.json` `SEARCH_IMAGE`). The Node.js client is pinned at `@opensearch-project/opensearch@^3.5.1`. OpenSearch 1.3 is the final release of the 1.x major line and is past its support horizon; 2.x is the current stable major (2.19+ as of Q1 2026) and 3.x is also available upstream. Staying on 1.3 is accumulating a set of negatives that are independent of any single defect.
 
 This problem captures the **version debt itself**, not any individual bug caused by it. Specific bugs that the debt is suspected to cause or perpetuate are tracked separately (e.g., [P027](./027-synonym-expansion-bypasses-auto-fuzziness.open.md) — synonym-expansion fuzziness interaction in `match_bool_prefix`). The cost of P028 is the ongoing risk exposure across all the following axes simultaneously, and the stranded improvement value in newer releases.
 
@@ -64,9 +64,10 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 
 ### Investigation Tasks
 
-- [x] Confirm OpenSearch 1.3.x official EOL / retirement date and the AWS EB retirement schedule. Record in this ticket. _(see "Upstream and AWS EOL findings" below, 2026-04-21)_
+- [x] Confirm OpenSearch 1.3.x official EOL / retirement date and the AWS OpenSearch Service retirement schedule. Record in this ticket. _(see "Upstream and AWS EOL findings" below, 2026-04-21)_
 - [ ] Audit open CVEs against OpenSearch 1.3.x that are patched in 2.x/3.x. Publish the list in this ticket. _(partial — see "CVE status" below; full enumeration still pending a direct NVD / OpenSearch advisory scrape)_
-- [ ] Scope the upgrade path: direct 1.3 → 2.x upgrade via snapshot/restore on AWS EB vs blue/green cluster swap vs reindex from G-NAF source. Document the migration plan options.
+- [ ] Confirm the exact OpenSearch engine version running on the AWS-managed `search-addressr3-….aos.ap-southeast-2.on.aws` domain (AWS console / `aws opensearch describe-domain`). The client and local Docker are on 1.3.20; production engine version needs explicit verification.
+- [ ] Scope the upgrade path on AWS-managed OpenSearch Service: in-place engine upgrade (1.3 → 2.x via AWS console / API / Terraform) vs blue/green domain swap (`search-addressr4-…`) with reindex from G-NAF source. AWS handles snapshot/restore under the hood for in-place; the blue/green path is our lever if we want zero-risk rollback. Document options + decision criteria.
 - [ ] Spin up `opensearchproject/opensearch:2.19` locally (shared with P027 investigation). Run the Cucumber suite and the 14-query baseline against it. Note any behavioural deltas.
 - [ ] Enumerate OpenSearch 2.x features that would unlock addressr product value (vector / knn, point_in_time, improved aggregations, bulk indexing ergonomics). Quantify the value where possible.
 - [x] Check `@opensearch-project/opensearch` client's stated 1.x deprecation timeline. _(see "Client library status" below, 2026-04-21)_
@@ -83,7 +84,7 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
   - OpenSearch **1.0–1.2**: End of Standard Support **2025-11-07**, End of Extended Support **2026-11-07**.
   - OpenSearch **1.3**: support dates **"Not announced"** at time of writing — AWS recommends 1.2 users upgrade to 1.3 as an interim step.
   - OpenSearch versions supported in 2026: 3.5, 3.3, 3.1, 2.19, 2.17, 2.15, 2.13, 2.11, 2.9, 2.7, 2.5, 2.3, and 1.3.
-- **Applicability caveat**: addressr is **self-hosted** on AWS Elastic Beanstalk using the public `opensearchproject/opensearch:1.3.20` Docker image (see `package.json` `SEARCH_IMAGE`), not AWS-managed OpenSearch Service. The AWS retirement schedule therefore doesn't force our hand directly — but the AWS announcement is the most reliable leading indicator of when 1.3.x stops being treated as "supported" by a major vendor, and the upstream EOL already eliminates security-patch access regardless of hosting model.
+- **Applicability correction (supersedes earlier draft in this section)**: addressr production runs on **AWS-managed OpenSearch Service**, not self-hosted Docker. The Elastic Beanstalk application (`deploy/main.tf`) receives `ELASTIC_HOST` as a Terraform variable pointing at an AWS-managed domain (`search-addressr3-….aos.ap-southeast-2.on.aws`); the domain itself is managed outside Terraform. The `opensearchproject/opensearch:1.3.20` Docker image is used for local/CI only. This means the AWS Standard/Extended Support schedule applies **directly** to production — when AWS announces 1.3 dates, we face a hard deadline, not advisory pressure. When the deadline is published, the upgrade ticket should inherit that date as its "force-by" constraint.
 
 #### Client library status
 
@@ -98,7 +99,7 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 - Verified so far:
   - CVE-2023-31419 (StackOverflow DoS in `_search`): fixed in 1.3.14 and 2.11.1 — 1.3.20 carries this fix.
   - CVE-2023-45807 / GHSA-8wx3-324g-w4qq: fixed in 1.3.14 and 2.11.0 — 1.3.20 carries this fix.
-- **Implication of upstream EOL (2025-05-06)**: any CVE disclosed against OpenSearch code paths **after** 2025-05-06 will not have a 1.3.x patch unless a third party (e.g., AWS for managed service customers) issues one. For self-hosted `opensearchproject/opensearch:1.3.20`, we are on our own for any post-2025-05-06 CVE.
+- **Implication of upstream EOL (2025-05-06)**: any CVE disclosed against OpenSearch code paths **after** 2025-05-06 will not receive an upstream 1.3.x patch. For **production** (AWS-managed OpenSearch Service) AWS is responsible for engine-level patching and typically carries security backports during Standard Support and (with additional fees) Extended Support — but AWS has not yet announced 1.3 support dates, and its backport reach for an upstream-EOL major is not guaranteed. For **local/CI** (`opensearchproject/opensearch:1.3.20` Docker) no further patches will arrive at all; CI's realistic tolerance for running EOL software is higher than production's, but security-scanning tooling (Dependabot, Trivy) will increasingly flag it.
 
 #### Implications for priority
 
