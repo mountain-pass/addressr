@@ -1,8 +1,9 @@
 # Problem 028: OpenSearch 1.3.20 version debt — increasing exposure to bugs, EOL and compatibility drift
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-21
-**Priority**: 12 (High) — Impact: Moderate (3) x Likelihood: Likely (4)
+**Transitioned to Known Error**: 2026-04-21
+**Priority**: 15 (High) — Impact: Moderate (3) x Likelihood: Almost certain (5)
 
 ## Description
 
@@ -103,7 +104,18 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 
 #### Implications for priority
 
-Current priority line reads: **12 (High) — Impact: Moderate (3) × Likelihood: Likely (4)**. Findings strengthen the Likelihood reasoning: the "trigger visible" framing underestimates reality — the **security-patch drought** trigger already fired 11 months ago. The Impact rating (Moderate, 3) remains right for today because no user-visible failure has materialised, but the Likelihood of a material consequence arriving before any planned upgrade is now closer to **Almost certain (5)** than Likely (4). **Recommend re-scoring at the next `problem review` pass** once an upgrade ADR exists to anchor the comparison. Not unilaterally bumping in this update.
+Updated to **15 (High) — Impact: Moderate (3) × Likelihood: Almost certain (5)** on 2026-04-21. The prior "12 (High) — Likelihood Likely (4)" line under-stated reality: the **security-patch drought** trigger already fired on 2025-05-06 (upstream 1.x end-of-maintenance, 11 months before this ticket), and AWS has not published 1.3 Standard/Extended Support dates — so at least one material trigger is already active and another is pending publication. The Impact rating (Moderate, 3) is unchanged; the version debt still manifests today as release-pipeline and design-drag rather than user-visible failure. Label remains "High" (10–16 band). Re-score anchored to the existence of the upgrade plan ADRs ([ADR 029](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) and [ADR 030](../decisions/030-opensearch-domain-terraform-module.proposed.md), both proposed 2026-04-21).
+
+#### Known Error transition (2026-04-21)
+
+Transitioned Open → Known Error on 2026-04-21. Pre-flight checks:
+
+- **Root cause documented**: yes — both "Why we're on 1.3.20" and "Why the upgrade keeps getting deferred" sections, plus upstream EOL, AWS schedule, and client-library research.
+- **Investigation tasks progressed**: yes — three tasks checked off (EOL confirmation, client status, upgrade ADR drafted).
+- **Reproduction test referenced**: yes — ADR 029 Phase 1 step 4 specifies the local Cucumber + 14-query symmetric-SSLA baseline run against `opensearchproject/opensearch:2.19` as the regression test; the delta between 1.3.20 and 2.19 becomes the assertion.
+- **Workaround documented**: yes — "Stay on 1.3.20 and monitor" in the Workaround section.
+
+Fix path is clear via ADRs 029 and 030 (both proposed). Closure (this file → `.closed.md`) is gated on ADR 029 Phase 1 cutover being verified in production, consistent with the `## Fix Released` → verify-then-close workflow.
 
 ## Related
 

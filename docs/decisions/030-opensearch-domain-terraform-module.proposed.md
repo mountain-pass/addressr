@@ -146,5 +146,5 @@ Narrative:
 - [ADR 021 — Retain OpenSearch, plan multi-backend](021-retain-opensearch-plan-multi-backend.proposed.md) — the locality/postcode direction is a future consumer of this module.
 - [ADR 024 — Origin-gateway auth header enforcement](024-origin-gateway-auth-header-enforcement.accepted.md) — adjacent EB env-var concern; unaffected by this ADR.
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](029-opensearch-blue-green-two-phase-upgrade.proposed.md) — sibling ADR; the forcing function for this work but not its sole justification.
-- [Problem P028 — OpenSearch 1.3.20 version debt](../problems/028-opensearch-1-3-20-version-debt.open.md) — context for why both ADRs exist now.
+- [Problem P028 — OpenSearch 1.3.20 version debt](../problems/028-opensearch-1-3-20-version-debt.known-error.md) — context for why both ADRs exist now.
 - [`docs/JOBS_TO_BE_DONE.md`](../JOBS_TO_BE_DONE.md) — J7 (maintainer release integrity); J6 (self-hosted) explicitly out of scope.

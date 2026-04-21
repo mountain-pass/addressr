@@ -63,7 +63,7 @@ Preliminary hypotheses, not yet verified:
 
 ## Related
 
-- [Problem P028 — OpenSearch 1.3.20 version debt](./028-opensearch-1-3-20-version-debt.open.md) — subset of the 46 alerts may be blocked by the 1.3 server/client compatibility pin; upgrading OpenSearch may clear some of them.
+- [Problem P028 — OpenSearch 1.3.20 version debt](./028-opensearch-1-3-20-version-debt.known-error.md) — subset of the 46 alerts may be blocked by the 1.3 server/client compatibility pin; upgrading OpenSearch may clear some of them.
 - [Problem P025 — GitHub Actions Node.js 20 deprecation](./025-github-actions-node20-deprecation.open.md) — adjacent version-debt ticket; the pattern is the same (managed-platform clock ticking while we don't upgrade).
 - [BRIEFING.md](../BRIEFING.md) — "Dockerfile is stale: uses Node 16" — the Dockerfile's Node 16 base is itself a CVE source and should be addressed alongside this ticket.
 - [`package.json`](../../package.json) — direct dependency list; `dotenv@10.0.0` is the most visibly-stale direct dep flagged by `dry-aged-deps`.
