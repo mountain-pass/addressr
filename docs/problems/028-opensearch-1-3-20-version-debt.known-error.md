@@ -117,6 +117,31 @@ Transitioned Open → Known Error on 2026-04-21. Pre-flight checks:
 
 Fix path is clear via ADRs 029 and 030 (both proposed). Closure (this file → `.closed.md`) is gated on ADR 029 Phase 1 cutover being verified in production, consistent with the `## Fix Released` → verify-then-close workflow.
 
+#### ADR 030 module scaffolded (2026-04-24)
+
+Scaffolded `deploy/modules/opensearch/` per [ADR 030](../decisions/030-opensearch-domain-terraform-module.proposed.md)'s module shape:
+
+- `versions.tf` — matches root `deploy/versions.tf` (AWS provider, `required_version >= 0.13`; no backend block in the module)
+- `variables.tf` — `name`, `engine_version`, `instance_type` (default `t3.small.search`), `instance_count`, `ebs_volume_size`/`ebs_volume_type`, `master_user_name`/`master_user_password` (sensitive), `tags`. VPC/subnet vars deliberately omitted in this module version; comment explains deferral to a future network-hardening ADR.
+- `main.tf` — single `aws_opensearch_domain` resource with `advanced_security_options` (fine-grained access), `node_to_node_encryption`, `encrypt_at_rest`, `domain_endpoint_options { enforce_https, tls_security_policy = "Policy-Min-TLS-1-2-2019-07" }`, and a permissive `access_policies` JSON block that mirrors `search-addressr3-…`'s app-layer-auth posture. Inline comment flags network-level hardening as a future-ADR candidate.
+- `outputs.tf` — `endpoint` (feeds `ELASTIC_HOST`), `arn`, `domain_name`.
+- `README.md` — pointers to ADR 029 + ADR 030 and a minimal usage snippet.
+
+`terraform fmt -check -diff` passes. No change to `deploy/main.tf` — module is not yet called, so `terraform plan` against the existing workspace shows no diff for `search-addressr3-…` (ADR 030 Confirmation line satisfied). Architect review PASS and JTBD review PASS (J7 served; J6 correctly scoped out) captured in the session transcript.
+
+Satisfies the **"implemented"** half of ADR 029's Confirmation line:
+
+> ADR 030 is `proposed` and its module (`deploy/modules/opensearch/`) is implemented and applied to real infra before any `ELASTIC_HOST` change in `deploy/main.tf`.
+
+The **"applied to real infra"** half remains open and is a user-led step (requires AWS creds + credential wiring for `master_user_name`/`master_user_password` through the 1P → GH Actions → Terraform path). Next actions, in order:
+
+1. Wire `module "opensearch_v2"` call into `deploy/main.tf` pointing at `search-addressr4` on engine `OpenSearch_2.19`.
+2. Extend `deploy/vars.tf` / CI secrets for the new domain's `master_user_*`.
+3. `terraform apply` to stand up `search-addressr4-…` (parallel to `search-addressr3-…`; ADR 030 Confirmation: `terraform plan` must show zero changes to `search-addressr3-…`).
+4. Execute ADR 029 Phase 1 steps 2–7 (SEARCH_IMAGE bump, G-NAF reindex, Cucumber + 14-query SSLA baseline against 2.19, cutover, smoke test, 7-day soak).
+
+Both ADRs remain `proposed` — per ADR 029's Confirmation, both promote to `accepted` together after the 7-day soak.
+
 ## Related
 
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.
