@@ -142,6 +142,26 @@ The **"applied to real infra"** half remains open and is a user-led step (requir
 
 Both ADRs remain `proposed` — per ADR 029's Confirmation, both promote to `accepted` together after the 7-day soak.
 
+#### Module wired into `deploy/main.tf` (2026-04-24)
+
+Wired the scaffolded `deploy/modules/opensearch/` into the root Terraform module — Phase 1 step 1 (parallel provisioning) is now **code-complete**.
+
+Changes:
+
+- `deploy/vars.tf` — added two new defaulted root vars: `elastic_v2_name` (default `"search-addressr4"`) and `elastic_v2_engine_version` (default `"OpenSearch_2.19"`). Both `nullable = false`, matching the `var.elasticapp` pattern.
+- `deploy/main.tf` — added a `module "opensearch_v2"` block at the bottom that calls `./modules/opensearch` with the new v2 vars plus `master_user_name = var.elastic_username` and `master_user_password = var.elastic_password`. **Credential reuse** (Option A): the same fine-grained access creds are applied as master user on both `search-addressr3-…` (provisioned manually, out-of-IaC) and `search-addressr4-…` (new, IaC'd). This preserves ADR 029 Phase 1 step 5's single-variable cutover contract (only `var.elastic_host` changes at cutover).
+- `ELASTIC_HOST` in the EB env-var block is **unchanged** — still sourced from `var.elastic_host` pointing at `search-addressr3-…`. Cutover is a Phase 1 step 5 concern, not today's.
+- No new GHA secrets. No new 1Password items. The v2 domain inherits the existing `TF_VAR_elastic_username` / `TF_VAR_elastic_password` wiring from `.github/workflows/release.yml` unchanged.
+
+Architect review PASS and JTBD review PASS (both continued-J7, no persona gap, no new ADR needed). `terraform fmt -check -diff` passes.
+
+**What `terraform plan` will show after this commit** (against the existing prod workspace): one new resource to create — `module.opensearch_v2.aws_opensearch_domain.this`. Zero changes on the existing `search-addressr3-…` domain (it is not in state), satisfying ADR 030 Confirmation.
+
+**Next action (user-led)**: `terraform apply` from the prod workspace to stand up `search-addressr4-…` in parallel. After that succeeds:
+
+- Record the module output `module.opensearch_v2.endpoint` for later cutover reference.
+- Proceed with ADR 029 Phase 1 steps 2–7 (local `SEARCH_IMAGE` bump to `opensearchproject/opensearch:2.19`, Cucumber + 14-query SSLA baseline run against 2.19, G-NAF load against the new domain, cutover via `ELASTIC_HOST` flip, smoke tests, 7-day soak).
+
 ## Related
 
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.

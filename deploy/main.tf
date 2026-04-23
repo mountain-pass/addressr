@@ -592,5 +592,23 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   }
 }
 
+# ADR 029 Phase 1 + ADR 030: parallel v2 OpenSearch domain for blue/green cutover.
+# Master user creds are reused from var.elastic_username / var.elastic_password so
+# the cutover flips only var.elastic_host (ADR 029 Phase 1 step 5), matching
+# ADR 029's "update the ELASTIC_HOST Terraform variable" contract. ELASTIC_HOST
+# in the EB env-var block above stays pointed at search-addressr3-... until the
+# cutover step; this module call just creates the parallel v2 domain.
+module "opensearch_v2" {
+  source = "./modules/opensearch"
 
+  name                 = var.elastic_v2_name
+  engine_version       = var.elastic_v2_engine_version
+  master_user_name     = var.elastic_username
+  master_user_password = var.elastic_password
 
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "029,030"
+  }
+}

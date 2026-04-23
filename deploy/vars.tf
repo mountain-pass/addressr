@@ -66,3 +66,15 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
+variable "elastic_v2_name" {
+  type        = string
+  nullable    = false
+  default     = "search-addressr4"
+  description = "ADR 029 Phase 1 / ADR 030: domain name for the v2 OpenSearch domain provisioned in parallel during blue/green cutover. Phase 2 can override to search-addressr5 (or similar) without touching main.tf."
+}
+variable "elastic_v2_engine_version" {
+  type        = string
+  nullable    = false
+  default     = "OpenSearch_2.19"
+  description = "ADR 029 Phase 1: engine version for the v2 domain. Phase 2 will override to OpenSearch_3.x."
+}
