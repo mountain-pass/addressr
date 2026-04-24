@@ -160,7 +160,32 @@ Architect review PASS and JTBD review PASS (both continued-J7, no persona gap, n
 **Next action (user-led)**: `terraform apply` from the prod workspace to stand up `search-addressr4-…` in parallel. After that succeeds:
 
 - Record the module output `module.opensearch_v2.endpoint` for later cutover reference.
-- Proceed with ADR 029 Phase 1 steps 2–7 (local `SEARCH_IMAGE` bump to `opensearchproject/opensearch:2.19`, Cucumber + 14-query SSLA baseline run against 2.19, G-NAF load against the new domain, cutover via `ELASTIC_HOST` flip, smoke tests, 7-day soak).
+- Proceed with ADR 029 Phase 1 remaining steps (G-NAF load, validation, cutover, smoke, soak).
+
+**Superseded by the 2026-04-24 Phase 1 reorder below** — the "next action" above still names `terraform apply` first, but the reordered Phase 1 puts local validation ahead of AWS provisioning to defer spend. Use the reordered sequence in the next subsection.
+
+#### ADR 029 Phase 1 reordered (2026-04-24)
+
+Amended ADR 029's Phase 1 step order (in-place edit; ADR is still `proposed`, no supersession needed) to defer AWS spend until local validation on engine 2.19 is green. User direction: "test locally before we deploy a 2.19 instance and start incurring $$$".
+
+**Decision outcome unchanged** — still two-phase blue/green, 2.19 first, reindex-from-G-NAF, zero-outage. Only the internal ordering of Phase 1 changed. Earlier commits (module scaffolded in `deploy/modules/opensearch/`, module wired in `deploy/main.tf`) remain valid — both were order-neutral with respect to local-first vs AWS-first, and neither performed any `terraform apply`.
+
+**New Phase 1 order** (see ADR 029 for full text):
+
+1. Bump local + CI `SEARCH_IMAGE` to `opensearchproject/opensearch:2.19.x` (both `package.json` and `.github/workflows/release.yml` services.opensearch.image in lockstep).
+2. Local validation: Cucumber suite + ADR 025 14-query SSLA baseline against local 2.19; co-investigate P027.
+3. Gate on version-upgrade regressions (P027 is co-investigated, not gating). No AWS spend until green.
+4. `terraform apply` — stand up `search-addressr4-…`. AWS spend begins here.
+5. G-NAF loader against `search-addressr4-…`.
+6. Re-run Cucumber + baseline against `search-addressr4-…` (catches AWS-managed-specific deltas).
+7. Cutover via `ELASTIC_HOST` flip.
+8. Smoke + rollback window.
+9. 7-day soak + decommission `search-addressr3-…`.
+10. Update ADR 002 Confirmation + ADR 021 reassessment note + promote ADR 029 and ADR 030 to `accepted`.
+
+Architect review PASS and JTBD review PASS (strengthens J7 via cheap fail-fast gate; J1–J5 unaffected; J6 unchanged). Three coherence advisories from architect applied: Phase 1 preamble explains the reorder; step-4 prose keeps the ADR 030 "applied to real infra at least once" dependency where it now belongs; the "Bad" consequence on ADR 030 coupling is reworded from "Phase 1 is blocked" to "Phase 1 cutover is blocked". Step 3 makes P027's non-gating role explicit.
+
+**Next action (user-led, reordered)**: step 1 — bump `SEARCH_IMAGE` in `package.json` and `.github/workflows/release.yml`. This is a small, reversible config-only change; `terraform apply` should NOT run until step 3's gate is green.
 
 ## Related
 
