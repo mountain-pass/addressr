@@ -187,6 +187,28 @@ Architect review PASS and JTBD review PASS (strengthens J7 via cheap fail-fast g
 
 **Next action (user-led, reordered)**: step 1 — bump `SEARCH_IMAGE` in `package.json` and `.github/workflows/release.yml`. This is a small, reversible config-only change; `terraform apply` should NOT run until step 3's gate is green.
 
+#### ADR 029 Phase 1 dual-version testing (2026-04-26)
+
+User-flagged correction to step 1: a single-version "bump" replaces 1.3.20 with 2.19, but during the parallel-domain window (steps 4–9) the **same app binary must work against both 1.3.20 and 2.19** because cutover (step 7) flips only `ELASTIC_HOST` and rollback flips it back. A 2.19-targeted fix that breaks 1.3.20 compatibility would mean rollback fails silently — exactly the zero-outage failure ADR 029 line 20 prohibits.
+
+**Fix (committed in this commit)**: step 1 now **adds 2.19 alongside 1.3.20** rather than replacing it. CI runs a `strategy.matrix.opensearch_version: ["1.3.20", "2.19"]` matrix on the `build-and-test` job with `fail-fast: false`. The 1.3.20 leg is dropped at step 9 as part of decommission. `package.json` carries per-version `SEARCH_IMAGE_1_3_20` and `SEARCH_IMAGE_2_19` constants plus per-version `start:open-search:1.3.20` / `:2.19` and `pull:open-search:1.3.20` / `:2.19` scripts; the default `SEARCH_IMAGE` flips from 1.3.20 to 2.19 (matching the post-cutover target). CI `ES_JAVA_OPTS` bumped from `-Xms512m -Xmx512m` to `-Xms1g -Xmx1g` (per risk-scorer R1, pre-empts 2.19 startup-OOM noise; matches local-dev posture).
+
+**Why no changeset**: `start:open-search` is a repo-only dev-convenience script; not part of the published `@mountainpass/addressr` package surface. Self-hosters use `npm install -g`, not `npm run start:open-search`.
+
+**Tradeoff acknowledged**: CI build time roughly doubles during the Phase 1 window (matrix runs both legs in parallel; G-NAF + npm caches shared across legs via `actions/cache@v4` keys, so downloads are not duplicated). Doubled cost ends at step 9 decommission.
+
+**ADR 029 amendments** (in-place, still `proposed`):
+
+- Step 1 wording: matrix not replacement
+- Step 6 wording: both legs must be green for cutover
+- Step 9 wording: 1.3.20 leg cleanup spelled out (release.yml matrix entry, `:1.3.20` scripts, `SEARCH_IMAGE_1_3_20` config)
+- New Bad consequence: doubled CI runtime during Phase 1 window
+- Two new Confirmation criteria: matrix-state mechanically checkable during Phase 1 and after step 9
+
+Architect re-review PASS, JTBD re-review PASS, risk-scorer plan review PASS with R1 (heap pre-emption) folded in. P028 status unchanged (still Known Error); closure still gated on cutover verification per ADR 029.
+
+**Next action (user-led, unchanged)**: ADR 029 Phase 1 step 2 — run Cucumber suite + ADR 025 14-query SSLA baseline locally against 2.19 (via `npm run start:open-search:2.19` then the test runner). Address any version-upgrade regressions before progressing to step 4 (`terraform apply`).
+
 ## Related
 
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.
