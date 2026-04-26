@@ -209,6 +209,25 @@ Architect re-review PASS, JTBD re-review PASS, risk-scorer plan review PASS with
 
 **Next action (user-led, unchanged)**: ADR 029 Phase 1 step 2 — run Cucumber suite + ADR 025 14-query SSLA baseline locally against 2.19 (via `npm run start:open-search:2.19` then the test runner). Address any version-upgrade regressions before progressing to step 4 (`terraform apply`).
 
+#### Phase 1 step 2 complete + test:geo brought into CI scope (2026-04-27)
+
+**Phase 1 step 2 (local validation against 2.19.5) is GREEN.** Confirmed twice:
+
+1. CI's `build-and-test (2.19.5)` matrix leg passed in 2m18s on commit `98583ff` — runs `npm run test:nogeo` (5 cucumber profiles + node test:js).
+2. Local `npm run test:nogeo` against `opensearchproject/opensearch:2.19.5` exit 0 — independent confirmation on macOS.
+
+P027 (synonym + `AUTO:5,8` fuzziness) was not gating per the amended step 3 wording, but the cucumber pass implies it is not a 2.19-specific show-stopper either.
+
+**test:geo brought into CI scope** (this commit). Production EB env at `deploy/main.tf:62-66` runs `ADDRESSR_ENABLE_GEO=1`; CI was previously running only `test:nogeo`, so the geo code path (`loadSiteGeo` / `loadDefaultGeo` in `service/address-service.js:1431` and `@geo`-tagged scenarios per `cucumber.js:10`) had no automated coverage. Closing that blind spot:
+
+- `.github/workflows/release.yml` `build-and-test` job: existing "Run tests" step renamed to "Run tests (no geo)"; new "Run tests (geo)" step added, running `npm run test:geo` (3 cucumber profiles: `test:nodejs:geo`, `test:rest:geo`, `test:cli:geo`). Both steps run under the existing matrix (1.3.20 + 2.19.5).
+- ADR 029 Phase 1 step 2 wording explicitly requires both `test:nogeo` and `test:geo` against 2.19; Confirmation section updated to mirror.
+- Local verification before push: `npm run test:geo` against local 2.19.5 exit 0 (3 profiles, all passed).
+
+**Trade-off**: per-matrix-leg CI runtime roughly doubles (~2m → ~4m); total matrix CI time across both versions roughly doubles for the duration of the parallel-domain window. Closes a production-parity coverage gap that pre-dated this work; the runtime cost is the right trade. No external API surface added — geo data comes from the G-NAF dataset itself.
+
+**Phase 1 step 3 (gate) is clear**. Both no-geo AND geo cucumber green on 2.19.5 locally; CI will green on the next push. AWS spend (step 4 `terraform apply`) is unblocked.
+
 ## Related
 
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.

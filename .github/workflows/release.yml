@@ -96,10 +96,19 @@ jobs:
           unzip -o -j "$GNAF_ZIP" '*/Standard/OT_*' -d "$FIXTURE_DIR/Standard/" 2>/dev/null || true
           echo "Fixture contents:"
           find "$FIXTURE_DIR" -type f | head -20
-      - name: Run tests
+      - name: Run tests (no geo)
         env:
           GNAF_TEST_FIXTURE_DIR: target/gnaf-fixture
         run: npm run test:nogeo
+      - name: Run tests (geo)
+        env:
+          GNAF_TEST_FIXTURE_DIR: target/gnaf-fixture
+        # ADDRESSR_ENABLE_GEO=1 matches the production EB env at deploy/main.tf
+        # so this step closes the previous coverage gap where the geo code
+        # path (loadSiteGeo / loadDefaultGeo) only ran in production. No
+        # external API: geo data comes from the G-NAF dataset itself, so the
+        # OT fixture above is sufficient.
+        run: npm run test:geo
 
   release:
     if: github.ref == 'refs/heads/master'
