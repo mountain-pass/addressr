@@ -139,7 +139,6 @@
     "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\"",
     "push:watch": "bash scripts/push-and-watch.sh",
     "release:watch": "bash scripts/release-watch.sh",
-    "test:hooks": "bats .claude/hooks/test/",
     "prepare": "husky"
   },
   "bin": {
@@ -211,7 +210,6 @@
     "@istanbuljs/nyc-config-babel": "^3.0.0",
     "@mountainpass/waychaser": "^5.0.50",
     "babel-plugin-istanbul": "^7.0.1",
-    "bats": "^1.13.0",
     "chai": "^4.2.0",
     "dry-aged-deps": "^2.6.0",
     "eslint": "^9.39.4",
