@@ -1,0 +1,68 @@
+name: Populate Search Domain
+
+# ADR 029 Phase 1 step 5: populate the v2 OpenSearch domain (search-addressr4-...)
+# from G-NAF source while v1 (search-addressr3-...) continues to serve production
+# unchanged. Reuses the same loader path as the quarterly update-{state}.yml
+# workflows via reusable-update.yml; the only difference is target=v2.
+#
+# Naming is intentionally version-agnostic for Phase 2 reuse: when ADR 029
+# Phase 2 (2.19 -> 3.x) begins, this workflow's `target` enum gains 'v3' and
+# the same matrix runs against search-addressr5-... or its successor.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target search domain (v1 = production, v2 = upgrade target)'
+        required: true
+        default: 'v2'
+        type: choice
+        options:
+          - v1
+          - v2
+      states:
+        description: 'States to load (comma-separated, or "all")'
+        required: false
+        default: 'all'
+        type: string
+
+jobs:
+  resolve-states:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.r.outputs.matrix }}
+    steps:
+      - id: r
+        env:
+          STATES_INPUT: ${{ inputs.states }}
+        run: |
+          set -e
+          if [ "$STATES_INPUT" = "all" ]; then
+            MATRIX='["act","nsw","nt","ot","qld","sa","tas","vic","wa"]'
+          else
+            # comma-separated -> JSON array, trimming whitespace per element
+            MATRIX=$(echo "$STATES_INPUT" | jq -R -s -c 'split(",") | map(gsub("\\s+";"")) | map(select(length > 0))')
+          fi
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "Resolved matrix: $MATRIX"
+
+  populate:
+    needs: resolve-states
+    strategy:
+      # ADR 029 Consequences: G-NAF load against a fresh domain consumes
+      # full-dataset compute time and must be scheduled outside peak traffic
+      # windows. Sequential default (max-parallel: 1) respects that bulk-load
+      # discipline. Operator can edit this workflow file before triggering
+      # if they want parallel; doing so puts more concurrent ingest pressure
+      # on the v2 domain instance class. The 'fail-fast: false' lets a
+      # state's failure not cancel other in-flight states (matters more
+      # under operator-overridden parallelism than under sequential).
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        state: ${{ fromJSON(needs.resolve-states.outputs.matrix) }}
+    uses: ./.github/workflows/reusable-update.yml
+    with:
+      state: ${{ matrix.state }}
+      target: ${{ inputs.target }}
+    secrets: inherit

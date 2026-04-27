@@ -6,6 +6,17 @@ on:
       state:
         required: true
         type: string
+      target:
+        # ADR 029 Phase 1: which OpenSearch domain to populate.
+        # 'v1' = the production domain reached via TF_VAR_ELASTIC_HOST (current default).
+        # 'v2' = the parallel-provisioned upgrade-target domain reached via
+        # TF_VAR_ELASTIC_V2_HOST. The v2 secrets must be set in the repo for
+        # target=v2 to succeed; the resolve step below fails loudly if they
+        # are missing. The 9 update-{state}.yml workflows do not pass target,
+        # so they inherit the v1 default and are unchanged by this addition.
+        required: false
+        type: string
+        default: 'v1'
     secrets:
       TF_VAR_ELASTIC_HOST:
         required: true
@@ -13,6 +24,12 @@ on:
         required: true
       TF_VAR_ELASTIC_USERNAME:
         required: true
+      TF_VAR_ELASTIC_V2_HOST:
+        required: false
+      TF_VAR_ELASTIC_V2_PASSWORD:
+        required: false
+      TF_VAR_ELASTIC_V2_USERNAME:
+        required: false
 
 jobs:
   update:
@@ -25,11 +42,48 @@ jobs:
         with:
           node-version: '22.x' # Specify the Node.js version you need
 
+      - name: Resolve target host/credentials
+        # Selects the host/username/password that the loader will write to
+        # based on inputs.target. Fails loudly if target=v2 is requested but
+        # the v2 secrets are not configured -- prevents silent fall-through
+        # to v1 from masking a misconfigured Phase 1 step 5 trigger.
+        env:
+          TARGET: ${{ inputs.target }}
+          V1_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+          V1_USER: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
+          V1_PASS: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+          V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
+          V2_USER: ${{ secrets.TF_VAR_ELASTIC_V2_USERNAME }}
+          V2_PASS: ${{ secrets.TF_VAR_ELASTIC_V2_PASSWORD }}
+        run: |
+          set -e
+          if [ "$TARGET" = "v2" ]; then
+            [ -n "$V2_HOST" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_HOST is not set"; exit 1; }
+            [ -n "$V2_USER" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_USERNAME is not set"; exit 1; }
+            [ -n "$V2_PASS" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_PASSWORD is not set"; exit 1; }
+            echo "RESOLVED_HOST=$V2_HOST" >> "$GITHUB_ENV"
+            echo "RESOLVED_USERNAME=$V2_USER" >> "$GITHUB_ENV"
+            echo "RESOLVED_PASSWORD=$V2_PASS" >> "$GITHUB_ENV"
+            echo "::add-mask::$V2_HOST"
+            echo "::add-mask::$V2_USER"
+            echo "::add-mask::$V2_PASS"
+            echo "Resolved target: v2"
+          elif [ "$TARGET" = "v1" ]; then
+            [ -n "$V1_HOST" ] || { echo "::error::TF_VAR_ELASTIC_HOST is not set"; exit 1; }
+            echo "RESOLVED_HOST=$V1_HOST" >> "$GITHUB_ENV"
+            echo "RESOLVED_USERNAME=$V1_USER" >> "$GITHUB_ENV"
+            echo "RESOLVED_PASSWORD=$V1_PASS" >> "$GITHUB_ENV"
+            echo "Resolved target: v1"
+          else
+            echo "::error::Unknown target: $TARGET (expected 'v1' or 'v2')"
+            exit 1
+          fi
+
       - name: Upload
         env:
-          ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
-          ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
-          ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
+          ELASTIC_HOST: ${{ env.RESOLVED_HOST }}
+          ELASTIC_PASSWORD: ${{ env.RESOLVED_PASSWORD }}
+          ELASTIC_USERNAME: ${{ env.RESOLVED_USERNAME }}
           ELASTIC_PORT: 443
           ELASTIC_PROTOCOL: https
           NODE_ENV: production

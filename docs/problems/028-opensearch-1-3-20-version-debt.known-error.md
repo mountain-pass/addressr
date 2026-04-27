@@ -228,6 +228,32 @@ P027 (synonym + `AUTO:5,8` fuzziness) was not gating per the amended step 3 word
 
 **Phase 1 step 3 (gate) is clear**. Both no-geo AND geo cucumber green on 2.19.5 locally; CI will green on the next push. AWS spend (step 4 `terraform apply`) is unblocked.
 
+#### Phase 1 step 5 mechanism specified — populate-search-domain.yml (2026-04-28)
+
+ADR 029 step 5 had been a stub: "Run the G-NAF loader against `search-addressr4-…`". User question on the plan surfaced the gap: the existing 9 `update-{state}.yml` workflows hard-code `secrets.TF_VAR_ELASTIC_HOST`, so populating v2 in parallel with v1 (per ADR 029's "while `search-addressr3-…` continues to serve production unchanged") had no mechanical path.
+
+**Fix (this commit)**: parameterize the existing population mechanism so v2 can be loaded without disturbing v1 schedules.
+
+- `.github/workflows/reusable-update.yml`: gains a `target` input (`'v1' | 'v2'`, default `'v1'`) and 3 optional v2 secrets (`TF_VAR_ELASTIC_V2_HOST` / `_USERNAME` / `_PASSWORD`). A new "Resolve target" step selects host/user/pass based on `inputs.target` and **fails loudly** if `target=v2` but the v2 secrets are missing — prevents silent fall-through that would mask a misconfigured trigger. The 9 existing `update-{state}.yml` callers don't pass `target` and inherit the v1 default; they are unchanged.
+- `.github/workflows/populate-search-domain.yml` (new): workflow_dispatch only, with `target` (choice v1/v2, default v2) and `states` (comma-separated or `'all'`) inputs. A `resolve-states` job parses the input into a JSON matrix; the `populate` job iterates the matrix calling `reusable-update.yml` with `secrets: inherit` and `max-parallel: 1` (sequential by default, respects ADR 029's "scheduled outside peak traffic windows" — operator may bump by editing the file). Naming is intentionally version-agnostic: Phase 2 (2.19 → 3.x) extends the `target` enum with `'v3'`.
+
+**ADR 029 amendments** (2026-04-28 dated amendment-blocks per the line-54 precedent style):
+
+- **Step 4**: documents the operator-memory copy step between `terraform apply` and step 5 — copy `module.opensearch_v2.endpoint` (Terraform output) into `TF_VAR_ELASTIC_V2_HOST` GHA secret; reuse v1 creds for `_USERNAME`/`_PASSWORD`. The fail-loud Resolve step makes a forgotten copy surface immediately at step 5 rather than silently mid-load.
+- **Step 5**: replaces the stub with concrete mechanism — trigger `populate-search-domain.yml` workflow_dispatch with `target: v2`. Notes the published-loader compatibility precondition (verified by the dual-version CI matrix on commit `d3d1e09`).
+- **Step 7 clarification** (per architect feedback): cutover REMAINS a Terraform variable change. Concretely, operator updates the value of `TF_VAR_ELASTIC_HOST` GHA secret to v2's hostname AND triggers `terraform apply`. Editing the GHA secret alone does NOT move production traffic — only `terraform apply` does. The loader-pointer flip is a side-effect of the secret value change (since `update-{state}.yml` defaults to `target=v1` and reads the same secret) but is a separate event from the cutover itself. Rollback is the inverse: revert secret value, run `terraform apply`. Single-digit-minutes rollback property preserved.
+- **Step 9** + matching Confirmation: cleanup includes clearing `TF_VAR_ELASTIC_V2_*` secrets after decommission; recommended `populate-search-domain.yml` retain for Phase 2 reuse (target enum gains `'v3'`).
+
+Architect re-review PASS (all four prior items resolved); JTBD re-review PASS (post-migration to docs/jtbd/ layout; serves JTBD-400 — "Ship releases reliably from trunk", explicitly the "infra-boundary release steps as checkable artefacts" outcome).
+
+**Phase 1 step 4 → 5 path is now mechanically actionable end-to-end**:
+
+1. `terraform apply` (step 4) → AWS provisions `search-addressr4-…`
+2. Operator copies the new domain's endpoint + credentials into the 3 `TF_VAR_ELASTIC_V2_*` GHA secrets (step 4 amendment)
+3. Operator triggers `populate-search-domain.yml` workflow_dispatch with `target: v2`, `states: all` (step 5)
+4. Matrix sequentially loads each state via `reusable-update.yml` with `target: v2` → loader writes to v2; v1 untouched
+5. Validation (step 6), cutover (step 7) via Terraform var change, smoke (step 8), 7-day soak + decommission (step 9)
+
 ## Related
 
 - [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.
