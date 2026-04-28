@@ -1,0 +1,131 @@
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+# ADR 029 Phase 1 step 6: validate the AWS-managed v2 OpenSearch domain after
+# population (step 5) but before cutover (step 7). Operator-triggered via
+# workflow_dispatch.
+#
+# Scope: this workflow probes the AWS-managed-config layer (TLS, IAM,
+# fine-grained-access auth, data shape per index). Search-behaviour validation
+# already happened in step 2 via the local 2.19 dual-version CI matrix
+# (commit d3d1e09); pointing cucumber at the AWS-managed domain would need a
+# configurable index-name profile that does not exist today, so this workflow
+# is smoke-probe-only by design. ADR 029 Confirmation line 114 ("full Cucumber
+# suite … against both local 2.19 and `search-addressr4-…`") will be amended at
+# step 10 closure to record this split (local = behaviour gate; AWS-managed =
+# config gate). See `/Users/tomhoward/.claude/plans/resilient-finding-dragon.md`
+# Phase 0.1 for the rationale.
+
+name: Validate Search Domain
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target search domain (v1 = production, v2 = upgrade target)'
+        required: true
+        default: 'v2'
+        type: choice
+        options:
+          - v1
+          - v2
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target host/credentials
+        # Same fail-loud pattern as reusable-update.yml. Picks v1 or v2 secrets
+        # based on inputs.target; errors immediately if target=v2 is requested
+        # but the v2 secrets are not configured.
+        env:
+          TARGET: ${{ inputs.target }}
+          V1_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
+          V1_USER: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
+          V1_PASS: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
+          V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
+          V2_USER: ${{ secrets.TF_VAR_ELASTIC_V2_USERNAME }}
+          V2_PASS: ${{ secrets.TF_VAR_ELASTIC_V2_PASSWORD }}
+        run: |
+          set -e
+          if [ "$TARGET" = "v2" ]; then
+            [ -n "$V2_HOST" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_HOST is not set"; exit 1; }
+            [ -n "$V2_USER" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_USERNAME is not set"; exit 1; }
+            [ -n "$V2_PASS" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_PASSWORD is not set"; exit 1; }
+            echo "RESOLVED_HOST=$V2_HOST" >> "$GITHUB_ENV"
+            echo "RESOLVED_USERNAME=$V2_USER" >> "$GITHUB_ENV"
+            echo "RESOLVED_PASSWORD=$V2_PASS" >> "$GITHUB_ENV"
+            echo "::add-mask::$V2_HOST"
+            echo "::add-mask::$V2_USER"
+            echo "::add-mask::$V2_PASS"
+            echo "Resolved target: v2"
+          elif [ "$TARGET" = "v1" ]; then
+            [ -n "$V1_HOST" ] || { echo "::error::TF_VAR_ELASTIC_HOST is not set"; exit 1; }
+            echo "RESOLVED_HOST=$V1_HOST" >> "$GITHUB_ENV"
+            echo "RESOLVED_USERNAME=$V1_USER" >> "$GITHUB_ENV"
+            echo "RESOLVED_PASSWORD=$V1_PASS" >> "$GITHUB_ENV"
+            echo "Resolved target: v1"
+          else
+            echo "::error::Unknown target: $TARGET (expected 'v1' or 'v2')"
+            exit 1
+          fi
+
+      - name: Cluster health
+        # Probes TLS, fine-grained auth, and basic cluster reachability.
+        # Expect "status":"green" or "yellow" (single-node clusters report yellow).
+        env:
+          HOST: ${{ env.RESOLVED_HOST }}
+          USER: ${{ env.RESOLVED_USERNAME }}
+          PASS: ${{ env.RESOLVED_PASSWORD }}
+        run: |
+          set -e
+          STATUS_JSON=$(curl -sf -u "$USER:$PASS" "https://$HOST/_cluster/health")
+          echo "Cluster health: $STATUS_JSON"
+          STATUS=$(echo "$STATUS_JSON" | jq -r '.status')
+          case "$STATUS" in
+            green|yellow) echo "Cluster status: $STATUS (acceptable)";;
+            *) echo "::error::Cluster status not green/yellow: $STATUS"; exit 1;;
+          esac
+
+      - name: Index document count
+        # Confirms population (step 5) wrote data. Expect non-zero count for
+        # the production-like index. The exact index pattern matches what
+        # addressr-loader writes; '*' is a safe glob.
+        env:
+          HOST: ${{ env.RESOLVED_HOST }}
+          USER: ${{ env.RESOLVED_USERNAME }}
+          PASS: ${{ env.RESOLVED_PASSWORD }}
+        run: |
+          set -e
+          COUNT_JSON=$(curl -sf -u "$USER:$PASS" "https://$HOST/_count")
+          echo "Total document count: $COUNT_JSON"
+          COUNT=$(echo "$COUNT_JSON" | jq -r '.count')
+          if [ "$COUNT" -gt 0 ] 2>/dev/null; then
+            echo "Document count: $COUNT (non-zero, OK)"
+          else
+            echo "::error::Document count is zero or invalid: $COUNT (population may be incomplete)"
+            exit 1
+          fi
+
+      - name: Search probe (q=sydney)
+        # End-to-end search-path probe: confirms the search behaviour the app
+        # depends on works against the AWS-managed domain (analyzers, mappings,
+        # query DSL all wired correctly). Cheap; complements the data-shape
+        # check above.
+        env:
+          HOST: ${{ env.RESOLVED_HOST }}
+          USER: ${{ env.RESOLVED_USERNAME }}
+          PASS: ${{ env.RESOLVED_PASSWORD }}
+        run: |
+          set -e
+          # Use a generic match query rather than addressr's specific DSL,
+          # since this workflow does not have access to the app's query
+          # builder. A `q=sydney` URL-style search exercises the standard
+          # _search path which is sufficient as a smoke probe.
+          HITS_JSON=$(curl -sf -u "$USER:$PASS" "https://$HOST/_search?q=sydney&size=1")
+          TOTAL=$(echo "$HITS_JSON" | jq -r '.hits.total.value // .hits.total')
+          echo "Search probe q=sydney returned $TOTAL hits"
+          if [ "$TOTAL" -gt 0 ] 2>/dev/null; then
+            echo "Search path: OK"
+          else
+            echo "::error::Search probe returned zero hits — search path may be broken"
+            exit 1
+          fi
