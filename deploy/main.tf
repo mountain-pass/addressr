@@ -609,6 +609,6 @@ module "opensearch_v2" {
   tags = {
     ManagedBy = "terraform"
     Component = "search"
-    Adr       = "029,030"
+    Adr       = "029-030"
   }
 }
