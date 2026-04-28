@@ -35,13 +35,22 @@ jobs:
       - id: r
         env:
           STATES_INPUT: ${{ inputs.states }}
+        # State names MUST be uppercase. The loader at
+        # service/address-service.js:1340 filters G-NAF detail files via
+        # `path.basename(f).startsWith(`${COVERED_STATES[i]}_`)`, matching
+        # against uppercase filenames like `OT_ADDRESS_DETAIL_psv.psv`. A
+        # lowercase state code makes the filter empty and the loader silently
+        # skips address indexing (ends with 0 docs) -- reproduced on populate
+        # run 25033129925. The 9 update-{state}.yml workflows pass uppercase
+        # (e.g. `state: OT`) and work fine. Both the hardcoded `all` list and
+        # the comma-separated input are normalised to upper case here.
         run: |
           set -e
           if [ "$STATES_INPUT" = "all" ]; then
-            MATRIX='["act","nsw","nt","ot","qld","sa","tas","vic","wa"]'
+            MATRIX='["ACT","NSW","NT","OT","QLD","SA","TAS","VIC","WA"]'
           else
-            # comma-separated -> JSON array, trimming whitespace per element
-            MATRIX=$(echo "$STATES_INPUT" | jq -R -s -c 'split(",") | map(gsub("\\s+";"")) | map(select(length > 0))')
+            # comma-separated -> JSON array, trimming whitespace and uppercasing each element
+            MATRIX=$(echo "$STATES_INPUT" | jq -R -s -c 'split(",") | map(gsub("\\s+";"") | ascii_upcase) | map(select(length > 0))')
           fi
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "Resolved matrix: $MATRIX"
