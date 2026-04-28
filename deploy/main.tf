@@ -606,6 +606,14 @@ module "opensearch_v2" {
   master_user_name     = var.elastic_username
   master_user_password = var.elastic_password
 
+  # 2 nodes match v1 (search-addressr3) AZ posture and let replicas assign.
+  # Brought forward from plan step 6a after step 5's WA leg failed against the
+  # single-node config: VIC's 80-min bulk load left the cluster RED with 13
+  # unassigned shards, addressr search returning 503. ADR 029 step 6a was
+  # always going to do this pre-cutover; the WA failure proves the single-node
+  # config is not viable at the data scale, not just at cutover time.
+  instance_count = 2
+
   tags = {
     ManagedBy = "terraform"
     Component = "search"
