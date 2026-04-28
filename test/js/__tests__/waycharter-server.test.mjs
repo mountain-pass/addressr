@@ -18,10 +18,7 @@ import { fileURLToPath } from 'node:url';
 // src/waycharter-server.js by basename. Other tests stay under test/js/.
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const serverPath = path.resolve(
-  __dirname,
-  '../../../src/waycharter-server.js',
-);
+const serverPath = path.resolve(__dirname, '../../../src/waycharter-server.js');
 
 describe('root / cache-control directive (P018 parked — long-lived by design)', () => {
   it("root resource emits 'public, max-age=${ONE_WEEK}'", async () => {
@@ -38,6 +35,36 @@ describe('root / cache-control directive (P018 parked — long-lived by design)'
       rootBlock,
       /'cache-control':\s*`public,\s*max-age=\$\{ONE_WEEK\}`/,
       `expected root resource to emit 'public, max-age=\${ONE_WEEK}' (long-lived by design — P018 parked); got:\n${rootBlock}`,
+    );
+  });
+});
+
+// ADR 031: read-shadow startup validator must be invoked alongside
+// validateProxyAuthConfig() in startRest2Server so misconfigured shadow
+// env vars fail the process at startup rather than silently degrade.
+describe('startRest2Server — read-shadow startup validator (ADR 031)', () => {
+  it('imports validateReadShadowConfig from ./read-shadow', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    assert.match(
+      source,
+      /import\s+\{\s*validateReadShadowConfig\s*\}\s+from\s+['"]\.\/read-shadow['"]/,
+      'src/waycharter-server.js must import validateReadShadowConfig from ./read-shadow',
+    );
+  });
+
+  it('startRest2Server calls validateReadShadowConfig() at startup', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    const startIndex = source.indexOf('export function startRest2Server');
+    assert.notEqual(startIndex, -1, 'startRest2Server must exist');
+    const endIndex = source.indexOf('\nexport ', startIndex + 1);
+    const fnBody = source.slice(
+      startIndex,
+      endIndex === -1 ? source.length : endIndex,
+    );
+    assert.match(
+      fnBody,
+      /validateReadShadowConfig\(\)/,
+      'startRest2Server must call validateReadShadowConfig() at startup (ADR 031)',
     );
   });
 });

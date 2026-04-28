@@ -6,6 +6,88 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// P033 caveat: this file uses source-inspection tests because
+// service/address-service.js is babel-only and cannot be imported by raw
+// Node ESM. A future extraction to clean ESM (per the gnaf-package-fetch.js
+// precedent) would let these become behavioural tests. Until then, source
+// inspection guards the integration shape only — behavioural correctness of
+// imported helpers is covered by their own *.test.mjs files.
+
+// ADR 031: searchForAddress must call mirrorRequest after the primary
+// search so v2 OpenSearch caches warm with realistic production query
+// distribution before cutover. Behavioural correctness of mirrorRequest
+// itself is covered by test/js/__tests__/read-shadow.test.mjs.
+describe('service/address-service.js — read-shadow integration (ADR 031)', () => {
+  it('imports mirrorRequest from src/read-shadow', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    assert.match(
+      source,
+      /import\s+\{\s*mirrorRequest\s*\}\s+from\s+['"]\.\.\/src\/read-shadow['"]/,
+      'service/address-service.js must import mirrorRequest from ../src/read-shadow (ADR 031)',
+    );
+  });
+
+  it('searchForAddress calls mirrorRequest after the primary client.search', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const startIndex = source.indexOf('export async function searchForAddress');
+    assert.notEqual(startIndex, -1, 'searchForAddress must exist');
+    const endMarker = source.indexOf('\nexport ', startIndex + 1);
+    const functionBody = source.slice(
+      startIndex,
+      endMarker === -1 ? source.length : endMarker,
+    );
+    const searchIndex = functionBody.indexOf('globalThis.esClient.search');
+    assert.notEqual(
+      searchIndex,
+      -1,
+      'searchForAddress must call globalThis.esClient.search',
+    );
+    const mirrorIndex = functionBody.indexOf('mirrorRequest({');
+    assert.notEqual(
+      mirrorIndex,
+      -1,
+      'searchForAddress must call mirrorRequest (ADR 031)',
+    );
+    assert.ok(
+      mirrorIndex > searchIndex,
+      'mirrorRequest must be called AFTER the primary client.search await',
+    );
+    // mirrorRequest must NOT be awaited (fire-and-forget per ADR 031)
+    const mirrorRegion = functionBody.slice(
+      Math.max(0, mirrorIndex - 20),
+      mirrorIndex,
+    );
+    assert.ok(
+      !/await\s*$/.test(mirrorRegion),
+      'mirrorRequest must NOT be awaited (fire-and-forget per ADR 031)',
+    );
+  });
+
+  it('searchForAddress passes method=search and the same body to mirrorRequest', async () => {
+    const source = await readFile(
+      path.resolve(__dirname, '../../../service/address-service.js'),
+      'utf8',
+    );
+    const startIndex = source.indexOf('export async function searchForAddress');
+    const endMarker = source.indexOf('\nexport ', startIndex + 1);
+    const functionBody = source.slice(
+      startIndex,
+      endMarker === -1 ? source.length : endMarker,
+    );
+    assert.match(
+      functionBody,
+      /mirrorRequest\(\{[\s\S]*?method:\s*['"]search['"]/,
+      'mirrorRequest must be called with method: "search"',
+    );
+  });
+});
+
 // P012: the loader used to JSON.stringify(rval) on every 1% / 10K rows of
 // progress logging, producing ~60K lines per QLD reindex and drowning out
 // real errors. The progress signal is the percent/row log that follows it —
@@ -26,7 +108,7 @@ describe('service/address-service.js — progress logging (P012)', () => {
     // mapAddressDetails spans ~160 lines (~8000 chars). Read a generous
     // window and confirm JSON.stringify(rval, ...) is absent from the
     // progress-logging region inside the function body.
-    const functionBody = source.slice(startIndex, startIndex + 10000);
+    const functionBody = source.slice(startIndex, startIndex + 10_000);
     const endIndex = functionBody.indexOf('\nasync function ');
     const scopedBody =
       endIndex === -1 ? functionBody : functionBody.slice(0, endIndex);
@@ -56,16 +138,19 @@ describe('service/address-service.js — getAddress catch block (P014)', () => {
       -1,
       'export async function getAddress must exist in service/address-service.js',
     );
-    const nextFnIndex = source.indexOf('\nexport async function ', startIndex + 1);
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(startIndex) : source.slice(startIndex, nextFnIndex);
-    const catchStart = fnBody.indexOf('error getting record from elastic search');
-    assert.notEqual(
-      catchStart,
-      -1,
-      'getAddress catch block must exist',
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      startIndex + 1,
     );
-    const catchBody = fnBody.slice(catchStart);
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(startIndex)
+        : source.slice(startIndex, nextFunctionIndex);
+    const catchStart = functionBody.indexOf(
+      'error getting record from elastic search',
+    );
+    assert.notEqual(catchStart, -1, 'getAddress catch block must exist');
+    const catchBody = functionBody.slice(catchStart);
 
     assert.match(
       catchBody,
@@ -85,12 +170,17 @@ describe('service/address-service.js — getAddress catch block (P014)', () => {
       'utf8',
     );
     const startIndex = source.indexOf('export async function getAddress(');
-    const nextFnIndex = source.indexOf('\nexport async function ', startIndex + 1);
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(startIndex) : source.slice(startIndex, nextFnIndex);
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      startIndex + 1,
+    );
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(startIndex)
+        : source.slice(startIndex, nextFunctionIndex);
 
     assert.match(
-      fnBody,
+      functionBody,
       /displayName\s*===\s*['"]RequestTimeout['"][\s\S]{0,200}statusCode:\s*504/,
       'getAddress must map RequestTimeout errors to 504 Gateway Timeout — see P014',
     );
@@ -162,19 +252,23 @@ describe('service/address-service.js — searchForAddress query clauses (ADR 026
       path.resolve(__dirname, '../../../service/address-service.js'),
       'utf8',
     );
-    const fnStart = source.indexOf('export async function searchForAddress(');
-    assert.notEqual(fnStart, -1, 'searchForAddress must exist');
-    const nextFnIndex = source.indexOf(
-      '\nexport async function ',
-      fnStart + 1,
+    const functionStart = source.indexOf(
+      'export async function searchForAddress(',
     );
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+    assert.notEqual(functionStart, -1, 'searchForAddress must exist');
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      functionStart + 1,
+    );
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(functionStart)
+        : source.slice(functionStart, nextFunctionIndex);
 
     // Find the phrase_prefix multi_match and confirm its fields array
     // contains sla_range_expanded. Use a non-greedy match against the
     // multi_match block surrounding `type: 'phrase_prefix'`.
-    const phrasePrefixBlock = fnBody.match(
+    const phrasePrefixBlock = functionBody.match(
       /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
     );
     assert.notEqual(
@@ -194,15 +288,19 @@ describe('service/address-service.js — searchForAddress query clauses (ADR 026
       path.resolve(__dirname, '../../../service/address-service.js'),
       'utf8',
     );
-    const fnStart = source.indexOf('export async function searchForAddress(');
-    const nextFnIndex = source.indexOf(
-      '\nexport async function ',
-      fnStart + 1,
+    const functionStart = source.indexOf(
+      'export async function searchForAddress(',
     );
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      functionStart + 1,
+    );
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(functionStart)
+        : source.slice(functionStart, nextFunctionIndex);
 
-    const boolPrefixBlock = fnBody.match(
+    const boolPrefixBlock = functionBody.match(
       /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
     );
     assert.notEqual(
@@ -222,23 +320,27 @@ describe('service/address-service.js — searchForAddress query clauses (ADR 026
       path.resolve(__dirname, '../../../service/address-service.js'),
       'utf8',
     );
-    const fnStart = source.indexOf('export async function searchForAddress(');
-    const nextFnIndex = source.indexOf(
-      '\nexport async function ',
-      fnStart + 1,
+    const functionStart = source.indexOf(
+      'export async function searchForAddress(',
     );
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      functionStart + 1,
+    );
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(functionStart)
+        : source.slice(functionStart, nextFunctionIndex);
 
-    const phrasePrefixBlock = fnBody.match(
+    const phrasePrefixBlock = functionBody.match(
       /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
     );
     // Strip block and line comments before matching so a prose mention of
     // tie_breaker in a guardrail comment does not trigger the assertion.
     // Only a real key declaration `tie_breaker: <value>` should fail.
     const decommented = phrasePrefixBlock[0]
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/\/\/[^\n]*/g, '');
+      .replaceAll(/\/\*[\s\S]*?\*\//g, '')
+      .replaceAll(/\/\/[^\n]*/g, '');
     assert.doesNotMatch(
       decommented,
       /\btie_breaker\s*:/,
@@ -260,16 +362,20 @@ describe('service/address-service.js — bool_prefix fuzziness (ADR 027)', () =>
       path.resolve(__dirname, '../../../service/address-service.js'),
       'utf8',
     );
-    const fnStart = source.indexOf('export async function searchForAddress(');
-    assert.notEqual(fnStart, -1, 'searchForAddress must exist');
-    const nextFnIndex = source.indexOf(
-      '\nexport async function ',
-      fnStart + 1,
+    const functionStart = source.indexOf(
+      'export async function searchForAddress(',
     );
-    const fnBody =
-      nextFnIndex === -1 ? source.slice(fnStart) : source.slice(fnStart, nextFnIndex);
+    assert.notEqual(functionStart, -1, 'searchForAddress must exist');
+    const nextFunctionIndex = source.indexOf(
+      '\nexport async function ',
+      functionStart + 1,
+    );
+    const functionBody =
+      nextFunctionIndex === -1
+        ? source.slice(functionStart)
+        : source.slice(functionStart, nextFunctionIndex);
 
-    const boolPrefixBlock = fnBody.match(
+    const boolPrefixBlock = functionBody.match(
       /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
     );
     assert.notEqual(
@@ -284,4 +390,3 @@ describe('service/address-service.js — bool_prefix fuzziness (ADR 027)', () =>
     );
   });
 });
-

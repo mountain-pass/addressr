@@ -16,6 +16,7 @@ import {
 import { version } from '../version';
 import crypto from 'node:crypto';
 import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
+import { validateReadShadowConfig } from './read-shadow';
 
 var app = express();
 
@@ -553,6 +554,7 @@ const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
 export function startRest2Server() {
   validateProxyAuthConfig();
+  validateReadShadowConfig();
   app.use((_request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(

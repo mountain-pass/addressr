@@ -42,6 +42,12 @@ Runs addressr on their own infrastructure for sovereignty, privacy, or cost reas
 | -------- | ----------------------------------- | ------------------------------------------------------------------------------- |
 | JTBD-200 | Protect the chosen gateway boundary | [JTBD-200](self-hosted-operator/JTBD-200-protect-gateway-boundary.validated.md) |
 
+### Proposed
+
+| ID       | Job                                                                            | File                                                                                         |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| JTBD-201 | Validate a new search backend with realistic production traffic before cutover | [JTBD-201](self-hosted-operator/JTBD-201-validate-search-backend-before-cutover.proposed.md) |
+
 ## AI Assistant User
 
 Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or similar AI tools.

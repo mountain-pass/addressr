@@ -20,6 +20,7 @@ import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { expandRangeAliases } from './range-expansion';
 import { fetchPackageData } from './gnaf-package-fetch';
+import { mirrorRequest } from '../src/read-shadow';
 import crypto from 'node:crypto';
 import { glob } from 'glob';
 
@@ -931,7 +932,9 @@ async function loadAddressDetails(
 
 export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
   //  const searchString = '657 The Entrance Road'; //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';
-  const searchResp = await globalThis.esClient.search({
+  // ADR 031: hoist params so the same body object is shared by the primary
+  // and the fire-and-forget shadow mirror — no double-build cost.
+  const searchParameters = {
     index: ES_INDEX_NAME,
     body: {
       from: (p - 1 || 0) * pageSize,
@@ -992,7 +995,13 @@ export async function searchForAddress(searchString, p, pageSize = PAGE_SIZE) {
         },
       },
     },
-  });
+  };
+  const searchResp = await globalThis.esClient.search(searchParameters);
+  // ADR 031 read-shadow: fire-and-forget mirror to a configurable secondary
+  // OpenSearch backend so v2 caches warm with realistic production query
+  // distribution before cutover. Returns synchronously; failures swallowed.
+  // No-op when ADDRESSR_SHADOW_HOST is unset (default).
+  mirrorRequest({ method: 'search', params: searchParameters });
   logger('hits', JSON.stringify(searchResp.body.hits, undefined, 2));
   return searchResp;
 }

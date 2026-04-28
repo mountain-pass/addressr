@@ -6,6 +6,7 @@ import { createServer } from 'node:http';
 import { load } from 'js-yaml';
 import pathUtil from 'node:path';
 import { initializeMiddleware } from 'swagger-tools';
+import { validateReadShadowConfig } from './src/read-shadow';
 
 var app = express();
 
@@ -94,6 +95,8 @@ export function swaggerInit() {
 let server;
 
 export function startServer() {
+  // ADR 031: fail loudly at startup if read-shadow env vars are misconfigured.
+  validateReadShadowConfig();
   app.use((request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(
