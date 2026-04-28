@@ -19,8 +19,7 @@ import {
 import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { expandRangeAliases } from './range-expansion';
-import { Keyv } from 'keyv';
-import { KeyvFile } from 'keyv-file';
+import { fetchPackageData } from './gnaf-package-fetch';
 import crypto from 'node:crypto';
 import { glob } from 'glob';
 
@@ -29,9 +28,9 @@ const fsp = fs.promises;
 var logger = debug('api');
 var error = debug('error');
 
-const cache = new Keyv({
-  store: new KeyvFile({ filename: 'target/keyv-file.msgpack' }),
-});
+// `cache`, `ONE_DAY_MS`, and `THIRTY_DAYS_MS` previously lived here for
+// fetchPackageData. Moved to ./gnaf-package-fetch.js along with that
+// function — see the comment above its `import` and P033.
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
@@ -41,11 +40,6 @@ function getCoveredStates() {
 }
 
 const COVERED_STATES = getCoveredStates();
-
-const ONE_DAY_S = 60 /*sec*/ * 60 /*min*/ * 24; /*hours*/
-
-const ONE_DAY_MS = 1000 * ONE_DAY_S;
-const THIRTY_DAYS_MS = ONE_DAY_MS * 30;
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
 
@@ -87,47 +81,13 @@ export async function setAddresses(addr) {
   //logger(await searchForAddress('657 The Entrance Road')); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
-// need to try proxying this to modify the headers if we want to use got's cache implementation
-
-// SEE https://data.gov.au/data/dataset/19432f89-dc3a-4ef3-b943-5326ef1dbecc
-const GNAF_PACKAGE_URL =
-  process.env.GNAF_PACKAGE_URL ||
-  'https://data.gov.au/data/api/3/action/package_show?id=19432f89-dc3a-4ef3-b943-5326ef1dbecc';
-
-async function fetchPackageData() {
-  const packageUrl = GNAF_PACKAGE_URL;
-  // See if we have the value in cache
-  const cachedResponse = await cache.get(packageUrl);
-  logger('cached gnaf package data', cachedResponse);
-  let age = 0;
-  if (cachedResponse !== undefined) {
-    cachedResponse.headers['x-cache'] = 'HIT';
-    const created = new Date(cachedResponse.headers.date);
-    logger('created', created);
-    age = Date.now() - created;
-    if (age <= ONE_DAY_MS) {
-      return cachedResponse;
-    }
-  }
-  // cached value was older than one day, so go fetch
-  try {
-    const fetchResponse = await fetch(packageUrl);
-    const body = await fetchResponse.text();
-    const headers = Object.fromEntries(fetchResponse.headers.entries());
-    logger('fresh gnaf package data', { body, headers });
-    await cache.set(packageUrl, { body, headers });
-    headers['x-cache'] = 'MISS';
-    return { body, headers };
-  } catch (error_) {
-    // we were unable to fetch. if we have cached value that isn't stale, return in
-    if (cachedResponse !== undefined && age < THIRTY_DAYS_MS) {
-      cachedResponse.headers['warning'] = '110	custom/1.0 "Response is Stale"';
-      return cachedResponse;
-    }
-    // otherwise, throw the original network error
-    throw error_;
-  }
-}
+// fetchPackageData and the GNAF_PACKAGE_URL constant moved to
+// ./gnaf-package-fetch.js so the data.gov.au CKAN fetch is testable in
+// raw Node ESM (this file uses babel-only bare imports). See P033 for the
+// source-inspection anti-pattern that motivated the extraction. The new
+// module also adds a Mozilla-prefixed compatible-mode User-Agent header
+// required by data.gov.au's CloudFront WAF (without it, fetch returns
+// HTTP 403 — surfaced by run 25032179791).
 
 const GNAF_DIR = process.env.GNAF_DIR || `target/gnaf`;
 
