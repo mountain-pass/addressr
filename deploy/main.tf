@@ -119,6 +119,46 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     value     = var.elastic_username
     resource  = ""
   }
+
+  # ADR 031 read-shadow: fire-and-forget mirror of /addresses search and
+  # /addresses/{id} to the v2 OpenSearch domain so its caches warm with
+  # realistic production query distribution before ADR 029 step 7 cutover.
+  # Default-off behaviour kicks in when ADDRESSR_SHADOW_HOST is unset; here
+  # we set it to v2's endpoint so the soak window begins. Username/password
+  # reuse v1's creds per ADR 029 step 4 design (same fine-grained-access
+  # user). Shadow failures are swallowed in src/read-shadow.js so primary
+  # /addresses responses are unaffected.
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_HOST"
+    value     = module.opensearch_v2.endpoint
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PASSWORD"
+    value     = var.elastic_password
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PORT"
+    value     = "443"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PROTOCOL"
+    value     = "https"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_USERNAME"
+    value     = var.elastic_username
+    resource  = ""
+  }
+
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "NODE_ENV"
