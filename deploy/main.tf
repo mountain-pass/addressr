@@ -137,7 +137,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ADDRESSR_SHADOW_PASSWORD"
-    value     = var.elastic_password
+    value     = var.elastic_v2_password
     resource  = ""
   }
   setting {
@@ -155,7 +155,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ADDRESSR_SHADOW_USERNAME"
-    value     = var.elastic_username
+    value     = var.elastic_v2_username
     resource  = ""
   }
 
@@ -643,8 +643,15 @@ module "opensearch_v2" {
 
   name                 = var.elastic_v2_name
   engine_version       = var.elastic_v2_engine_version
-  master_user_name     = var.elastic_username
-  master_user_password = var.elastic_password
+  # ADR 029 amendment 2026-04-29: v2 master user is decoupled from v1's. The
+  # original ADR 029 step 4 design said "v2 reuses creds" but in practice TFC's
+  # var.elastic_password drifted from EB's ELASTIC_PASSWORD, causing v2 to
+  # silently 401 every shadow request and invalidating the soak window. ADR 030
+  # Consequences now records "distinct credentials per parallel domain" as a
+  # deliberate property of the parallel-domain pattern. var.elastic_host still
+  # flips alone at cutover (ADR 029 step 7); only the cred plane is decoupled.
+  master_user_name     = var.elastic_v2_username
+  master_user_password = var.elastic_v2_password
 
   # 2 nodes match v1 (search-addressr3) AZ posture and let replicas assign.
   # Brought forward from plan step 6a after step 5's WA leg failed against the

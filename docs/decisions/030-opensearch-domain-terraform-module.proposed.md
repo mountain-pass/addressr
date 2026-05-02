@@ -77,6 +77,7 @@ The root `deploy/main.tf` calls the module once per domain. ADR 029 Phase 1 adds
 
 - `search-addressr3-…` remains unmanaged until it is destroyed at the end of ADR 029 Phase 1 soak. The asymmetry is explicit and time-bounded.
 - Module shape is the conventional Terraform module layout; no architectural innovation, low maintenance burden
+- **Distinct credentials per parallel domain (added 2026-04-29).** Each parallel domain instance (v1 active, v2 candidate; future v2 active, v3 candidate) carries its own master*user_name/password sourced from its own GHA secret + TFC workspace variable. The original ADR 029 step 4 design said "v2 reuses v1 creds for cutover simplicity" but in practice that aliasing collapses 4 storage locations (TFC v1, TFC v2, GHA v1, GHA v2) into a single `var.elastic_password` whose value can drift unobserved between TFC's stored value and EB's deployed env var. P028 was the first realised consequence: shadow silently 401'd every request for the entire ADR 031 soak window. Treat distinct creds per parallel domain as a deliberate property of the parallel-domain pattern, not an emergency fix during one cutover. Phase 2 (2.x → 3.x) will use `var.elastic_v3*\*` with the same shape.
 
 ### Bad
 

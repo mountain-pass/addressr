@@ -308,6 +308,16 @@ This ADR's outcome is satisfied when:
   v2 p95 ≤ 1.5× v1 p95.
 - Primary-path invariant (≤ 1 ms p95 delta with shadow on vs off) is verified
   via a back-to-back k6 pair against v1 with shadow off vs on.
+- **Soak-validity check (added 2026-04-29 after P028)**: before declaring the
+  soak window valid, verify that shadow requests are returning **2xx** on the
+  shadow target — not just that mirror invocations are being attempted.
+  The original soak gate gated on shadow invocation count (`mirrorRequest`
+  reaching the shadow client) but not on shadow HTTP status; P028 produced a
+  pathological 100%-401 case where invocations occurred and primary responses
+  were unaffected (all swallowed via `swallowError`) yet zero cache warming
+  happened. Concrete check: `aws elasticbeanstalk describe-configuration-settings`
+  for `ADDRESSR_SHADOW_*`, then `curl -u USER:PASS https://${ADDRESSR_SHADOW_HOST}/addressr/_count`
+  must return 200. If 401, soak window is invalid; restart after fixing creds.
 
 ## Reassessment Criteria
 

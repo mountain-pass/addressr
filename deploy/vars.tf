@@ -78,3 +78,15 @@ variable "elastic_v2_engine_version" {
   default     = "OpenSearch_2.19"
   description = "ADR 029 Phase 1: engine version for the v2 domain. Phase 2 will override to OpenSearch_3.x."
 }
+variable "elastic_v2_username" {
+  type      = string
+  sensitive = true
+  nullable  = false
+  description = "ADR 029 Phase 1 amendment 2026-04-29: master user for the v2 OpenSearch domain. Decoupled from var.elastic_username to prevent silent TFC/EB drift from re-introducing P028's 401 failure mode. Sourced from GHA secret TF_VAR_ELASTIC_V2_USERNAME via release.yml."
+}
+variable "elastic_v2_password" {
+  type      = string
+  sensitive = true
+  nullable  = false
+  description = "ADR 029 Phase 1 amendment 2026-04-29: master password for the v2 OpenSearch domain. Decoupled from var.elastic_password. Sourced from GHA secret TF_VAR_ELASTIC_V2_PASSWORD via release.yml. The value in TFC must equal the GHA secret AND the EB ADDRESSR_SHADOW_PASSWORD env var; divergence between any of these three is the failure mode P028 captured."
+}

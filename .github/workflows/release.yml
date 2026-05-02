@@ -143,6 +143,11 @@ jobs:
           TF_VAR_elastic_host: ${{ secrets.TF_VAR_elastic_host }}
           TF_VAR_elastic_password: ${{ secrets.TF_VAR_elastic_password }}
           TF_VAR_elastic_username: ${{ secrets.TF_VAR_elastic_username }}
+          # ADR 029 amendment 2026-04-29: distinct creds for v2 to fix P028's
+          # silent 401 (v2 master user no longer aliases v1's; cutover still
+          # flips only var.elastic_host).
+          TF_VAR_elastic_v2_username: ${{ secrets.TF_VAR_ELASTIC_V2_USERNAME }}
+          TF_VAR_elastic_v2_password: ${{ secrets.TF_VAR_ELASTIC_V2_PASSWORD }}
           TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
           TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
           TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
@@ -157,6 +162,8 @@ jobs:
             TF_VAR_elastic_host
             TF_VAR_elastic_password
             TF_VAR_elastic_username
+            TF_VAR_elastic_v2_username
+            TF_VAR_elastic_v2_password
             TF_VAR_aws_secret_key
             TF_VAR_aws_access_key
             TF_VAR_proxy_auth_header
