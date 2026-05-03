@@ -1,7 +1,7 @@
 # Problem Backlog
 
-> Last reviewed: 2026-04-19T00:00:00Z
-> Run `/wr-itil:manage-problem review` to refresh.
+> Last reviewed: 2026-05-03 — P035 opened (read-shadow soak validation has multiple blind spots — silent failures across creds, deletion, and firing). Backlog has accumulated tickets since 2026-04-19 (P027–P035 not yet ranked); next `/wr-itil:review-problems` invocation will perform a full re-rank and proper render. Last full WSJF review: 2026-04-19.
+> Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
@@ -19,6 +19,7 @@
 | 4.5  | P014 | Invalid address ID returns 500 not 404                | 9 (Medium) | Open        | M      | Error handling exists but untested; null-check gap          |
 | 8.0  | P004 | release:watch script reports false negative           | 4 (Low)    | Known Error | S      | Fix released 2026-04-19; awaiting verify on next release    |
 | 4.0  | P024 | Architect agent misses performance implications       | 8 (Medium) | Open        | M      | Governance tooling blind spot                               |
+| 3.0  | P035 | Read-shadow soak validation has multiple blind spots  | 12 (High)  | Open        | L      | Class-of-issue ticket; debug endpoint + CW alarms next      |
 | 3.0  | P015 | Range-number addresses not findable by base number    | 12 (High)  | Open        | L      | Hypothesis only; needs OpenSearch explain investigation     |
 | 2.5  | P023 | Cross-origin root `/` not browser-cached              | 10 (High)  | Open        | L      | Multi-layer (origin CORS + RapidAPI gateway + SDK)          |
 
