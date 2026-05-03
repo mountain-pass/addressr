@@ -51,6 +51,20 @@ const DEFAULT_TIMEOUT_MS = 3000;
 let cachedClient;
 let cachedClientFingerprint;
 
+// P035: in-memory counters surfaced via /debug/shadow-config so an operator
+// can answer "is shadow firing?" in <200ms without ssh-ing into EB. Reset
+// at process boot; CloudWatch alarms (separate P035 task) cover the
+// persistent + cross-instance surface. Increments are JS-atomic on the
+// single-threaded event loop; no shared-memory worker threads in this
+// process, so no race protection needed. Number.MAX_SAFE_INTEGER is 2^53-1
+// — counter overflow horizon at 1000 q/s is ~285,000 years; not a concern.
+let shadowAttempts = 0;
+let shadowSuccesses = 0;
+let shadowFailures = 0;
+/** @type {{ class: 'AbortError' | 'ConnectionError' | 'AuthError' | 'UnknownError', ts: string } | null} */
+// eslint-disable-next-line unicorn/no-null -- explicit null preserves JSON serialization shape (`lastError: null` vs property dropped when undefined); contract documented in getShadowStatus JSDoc
+let lastShadowError = null;
+
 function isNonEmpty(value) {
   return typeof value === 'string' && value.length > 0;
 }
@@ -123,7 +137,34 @@ function getTimeoutMs(environment) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
 }
 
+// Closed enum mapping (P035, ADR 024 information-disclosure remediation):
+// arbitrary error shapes from the OpenSearch client get bucketed into a
+// fixed-size set so the /debug/shadow-config response cannot leak free-text
+// (which routinely contains hostnames, IPs, ARNs in OpenSearch errors).
+function classifyError(reason) {
+  if (reason && reason.name === 'AbortError') return 'AbortError';
+  if (
+    reason &&
+    (reason.code === 'ECONNREFUSED' ||
+      reason.code === 'ENOTFOUND' ||
+      reason.code === 'ETIMEDOUT' ||
+      reason.code === 'EAI_AGAIN' ||
+      reason.code === 'ECONNRESET')
+  ) {
+    return 'ConnectionError';
+  }
+  if (reason && (reason.statusCode === 401 || reason.statusCode === 403)) {
+    return 'AuthError';
+  }
+  return 'UnknownError';
+}
+
 function swallowError(reason) {
+  shadowFailures += 1;
+  lastShadowError = {
+    class: classifyError(reason),
+    ts: new Date().toISOString(),
+  };
   if (reason && reason.name === 'AbortError') {
     error('read-shadow: request aborted by timeout');
     return;
@@ -162,6 +203,7 @@ export function mirrorRequest({
   if (!client) {
     return; // feature disabled (HOST unset)
   }
+  shadowAttempts += 1;
   const timeoutMs = getTimeoutMs(environment);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -180,10 +222,19 @@ export function mirrorRequest({
     clearTimeout(timer);
     return;
   }
+  // Architect §3 / risk R2: success-callback body is wrapped in try so a
+  // counter-increment exception (or any other synchronous throw) cannot
+  // propagate as an unhandled rejection. Failure paths land in swallowError
+  // via .catch which is itself try-shaped.
   promise
     .then(() => {
       clearTimeout(timer);
-      logger('read-shadow: %s ok', method);
+      try {
+        shadowSuccesses += 1;
+        logger('read-shadow: %s ok', method);
+      } catch (callbackError) {
+        swallowError(callbackError);
+      }
       return;
     })
     .catch((error_) => {
@@ -192,9 +243,67 @@ export function mirrorRequest({
     });
 }
 
+/**
+ * Returns a snapshot of read-shadow runtime state for the
+ * `/debug/shadow-config` endpoint. Pure read of module-scoped state plus
+ * env-var presence checks; no I/O, no env-var values returned, no free-text
+ * error messages, no stack traces.
+ *
+ * Response shape:
+ * - `hostSet` / `credentialsSet`: booleans only — env vars present, not their values.
+ * - `clientConstructed`: true after the first `mirrorRequest` invocation that
+ *   reached the client construction step (i.e., HOST set and shadow has been
+ *   exercised at least once since boot).
+ * - `attempts` / `successes` / `failures`: integer counters since process start.
+ *   Reset on process restart; CloudWatch covers persistent metrics.
+ * - `lastError.class`: closed enum, never free text. One of:
+ *   - `'AbortError'` — request timeout (AbortController fired)
+ *   - `'ConnectionError'` — TCP/TLS/DNS/network reach failure (ECONNREFUSED, ENOTFOUND, etc.)
+ *   - `'AuthError'` — 401/403 from shadow target
+ *   - `'UnknownError'` — anything else (rare; the catch-all)
+ * - `lastError.ts`: ISO 8601 timestamp of the last failure.
+ *
+ * P035 / ADR 024 information-disclosure remediation: the bounded enum
+ * mechanically prevents leakage of hostnames, IPs, ARNs, or stack traces
+ * even though the endpoint is on the proxy-auth ALLOWLIST.
+ *
+ * @returns {{
+ *   hostSet: boolean,
+ *   credentialsSet: boolean,
+ *   clientConstructed: boolean,
+ *   attempts: number,
+ *   successes: number,
+ *   failures: number,
+ *   lastError: { class: 'AbortError' | 'ConnectionError' | 'AuthError' | 'UnknownError', ts: string } | null,
+ * }}
+ */
+export function getShadowStatus(environment = process.env) {
+  return {
+    hostSet: isNonEmpty(environment[HOST_VAR]),
+    credentialsSet:
+      isNonEmpty(environment[USERNAME_VAR]) &&
+      isNonEmpty(environment[PASSWORD_VAR]),
+    clientConstructed: !!cachedClient,
+    attempts: shadowAttempts,
+    successes: shadowSuccesses,
+    failures: shadowFailures,
+    lastError: lastShadowError,
+  };
+}
+
 // Internal: lets unit tests reset the singleton between cases. Not part of
 // the public contract; flagged with a leading underscore by convention.
 export function _resetShadowClientForTesting() {
   cachedClient = undefined;
   cachedClientFingerprint = undefined;
+}
+
+// Internal: lets unit tests reset counters between cases. Same convention
+// as _resetShadowClientForTesting.
+export function _resetShadowCountersForTesting() {
+  shadowAttempts = 0;
+  shadowSuccesses = 0;
+  shadowFailures = 0;
+  // eslint-disable-next-line unicorn/no-null -- match initial value semantics for the public lastError contract
+  lastShadowError = null;
 }

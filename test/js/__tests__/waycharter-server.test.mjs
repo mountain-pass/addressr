@@ -47,7 +47,7 @@ describe('startRest2Server — read-shadow startup validator (ADR 031)', () => {
     const source = await readFile(serverPath, 'utf8');
     assert.match(
       source,
-      /import\s+\{\s*validateReadShadowConfig\s*\}\s+from\s+['"]\.\/read-shadow['"]/,
+      /import\s+\{[^}]*validateReadShadowConfig[^}]*\}\s+from\s+['"]\.\/read-shadow['"]/,
       'src/waycharter-server.js must import validateReadShadowConfig from ./read-shadow',
     );
   });
@@ -65,6 +65,62 @@ describe('startRest2Server — read-shadow startup validator (ADR 031)', () => {
       fnBody,
       /validateReadShadowConfig\(\)/,
       'startRest2Server must call validateReadShadowConfig() at startup (ADR 031)',
+    );
+  });
+});
+
+// P035: /debug/shadow-config endpoint must be registered as a waycharter
+// resource type so an operator can introspect runtime shadow state.
+// Source-inspection here per the file's existing precedent (P033 caveat at
+// the file head); behavioural integration coverage lives in the release.yml
+// post-deploy smoke step, which exercises the full route + middleware
+// chain against the deployed server.
+describe('startRest2Server — /debug/shadow-config endpoint (P035)', () => {
+  it('imports getShadowStatus from ./read-shadow', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    assert.match(
+      source,
+      /import\s+\{[^}]*getShadowStatus[^}]*\}\s+from\s+['"]\.\/read-shadow['"]/,
+      'src/waycharter-server.js must import getShadowStatus from ./read-shadow',
+    );
+  });
+
+  it('registers /debug/shadow-config as a waycharter resource type', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    const startIndex = source.indexOf('export function startRest2Server');
+    const endIndex = source.indexOf('\nexport ', startIndex + 1);
+    const fnBody = source.slice(
+      startIndex,
+      endIndex === -1 ? source.length : endIndex,
+    );
+    assert.match(
+      fnBody,
+      /registerResourceType\(\{[\s\S]*?path:\s*['"]\/debug\/shadow-config['"]/,
+      'startRest2Server must register /debug/shadow-config via waycharter.registerResourceType',
+    );
+  });
+
+  it('the /debug/shadow-config loader calls getShadowStatus()', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    const blockStart = source.indexOf("path: '/debug/shadow-config'");
+    assert.notEqual(blockStart, -1, '/debug/shadow-config block must exist');
+    // Look at the next ~600 characters which should contain the loader body
+    const block = source.slice(blockStart, blockStart + 600);
+    assert.match(
+      block,
+      /getShadowStatus\(\)/,
+      '/debug/shadow-config loader must call getShadowStatus() to populate the response body',
+    );
+  });
+
+  it('the /debug/shadow-config response sets cache-control: no-cache', async () => {
+    const source = await readFile(serverPath, 'utf8');
+    const blockStart = source.indexOf("path: '/debug/shadow-config'");
+    const block = source.slice(blockStart, blockStart + 600);
+    assert.match(
+      block,
+      /'cache-control':\s*['"]no-cache['"]/,
+      '/debug/shadow-config must set cache-control: no-cache so monitoring tools see live counters',
     );
   });
 });

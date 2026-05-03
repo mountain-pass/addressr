@@ -387,3 +387,338 @@ describe('mirrorRequest (ADR 031)', () => {
     assert.equal(calls[0].hasSignal, true);
   });
 });
+
+// P035: getShadowStatus exposes runtime counters + presence flags so the
+// /debug/shadow-config endpoint can answer "is shadow firing?" as a 200ms
+// HTTP GET. ADR 031 isolation invariant must hold for the new code paths
+// (counter increments cannot impact the primary response).
+const ERROR_CLASSES = new Set([
+  'AbortError',
+  'ConnectionError',
+  'AuthError',
+  'UnknownError',
+]);
+
+describe('getShadowStatus (P035)', () => {
+  let snapshot;
+
+  beforeEach(() => {
+    snapshot = snapshotEnv();
+  });
+
+  afterEach(() => {
+    restoreEnv(snapshot);
+  });
+
+  it('returns all-false / zero counters when shadow is disabled (host unset)', async () => {
+    const {
+      getShadowStatus,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    const status = getShadowStatus();
+    assert.equal(status.hostSet, false);
+    assert.equal(status.credentialsSet, false);
+    assert.equal(status.clientConstructed, false);
+    assert.equal(status.attempts, 0);
+    assert.equal(status.successes, 0);
+    assert.equal(status.failures, 0);
+    assert.equal(status.lastError, null);
+  });
+
+  it('returns hostSet:true when ADDRESSR_SHADOW_HOST is configured', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
+      '../../../src/read-shadow.js'
+    );
+    _resetShadowCountersForTesting();
+
+    const status = getShadowStatus();
+    assert.equal(status.hostSet, true);
+    assert.equal(status.credentialsSet, false);
+  });
+
+  it('returns credentialsSet:false when only one of USERNAME/PASSWORD is set', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    process.env.ADDRESSR_SHADOW_USERNAME = 'user';
+    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
+      '../../../src/read-shadow.js'
+    );
+    _resetShadowCountersForTesting();
+
+    const status = getShadowStatus();
+    assert.equal(status.credentialsSet, false);
+  });
+
+  it('returns credentialsSet:true when both USERNAME and PASSWORD are set', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    process.env.ADDRESSR_SHADOW_USERNAME = 'user';
+    process.env.ADDRESSR_SHADOW_PASSWORD = 'pass';
+    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
+      '../../../src/read-shadow.js'
+    );
+    _resetShadowCountersForTesting();
+
+    const status = getShadowStatus();
+    assert.equal(status.credentialsSet, true);
+  });
+
+  it('clientConstructed flips false → true after the first mirrorRequest call', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      async search() {
+        return { body: {} };
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    assert.equal(getShadowStatus().clientConstructed, false);
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(getShadowStatus().clientConstructed, true);
+  });
+
+  it('counters increment correctly on success path', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      async search() {
+        return { body: {} };
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const status = getShadowStatus();
+    assert.equal(status.attempts, 3);
+    assert.equal(status.successes, 3);
+    assert.equal(status.failures, 0);
+    assert.equal(status.lastError, null);
+  });
+
+  it('counters increment correctly on failure path with ConnectionError class', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      async search() {
+        const error_ = new Error('connect ECONNREFUSED 127.0.0.1:12345');
+        error_.code = 'ECONNREFUSED';
+        throw error_;
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const status = getShadowStatus();
+    assert.equal(status.attempts, 1);
+    assert.equal(status.successes, 0);
+    assert.equal(status.failures, 1);
+    assert.ok(status.lastError);
+    assert.equal(status.lastError.class, 'ConnectionError');
+    assert.match(status.lastError.ts, /^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('captures AbortError class when AbortController fires', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    process.env.ADDRESSR_SHADOW_TIMEOUT_MS = '20';
+    const FakeClient = class {
+      async search(_parameters, options) {
+        return new Promise((_resolve, reject) => {
+          options.signal.addEventListener('abort', () => {
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+          });
+        });
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const status = getShadowStatus();
+    assert.equal(status.failures, 1);
+    assert.equal(status.lastError.class, 'AbortError');
+  });
+
+  it('captures AuthError class when shadow target returns 401', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      async search() {
+        const error_ = new Error('Response Error');
+        error_.statusCode = 401;
+        throw error_;
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const status = getShadowStatus();
+    assert.equal(status.failures, 1);
+    assert.equal(status.lastError.class, 'AuthError');
+  });
+
+  it('lastError.class is always one of the closed-set enum values, never free text (R4)', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    // Drive multiple distinct error shapes to exercise the classifier
+    const errorShapes = [
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+      Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+      Object.assign(new Error('Response Error'), { statusCode: 403 }),
+      new Error('something weird'),
+      'a non-error string rejection',
+    ];
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+
+    for (const shape of errorShapes) {
+      _resetShadowClientForTesting();
+      _resetShadowCountersForTesting();
+      const FakeClient = class {
+        async search() {
+          throw shape;
+        }
+      };
+      mirrorRequest({
+        method: 'search',
+        params: { index: 'addressr', body: {} },
+        ClientClass: FakeClient,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const status = getShadowStatus();
+      assert.ok(
+        ERROR_CLASSES.has(status.lastError.class),
+        `lastError.class must be in closed enum; got: ${status.lastError.class}`,
+      );
+    }
+  });
+
+  it('counter-increment-as-failure-mode: incrementer throwing synchronously does not bubble (architect §3 / risk R2)', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    let unhandled = false;
+    const onUnhandled = () => {
+      unhandled = true;
+    };
+    process.on('unhandledRejection', onUnhandled);
+
+    // Simulate the shadow client returning a Promise whose .then() handler
+    // would throw synchronously when invoked. mirrorRequest's success
+    // callback path must catch this so the failure cannot bubble out as an
+    // unhandled rejection or impact the primary path.
+    const FakeClient = class {
+      // Returns an object whose .then() callback receives a "trapped" body
+      // that throws when accessed. mirrorRequest's success callback only
+      // increments a counter; instead, we simulate a malformed promise
+      // resolution by having .then() invoke its handler with a body that
+      // forces the handler into an exception path on access.
+      async search() {
+        return new Proxy(
+          {},
+          {
+            get(_target, prop) {
+              if (prop === 'then') return undefined; // fall through to plain resolve
+              throw new Error('synthetic throw on body access');
+            },
+          },
+        );
+      }
+    };
+
+    const {
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    assert.doesNotThrow(() =>
+      mirrorRequest({
+        method: 'search',
+        params: { index: 'addressr', body: {} },
+        ClientClass: FakeClient,
+      }),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    process.off('unhandledRejection', onUnhandled);
+    assert.equal(unhandled, false, 'shadow code path must not raise unhandled rejection');
+  });
+});

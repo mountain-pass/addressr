@@ -16,7 +16,7 @@ import {
 import { version } from '../version';
 import crypto from 'node:crypto';
 import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
-import { validateReadShadowConfig } from './read-shadow';
+import { validateReadShadowConfig, getShadowStatus } from './read-shadow';
 
 var app = express();
 
@@ -898,6 +898,22 @@ export function startRest2Server() {
         headers: {
           'cache-control': `public, max-age=${ONE_WEEK}`,
           'content-type': 'application/json',
+        },
+      };
+    },
+  });
+
+  // P035: operator-diagnostic endpoint for read-shadow runtime introspection.
+  // Returns config-presence booleans + counters + closed-enum lastError;
+  // never returns hostnames, secrets, or free-text error messages.
+  // ALLOWLIST'd in src/proxy-auth.js per the debug-endpoint policy.
+  waycharter.registerResourceType({
+    path: '/debug/shadow-config',
+    loader: async () => {
+      return {
+        body: getShadowStatus(),
+        headers: {
+          'cache-control': 'no-cache',
         },
       };
     },

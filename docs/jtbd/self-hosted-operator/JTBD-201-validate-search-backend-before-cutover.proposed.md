@@ -8,6 +8,8 @@ screens:
   - service/address-service.js
   - src/waycharter-server.js
   - swagger.js
+  - src/proxy-auth.js
+  - /debug/shadow-config
 ---
 
 # JTBD-201: Validate a new search backend with realistic production traffic before cutover

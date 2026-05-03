@@ -187,4 +187,118 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
     });
     assert.equal(nextCalled, true);
   });
+
+  // P035: /debug/shadow-config is an operator-diagnostic endpoint per ADR
+  // 024's debug-endpoint policy. Allowlisted because the response shape is
+  // bounded (no free-text, no infra leakage) — see src/read-shadow.js
+  // getShadowStatus JSDoc for the closed enum.
+  it('exempts /debug/shadow-config from enforcement', async () => {
+    process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
+    process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
+    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
+      path: '/debug/shadow-config',
+    });
+    assert.equal(nextCalled, true);
+  });
+});
+
+// Risk-scorer R1: ALLOWLIST is a closed list per ADR 024. This snapshot
+// test asserts exact membership so future accidental widening (e.g. adding
+// an entry without going through architect review) trips the test before
+// the change can land.
+describe('proxy-auth ALLOWLIST membership (ADR 024 closed list)', () => {
+  let snapshot;
+
+  beforeEach(() => {
+    snapshot = {
+      header: process.env.ADDRESSR_PROXY_AUTH_HEADER,
+      value: process.env.ADDRESSR_PROXY_AUTH_VALUE,
+    };
+    process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
+    process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
+  });
+
+  afterEach(() => {
+    if (snapshot.header === undefined) {
+      delete process.env.ADDRESSR_PROXY_AUTH_HEADER;
+    } else {
+      process.env.ADDRESSR_PROXY_AUTH_HEADER = snapshot.header;
+    }
+    if (snapshot.value === undefined) {
+      delete process.env.ADDRESSR_PROXY_AUTH_VALUE;
+    } else {
+      process.env.ADDRESSR_PROXY_AUTH_VALUE = snapshot.value;
+    }
+  });
+
+  // Local copy of the middleware harness — the original lives inside the
+  // first describe's closure. Duplicated rather than hoisted to keep the
+  // diff for this test localised.
+  function runMiddleware(mw, { path = '/addresses', headers = {} } = {}) {
+    return new Promise((resolve) => {
+      const req = {
+        path,
+        headers: Object.fromEntries(
+          Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
+        ),
+        get(name) {
+          return this.headers[name.toLowerCase()];
+        },
+      };
+      const res = {
+        statusCode: 200,
+        body: undefined,
+        headersOut: {},
+        status(code) {
+          this.statusCode = code;
+          return this;
+        },
+        json(payload) {
+          this.body = payload;
+          this.headersOut['content-type'] = 'application/json';
+          resolve({ req, res: this, nextCalled: false });
+        },
+      };
+      mw(req, res, () => resolve({ req, res, nextCalled: true }));
+    });
+  }
+
+  it('contains exactly the documented closed list', async () => {
+    const moduleSource = await import('../../../src/proxy-auth.js');
+    const expected = ['/health', '/api-docs', '/debug/shadow-config'];
+    for (const path of expected) {
+      const { nextCalled } = await runMiddleware(
+        moduleSource.proxyAuthMiddleware(),
+        { path },
+      );
+      assert.equal(
+        nextCalled,
+        true,
+        `expected ALLOWLIST path ${path} to be exempt`,
+      );
+    }
+    // Spot-check a sample of paths that MUST NOT be allowlisted. If any
+    // future change widens the list (e.g. broad prefix matching), one of
+    // these will start passing through and the test will fail loudly.
+    const mustNotExempt = [
+      '/addresses',
+      '/addresses/GAACT_123',
+      '/localities',
+      '/debug',
+      '/debug/other-endpoint',
+      '/debug/shadow-config/extra',
+      '/',
+    ];
+    for (const path of mustNotExempt) {
+      const result = await runMiddleware(moduleSource.proxyAuthMiddleware(), {
+        path,
+      });
+      assert.equal(
+        result.nextCalled,
+        false,
+        `path ${path} must NOT be exempt from proxy auth`,
+      );
+    }
+  });
 });

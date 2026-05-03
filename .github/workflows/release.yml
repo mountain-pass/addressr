@@ -184,6 +184,35 @@ jobs:
           echo "Testing /api-docs is reachable without gateway auth (ADR 024 allowlist)..."
           curl -sf --retry 3 --retry-delay 10 -o /dev/null https://backend.addressr.io/api-docs
           echo ""
+
+          # P035 / risk-scorer R3: /debug/shadow-config must be reachable
+          # without gateway auth (ADR 024 allowlist) and must return the
+          # documented JSON shape. Catches the silent-no-op P035 failure
+          # mode automatically on every deploy: if the running addressr-server
+          # process can't see ADDRESSR_SHADOW_HOST, hostSet will be false
+          # and we'll know within minutes of deploy instead of hours via
+          # operator probing. The endpoint must also respect the closed
+          # lastError.class enum — we assert it against null OR enum members.
+          echo "P035 R3: probing /debug/shadow-config..."
+          shadow_body=$(curl -sf --retry 3 --retry-delay 10 \
+            https://backend.addressr.io/debug/shadow-config)
+          echo "$shadow_body" | jq -e '.' > /dev/null || {
+            echo "/debug/shadow-config did not return valid JSON"; exit 1;
+          }
+          host_set=$(echo "$shadow_body" | jq -r '.hostSet')
+          if [ "$host_set" != "true" ]; then
+            echo "/debug/shadow-config hostSet=$host_set, expected true (shadow env vars not visible to running process)"
+            echo "body: $shadow_body"; exit 1
+          fi
+          last_error_class=$(echo "$shadow_body" | jq -r '.lastError.class // "null"')
+          case "$last_error_class" in
+            null|AbortError|ConnectionError|AuthError|UnknownError) ;;
+            *)
+              echo "/debug/shadow-config lastError.class=$last_error_class, expected null or one of the closed enum values"
+              exit 1 ;;
+          esac
+          echo "P035 R3 ok: hostSet=true, lastError.class=$last_error_class"
+          echo ""
           # ADR 024 bypass probe: direct-without-header must be rejected.
           # Any status other than 401 fails the release — enforcement is the
           # steady state (ADR 024 accepted, P009 closed).
