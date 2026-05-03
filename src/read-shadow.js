@@ -94,8 +94,13 @@ function buildClientOptions(environment) {
   const protocol = environment[PROTOCOL_VAR] || 'https';
   const username = environment[USERNAME_VAR];
   const password = environment[PASSWORD_VAR];
+  // P035 production-discovered bug: base64-derived passwords commonly contain
+  // '/', '+', '=', ':' which are URL-reserved. Without encoding, the resulting
+  // node URL `https://user:pa/ss@host:443` makes `new Client(...)` throw
+  // synchronously (URL parser treats '/' as path delimiter). Encode the
+  // credentials so any password the operator generates is safe.
   const node = isNonEmpty(username)
-    ? `${protocol}://${username}:${password}@${host}:${port}`
+    ? `${protocol}://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}`
     : `${protocol}://${host}:${port}`;
   return { node };
 }

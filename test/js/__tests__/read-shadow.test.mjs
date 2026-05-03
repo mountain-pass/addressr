@@ -670,6 +670,54 @@ describe('getShadowStatus (P035)', () => {
     }
   });
 
+  it('builds a valid OpenSearch client URL when password contains URL-reserved characters (P035 production-discovered bug)', async () => {
+    // The base64-derived passwords we generate contain '/', '+', '=', ':',
+    // '@' — all reserved in URLs. Without URL-encoding the credentials,
+    // `new Client({ node: 'https://user:pa/ss@host:443' })` throws
+    // synchronously because the URL parser interprets '/' as path delimiter.
+    // Production manifestation: /debug/shadow-config showed
+    // attempts=0, failures=7 because every shadow request swallowed the
+    // synchronous URL-parse throw before reaching the search call.
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    process.env.ADDRESSR_SHADOW_USERNAME = 'elastic';
+    // Realistic shape: 33 chars, contains '/' and '+' from base64
+    process.env.ADDRESSR_SHADOW_PASSWORD = 'Vpk2r4Qy/abc+def=ghi:jkl@mno/pqr!';
+    const constructed = [];
+    const FakeClient = class {
+      constructor(options) {
+        // Ensure the constructor actually receives a parseable URL —
+        // i.e., one we could pass to new URL() without throwing.
+        new URL(options.node); // would throw if the URL is malformed
+        constructed.push(options);
+      }
+      async search() {
+        return { body: {} };
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    // The bug manifests as: attempts=0, failures=1, no constructor call.
+    // Fixed shape: attempts=1, failures=0, constructor called with a parseable URL.
+    const status = getShadowStatus();
+    assert.equal(constructed.length, 1, 'shadow client constructor must be called with a parseable URL');
+    assert.equal(status.attempts, 1, 'mirrorRequest must reach the attempt counter (URL must be valid)');
+    assert.equal(status.failures, 0, 'no synchronous URL-parse throw should have fired');
+  });
+
   it('counter-increment-as-failure-mode: incrementer throwing synchronously does not bubble (architect §3 / risk R2)', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     let unhandled = false;
