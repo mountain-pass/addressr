@@ -1,6 +1,7 @@
 const waitPort = require('wait-port');
 const elasticsearch = require('@opensearch-project/opensearch');
 import debug from 'debug';
+import { buildClientNode } from '../src/client-node-url.js';
 const logger = debug('api');
 const error = debug('error');
 
@@ -290,9 +291,17 @@ export async function esConnect(
 
         while (true) {
           try {
-            const node = ELASTIC_USERNAME
-              ? `${ELASTIC_PROTOCOL}://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${eshost}:${esport}`
-              : `${ELASTIC_PROTOCOL}://${eshost}:${esport}`;
+            // P036: URL-encode credentials so passwords containing URL-reserved
+            // chars ('/', '+', '=', ':', '!') don't make `new Client({ node })`
+            // throw `TypeError: Invalid URL`. Shared helper used here AND in
+            // src/read-shadow.js so the fix cannot drift between paths.
+            const node = buildClientNode({
+              protocol: ELASTIC_PROTOCOL,
+              username: ELASTIC_USERNAME,
+              password: ELASTIC_PASSWORD,
+              host: eshost,
+              port: esport,
+            });
             const esClientOptions = {
               node,
               // ...(ELASTIC_USERNAME &&
