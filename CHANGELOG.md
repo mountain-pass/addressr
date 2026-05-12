@@ -1,5 +1,12 @@
 # @mountainpass/addressr
 
+## 2.6.4
+
+### Patch Changes
+
+- b953c49: Retry P036 v2 OpenSearch recreate deploy (prior attempt failed on a
+  stale TFC workspace lock; now force-unlocked).
+
 ## 2.6.3
 
 ### Patch Changes
