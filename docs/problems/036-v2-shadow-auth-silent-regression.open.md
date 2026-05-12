@@ -93,8 +93,16 @@ Three remaining-but-unverifiable hypotheses for who/what changed it:
 - [x] CloudTrail lookup for `es.amazonaws.com` non-read events on `search-addressr4` — none
 - [ ] Enable OpenSearch domain audit logs on `search-addressr4` so the next instance of this failure is fully traceable (P036 + P035 follow-up)
 - [ ] Verify the 2026-05-02 snapshot restore did NOT include `.opendistro_security` — list snapshot indices via `_snapshot/cs-automated-enc/<id>` and confirm only `addressr` was specified
-- [ ] Apply the rotate-and-sync workaround documented above to restore the soak window
-- [ ] Once soak is healthy again: re-run the k6 v2-leg comparison and re-evaluate ADR 029 step 7 cutover
+- [x] Apply the rotate-and-sync workaround — **completed 2026-05-12** via destroy + recreate path:
+  - Cluster password rotation via direct UpdateDomainConfig got stuck for 10h+ ("MasterUserOptions" change PROCESSING with no progress); user manually deleted `search-addressr4` to break the stuck state
+  - Triple-deploy sequence required to fully recover:
+    - v2.6.3 release (PR #475) — terraform recreate of v2 OpenSearch domain; deploy failed on TFC workspace state lock (residual from cancelled 10h prior run); user force-unlocked TFC workspace
+    - v2.6.4 release (PR #476) — terraform recreate succeeded on OpenSearch resource (cluster came up GREEN with new password); EB resource failed when 1 of 2 instances timed out during app deploy → terraform rolled back EB env vars to OLD password (cluster on NEW, EB on OLD — inverse of original P036)
+    - v2.6.5 release (PR #477) — terraform re-applied EB env vars; deploy succeeded; EB Health: Green; smoke check passed
+  - **Final state verified 2026-05-12T07:55Z**: EB `ADDRESSR_SHADOW_PASSWORD` (36-char) authenticates against v2 cluster (cluster returns HTTP 200 `_cluster/health` GREEN with EB-resident creds)
+- [ ] Run `populate-search-domain.yml` to load `addressr` index into the rebuilt v2 cluster (v2 currently has only system indices; `/debug/shadow-config` reports `UnknownError` because shadow searches hit `index_not_found_exception` 404)
+- [ ] Once index is populated: confirm `/debug/shadow-config` shows `successes > 0, failures = 0` then start the ADR 031 soak clock (≥48h business traffic)
+- [ ] After soak passes: re-run the k6 v2-leg comparison and re-evaluate ADR 029 step 7 cutover
 
 ## Dependencies
 
