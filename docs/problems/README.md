@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-05-11 — **README reconciled** — 17 drift entries corrected: P003/P012/P020/P022 (closed), P016/P021/P024 (parked), P025/P026/P027/P029/P030/P031/P032/P033/P034 (missing open), P028 (missing known-error). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF values for newly-added rows are deferred estimates pending next `/wr-itil:review-problems` full re-rank.
+> Last reviewed: 2026-05-12 — **README reconciled** — 1 drift entry corrected: P036 (missing open). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF deferred pending next `/wr-itil:review-problems`.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -16,6 +16,7 @@
 | 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                     | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank              |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                         | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank              |
 | 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive             | 6 (Medium) | Open        | S      | Deferred estimate; needs review-problems re-rank              |
+| 6.0  | P036 | v2 shadow auth silently regressed mid-soak                            | 12 (High)  | Open        | M      | Triple-deploy recovery shipped; soak restart pending populate |
 | 4.5  | P014 | Invalid address ID returns 500 not 404                                | 9 (Medium) | Open        | M      | Error handling exists but untested; null-check gap            |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium) | Open        | M      | Deferred estimate; needs review-problems re-rank              |
 | 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses         | 4 (Low)    | Open        | S      | Deferred estimate; needs review-problems re-rank              |
