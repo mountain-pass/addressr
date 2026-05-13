@@ -1,9 +1,16 @@
 # Problem 036: v2 shadow auth silently regressed mid-soak
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-05-11
+**Parked**: 2026-05-14
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Likely (3) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
+
+## Parked
+
+**Reason**: ADR 029 Phase 1 rolled back 2026-05-14 — the v2 OpenSearch domain (`search-addressr4`) this problem manifested on is being decommissioned. The class-of-issue learning (AWS-managed FGAC clobber pattern on cluster blue/green ops, 3 observations) is preserved in this ticket body for the next Phase 1 attempt; P035 covers the broader observability-gap class.
+
+**Un-park trigger**: ADR 029 Phase 1 re-attempt fires (new v2/v3 OpenSearch domain provisioned). At that point the class-of-issue investigation tasks (enable audit logs, snapshot security-index check) become actionable again.
 
 ## Description
 

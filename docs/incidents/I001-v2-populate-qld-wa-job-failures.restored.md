@@ -1,6 +1,6 @@
 # Incident I001: v2 OpenSearch populate — QLD and WA state jobs failed
 
-**Status**: Mitigating
+**Status**: Restored
 **Reported**: 2026-05-12 21:01 UTC
 **Severity**: 8 (Moderate) — Impact: Moderate (4) x Likelihood: Likely (2)
 **Scope**: v2 OpenSearch domain `search-addressr4`; ADR 029 cutover gate evaluation. No user-visible impact (v1 serves all production traffic).
@@ -48,7 +48,15 @@
 
 ## Linked Problem
 
-_(none yet — added on restore transition)_
+**P037** — `docs/problems/037-loader-index-close-races-snapshot-no-retry.open.md` — captures the loader root cause (close-index races snapshots; no retry). Stays Open after I001 restored because the loader fix applies to v1's loader path independently of v2.
+
+Also linked (parked alongside this incident): **P036** (FGAC clobber pattern) and **P038** (scale-back tracker) — both parked 2026-05-14 as superseded by the ADR 029 Phase 1 rollback decommission. They un-park if Phase 1 is re-attempted.
+
+## Restored
+
+**Restoration signal**: ADR 029 Phase 1 rolled back 2026-05-14 — the v2 populate workflow (the surface on which QLD + WA failed) no longer needs to run because the v2 domain is being decommissioned. The incident's failure surface is removed by decommission, not by fixing the failure. The underlying loader bug (close-index race + no retry on snapshot_in_progress) remains tracked by P037 and will apply to a future Phase 1 re-attempt's populate workflow if it isn't fixed first.
+
+**Restored**: 2026-05-14
 
 ## Related
 

@@ -286,6 +286,8 @@ or Option 5 (bigger instances) before any cutover.
 
 ## Confirmation
 
+> **Amendment 2026-05-14** — capability is in **default-off posture**. ADR 029 Phase 1 was rolled back; `ADDRESSR_SHADOW_*` env vars removed from the EB resource in `deploy/main.tf`; `src/read-shadow.js`'s `mirrorRequest` no-ops when `ADDRESSR_SHADOW_HOST` is unset. The capability remains shipped and tested in code (no change to `src/`, no change to `test/`); a future search-backend migration re-enables it by reintroducing the env-var block. No status change to this ADR.
+
 This ADR's outcome is satisfied when:
 
 - `src/read-shadow.js` ships with `validateReadShadowConfig` and `mirrorRequest`

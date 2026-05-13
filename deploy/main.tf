@@ -120,44 +120,15 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 031 read-shadow: fire-and-forget mirror of /addresses search and
-  # /addresses/{id} to the v2 OpenSearch domain so its caches warm with
-  # realistic production query distribution before ADR 029 step 7 cutover.
-  # Default-off behaviour kicks in when ADDRESSR_SHADOW_HOST is unset; here
-  # we set it to v2's endpoint so the soak window begins. Username/password
-  # reuse v1's creds per ADR 029 step 4 design (same fine-grained-access
-  # user). Shadow failures are swallowed in src/read-shadow.js so primary
-  # /addresses responses are unaffected.
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_HOST"
-    value     = module.opensearch_v2.endpoint
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PASSWORD"
-    value     = var.elastic_v2_password
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PORT"
-    value     = "443"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PROTOCOL"
-    value     = "https"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_USERNAME"
-    value     = var.elastic_v2_username
-    resource  = ""
-  }
+  # ADR 029 Phase 1 rolled back 2026-05-14: v2 OpenSearch domain
+  # (search-addressr4) decommissioned after the resize-to-m6g.large blue/green
+  # got stuck (3rd observation of the AWS-managed FGAC clobber pattern in P036).
+  # ADDRESSR_SHADOW_* env vars removed → src/read-shadow.js default-off kicks
+  # in → mirrorRequest no-ops → primary /addresses responses unaffected (always
+  # were; v1 served production throughout). Read-shadow capability remains
+  # shipped in code; ADR 031 default-off posture documented. Phase 1 may be
+  # re-attempted later; the module ./modules/opensearch is retained
+  # intentionally (ADR 030 amendment 2026-05-14).
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
@@ -632,52 +603,17 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   }
 }
 
-# ADR 029 Phase 1 + ADR 030: parallel v2 OpenSearch domain for blue/green cutover.
-# Master user creds are reused from var.elastic_username / var.elastic_password so
-# the cutover flips only var.elastic_host (ADR 029 Phase 1 step 5), matching
-# ADR 029's "update the ELASTIC_HOST Terraform variable" contract. ELASTIC_HOST
-# in the EB env-var block above stays pointed at search-addressr3-... until the
-# cutover step; this module call just creates the parallel v2 domain.
-module "opensearch_v2" {
-  source = "./modules/opensearch"
-
-  name                 = var.elastic_v2_name
-  engine_version       = var.elastic_v2_engine_version
-  # ADR 029 amendment 2026-04-29: v2 master user is decoupled from v1's. The
-  # original ADR 029 step 4 design said "v2 reuses creds" but in practice TFC's
-  # var.elastic_password drifted from EB's ELASTIC_PASSWORD, causing v2 to
-  # silently 401 every shadow request and invalidating the soak window. ADR 030
-  # Consequences now records "distinct credentials per parallel domain" as a
-  # deliberate property of the parallel-domain pattern. var.elastic_host still
-  # flips alone at cutover (ADR 029 step 7); only the cred plane is decoupled.
-  master_user_name     = var.elastic_v2_username
-  master_user_password = var.elastic_v2_password
-
-  # 2 nodes match v1 (search-addressr3) AZ posture and let replicas assign.
-  # Brought forward from plan step 6a after step 5's WA leg failed against the
-  # single-node config: VIC's 80-min bulk load left the cluster RED with 13
-  # unassigned shards, addressr search returning 503. ADR 029 step 6a was
-  # always going to do this pre-cutover; the WA failure proves the single-node
-  # config is not viable at the data scale, not just at cutover time.
-  instance_count = 2
-
-  # ADR 029 amendment 2026-05-13: populate-window v2 sizing is decoupled
-  # from steady-state v2 sizing. v1 (search-addressr3) handles its workload
-  # on t3.small.search × 2 because it only serves steady-state queries; v1
-  # bulk-loads only quarterly G-NAF deltas. v2 is being asked to do a
-  # full from-scratch 16.8M-doc populate WHILE serving shadow soak queries,
-  # which overwhelmed the t3.small instances (populate run 25731879773 QLD
-  # + WA hit snapshot_in_progress_exception per I001; populate run 25762661760
-  # QLD hung 2h+ with shadow success rate dropping from 95% to 52% under
-  # bulk-index contention). Scale up for the populate window only; P038
-  # tracks the scale-back to t3.small + 10 GB EBS post-populate-success
-  # so steady-state cost matches v1.
-  instance_type   = "m6g.large.search"
-  ebs_volume_size = 20
-
-  tags = {
-    ManagedBy = "terraform"
-    Component = "search"
-    Adr       = "029-030"
-  }
-}
+# ADR 029 Phase 1 rolled back 2026-05-14: module "opensearch_v2" block removed.
+# The two-phase blue/green pattern remains the chosen path; this specific
+# Phase 1 attempt is abandoned after the AWS-managed FGAC clobber pattern
+# tripped the cluster three times (P036) and the m6g.large resize stuck mid
+# blue/green for 3+ hours with non-monotonic stage-4 telemetry. v1
+# (search-addressr3, out of TF scope per ADR 030) continues to serve all
+# production traffic unaffected. The ./modules/opensearch module is
+# intentionally retained without a caller during this rollback window
+# (ADR 030 Confirmation amendment 2026-05-14); a future Phase 1 re-attempt
+# or a locality/postcode secondary-index decision will re-introduce a caller.
+# var.elastic_v2_* declarations in deploy/vars.tf are kept (deferred cleanup;
+# orphaned-but-harmless). Read-shadow capability is in default-off posture
+# (ADR 031 amendment 2026-05-14) — capability shipped, no shadow target
+# configured, mirrorRequest no-ops.

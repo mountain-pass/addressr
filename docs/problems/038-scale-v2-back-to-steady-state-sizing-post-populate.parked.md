@@ -1,9 +1,16 @@
 # Problem 038: Scale v2 OpenSearch back to steady-state sizing (`t3.small.search` × 2, 10 GB EBS) post-populate
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-05-13
+**Parked**: 2026-05-14
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Likely (2) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: S (deferred — re-rate at next /wr-itil:review-problems)
+
+## Parked
+
+**Reason**: Superseded by ADR 029 Phase 1 rollback 2026-05-14 — the m6g.large.search v2 cluster this scale-back targeted is being decommissioned. The scale-back action no longer has anything to act on. The architectural learning (populate-window sizing is workload-asymmetric vs steady-state; provision at target class from the start, not via resize blue/green) is captured in ADR 029's Phase 1 rollback amendment 2026-05-14.
+
+**Un-park trigger**: ADR 029 Phase 1 re-attempt fires AND the operator provisions at a populate-friendly instance class that needs scale-back post-populate. If the re-attempt provisions directly at v1-matching class (`t3.small.search`) and proves it can handle from-scratch populate, this ticket is permanently superseded.
 
 ## Description
 

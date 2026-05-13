@@ -91,6 +91,9 @@ Mechanically checkable:
 
 - `deploy/modules/opensearch/main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist before any production cutover under ADR 029.
 - `deploy/main.tf` consumes the module via at least one `module "opensearch_..." {}` block referencing `./modules/opensearch`. Ad-hoc `aws_opensearch_domain` resources in `deploy/main.tf` (outside the module) constitute a confirmation violation.
+
+  > **Amendment 2026-05-14** — during a post-rollback / pre-re-attempt window the module may be retained without a caller. Specifically: ADR 029 Phase 1 was rolled back 2026-05-14 after the `search-addressr4` cluster's blue/green resize stuck mid-stage-4 (3rd observation of the FGAC clobber pattern in P036). The `./modules/opensearch` module is intentionally retained without a caller during this window — re-introducing a caller is a one-line change when a future Phase 1 re-attempt fires (per ADR 029 Reassessment Criteria) or when a locality/postcode secondary-index decision lands. Treat this state as expected, not as drift; not a confirmation violation. Ad-hoc `aws_opensearch_domain` resources remain a violation regardless of caller state.
+
 - `terraform state list` (run against the workspace post-apply) includes `module.opensearch_v2.aws_opensearch_domain.*` for `search-addressr4-…`.
 - `terraform plan` shows zero changes to `search-addressr3-…` throughout Phase 1 (the un-IaC'd domain must remain untouched by Terraform).
 - `ELASTIC_HOST` in `deploy/main.tf` is sourced from a module output (`module.opensearch_v2.endpoint`) once the application is pointing at the new domain.
