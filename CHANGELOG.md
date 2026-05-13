@@ -1,5 +1,12 @@
 # @mountainpass/addressr
 
+## 2.6.8
+
+### Patch Changes
+
+- f4036ab: Credential rotation for v2 OpenSearch following the infrastructure
+  resize. No user-facing service change. See P036 for incident detail.
+
 ## 2.6.7
 
 ### Patch Changes
