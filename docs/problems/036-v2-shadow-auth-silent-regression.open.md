@@ -84,6 +84,20 @@ Three remaining-but-unverifiable hypotheses for who/what changed it:
 2. **A direct OpenSearch REST API call from somewhere outside our session record** — would need wider CloudTrail (read + management events combined) to verify, or OpenSearch audit logs (not currently enabled on this domain).
 3. **A snapshot restore that included the `.opendistro_security` system index** — the only restore in this window was the 2026-05-02 addressr-index restore from 2026-04-29 snapshot, which restored only `indices: "addressr"`; the security index should NOT have been touched but this is worth re-verifying.
 
+### Update 2026-05-13: third observation — pattern is reproducible on AWS-managed blue/green ops
+
+After temporarily scaling v2 from `t3.small.search × 2` to `m6g.large.search × 2 + 20 GB EBS` (per ADR 029 step 5 amendment 2026-05-13 — to clear the bulk-index + shadow contention surfaced by I001), `/debug/shadow-config` returned 100% AuthError on the very first attempt post-deploy. Direct cluster probe with EB-resident 36-char password also returned HTTP 401 — same shape as the original P036.
+
+**Three observations now of AWS-managed clobbering the FGAC master user password on cluster blue/green ops:**
+
+1. Original P036 failure-mode 4 (2026-05-11) — undiagnosed cluster-side change while domain steady-state
+2. Post-recreate (2026-05-12) — after `terraform apply` recreated the domain following the user's manual delete
+3. Post-resize (2026-05-13) — after `terraform apply` resized instance class + EBS
+
+Each is invisible to CloudTrail (no `UpdateDomainConfig` events). Pattern is **reproducible**: every AWS-side domain reconfiguration appears to trigger an internal master-user-password clobber that terraform's `master_user_password` re-push does not deterministically counter. The workaround is a follow-up rotation deploy — proven to work three times now, but operator-memory-dependent each time.
+
+**This is now a standing risk shape, not a one-off failure.** Hypotheses 1-3 above are partially refuted by reproducibility: hypothesis 2 (out-of-band REST API call) is structurally ruled out — we've now observed the pattern on operations that are entirely terraform-driven with no external API access. The mechanism is some AWS-internal step inside the blue/green deployment that re-bootstraps or restores FGAC state from a source other than what `terraform apply` sends.
+
 ### Investigation Tasks
 
 - [x] Re-rate Priority and Effort at next /wr-itil:review-problems
