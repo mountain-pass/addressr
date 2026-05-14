@@ -1,0 +1,390 @@
+// Cloudflare Worker — addressr API key proxy (cool-bush-ca66)
+//
+// SOURCE OF TRUTH: the Cloudflare dashboard. This file is NOT canonical.
+// It is a copy-from-this artifact for operator paste into the Cloudflare
+// dashboard editor. Edits here do not deploy anything.
+//
+// Deploy target:
+//   Account:  Windy Road Cloudflare account (per ADR 018 line 30)
+//   Worker:   cool-bush-ca66 (worker name)
+//   Route:    api.addressr.io/*
+//             cool-bush-ca66.addressr-key-provider.workers.dev/*
+//
+// Lifecycle: transient. Superseded by P042 (Terraform-manage the worker per
+// ADR 018 reassessment criterion line 63) — deploy moves to the Cloudflare
+// Terraform provider and the canonical source becomes deploy/cloudflare-worker.js.
+// Delete this file in the same commit that lands the TF module.
+//
+// References:
+//   - ADR 016 — Uptime Robot monitors through this worker
+//   - ADR 018 — Cloudflare Worker as API key proxy (status: accepted; line 50
+//               "Bad: worker not version-controlled" still holds until P042 lands)
+//   - P040    — Uptime Robot 401 RCA (this patch fixes the safeIps CIDR-match bug
+//               and refreshes the UR IP list)
+//   - P042    — Terraform-manage the worker (the supersession plan for this file)
+//
+// Placeholder semantics:
+//   <RAPIDAPI_KEY_FROM_CLOUDFLARE_DASHBOARD> — paste-time substitution. The current
+//   live value is hardcoded in the dashboard worker (ADR 018 line 48 "Bad"
+//   consequence). Read the existing value from the dashboard worker source
+//   before saving the patched code; paste it back in place of the placeholder.
+//   DO NOT commit the real key value to this repo.
+//   Migration to Cloudflare secrets via 1P Voder is P042 scope, NOT this paste.
+//
+// P040 fixes vs prior dashboard version:
+//   1. ipInList() is CIDR-aware for IPv4 and IPv6 (prior `safeIps.includes(srcIp)`
+//      was strict string-equality and could never match the four CIDR entries).
+//   2. safeIps re-synced from https://uptimerobot.com/inc/files/ips/IPv4.txt and
+//      .../IPv6.txt on 2026-05-14 — 48 v4 + 80 v6 UR-published addresses absent
+//      from the prior list are now included; stale entries dropped.
+
+const someHost = "addressr.p.rapidapi.com";
+
+const safeHosts = [
+  "addressr.io",
+  "localhost",
+  "addressr.mountain-pass.com.au",
+  "addressr.mountainpass.com.au",
+];
+
+const safeIps = [
+  // CIDR ranges — matched correctly by ipInList (P040 fix)
+  "69.162.124.224/28",
+  "216.144.248.16/28",
+  "216.245.221.80/28",
+  "2607:ff68:107::0/121",
+
+  // IPv4 — synced from https://uptimerobot.com/inc/files/ips/IPv4.txt on 2026-05-14
+  "128.140.106.114",
+  "128.140.41.193",
+  "129.212.132.140",
+  "134.199.240.137",
+  "138.197.53.117",
+  "138.197.53.138",
+  "138.197.54.143",
+  "138.197.54.247",
+  "138.197.63.92",
+  "139.59.50.44",
+  "142.132.180.39",
+  "143.198.249.237",
+  "143.198.250.89",
+  "143.244.196.21",
+  "143.244.196.211",
+  "143.244.221.177",
+  "144.126.251.21",
+  "146.190.9.187",
+  "152.42.149.135",
+  "157.90.155.240",
+  "157.90.156.63",
+  "159.223.243.219",
+  "159.69.158.189",
+  "161.35.247.201",
+  "18.116.205.62",
+  "18.180.208.214",
+  "18.192.166.72",
+  "18.193.252.127",
+  "24.144.78.185",
+  "24.144.78.39",
+  "3.105.133.239",
+  "3.105.190.221",
+  "3.12.251.153",
+  "3.133.226.214",
+  "3.149.57.90",
+  "3.20.63.178",
+  "3.212.128.62",
+  "3.77.67.4",
+  "3.79.134.69",
+  "34.198.201.66",
+  "45.55.123.175",
+  "45.55.127.146",
+  "49.13.130.29",
+  "49.13.134.145",
+  "49.13.164.148",
+  "49.13.167.123",
+  "49.13.24.81",
+  "5.161.113.195",
+  "5.161.117.52",
+  "5.161.177.47",
+  "5.161.194.92",
+  "5.161.215.244",
+  "5.161.61.238",
+  "5.161.73.160",
+  "5.161.75.7",
+  "5.223.43.32",
+  "5.223.53.147",
+  "5.223.57.22",
+  "52.15.147.27",
+  "52.22.236.30",
+  "52.28.162.93",
+  "52.59.43.236",
+  "52.87.72.16",
+  "54.167.223.174",
+  "54.249.170.27",
+  "54.64.67.106",
+  "54.79.28.129",
+  "54.87.112.51",
+  "63.178.84.147",
+  "64.225.81.248",
+  "64.225.82.147",
+  "69.162.124.227",
+  "69.162.124.235",
+  "69.162.124.238",
+  "78.46.190.63",
+  "78.46.215.1",
+  "78.47.173.76",
+  "78.47.98.55",
+  "88.99.80.227",
+  "91.99.101.207",
+
+  // IPv6 — synced from https://uptimerobot.com/inc/files/ips/IPv6.txt on 2026-05-14
+  "2400:6180:10:200::56a0:b000",
+  "2400:6180:10:200::56a0:c000",
+  "2400:6180:10:200::56a0:e000",
+  "2400:6180:100:d0::94b6:4001",
+  "2400:6180:100:d0::94b6:5001",
+  "2400:6180:100:d0::94b6:7001",
+  "2406:da14:94d:8601:9d0d:7754:bedf:e4f5",
+  "2406:da14:94d:8601:b325:ff58:2bba:7934",
+  "2406:da14:94d:8601:db4b:c5ac:2cbe:9a79",
+  "2406:da1c:9c8:dc02:7ae1:f2ea:ab91:2fde",
+  "2406:da1c:9c8:dc02:7db9:f38b:7b9f:402e",
+  "2406:da1c:9c8:dc02:82b2:f0fd:ee96:579",
+  "2600:1f16:775:3a00:37bf:6026:e54a:f03a",
+  "2600:1f16:775:3a00:3f24:5bb0:95d7:5a6b",
+  "2600:1f16:775:3a00:8c2c:2ba6:778f:5be5",
+  "2600:1f16:775:3a00:91ac:3120:ff38:92b5",
+  "2600:1f16:775:3a00:ac3:c5eb:7081:942e",
+  "2600:1f16:775:3a00:dbbe:36b0:3c45:da32",
+  "2600:1f18:179:f900:2406:9399:4ae6:c5d3",
+  "2600:1f18:179:f900:4696:7729:7bb3:f52f",
+  "2600:1f18:179:f900:4b7d:d1cc:2d10:211",
+  "2600:1f18:179:f900:5c68:91b6:5d75:5d7",
+  "2600:1f18:179:f900:71:af9a:ade7:d772",
+  "2600:1f18:179:f900:e8dd:eed1:a6c:183b",
+  "2604:a880:800:14:0:1:68ba:d000",
+  "2604:a880:800:14:0:1:68ba:e000",
+  "2604:a880:800:14:0:1:68bb:0",
+  "2604:a880:800:14:0:1:68bb:1000",
+  "2604:a880:800:14:0:1:68bb:3000",
+  "2604:a880:800:14:0:1:68bb:4000",
+  "2604:a880:800:14:0:1:68bb:5000",
+  "2604:a880:800:14:0:1:68bb:6000",
+  "2604:a880:800:14:0:1:68bb:7000",
+  "2604:a880:800:14:0:1:68bb:a000",
+  "2604:a880:800:14:0:1:68bb:b000",
+  "2604:a880:800:14:0:1:68bb:c000",
+  "2604:a880:800:14:0:1:68bb:d000",
+  "2604:a880:800:14:0:1:68bb:e000",
+  "2604:a880:800:14:0:1:68bb:f000",
+  "2607:ff68:107::14",
+  "2607:ff68:107::33",
+  "2607:ff68:107::4",
+  "2607:ff68:107::48",
+  "2607:ff68:107::49",
+  "2607:ff68:107::50",
+  "2607:ff68:107::51",
+  "2607:ff68:107::52",
+  "2607:ff68:107::53",
+  "2607:ff68:107::54",
+  "2607:ff68:107::55",
+  "2607:ff68:107::56",
+  "2607:ff68:107::57",
+  "2607:ff68:107::58",
+  "2607:ff68:107::59",
+  "2607:ff68:107::60",
+  "2a01:4f8:1c1a:3d53::1",
+  "2a01:4f8:1c1b:4ef4::1",
+  "2a01:4f8:1c1b:5b5a::1",
+  "2a01:4f8:1c1b:7ecc::1",
+  "2a01:4f8:1c1c:11aa::1",
+  "2a01:4f8:1c1c:5353::1",
+  "2a01:4f8:1c1c:7240::1",
+  "2a01:4f8:1c1c:a98a::1",
+  "2a01:4f8:c012:c60e::1",
+  "2a01:4f8:c013:34c0::1",
+  "2a01:4f8:c013:3b0f::1",
+  "2a01:4f8:c013:3c52::1",
+  "2a01:4f8:c013:3c53::1",
+  "2a01:4f8:c013:3c54::1",
+  "2a01:4f8:c013:3c55::1",
+  "2a01:4f8:c013:3c56::1",
+  "2a01:4f8:c013:c18::1",
+  "2a01:4f8:c0c:83fa::1",
+  "2a01:4f8:c17:42e4::1",
+  "2a01:4f8:c2c:9fc6::1",
+  "2a01:4f8:c2c:beae::1",
+  "2a01:4ff:2f0:193c::1",
+  "2a01:4ff:2f0:27de::1",
+  "2a01:4ff:2f0:3b3a::1",
+  "2a01:4ff:f0:2219::1",
+  "2a01:4ff:f0:3e03::1",
+  "2a01:4ff:f0:5f80::1",
+  "2a01:4ff:f0:7fad::1",
+  "2a01:4ff:f0:9c5f::1",
+  "2a01:4ff:f0:b2f2::1",
+  "2a01:4ff:f0:b6f1::1",
+  "2a01:4ff:f0:bfd::1",
+  "2a01:4ff:f0:d283::1",
+  "2a01:4ff:f0:d3cd::1",
+  "2a01:4ff:f0:e516::1",
+  "2a01:4ff:f0:e9cf::1",
+  "2a01:4ff:f0:eccb::1",
+  "2a01:4ff:f0:efd1::1",
+  "2a01:4ff:f0:fdc7::1",
+  "2a03:b0c0:2:f0::bd91:f001",
+  "2a03:b0c0:2:f0::bd92:1",
+  "2a03:b0c0:2:f0::bd92:1001",
+  "2a03:b0c0:2:f0::bd92:2001",
+  "2a03:b0c0:2:f0::bd92:4001",
+  "2a03:b0c0:2:f0::bd92:5001",
+  "2a03:b0c0:2:f0::bd92:6001",
+  "2a03:b0c0:2:f0::bd92:7001",
+  "2a03:b0c0:2:f0::bd92:8001",
+  "2a03:b0c0:2:f0::bd92:9001",
+  "2a03:b0c0:2:f0::bd92:a001",
+  "2a03:b0c0:2:f0::bd92:b001",
+  "2a03:b0c0:2:f0::bd92:c001",
+  "2a03:b0c0:2:f0::bd92:e001",
+  "2a03:b0c0:2:f0::bd92:f001",
+  "2a05:d014:1815:3400:654f:bd37:724c:212b",
+  "2a05:d014:1815:3400:6d:9235:c1c0:96ad",
+  "2a05:d014:1815:3400:90b4:4ef9:5631:b170",
+  "2a05:d014:1815:3400:9779:d8e9:100a:9642",
+  "2a05:d014:1815:3400:af29:e95e:64ff:df81",
+  "2a05:d014:1815:3400:c7d6:f7f3:6cc1:30d1",
+  "2a05:d014:1815:3400:d784:e5dd:8e0:67cb",
+];
+
+// ---------- CIDR-aware IP matcher (P040 fix) ----------
+
+function ipInList(srcIp, list) {
+  if (!srcIp) return false;
+  for (const entry of list) {
+    if (entry.includes("/")) {
+      if (ipInCidr(srcIp, entry)) return true;
+    } else if (srcIp === entry) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function ipInCidr(ip, cidr) {
+  const [range, bitsStr] = cidr.split("/");
+  const bits = parseInt(bitsStr, 10);
+  if (Number.isNaN(bits)) return false;
+  const ipIsV6 = ip.includes(":");
+  const rangeIsV6 = range.includes(":");
+  if (ipIsV6 !== rangeIsV6) return false;
+  return ipIsV6 ? v6InCidr(ip, range, bits) : v4InCidr(ip, range, bits);
+}
+
+function v4InCidr(ip, range, bits) {
+  if (bits < 0 || bits > 32) return false;
+  const ipNum = v4ToInt(ip);
+  const rangeNum = v4ToInt(range);
+  if (ipNum === null || rangeNum === null) return false;
+  if (bits === 0) return true;
+  const mask = (-1 << (32 - bits)) >>> 0;
+  return (ipNum & mask) === (rangeNum & mask);
+}
+
+function v4ToInt(ip) {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+  let n = 0;
+  for (const p of parts) {
+    const v = parseInt(p, 10);
+    if (Number.isNaN(v) || v < 0 || v > 255 || String(v) !== p) return null;
+    n = n * 256 + v;
+  }
+  return n >>> 0;
+}
+
+function v6InCidr(ip, range, bits) {
+  if (bits < 0 || bits > 128) return false;
+  const ipBig = v6ToBig(ip);
+  const rangeBig = v6ToBig(range);
+  if (ipBig === null || rangeBig === null) return false;
+  if (bits === 0) return true;
+  const mask = ((1n << 128n) - 1n) ^ ((1n << (128n - BigInt(bits))) - 1n);
+  return (ipBig & mask) === (rangeBig & mask);
+}
+
+function v6ToBig(ip) {
+  let head, tail;
+  if (ip.includes("::")) {
+    [head, tail] = ip.split("::");
+  } else {
+    head = ip;
+    tail = "";
+  }
+  const headParts = head ? head.split(":") : [];
+  const tailParts = tail ? tail.split(":") : [];
+  const fill = 8 - headParts.length - tailParts.length;
+  if (fill < 0) return null;
+  const parts = [...headParts, ...Array(fill).fill("0"), ...tailParts];
+  if (parts.length !== 8) return null;
+  let n = 0n;
+  for (const p of parts) {
+    const v = parseInt(p || "0", 16);
+    if (Number.isNaN(v) || v < 0 || v > 0xffff) return null;
+    n = (n << 16n) | BigInt(v);
+  }
+  return n;
+}
+
+// ---------- Request handling ----------
+
+async function handleRequest(request) {
+  const referer = request.headers.get("Referer");
+  const origin = request.headers.get("origin");
+  const srcIp = request.headers.get("CF-Connecting-IP");
+
+  const refHost = referer ? safeUrlHost(referer) : null;
+  const orgHost = origin ? safeUrlHost(origin) : null;
+
+  const hostOk =
+    (refHost && safeHosts.includes(refHost)) ||
+    (orgHost && safeHosts.includes(orgHost));
+
+  const ipOk = ipInList(srcIp, safeIps);
+
+  if (!hostOk && !ipOk) {
+    return new Response(
+      `${referer || origin || "no-origin"} not permitted from ${srcIp}`,
+      { status: 401 }
+    );
+  }
+
+  const url = new URL(request.url);
+  url.hostname = someHost;
+
+  const newRequest = new Request(url.toString(), new Request(request, {}));
+  newRequest.headers.set("x-rapidapi-key", "<RAPIDAPI_KEY_FROM_CLOUDFLARE_DASHBOARD>");
+  newRequest.headers.set("x-rapidapi-host", "addressr.p.rapidapi.com");
+
+  try {
+    const response = await fetch(newRequest);
+    const newHdrs = new Headers(response.headers);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHdrs,
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+function safeUrlHost(value) {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return null;
+  }
+}
+
+addEventListener("fetch", (event) => {
+  event.respondWith(handleRequest(event.request));
+});
