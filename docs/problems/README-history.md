@@ -13,3 +13,7 @@ Last reviewed: 2026-05-11 — **README reconciled** — 17 drift entries correct
 ## 2026-05-12
 
 Last reviewed: 2026-05-12 — **README reconciled** — 1 drift entry corrected: P036 (missing open). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF deferred pending next `/wr-itil:review-problems`.
+
+## 2026-05-14
+
+Last reviewed: 2026-05-14 — ADR 029 Phase 1 rolled back; P036 + P038 parked as superseded by the decommission. P037 stays open (loader fix applies to v1 path too). WSJF deferred pending next `/wr-itil:review-problems`.
