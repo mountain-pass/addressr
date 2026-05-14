@@ -223,6 +223,28 @@ jobs:
           fi
           echo "direct probe status 401 (expected)"
 
+          # P040: Cloudflare Worker (ADR 018) auth boundary probes. These are
+          # distinct from the ADR 024 origin probe above — the worker rejects
+          # at a different layer with a different body shape. Probing both
+          # makes a future regression that conflates the two layers loud.
+          echo "Probing worker referer-accept (ADR 018 safeHosts allowlist)..."
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Referer: https://addressr.io/" \
+            "https://api.addressr.io/addresses/GANSW718804790")
+          if [ "$status" != "200" ]; then
+            echo "worker probe with Referer returned $status, expected 200 (safeHosts allowlist regression — P040 workaround broken)"; exit 1
+          fi
+          echo "worker probe with Referer status 200 (expected)"
+
+          echo "Probing worker no-referer rejection (ADR 018 default-deny)..."
+          worker_body=$(curl -s "https://api.addressr.io/addresses/GANSW718804790")
+          if ! echo "$worker_body" | grep -q "no-origin not permitted"; then
+            echo "worker no-Referer probe did not return ADR 018 rejection body; got: $worker_body"
+            echo "(this distinguishes the worker layer from the ADR 024 origin layer — body must start with 'no-origin not permitted')"
+            exit 1
+          fi
+          echo "worker no-Referer rejection body matches ADR 018 (expected)"
+
           # ADR 025 / P007 ranking probes + P019 Link header rel probe: exact
           # street-level address must rank first when sub-unit variants share
           # the address; root / must advertise every rel in the contract.
