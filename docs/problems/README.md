@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-05-14 — P040 → Known Error (RCA corrected — Cloudflare Worker `safeIps` strict-equality bug + UR IP drift, not ADR 024 origin enforcement; Referer-header workaround documented; WSJF 1.5 → 20.0). P042 captured (version-control the worker via Terraform — closes ADR 018 line 50/63). ADR 016 amended to require the Referer header in Confirmation; BRIEFING.md line 65 misattribution corrected; release.yml gains worker-vs-origin smoke probes.
+> Last reviewed: 2026-05-14 — Retro: P043 captured (wr-itil SID-helper fallback picks subagent UUID in multi-agent sessions; observed when capturing P042). BRIEFING.md gains diagnostic + workaround entry. P040 verified live via 6 probes; pending UR 24-hour observation window before user-initiated transition to verifying.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -29,6 +29,7 @@
 | 1.5  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 3 (Low)    | Open        | M      | Captured 2026-05-14; deferred estimate; needs review-problems re-rank                          |
 | 1.5  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 3 (Low)    | Open        | M      | Captured 2026-05-14; meta-ticket; deferred estimate                                            |
 | 1.5  | P042 | Version-control the Cloudflare Worker via Terraform                   | 3 (Low)    | Open        | M      | Captured 2026-05-14; structural follow-up to P040; pairs after option 2 worker patch lands     |
+| 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)    | Open        | M      | Captured 2026-05-14 retro; upstream fix needed in @windyroad/itil; one-line bash workaround    |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium) | Open        | L      | Deferred estimate; needs review-problems re-rank                                               |
 
 ## Parked
