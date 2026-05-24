@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-05-14 — Retro: P043 captured (wr-itil SID-helper fallback picks subagent UUID in multi-agent sessions; observed when capturing P042). BRIEFING.md gains diagnostic + workaround entry. P040 verified live via 6 probes; pending UR 24-hour observation window before user-initiated transition to verifying.
+> Last reviewed: 2026-05-25 — P042 → Verification Pending (Cloudflare Worker cut over to Terraform, ADR 032, v2.6.12/13 deployed + verified live); P044 captured (changesets swallows publish failure → deploy silently skips). P040 + P042 share the 24h UptimeRobot observation gate before close. WSJF re-rank deferred to next `/wr-itil:review-problems`.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -28,9 +28,18 @@
 | 2.5  | P023 | Cross-origin root `/` not browser-cached                              | 10 (High)  | Open        | L      | Multi-layer (origin CORS + RapidAPI gateway + SDK)                                             |
 | 1.5  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 3 (Low)    | Open        | M      | Captured 2026-05-14; deferred estimate; needs review-problems re-rank                          |
 | 1.5  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 3 (Low)    | Open        | M      | Captured 2026-05-14; meta-ticket; deferred estimate                                            |
-| 1.5  | P042 | Version-control the Cloudflare Worker via Terraform                   | 3 (Low)    | Open        | M      | Captured 2026-05-14; structural follow-up to P040; pairs after option 2 worker patch lands     |
+| 1.5  | P044 | changesets/action swallows publish failure → deploy silently skips    | (defer)    | Open        | S      | Captured 2026-05-25; silent-green failure mode of the P039 publish-coupling                    |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)    | Open        | M      | Captured 2026-05-14 retro; upstream fix needed in @windyroad/itil; one-line bash workaround    |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium) | Open        | L      | Deferred estimate; needs review-problems re-rank                                               |
+
+## Verification Queue
+
+<!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 -->
+<!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
+
+| ID   | Title                                               | Released   | Likely verified?  | Notes                                                                                    |
+| ---- | --------------------------------------------------- | ---------- | ----------------- | ---------------------------------------------------------------------------------------- |
+| P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); awaiting 24h UR observation (shared gate w/ P040) |
 
 ## Parked
 

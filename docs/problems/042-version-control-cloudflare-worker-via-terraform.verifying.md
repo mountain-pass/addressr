@@ -1,10 +1,18 @@
 # Problem 042: Version-control the Cloudflare Worker via Terraform
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-05-14
 **Priority**: 3 (Medium) — Impact: 3 x Likelihood: 1 (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
 **Type**: technical
+
+## Fix Released
+
+- **Release marker**: v2.6.12 (worker cutover deploy) + v2.6.13 (clean green release); commit `4f26067`; deployed 2026-05-25.
+- **Fix**: the Cloudflare Worker is now version-controlled and Terraform-managed (ADR 032) — esbuild bundle, `cloudflare_workers_script` + route + `RAPIDAPI_KEY` secret binding, imported in-place into TF state (no edge outage). ADR 018 line 48/50/63 closed; ADR 016 Referer-header requirement removed.
+- **Lifecycle note**: P042 is a planned improvement task, not a defect, so it transitions `Open → Verification Pending` directly — the intermediate "Known Error" state (diagnosed-bug-awaiting-fix) never applied. (The transition skill's normal path is Open → Known Error → Verification Pending; that intermediate is skipped here as semantically inapplicable, recorded explicitly for the audit trail.)
+- **Exercise evidence (2026-05-25)**: live worker verified — module/bundle format, `RAPIDAPI_KEY` binding present, fresh `safeIps` (incl. `168.119.53.160`), `api.addressr.io`+Referer → 200 with real content, no-Referer → `no-origin not permitted`. Release pipeline green (2.6.13 deploy + smoke).
+- **Awaiting user verification**: the 24-hour UptimeRobot observation window — confirm the recurring 401 alerts cease (the verification gate shared with P040). Close P042 once that window is clean.
 
 ## Description
 
