@@ -11,7 +11,9 @@
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/terraform:1.3.5": {},
+    "ghcr.io/devcontainers/features/terraform:1.3.5": {
+      "version": "1.9.8"
+    },
     "ghcr.io/devcontainers/features/aws-cli:1": {}
     // "ghcr.io/frntn/devcontainers-features/gitleaks:1": {}
   },
