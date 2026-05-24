@@ -212,9 +212,15 @@ jobs:
           echo "$shadow_body" | jq -e '.' > /dev/null || {
             echo "/debug/shadow-config did not return valid JSON"; exit 1;
           }
+          # ADR 029 Phase 1 was rolled back 2026-05-14 (v2 OpenSearch
+          # decommissioned, ADDRESSR_SHADOW_* env vars removed). Per the ADR 031
+          # default-off posture, hostSet=false is now the expected steady state
+          # (shadow capability shipped, no target configured, mirrorRequest
+          # no-ops). Assert false so an ACCIDENTAL shadow re-enable is caught.
+          # When ADR 029 Phase 1 is re-attempted, flip this back to "true".
           host_set=$(echo "$shadow_body" | jq -r '.hostSet')
-          if [ "$host_set" != "true" ]; then
-            echo "/debug/shadow-config hostSet=$host_set, expected true (shadow env vars not visible to running process)"
+          if [ "$host_set" != "false" ]; then
+            echo "/debug/shadow-config hostSet=$host_set, expected false (shadow is intentionally off post-ADR-029-rollback; flip to true when shadow is re-enabled)"
             echo "body: $shadow_body"; exit 1
           fi
           last_error_class=$(echo "$shadow_body" | jq -r '.lastError.class // "null"')
@@ -224,7 +230,7 @@ jobs:
               echo "/debug/shadow-config lastError.class=$last_error_class, expected null or one of the closed enum values"
               exit 1 ;;
           esac
-          echo "P035 R3 ok: hostSet=true, lastError.class=$last_error_class"
+          echo "P035 R3 ok: hostSet=false (shadow off per ADR 029 rollback), lastError.class=$last_error_class"
           echo ""
           # ADR 024 bypass probe: direct-without-header must be rejected.
           # Any status other than 401 fails the release — enforcement is the
