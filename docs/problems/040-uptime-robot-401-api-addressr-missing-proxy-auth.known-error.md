@@ -76,9 +76,9 @@ This ticket transitions to Known Error on option 2 being scheduled and to Verifi
 - [x] Reproduce the rejection deterministically with curl.
 - [x] Identify a working workaround (Referer header).
 - [x] Produce the CIDR-aware worker patch.
-- [ ] Operator pastes the patched worker into the Cloudflare dashboard.
-- [ ] Confirm Uptime Robot alerts cease over a 24-hour observation window.
-- [ ] Capture P042 — version-control the worker via Terraform (option 4).
+- [x] ~~Operator pastes the patched worker into the Cloudflare dashboard.~~ Superseded: a version of the patch was hand-pasted ~2026-05-15 (CIDR fix live, but `safeIps` stale at the 2026-05-14 sync → drifted IPs like `168.119.53.160` still 401'd). **Definitively resolved 2026-05-25** by the P042 cutover — the TF-managed worker (esbuild bundle) deployed the CIDR matcher **+ the fresh 2026-05-15 `safeIps`** (drifted UR IPs included). Verified live: `api.addressr.io`+Referer → 200, no-Referer → `no-origin not permitted`.
+- [ ] Confirm Uptime Robot alerts cease over a 24-hour observation window (fresh `safeIps` now live as of 2026-05-25).
+- [x] Capture P042 — version-control the worker via Terraform (option 4). Done; P042 implemented + deployed 2026-05-25 (ADR 032).
 
 ## Dependencies
 
