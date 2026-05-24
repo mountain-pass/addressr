@@ -32,6 +32,15 @@ EOM
 
 }
 
+# ADR 032 / P042: bundle the Cloudflare Worker (esbuild) before any terraform
+# command. cloudflare_workers_script.content reads worker.bundled.js; the v5
+# provider takes a single content string, so worker.js's local imports
+# (./ip-matcher.mjs, ./safe-ips.mjs) must be bundled into one file first. Run
+# from the repo root (this script has cd'd into deploy/) so the npm script's
+# relative paths resolve. The bundle is gitignored — derived fresh each run
+# from the same source the unit tests import, so it cannot drift.
+( cd .. && npm run build:worker )
+
 if test -z "$*"; then
     set -x
     TF_WORKSPACE="${npm_lifecycle_event#deploy:}"

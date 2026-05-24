@@ -40,3 +40,15 @@ variable "compatibility_date" {
   default     = "2024-01-01"
   description = "Cloudflare Workers runtime compatibility date. Conservative pinning; recent enough for ES modules + fetch but stable. Bump in a dedicated PR if the worker starts to need a newer runtime feature."
 }
+
+variable "worker_bundle" {
+  type        = string
+  default     = "worker.bundled.js"
+  description = "Filename (within worker_dir) of the esbuild bundle deployed as the worker content. Produced by `npm run build:worker` before terraform runs (deploy/deploy.sh). Gitignored deploy-time artifact — derived from worker.js + ip-matcher.mjs + safe-ips.mjs. ADR 032 amended 2026-05-25 (v5 single-content constraint)."
+}
+
+variable "main_module" {
+  type        = string
+  default     = "worker.js"
+  description = "Logical entry-module name for the module-format worker. Labels the uploaded content part; does not need to be a real file (the deployed content is the bundle). Kept as worker.js for readability."
+}

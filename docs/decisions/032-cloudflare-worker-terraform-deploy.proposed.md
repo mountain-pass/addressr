@@ -9,6 +9,15 @@ reassessment-date: 2026-08-15
 
 # ADR 032: Cloudflare Worker deployed via Terraform (not Wrangler)
 
+> **Amendment 2026-05-25 — worker is esbuild-bundled before Terraform deploys it.** A `terraform validate` dry run against the real Cloudflare provider v5 surfaced two facts the original ADR did not account for:
+>
+> 1. `cloudflare_workers_script` (v5) accepts only a **single `content` string** (or `content_file`) — there is no attribute to upload sibling modules. So the modular source (`worker.js` importing `./ip-matcher.mjs` + `./safe-ips.mjs`) cannot deploy as separate files; only `worker.js` would upload and its imports would fail at the CF runtime.
+> 2. The v5 route resource attribute is `script`, not `script_name`, and `cloudflare_workers_secret` does not exist in v5 — secrets are inline `bindings` (`{name, type = "secret_text", text}`) on the script, which the module already uses.
+>
+> **Resolution:** the worker is bundled with **esbuild** (`npm run build:worker` → `deploy/cloudflare-worker/worker.bundled.js`, a single ES module) before Terraform runs; `deploy/deploy.sh` invokes it ahead of every `terraform` command, and `cloudflare_workers_script.content` reads the bundle. The bundle is a **deploy-time artifact (gitignored)** — regenerated from source each run, so the unit-tested source (`ip-matcher.mjs`) and the deployed bundle cannot drift. The three-file modular split is retained for testability.
+>
+> **This does not reopen the Wrangler decision.** esbuild is purely a _bundler_ (no deploy, no secret handling); Terraform still owns deploy + the `RAPIDAPI_KEY` secret binding. esbuild bundles, Terraform deploys — they compose. It also does not conflict with [ADR 005 (Babel transpilation)](005-babel-transpilation.accepted.md): Babel transpiles the Node.js server/loader (`babel . -d lib`, which already ignores `deploy/`); the worker is a separate V8-isolate artifact built by a different tool. (Architect agent was unavailable at amendment time; this reasoning was self-reviewed and recorded here per the architecture-gate intent.)
+
 ## Context and Problem Statement
 
 The Cloudflare Worker described in [ADR 018](018-cloudflare-worker-api-proxy.accepted.md) (worker name `cool-bush-ca66`; routes `api.addressr.io/*` and `cool-bush-ca66.addressr-key-provider.workers.dev/*`) is the gateway boundary for unauthenticated browser traffic from the addressr.io SPA and for IP-stable monitoring (Uptime Robot per ADR 016). It injects the RapidAPI key and rejects requests that match neither `safeHosts` (Referer/Origin) nor `safeIps` (CF-Connecting-IP).
