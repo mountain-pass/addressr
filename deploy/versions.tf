@@ -13,6 +13,11 @@ terraform {
     google = {
       source = "hashicorp/google"
     }
+    # ADR 032 / P042 — Cloudflare Worker brought under Terraform.
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
   required_version = ">= 0.13"
 }

@@ -152,6 +152,15 @@ jobs:
           TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
           TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
           TF_VAR_proxy_auth_value: ${{ secrets.TF_VAR_proxy_auth_value }}
+          # ADR 032 / P042 — Cloudflare provider + worker module credentials.
+          # Token requires Workers Scripts Edit + Workers Routes Edit + Workers
+          # Secrets Edit scopes on the addressr account/zone. RapidAPI key is
+          # the existing dashboard value (no rotation during the P042 cutover,
+          # per ADR 032 Scope). Sourced via 1P Voder per reference_addressr_secrets.
+          TF_VAR_cloudflare_api_token: ${{ secrets.TF_VAR_cloudflare_api_token }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.TF_VAR_cloudflare_account_id }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.TF_VAR_cloudflare_zone_id }}
+          TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
           TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
         with:
           runCmd: |
@@ -168,6 +177,10 @@ jobs:
             TF_VAR_aws_access_key
             TF_VAR_proxy_auth_header
             TF_VAR_proxy_auth_value
+            TF_VAR_cloudflare_api_token
+            TF_VAR_cloudflare_account_id
+            TF_VAR_cloudflare_zone_id
+            TF_VAR_cloudflare_rapidapi_key
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize

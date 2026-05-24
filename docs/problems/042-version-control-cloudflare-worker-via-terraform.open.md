@@ -41,13 +41,18 @@ Until this lands, P040's Referer-header workaround (configure UR monitors to sen
 ### Investigation Tasks
 
 - [ ] Re-rate Priority and Effort at next /wr-itil:review-problems
-- [ ] Draft the new ADR for "Cloudflare Worker deployed via Terraform (not wrangler)"
-- [ ] Draft the ADR 018 amendment marking line 50/63 resolved
-- [ ] Bring worker.js into the repo with CIDR-aware matcher
-- [ ] Write CIDR-matcher unit tests (TDD red → green)
-- [ ] Migrate the hardcoded RapidAPI key into Cloudflare Worker secrets via Terraform
+- [x] Draft the new ADR for "Cloudflare Worker deployed via Terraform (not wrangler)" — landed as ADR 032 (proposed) on 2026-05-15
+- [x] Draft the ADR 018 amendment marking line 50/63 resolved — landed as ADR 018 Amendment 2026-05-15
+- [x] Bring worker.js into the repo with CIDR-aware matcher — `deploy/cloudflare-worker/{worker.js, ip-matcher.mjs, safe-ips.mjs}`
+- [x] Write CIDR-matcher unit tests (TDD red → green) — 37 assertions at `test/js/__tests__/cloudflare-worker-ip-matcher.test.mjs`; module-shape smoke at `deploy/cloudflare-worker/worker.test.js`
+- [x] Migrate the hardcoded RapidAPI key into Cloudflare Worker secrets via Terraform — `deploy/modules/cloudflare-worker/main.tf` provisions `cloudflare_workers_secret.rapidapi_key`; key sourced via `TF_VAR_cloudflare_rapidapi_key`
 - [ ] Add the UR-IP-drift detection job (optional follow-up — could be its own ticket if scope grows)
 - [ ] Update ADR 016 Confirmation to remove the Referer-header requirement once the worker patch is live
+- [x] Operator: populate four new GH Actions secrets from 1P Voder — done 2026-05-23. Four `Addressr Cloudflare *` items created in the Voder vault (source of truth); `TF_VAR_cloudflare_api_token`, `TF_VAR_cloudflare_account_id`, `TF_VAR_cloudflare_zone_id`, `TF_VAR_cloudflare_rapidapi_key` synced to `mountain-pass/addressr` and verified. Token validated against Cloudflare `/user/tokens/verify` (active; Workers Scripts + Workers Routes scopes confirmed; can see `cool-bush-ca66` and the `api.addressr.io/*` route). RapidAPI key sourced from local `.env` (matches the dashboard worker value). Note: "Workers Secrets Edit" is NOT a separate Cloudflare scope — Workers Scripts Edit covers secret bindings.
+- [ ] Operator: run `terraform import` once for the existing dashboard worker (script + route) before the next release per ADR 032 Cutover mechanism; confirm `terraform plan` is a no-op. **Import IDs (captured 2026-05-23):**
+  - script: `terraform import 'module.cloudflare_worker.cloudflare_workers_script.proxy' '44ee5fee98c702f8b64e2d81e557c876/cool-bush-ca66'`
+  - route: `terraform import 'module.cloudflare_worker.cloudflare_workers_route.api_addressr_io' 'f0a901f4fb16bdcdf73cad942cc4e205/aa5d80460d384047928b27d1c4730250'`
+- [ ] Operator: confirm Uptime Robot alerts cease over a 24-hour observation window after the first `terraform apply` lands
 
 ## Dependencies
 

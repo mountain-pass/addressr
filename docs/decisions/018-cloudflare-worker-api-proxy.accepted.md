@@ -4,9 +4,19 @@ date: 2021-01-01
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
+reassessment-date: 2026-08-15
 ---
 
 # ADR 018: Cloudflare Worker as API Key Proxy
+
+> **Amendment 2026-05-15** — Two of the four Reassessment Criteria below now have explicit follow-up ADRs and are no longer open against this ADR. Line 62 ("RapidAPI key rotation … should move to Cloudflare secrets") and line 63 ("Version-controlling the worker script") are resolved by [ADR 032 (Cloudflare Worker deployed via Terraform)](032-cloudflare-worker-terraform-deploy.proposed.md), which P042 lands. Concretely:
+>
+> - The worker source now lives at `deploy/cloudflare-worker/{worker.js, ip-matcher.mjs, safe-ips.mjs}` and is unit-tested at `test/js/__tests__/cloudflare-worker-ip-matcher.test.mjs` — this resolves the Bad consequence at line 50 ("worker is not version-controlled"). The dashboard is no longer source of truth; the repo is, deployed via `terraform apply`.
+> - The RapidAPI key moves out of source into `cloudflare_workers_secret.rapidapi_key` populated via `var.cloudflare_rapidapi_key` sourced from 1Password Voder → GHA secret `TF_VAR_cloudflare_rapidapi_key` (per `reference_addressr_secrets`) — this resolves the Bad consequence at line 48 ("RapidAPI key is hardcoded").
+> - The Uptime Robot IP-list drift consequence at line 49 remains a latent operational task; ADR 032 captures a UR-IP-drift detection follow-up as out of scope for the initial migration. The drift cost is unchanged from this ADR; what changes is that the next re-sync is a PR with `terraform apply` rather than a dashboard paste.
+> - The remaining Reassessment Criterion (line 60 Cloudflare Workers pricing) is still open; the line 61 Reassessment Criterion (additional consumer domains beyond the current safelist) is now a same-shape PR against `deploy/cloudflare-worker/safe-ips.mjs`.
+>
+> The core decision — Option 1 (Cloudflare Worker as the proxy) — is unchanged; only the deploy mechanism is documented elsewhere (ADR 032).
 
 ## Context and Problem Statement
 
@@ -37,6 +47,7 @@ The addressr.io website and Uptime Robot need to call the addressr API without e
 6. Proxies the response back to the caller
 
 This enables:
+
 - **addressr.io website**: calls the API from JavaScript without exposing the RapidAPI key
 - **Uptime Robot**: monitors `/addresses/GANSW718804790` without needing RapidAPI credentials (see ADR 016)
 

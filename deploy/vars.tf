@@ -90,3 +90,30 @@ variable "elastic_v2_password" {
   nullable  = false
   description = "ADR 029 Phase 1 amendment 2026-04-29: master password for the v2 OpenSearch domain. Decoupled from var.elastic_password. Sourced from GHA secret TF_VAR_ELASTIC_V2_PASSWORD via release.yml. The value in TFC must equal the GHA secret AND the EB ADDRESSR_SHADOW_PASSWORD env var; divergence between any of these three is the failure mode P028 captured."
 }
+
+# ADR 032 / P042 — Cloudflare provider + worker module inputs.
+variable "cloudflare_api_token" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  description = "Cloudflare API token with Workers Scripts Edit + Workers Routes Edit + Workers Secrets Edit scopes on the addressr account/zone. Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_api_token (per reference_addressr_secrets)."
+}
+
+variable "cloudflare_account_id" {
+  type        = string
+  nullable    = false
+  description = "Cloudflare account ID hosting the cool-bush-ca66 worker (Windy Road Cloudflare account, per ADR 018 line 30). Not strictly sensitive but sourced via the same GHA-secret path for consistency."
+}
+
+variable "cloudflare_zone_id" {
+  type        = string
+  nullable    = false
+  description = "Cloudflare zone ID for the addressr.io zone. The api.addressr.io/* worker route binds against this zone."
+}
+
+variable "cloudflare_rapidapi_key" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  description = "RapidAPI key consumed by the worker (replaces the prior hardcoded value in the dashboard worker source, ADR 018 line 48 Bad consequence). Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_rapidapi_key. The current production value is reused at cutover (no rotation during the P042 migration, per P042 ticket §16)."
+}

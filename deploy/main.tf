@@ -603,6 +603,18 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   }
 }
 
+# ADR 032 / P042 — Cloudflare Worker as API key proxy, brought under Terraform.
+# Worker source lives in deploy/cloudflare-worker/. Cutover via `terraform import`
+# of the existing dashboard-managed worker (script + route) — see ADR 032
+# Decision Outcome / Cutover mechanism for the import commands.
+module "cloudflare_worker" {
+  source = "./modules/cloudflare-worker"
+
+  account_id   = var.cloudflare_account_id
+  zone_id      = var.cloudflare_zone_id
+  rapidapi_key = var.cloudflare_rapidapi_key
+}
+
 # ADR 029 Phase 1 rolled back 2026-05-14: module "opensearch_v2" block removed.
 # The two-phase blue/green pattern remains the chosen path; this specific
 # Phase 1 attempt is abandoned after the AWS-managed FGAC clobber pattern
