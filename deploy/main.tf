@@ -65,7 +65,11 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
   dynamic "setting" {
-    for_each = var.proxy_auth_header != "" ? [1] : []
+    # toset(...) not [1]: terraform >= 1.5 (pinned 1.9.8 for ADR 032 import
+    # blocks) rejects a list-of-number in for_each; a set is required. The
+    # content uses var.proxy_auth_header directly, so the iterator value is
+    # irrelevant — this just emits the block once when the var is set.
+    for_each = var.proxy_auth_header != "" ? toset(["enabled"]) : toset([])
     content {
       namespace = "aws:elasticbeanstalk:application:environment"
       name      = "ADDRESSR_PROXY_AUTH_HEADER"
@@ -74,7 +78,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     }
   }
   dynamic "setting" {
-    for_each = var.proxy_auth_value != "" ? [1] : []
+    for_each = var.proxy_auth_value != "" ? toset(["enabled"]) : toset([])
     content {
       namespace = "aws:elasticbeanstalk:application:environment"
       name      = "ADDRESSR_PROXY_AUTH_VALUE"
