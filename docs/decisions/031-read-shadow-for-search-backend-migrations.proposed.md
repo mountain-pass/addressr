@@ -286,6 +286,8 @@ or Option 5 (bigger instances) before any cutover.
 
 ## Confirmation
 
+> **Baseline note 2026-07-07** — the 741 ms v1 p95 figure quoted in the Soak Gate and Confirmation examples below is the 2026-04-29 measurement, since **replaced**: the refreshed baseline is search p95 961.64 ms (see ADR 029 re-attempt amendment item 5), making the current gate v2 p95 ≤ ~1,443 ms. The 1.5× formula is normative; the absolute figures are illustrative.
+
 > **Amendment 2026-07-06** — ADR 029 Phase 1 re-attempt: shadow enable is **deferred until the v2 populate completes and validates** (quiet-populate-first sequencing per the ADR 029 re-attempt amendment 2026-07-06). The first attempt ran shadow during populate; bulk-index contention degraded shadow success 95% → 52% (I001) and invalidated the soak. Separating the windows means the soak clock only ever runs against a fully-populated, quiescent-indexing cluster. Soak gate, 2xx soak-validity check, and the 1.5× k6 threshold are unchanged.
 
 > **Amendment 2026-05-14** — capability is in **default-off posture**. ADR 029 Phase 1 was rolled back; `ADDRESSR_SHADOW_*` env vars removed from the EB resource in `deploy/main.tf`; `src/read-shadow.js`'s `mirrorRequest` no-ops when `ADDRESSR_SHADOW_HOST` is unset. The capability remains shipped and tested in code (no change to `src/`, no change to `test/`); a future search-backend migration re-enables it by reintroducing the env-var block. No status change to this ADR.
