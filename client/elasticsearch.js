@@ -2,6 +2,10 @@ const waitPort = require('wait-port');
 const elasticsearch = require('@opensearch-project/opensearch');
 import debug from 'debug';
 import { buildClientNode } from '../src/client-node-url.js';
+import {
+  indexConfigMatches,
+  retryOnSnapshotInProgress,
+} from '../src/init-index-config.js';
 const logger = debug('api');
 const error = debug('error');
 
@@ -118,30 +122,53 @@ export async function initIndex(esClient, clear, synonyms) {
   };
 
   if (exists.body) {
-    // update the index
-    const indexCloseResult = await esClient.indices.close({
-      index: ES_INDEX_NAME,
-    });
-    logger({ indexCloseResult });
-    const indexPutSettingsResult = await esClient.indices.putSettings({
-      index: ES_INDEX_NAME,
-      body: indexBody,
-    });
-    logger({ indexPutSettingsResult });
-    const indexPutMappingResult = await esClient.indices.putMapping({
-      index: ES_INDEX_NAME,
-      body: indexBody.mappings,
-    });
-    logger({ indexPutMappingResult });
+    // P037 fast-path: settings/mappings don't change between state loads,
+    // so skip the close-update-open dance (and its race with AWS hourly
+    // automated snapshots, I001) when the stored config already matches.
+    const [currentSettings, currentMapping] = await Promise.all([
+      esClient.indices.getSettings({ index: ES_INDEX_NAME }),
+      esClient.indices.getMapping({ index: ES_INDEX_NAME }),
+    ]);
+    if (
+      indexConfigMatches(
+        indexBody,
+        currentSettings.body,
+        currentMapping.body,
+        ES_INDEX_NAME,
+      )
+    ) {
+      logger(
+        'index settings and mappings already match; skipping close-update-open (P037)',
+      );
+    } else {
+      // update the index. Close can collide with an in-progress automated
+      // snapshot on AWS-managed domains — retry per P037.
+      const indexCloseResult = await retryOnSnapshotInProgress(() =>
+        esClient.indices.close({
+          index: ES_INDEX_NAME,
+        }),
+      );
+      logger({ indexCloseResult });
+      const indexPutSettingsResult = await esClient.indices.putSettings({
+        index: ES_INDEX_NAME,
+        body: indexBody,
+      });
+      logger({ indexPutSettingsResult });
+      const indexPutMappingResult = await esClient.indices.putMapping({
+        index: ES_INDEX_NAME,
+        body: indexBody.mappings,
+      });
+      logger({ indexPutMappingResult });
 
-    const indexOpenResult = await esClient.indices.open({
-      index: ES_INDEX_NAME,
-    });
-    logger({ indexOpenResult });
-    const refreshResult = await esClient.indices.refresh({
-      index: ES_INDEX_NAME,
-    });
-    logger({ refreshResult });
+      const indexOpenResult = await esClient.indices.open({
+        index: ES_INDEX_NAME,
+      });
+      logger({ indexOpenResult });
+      const refreshResult = await esClient.indices.refresh({
+        index: ES_INDEX_NAME,
+      });
+      logger({ refreshResult });
+    }
   } else {
     logger(`creating index: ${ES_INDEX_NAME}`);
     const indexCreateResult = await esClient.indices.create({

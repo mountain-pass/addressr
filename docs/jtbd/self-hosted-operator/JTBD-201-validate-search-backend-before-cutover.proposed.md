@@ -12,6 +12,8 @@ screens:
   - swagger.js
   - src/proxy-auth.js
   - /debug/shadow-config
+  - src/init-index-config.js
+  - client/elasticsearch.js
 ---
 
 # JTBD-201: Validate a new search backend with realistic production traffic before cutover
