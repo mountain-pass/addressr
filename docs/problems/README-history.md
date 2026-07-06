@@ -21,3 +21,7 @@ Last reviewed: 2026-05-14 — ADR 029 Phase 1 rolled back; P036 + P038 parked as
 Last reviewed: 2026-05-14 **README reconciled** — 3 drift entries corrected: P039, P040, P041 (all missing open). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF for new rows is a deferred estimate (3/M=1.5); next `/wr-itil:review-problems` will re-rate.
 
 Last reviewed: 2026-05-14 — P040 → Known Error (RCA corrected — Cloudflare Worker `safeIps` strict-equality bug + UR IP drift, not ADR 024 origin enforcement; Referer-header workaround documented; WSJF 1.5 → 20.0). P042 captured (version-control the worker via Terraform — closes ADR 018 line 50/63). ADR 016 amended to require the Referer header in Confirmation; BRIEFING.md line 65 misattribution corrected; release.yml gains worker-vs-origin smoke probes.
+
+## 2026-07-06
+
+Last reviewed: 2026-05-25 — P042 → Verification Pending (Cloudflare Worker cut over to Terraform, ADR 032, v2.6.12/13 deployed + verified live); P044 captured (changesets swallows publish failure → deploy silently skips). P040 + P042 share the 24h UptimeRobot observation gate before close. WSJF re-rank deferred to next `/wr-itil:review-problems`.

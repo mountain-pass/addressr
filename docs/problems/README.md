@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-05-25 — P042 → Verification Pending (Cloudflare Worker cut over to Terraform, ADR 032, v2.6.12/13 deployed + verified live); P044 captured (changesets swallows publish failure → deploy silently skips). P040 + P042 share the 24h UptimeRobot observation gate before close. WSJF re-rank deferred to next `/wr-itil:review-problems`.
+> Last reviewed: 2026-07-06 **P045 captured** — RISK-POLICY staleness window hardcoded at 14 days conflicts with the quarterly review cadence (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -31,6 +31,7 @@
 | 1.5  | P044 | changesets/action swallows publish failure → deploy silently skips    | (defer)    | Open        | S      | Captured 2026-05-25; silent-green failure mode of the P039 publish-coupling                    |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)    | Open        | M      | Captured 2026-05-14 retro; upstream fix needed in @windyroad/itil; one-line bash workaround    |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium) | Open        | L      | Deferred estimate; needs review-problems re-rank                                               |
+| 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | (defer)    | Open        | M      | Captured 2026-07-06; upstream wr-risk-scorer hook; fortnightly date-bump workaround            |
 
 ## Verification Queue
 
