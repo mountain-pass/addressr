@@ -2,7 +2,8 @@
 
 _Per ISO 31000 — Risk Management_
 
-**Last reviewed:** 2026-05-14
+**Last reviewed:** 2026-07-06
+**Review cadence:** quarterly (next review due 2026-10-06) — user-directed 2026-07-06
 
 ## Business Context
 
@@ -17,6 +18,7 @@ Addressr is an Australian Address Validation, Search and Autocomplete service pu
 **Live service (AWS):**
 
 - Deployed to AWS via Terraform with OpenSearch backend
+- Fronted by a Cloudflare Worker edge proxy since the ADR 032 cutover (v2.6.12/13); the Worker injects the gateway auth header per ADR 016/024
 - Serves the RapidAPI-listed API (v1, current)
 
 This is a revenue-generating production service with paid and free-tier consumers relying on address validation for their own applications.
