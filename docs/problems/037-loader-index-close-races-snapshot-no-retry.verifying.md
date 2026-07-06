@@ -1,6 +1,6 @@
 # Problem 037: Loader unnecessarily closes the addressr index every state load AND has no retry on snapshot_in_progress_exception
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-05-12
 **Priority**: 8 (Medium) — Impact: Moderate (4) x Likelihood: Likely (2) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
@@ -49,10 +49,30 @@ The loader's `initIndex` was written assuming a fresh-domain bootstrap path wher
 ### Investigation Tasks
 
 - [ ] Re-rate Priority and Effort at next /wr-itil:review-problems
-- [ ] Fix (1): add a `_settings` + mapping diff at the top of `initIndex` — only run close/putSettings/open if the deployed config differs from the desired one
-- [ ] Fix (2): wrap `indices.close` in a retry-on-`snapshot_in_progress_exception` loop with backoff (e.g. 3 attempts at 30s intervals)
-- [ ] Regression test: simulate a `snapshot_in_progress_exception` response in the OpenSearch test fixture; assert loader retries (for fix 2) and assert loader skips close on no-diff (for fix 1)
-- [ ] Verify the fix against `populate (QLD) / update` and `populate (WA) / update` cleanly even when snapshots overlap
+- [x] Fix (1): add a `_settings` + mapping diff at the top of `initIndex` — only run close/putSettings/open if the deployed config differs from the desired one — shipped in `src/init-index-config.js` `indexConfigMatches` (commit cb34e20)
+- [x] Fix (2): wrap `indices.close` in a retry-on-`snapshot_in_progress_exception` loop with backoff — shipped as `retryOnSnapshotInProgress` (6 × 30s, commit cb34e20)
+- [x] Regression test: `test/js/__tests__/init-index-config.test.mjs` (12 cases, TDD failing-first) — retry/exhaustion/rethrow for fix 2, match/mismatch/malformed fast-path for fix 1; plus live probe against real OpenSearch 2.19.5 confirming the fast-path fires on the actual stored-config echo
+- [ ] Verify the fix against a full populate run (ADR 029 Stage 2 `populate-search-domain.yml` target=v2 states=all) cleanly even when snapshots overlap — the verification gate for closing this ticket
+
+## Fix Strategy
+
+Both fixes shipped together in `client/elasticsearch.js` + `src/init-index-config.js` (commit cb34e20). Fast-path skips the close entirely on every state load after the first (config never changes between states); retry covers the genuinely-needed closes.
+
+**Release vehicle**: .changeset/p037-loader-skip-close-retry-snapshot.md
+
+## Workaround (superseded by fix)
+
+Re-trigger the failed populate state and hope it lands in a snapshot-quiet window (documented above; no longer needed once v2.6.14 loader is in use).
+
+## Fix Released
+
+Released in `@mountainpass/addressr@2.6.14` (merge commit d7b0cbd, PR #488, released 2026-07-07; fix commit cb34e20; changeset `.changeset/p037-loader-skip-close-retry-snapshot.md`).
+
+Fix: `initIndex` fast-paths past the close-update-open dance when stored index settings/mappings already match, and retries `indices.close` on `snapshot_in_progress_exception` (6 × 30s) when a close is genuinely needed.
+
+Exercise evidence from the releasing session: 12 unit tests green (TDD failing-first); live probe against real OpenSearch 2.19.5 confirmed the fast-path fires on the actual stored-config echo and the negative control falls back to the update path; full Cucumber `test:nodejs:nogeo` (13 scenarios / 64 steps) green with the change in the loader path.
+
+Awaiting user verification: first clean 9-of-9 `populate-search-domain.yml` run against the ADR 029 Stage 2 v2 domain (with hourly snapshots active) is the verification event.
 
 ## Dependencies
 

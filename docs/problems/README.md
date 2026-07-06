@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-06 **ADR 029 Phase 1 re-attempt begins** — P036 un-parked (trigger fired: re-attempt approved; audit logs shipped in ADR 030 module); P037 fix released ahead of populate (initIndex fast-path + snapshot retry); ADR 029/030/031 re-attempt amendments landed. WSJF re-rank deferred to next `/wr-itil:review-problems`.
+> Last reviewed: 2026-07-07 **P037 verification pending** — initIndex fast-path + snapshot retry released in v2.6.14 (PR #488); verification = first clean 9-of-9 populate against the ADR 029 Stage 2 v2 domain. Stage 0 of the re-attempt complete (audit-log module, parity dashboard, refreshed k6 baseline: gate ≤ ~1,443 ms).
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -18,7 +18,6 @@
 | 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                     | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                         | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
 | 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive             | 6 (Medium) | Open        | S      | Deferred estimate; needs review-problems re-rank                                               |
-| 4.0  | P037 | Loader index-close races snapshots + no retry                         | 8 (Medium) | Open        | M      | Deferred estimate; applies to v1 loader path                                                   |
 | 4.5  | P014 | Invalid address ID returns 500 not 404                                | 9 (Medium) | Open        | M      | Error handling exists but untested; null-check gap                                             |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium) | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
 | 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses         | 4 (Low)    | Open        | S      | Deferred estimate; needs review-problems re-rank                                               |
@@ -42,6 +41,7 @@
 | ID   | Title                                               | Released   | Likely verified?  | Notes                                                                                    |
 | ---- | --------------------------------------------------- | ---------- | ----------------- | ---------------------------------------------------------------------------------------- |
 | P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); awaiting 24h UR observation (shared gate w/ P040) |
+| P037 | Loader index-close races snapshots + no retry       | 2026-07-07 | no — not observed | Fix in v2.6.14 (PR #488); verify via first clean 9-of-9 populate vs v2 (ADR 029 Stage 2) |
 
 ## Parked
 
