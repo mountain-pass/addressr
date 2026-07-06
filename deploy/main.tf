@@ -622,20 +622,35 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
-# ADR 029 Phase 1 rolled back 2026-05-14: module "opensearch_v2" block removed.
-# The two-phase blue/green pattern remains the chosen path; this specific
-# Phase 1 attempt is abandoned after the AWS-managed FGAC clobber pattern
-# tripped the cluster three times (P036) and the m6g.large resize stuck mid
-# blue/green for 3+ hours with non-monotonic stage-4 telemetry. v1
-# (search-addressr3, out of TF scope per ADR 030) continues to serve all
-# production traffic unaffected. The ./modules/opensearch module is
-# intentionally retained without a caller during this rollback window
-# (ADR 030 Confirmation amendment 2026-05-14); a future Phase 1 re-attempt
-# or a locality/postcode secondary-index decision will re-introduce a caller.
-# var.elastic_v2_* declarations in deploy/vars.tf are kept (deferred cleanup;
-# orphaned-but-harmless). Read-shadow capability is in default-off posture
-# (ADR 031 amendment 2026-05-14) — capability shipped, no shadow target
-# configured, mirrorRequest no-ops.
+# ADR 029 Phase 1 re-attempt 2026-07-07 (Stage 1): parallel v2 OpenSearch
+# domain, provisioned QUIET — no ADDRESSR_SHADOW_* EB settings until the
+# populate completes and validates (ADR 031 amendment 2026-07-06). Sizing is
+# steady-state from day one (t3.small.search × 2 + 12 GB, matching v1) and is
+# NEVER resized in place; escalation is destroy + recreate per the ADR 030
+# never-resize consequence. Domain name addressr4 → endpoint reads
+# search-addressr4-… (attempt 1's literal search-addressr4 name produced a
+# double-prefixed endpoint). Audit logs on by module default (P036 — FGAC
+# clobbers are invisible to CloudTrail). Creds are the fresh 2026-07-06 pair,
+# synced GHA → TFC by .github/workflows/sync-tfc-vars.yml run 28821609857.
+# ELASTIC_HOST stays pointed at v1 until ADR 029 step 7 cutover.
+module "opensearch_v2" {
+  source = "./modules/opensearch"
+
+  name                 = var.elastic_v2_name
+  engine_version       = var.elastic_v2_engine_version
+  master_user_name     = var.elastic_v2_username
+  master_user_password = var.elastic_v2_password
+
+  instance_type   = "t3.small.search"
+  instance_count  = 2
+  ebs_volume_size = 12
+
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "029-030"
+  }
+}
 
 # ADR 029 re-attempt 2026-07-06, Stage 0d: search-parity dashboard, stood up
 # against v1 BEFORE any v2 spend so the parity signal is proven at our real
