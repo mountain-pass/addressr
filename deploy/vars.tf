@@ -69,15 +69,15 @@ variable "proxy_auth_value" {
 variable "elastic_v1_domain_name" {
   type        = string
   nullable    = false
-  default     = "search-addressr3"
-  description = "ADR 029 re-attempt 2026-07-06: DomainName dimension of the CURRENT production OpenSearch domain, used only for CloudWatch metric references on the parity dashboard. The v1 domain resource itself stays out of Terraform scope per ADR 030 — metrics are referenced by name only."
+  default     = "addressr3"
+  description = "ADR 029 re-attempt 2026-07-06: DomainName dimension of the CURRENT production OpenSearch domain, used only for CloudWatch metric references on the parity dashboard. NOTE: the domain NAME is addressr3 — the search-addressr3-… string quoted in ADRs is the ENDPOINT prefix (AWS prepends search- to the domain name). Verified via aws opensearch list-domain-names 2026-07-07. The v1 domain resource itself stays out of Terraform scope per ADR 030 — metrics are referenced by name only."
 }
 
 variable "elastic_v2_name" {
   type        = string
   nullable    = false
-  default     = "search-addressr4"
-  description = "ADR 029 Phase 1 / ADR 030: domain name for the v2 OpenSearch domain provisioned in parallel during blue/green cutover. Phase 2 can override to search-addressr5 (or similar) without touching main.tf."
+  default     = "addressr4"
+  description = "ADR 029 Phase 1 / ADR 030: domain name for the v2 OpenSearch domain provisioned in parallel during blue/green cutover. Re-attempt 2026-07-07: renamed search-addressr4 → addressr4 so the AWS endpoint (search-<name>-<hash>) reads search-addressr4-…, matching the ADR prose; attempt 1's literal search-addressr4 domain name produced a search-search-addressr4-… endpoint. The domain does not exist yet, so the rename is free. Operators: clear any stale elastic_v2_name override in the TFC workspace. Phase 2 can override to addressr5 without touching main.tf."
 }
 variable "elastic_v2_engine_version" {
   type        = string
