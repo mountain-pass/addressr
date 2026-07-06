@@ -636,3 +636,48 @@ module "cloudflare_worker" {
 # orphaned-but-harmless). Read-shadow capability is in default-off posture
 # (ADR 031 amendment 2026-05-14) — capability shipped, no shadow target
 # configured, mirrorRequest no-ops.
+
+# ADR 029 re-attempt 2026-07-06, Stage 0d: search-parity dashboard, stood up
+# against v1 BEFORE any v2 spend so the parity signal is proven at our real
+# traffic volume first. v1 (search-addressr3) stays out of Terraform scope per
+# ADR 030 — its metrics are referenced by DomainName only. The v2 widgets show
+# no data until the Stage 1 module caller provisions search-addressr4.
+data "aws_caller_identity" "current" {}
+
+locals {
+  search_parity_domains = [var.elastic_v1_domain_name, var.elastic_v2_name]
+  # One line per domain per stat. p95 may be sparse at low q/s — the Average
+  # lines are the fallback comparison per the ADR 029 re-attempt amendment;
+  # the statistic/period choice is validated on v1 during Stage 0d.
+  search_parity_widgets = [
+    for idx, metric in ["SearchLatency", "SearchRate", "CPUUtilization"] : {
+      type   = "metric"
+      x      = 0
+      y      = idx * 8
+      width  = 24
+      height = 8
+      properties = {
+        title  = "${metric} — v1 vs v2"
+        region = "ap-southeast-2"
+        stat   = metric == "SearchLatency" ? "p95" : "Average"
+        period = 3600
+        view   = "timeSeries"
+        metrics = concat(
+          [
+            for domain in local.search_parity_domains :
+            ["AWS/ES", metric, "DomainName", domain, "ClientId", data.aws_caller_identity.current.account_id]
+          ],
+          metric == "SearchLatency" ? [
+            for domain in local.search_parity_domains :
+            ["AWS/ES", metric, "DomainName", domain, "ClientId", data.aws_caller_identity.current.account_id, { stat = "Average", label = "${domain} avg" }]
+          ] : []
+        )
+      }
+    }
+  ]
+}
+
+resource "aws_cloudwatch_dashboard" "search_parity" {
+  dashboard_name = "addressr-search-parity"
+  dashboard_body = jsonencode({ widgets = local.search_parity_widgets })
+}

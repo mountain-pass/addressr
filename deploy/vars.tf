@@ -66,6 +66,13 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
+variable "elastic_v1_domain_name" {
+  type        = string
+  nullable    = false
+  default     = "search-addressr3"
+  description = "ADR 029 re-attempt 2026-07-06: DomainName dimension of the CURRENT production OpenSearch domain, used only for CloudWatch metric references on the parity dashboard. The v1 domain resource itself stays out of Terraform scope per ADR 030 — metrics are referenced by name only."
+}
+
 variable "elastic_v2_name" {
   type        = string
   nullable    = false
