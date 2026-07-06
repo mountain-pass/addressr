@@ -25,3 +25,5 @@ Last reviewed: 2026-05-14 — P040 → Known Error (RCA corrected — Cloudflare
 ## 2026-07-06
 
 Last reviewed: 2026-05-25 — P042 → Verification Pending (Cloudflare Worker cut over to Terraform, ADR 032, v2.6.12/13 deployed + verified live); P044 captured (changesets swallows publish failure → deploy silently skips). P040 + P042 share the 24h UptimeRobot observation gate before close. WSJF re-rank deferred to next `/wr-itil:review-problems`.
+
+Last reviewed: 2026-07-06 **P045 captured** — RISK-POLICY staleness window hardcoded at 14 days conflicts with the quarterly review cadence (lightweight aside via /wr-itil:capture-problem)

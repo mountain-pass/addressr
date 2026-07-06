@@ -48,6 +48,18 @@ variable "master_user_password" {
   description = "Fine-grained access control master password. Caller sources from 1Password → GitHub Actions secrets → Terraform (per ADR 030)."
 }
 
+variable "enable_audit_logs" {
+  type        = bool
+  default     = true
+  description = "Publish OpenSearch AUDIT_LOGS to a CloudWatch log group. P036: FGAC master-user password clobbers were invisible to CloudTrail (internal-user changes go through the OpenSearch REST API, not the AWS control plane); audit logs make the next occurrence traceable. Requires advanced_security_options (always on in this module)."
+}
+
+variable "audit_log_retention_days" {
+  type        = number
+  default     = 90
+  description = "CloudWatch retention for the audit-log group."
+}
+
 variable "tags" {
   type        = map(string)
   default     = {}

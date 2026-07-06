@@ -4,7 +4,7 @@ date: 2026-04-21
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
-reassessment-date: 2026-07-21
+reassessment-date: 2026-09-30
 ---
 
 # ADR 030: Bring AWS OpenSearch domain under Terraform management
@@ -77,6 +77,8 @@ The root `deploy/main.tf` calls the module once per domain. ADR 029 Phase 1 adds
 
 - `search-addressr3-…` remains unmanaged until it is destroyed at the end of ADR 029 Phase 1 soak. The asymmetry is explicit and time-bounded.
 - Module shape is the conventional Terraform module layout; no architectural innovation, low maintenance burden
+- **Audit-log publishing is part of the module shape (added 2026-07-06, P036).** The module provisions a per-domain CloudWatch log group (`/aws/opensearch/<name>/audit-logs`) + account/region-scoped resource policy (named per domain — AWS caps 10 per region) and enables `log_publishing_options { log_type = "AUDIT_LOGS" }`, gated by `enable_audit_logs` (default `true`). Rationale: the P036 FGAC master-user password-clobber pattern is invisible to CloudTrail (internal-user changes go through the OpenSearch REST API, not the AWS control plane); audit logs are the only trace. A durable property of every future domain (v3 included), same precedent as the distinct-credentials note below.
+- **Never resize a live parallel domain — recreate instead (added 2026-07-06).** The 2026-05-13 m6g.large resize blue/green stuck mid-stage-4 for 3+ hours with non-monotonic AWS telemetry, and 2 of 3 P036 FGAC-clobber observations followed AWS-side domain reconfigurations. Treat destroy + recreate at the new spec (plus fresh-creds rotation per the distinct-credentials note) as the only sanctioned resizing mechanic for domains provisioned by this module while they hold data we care about; in-place `terraform apply` reconfiguration of instance class/EBS is off the table. Grounded in the AWS-managed resource's observed behaviour, not just ADR 029 Phase 1 procedure.
 - **Distinct credentials per parallel domain (added 2026-04-29).** Each parallel domain instance (v1 active, v2 candidate; future v2 active, v3 candidate) carries its own master*user_name/password sourced from its own GHA secret + TFC workspace variable. The original ADR 029 step 4 design said "v2 reuses v1 creds for cutover simplicity" but in practice that aliasing collapses 4 storage locations (TFC v1, TFC v2, GHA v1, GHA v2) into a single `var.elastic_password` whose value can drift unobserved between TFC's stored value and EB's deployed env var. P028 was the first realised consequence: shadow silently 401'd every request for the entire ADR 031 soak window. Treat distinct creds per parallel domain as a deliberate property of the parallel-domain pattern, not an emergency fix during one cutover. Phase 2 (2.x → 3.x) will use `var.elastic_v3*\*` with the same shape.
 
 ### Bad

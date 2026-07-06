@@ -23,6 +23,10 @@ module "opensearch_v2" {
 
 The `endpoint` output feeds `var.elastic_host` / `ELASTIC_HOST` in `deploy/main.tf`.
 
+## Audit logs (P036)
+
+`enable_audit_logs` (default `true`) publishes OpenSearch `AUDIT_LOGS` to a per-domain CloudWatch log group (`/aws/opensearch/<name>/audit-logs`, retention `audit_log_retention_days`, default 90). FGAC internal-user changes — the P036 master-user password-clobber pattern — never surface in CloudTrail; audit logs are the only trace. The CloudWatch resource policy is account/region-scoped (AWS caps 10 per region) and named per domain.
+
 ## Scope
 
 - **In scope**: the AWS-managed production domain.

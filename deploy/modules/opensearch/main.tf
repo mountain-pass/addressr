@@ -1,6 +1,45 @@
+# P036: audit logs at provisioning time so FGAC internal-user changes (the
+# password-clobber pattern that killed the first ADR 029 Phase 1 attempt) are
+# traceable — they never surface in CloudTrail. The resource policy is
+# account/region-scoped and AWS caps them at 10 per region, so it is named
+# per domain (this module is instantiated once per parallel domain by design).
+resource "aws_cloudwatch_log_group" "audit" {
+  count             = var.enable_audit_logs ? 1 : 0
+  name              = "/aws/opensearch/${var.name}/audit-logs"
+  retention_in_days = var.audit_log_retention_days
+  tags              = var.tags
+}
+
+resource "aws_cloudwatch_log_resource_policy" "audit" {
+  count       = var.enable_audit_logs ? 1 : 0
+  policy_name = "opensearch-audit-${var.name}"
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "es.amazonaws.com" }
+        Action = [
+          "logs:PutLogEvents",
+          "logs:CreateLogStream",
+        ]
+        Resource = "${aws_cloudwatch_log_group.audit[0].arn}:*"
+      }
+    ]
+  })
+}
+
 resource "aws_opensearch_domain" "this" {
   domain_name    = var.name
   engine_version = var.engine_version
+
+  dynamic "log_publishing_options" {
+    for_each = var.enable_audit_logs ? [1] : []
+    content {
+      log_type                 = "AUDIT_LOGS"
+      cloudwatch_log_group_arn = aws_cloudwatch_log_group.audit[0].arn
+    }
+  }
 
   cluster_config {
     instance_type          = var.instance_type
@@ -54,4 +93,7 @@ resource "aws_opensearch_domain" "this" {
   })
 
   tags = var.tags
+
+  # AWS validates the domain can write to the log group at create time.
+  depends_on = [aws_cloudwatch_log_resource_policy.audit]
 }

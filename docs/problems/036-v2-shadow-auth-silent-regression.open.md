@@ -1,16 +1,20 @@
 # Problem 036: v2 shadow auth silently regressed mid-soak
 
-**Status**: Parked
+**Status**: Open
 **Reported**: 2026-05-11
-**Parked**: 2026-05-14
+**Un-parked**: 2026-07-06
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Likely (3) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
 
-## Parked
+## Un-parked 2026-07-06
 
-**Reason**: ADR 029 Phase 1 rolled back 2026-05-14 — the v2 OpenSearch domain (`search-addressr4`) this problem manifested on is being decommissioned. The class-of-issue learning (AWS-managed FGAC clobber pattern on cluster blue/green ops, 3 observations) is preserved in this ticket body for the next Phase 1 attempt; P035 covers the broader observability-gap class.
+The un-park trigger fired: ADR 029 Phase 1 re-attempt approved (see ADR 029 re-attempt amendment 2026-07-06). The class-of-issue investigation tasks are actionable again:
 
-**Un-park trigger**: ADR 029 Phase 1 re-attempt fires (new v2/v3 OpenSearch domain provisioned). At that point the class-of-issue investigation tasks (enable audit logs, snapshot security-index check) become actionable again.
+- Audit logs at provisioning: **shipped** in the ADR 030 module (`enable_audit_logs`, default true) — lands on the new domain at Stage 1 provision.
+- Snapshot `.opendistro_security` verification: applies to the new domain's first restore, if any.
+- Never-resize / recreate-not-reconfigure recorded as an ADR 030 parallel-domain consequence — removes the reconfiguration trigger behind 2 of the 3 clobber observations.
+
+(Parked 2026-05-14 → 2026-07-06; original park reason: the v2 domain this manifested on was decommissioned in the Phase 1 rollback. Class-of-issue learning preserved below. P035 covers the broader observability-gap class.)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-06 **P045 captured** — RISK-POLICY staleness window hardcoded at 14 days conflicts with the quarterly review cadence (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-06 **ADR 029 Phase 1 re-attempt begins** — P036 un-parked (trigger fired: re-attempt approved; audit logs shipped in ADR 030 module); P037 fix released ahead of populate (initIndex fast-path + snapshot retry); ADR 029/030/031 re-attempt amendments landed. WSJF re-rank deferred to next `/wr-itil:review-problems`.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -13,7 +13,8 @@
 | 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium) | Known Error | M      | Both approaches failed; GraphQL path unexplored                                                |
 | 8.0  | P004 | release:watch script reports false negative                           | 4 (Low)    | Known Error | S      | Fix released 2026-04-19; awaiting verify on next release                                       |
 | 8.0  | P030 | Dependabot reports 46 vulnerabilities on master                       | 16 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
-| 7.5  | P028 | OpenSearch 1.3.20 version debt                                        | 15 (High)  | Known Error | L      | Drives ADR 029 blue/green; mid-flight                                                          |
+| 7.5  | P028 | OpenSearch 1.3.20 version debt                                        | 15 (High)  | Known Error | L      | Drives ADR 029 blue/green; re-attempt in flight (amendment 2026-07-06)                         |
+| 6.0  | P036 | v2 shadow auth silently regressed mid-soak (FGAC clobber class)       | 12 (High)  | Open        | M      | Un-parked 2026-07-06 (re-attempt fired); audit logs shipped in module; deferred re-rate        |
 | 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                     | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                         | 12 (High)  | Open        | M      | Deferred estimate; needs review-problems re-rank                                               |
 | 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive             | 6 (Medium) | Open        | S      | Deferred estimate; needs review-problems re-rank                                               |
@@ -44,16 +45,15 @@
 
 ## Parked
 
-| ID   | Title                                                                   | Reason                                                            | Parked since |
-| ---- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ |
-| P013 | Loader second run fails on cloud clusters                               | Cannot reproduce on supported config                              | 2026-04-15   |
-| P018 | Root `/` cache TTL too long                                             | Long-lived root cache is intentional per user direction           | 2026-04-18   |
-| P005 | TDD hook does not recognise Cucumber                                    | Blocked on upstream windyroad TDD plugin fix                      | 2026-04-19   |
-| P016 | External comms posted without voice/tone check or risk assessment       | Parked pending process-gate design (VOICE-AND-TONE.md now exists) | 2026-04-19   |
-| P021 | `git push origin master` is not risk-gated — risk scorer advisory       | Parked pending hook design                                        | 2026-04-19   |
-| P024 | `wr-architect:agent` misses per-request performance / load implications | Parked governance tooling blind spot                              | 2026-04-19   |
-| P036 | v2 shadow auth silently regressed mid-soak                              | Superseded by ADR 029 Phase 1 rollback decommission               | 2026-05-14   |
-| P038 | Scale v2 back to steady-state sizing post-populate                      | Superseded by ADR 029 Phase 1 rollback decommission               | 2026-05-14   |
+| ID   | Title                                                                   | Reason                                                                                                                                      | Parked since |
+| ---- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| P013 | Loader second run fails on cloud clusters                               | Cannot reproduce on supported config                                                                                                        | 2026-04-15   |
+| P018 | Root `/` cache TTL too long                                             | Long-lived root cache is intentional per user direction                                                                                     | 2026-04-18   |
+| P005 | TDD hook does not recognise Cucumber                                    | Blocked on upstream windyroad TDD plugin fix                                                                                                | 2026-04-19   |
+| P016 | External comms posted without voice/tone check or risk assessment       | Parked pending process-gate design (VOICE-AND-TONE.md now exists)                                                                           | 2026-04-19   |
+| P021 | `git push origin master` is not risk-gated — risk scorer advisory       | Parked pending hook design                                                                                                                  | 2026-04-19   |
+| P024 | `wr-architect:agent` misses per-request performance / load implications | Parked governance tooling blind spot                                                                                                        | 2026-04-19   |
+| P038 | Scale v2 back to steady-state sizing post-populate                      | Superseded by ADR 029 Phase 1 rollback decommission; permanently superseded if t3.small populate succeeds (re-attempt amendment 2026-07-06) | 2026-05-14   |
 
 ## Review notes (2026-04-19)
 
