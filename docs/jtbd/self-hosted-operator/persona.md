@@ -1,5 +1,7 @@
 ---
 name: self-hosted-operator
+human-oversight: confirmed
+oversight-date: 2026-07-06
 description: Runs addressr on their own infrastructure for sovereignty, privacy, or cost reasons; may front it with their own API gateway.
 ---
 

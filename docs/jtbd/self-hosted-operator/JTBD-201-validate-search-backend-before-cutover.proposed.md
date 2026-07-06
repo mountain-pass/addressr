@@ -1,5 +1,7 @@
 ---
 status: proposed
+human-oversight: confirmed
+oversight-date: 2026-07-06
 job-id: validate-search-backend-before-cutover
 persona: self-hosted-operator
 date-created: 2026-04-29
