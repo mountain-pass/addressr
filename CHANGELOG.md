@@ -1,5 +1,12 @@
 # @mountainpass/addressr
 
+## 2.6.16
+
+### Patch Changes
+
+- 5c7768a: Recreate the parallel v2 OpenSearch domain with IAM/SigV4 identity-scoped access (ADR 033): only the app and loader AWS identities can reach it, and a CloudWatch alarm watches the document count as an index-integrity trip-wire. Replaces the prior authentication model after it proved unreliable on the managed service. Self-hosted and local deployments are unaffected (basic auth stays the default).
+- f24e3e7: Add an optional IAM/SigV4 authentication mode for the OpenSearch client (ADR 033). Set `ELASTIC_AUTH_MODE=sigv4` (and `ELASTIC_REGION`) to sign requests with AWS IAM credentials instead of basic auth; the read-shadow client has a matching `ADDRESSR_SHADOW_AUTH_MODE`. Both default to basic auth, so self-hosted and local deployments are unchanged.
+
 ## 2.6.15
 
 ### Patch Changes
