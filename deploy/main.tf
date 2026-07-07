@@ -625,9 +625,11 @@ module "cloudflare_worker" {
 # ADR 029 Phase 1 re-attempt (Stage 1) + ADR 033 (IAM/SigV4 auth): parallel v2
 # OpenSearch domain, provisioned QUIET — no ADDRESSR_SHADOW_* EB settings until
 # populate completes and validates (ADR 031 amendment 2026-07-06). Sizing is
-# steady-state from day one (t3.small.search × 2 + 12 GB, matching v1) and is
-# NEVER resized in place; escalation is destroy + recreate per the ADR 030
-# never-resize consequence. Domain name addressr4 → endpoint reads
+# t3.small.search × 2 + 20 GB (EBS bumped from 12 per the ADR 029 amendment
+# 2026-07-08 — 2.19 needs more disk). The never-resize discipline (ADR 030)
+# applies to the INSTANCE CLASS (blue/green resize under load is the stuck-
+# class that tripped P036); an online EBS volume resize on an empty domain is
+# a different, safe operation. Domain name addressr4 → endpoint reads
 # search-addressr4-….
 #
 # ADR 033: FGAC is OFF. Auth is IAM/SigV4 — the access policy is scoped to the
@@ -642,9 +644,18 @@ module "opensearch_v2" {
   name           = var.elastic_v2_name
   engine_version = var.elastic_v2_engine_version
 
-  instance_type   = "t3.small.search"
-  instance_count  = 2
-  ebs_volume_size = 12
+  instance_type  = "t3.small.search"
+  instance_count = 2
+  # ADR 029 amendment 2026-07-08: 20 GB (was 12). OpenSearch 2.19 uses ~1.7x
+  # the disk-per-doc of v1's 1.3.20 (v2 hit ~80% of 12 GB at 14M docs where v1
+  # holds the full 16.8M at ~56%), so the full dataset with a replica needs
+  # more than 12 GB. The from-scratch 16.8M geo-load is also what overwhelms
+  # the t3.small (v1 grew incrementally and never bulk-loaded from scratch);
+  # the load runs with replicas=0 (index template) to halve disk + write
+  # pressure, then the replica is added post-load. P035 index-deletion
+  # correlated with the t3.small overload and is FGAC-independent (ADR 033
+  # honesty caveat confirmed) — this sizing removes the overload driver.
+  ebs_volume_size = 20
 
   # ADR 033 scoped principals: the EB app's default instance role +
   # the local operator identity that runs the loader (SigV4).
