@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-07-07
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-07-07
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent]
 informed: []
@@ -46,6 +47,17 @@ Chosen option: **Option B**.
 - **A retains the clobbered artefact.** FGAC always maintains `.opendistro_security` — the exact internal state the AWS-internal channel mutates. A removes the password but not the subsystem, so it does not clearly close the P036 mechanism. B removes the subsystem entirely.
 - **We use none of FGAC's value.** One index, one app, no per-index/per-role control. B loses nothing we exercise.
 - **B forces the access-policy fix that matters.** Today `access_policies` is `Principal AWS = "*", Action es:*` — wide open, nominally backstopped by FGAC. Under B the access policy becomes the sole gate, scoped to exactly two principals: the **EB instance role** (app reads) and the **operator's local IAM identity** `arn:aws:iam::869772437473:user/tompahoward` (loader writes, run locally). That principal-scoping is a real security improvement independent of the clobber.
+
+### Security posture (human-confirmed 2026-07-07)
+
+The user's ratification concern was "random people connecting directly to the OpenSearch cluster". This design is **strictly tighter than the current v1 posture**, not looser:
+
+- **Today** the endpoint is public and the _only_ gate is the shared FGAC password (which just clobbered); a leaked/guessed password = full access.
+- **Under B** the endpoint stays public but every request must carry a live SigV4 signature from one of the two named IAM principals. Any unsigned request, or one from any other AWS account/identity, is rejected with `403 AccessDenied` at the AWS front door before reaching the cluster. No shared secret to leak; signatures cannot be replayed or guessed.
+
+**Non-negotiable implementation invariant**: disabling FGAC MUST land together with replacing `Principal AWS = "*"` with the two scoped ARNs in the same change. `"*"` + FGAC-off would be genuinely open — the scoping is what makes B safe, not incidental.
+
+**Network posture: IAM scoping only (VPC deferred).** The user chose IAM/SigV4 principal-scoping as sufficient and explicitly deferred VPC/private-endpoint hardening (2026-07-07). A future ADR may add `vpc_options` for defence-in-depth, but it is not required for this decision — the IAM scoping already closes "random people connecting".
 
 **Honesty caveat (do not overclaim, per ADR 023 / ADR-026 grounding):** the catastrophe has two symptoms; this decision directly addresses only one. B removes the `.opendistro_security` auth clobber (P036). It is **NOT proven to fix the silent index deletion (P035 fm2)** — under FGAC-on that delete should have been blocked yet happened and was invisible to audit logs, consistent with an AWS-internal control-plane channel that access-policy scoping does not necessarily govern. The index-deletion symptom stays tracked on the P035/P036 lineage; audit logs at provisioning (ADR 030) remain the trace; destroy+recreate remains recovery.
 
