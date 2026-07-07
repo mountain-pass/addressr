@@ -29,6 +29,7 @@
 
 import debug from 'debug';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
+import { resolveAuthMode, buildEsClientOptions } from './es-auth.js';
 
 const logger = debug('api');
 const error = debug('error');
@@ -40,6 +41,12 @@ const USERNAME_VAR = 'ADDRESSR_SHADOW_USERNAME';
 const PASSWORD_VAR = 'ADDRESSR_SHADOW_PASSWORD';
 const PROTOCOL_VAR = 'ADDRESSR_SHADOW_PROTOCOL';
 const TIMEOUT_VAR = 'ADDRESSR_SHADOW_TIMEOUT_MS';
+// ADR 033: when the shadow target is an AWS-managed FGAC-off domain,
+// ADDRESSR_SHADOW_AUTH_MODE=sigv4 signs mirror requests via IAM. Default
+// basic — self-hosted operators are unaffected.
+const AUTH_MODE_VAR = 'ADDRESSR_SHADOW_AUTH_MODE';
+const REGION_VAR = 'ADDRESSR_SHADOW_REGION';
+const DEFAULT_REGION = 'ap-southeast-2';
 
 const SUPPORTED_METHODS = new Set(['search', 'get']);
 const DEFAULT_TIMEOUT_MS = 3000;
@@ -102,7 +109,13 @@ function buildClientOptions(environment) {
   const node = isNonEmpty(username)
     ? `${protocol}://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}`
     : `${protocol}://${host}:${port}`;
-  return { node };
+  // ADR 033: sigv4 mode ignores any embedded basic-auth creds and signs
+  // instead; basic (default) returns `{ node }` unchanged.
+  return buildEsClientOptions({
+    authMode: resolveAuthMode(environment, AUTH_MODE_VAR),
+    node,
+    region: environment[REGION_VAR] || DEFAULT_REGION,
+  });
 }
 
 // Stable fingerprint so the cache resets when env changes between calls
@@ -113,6 +126,7 @@ function clientFingerprint(environment) {
     environment[PORT_VAR] || '',
     environment[PROTOCOL_VAR] || '',
     isNonEmpty(environment[USERNAME_VAR]) ? '+auth' : '-auth',
+    resolveAuthMode(environment, AUTH_MODE_VAR),
   ].join('|');
 }
 

@@ -6,6 +6,11 @@ import {
   indexConfigMatches,
   retryOnSnapshotInProgress,
 } from '../src/init-index-config.js';
+import { resolveAuthMode, buildEsClientOptions } from '../src/es-auth.js';
+
+// ADR 033: region for SigV4 signing when ELASTIC_AUTH_MODE=sigv4. Ignored
+// in the default basic-auth path (self-hosted / local Docker / v1).
+const ELASTIC_REGION = process.env.ELASTIC_REGION || 'ap-southeast-2';
 const logger = debug('api');
 const error = debug('error');
 
@@ -329,29 +334,15 @@ export async function esConnect(
               host: eshost,
               port: esport,
             });
-            const esClientOptions = {
+            // ADR 033: basic auth (default; credentials embedded in `node`)
+            // for self-hosted / local Docker / v1, or IAM/SigV4 when
+            // ELASTIC_AUTH_MODE=sigv4 (AWS-managed v2). buildEsClientOptions
+            // returns `{ node }` unchanged in the basic path.
+            const esClientOptions = buildEsClientOptions({
+              authMode: resolveAuthMode(process.env),
               node,
-              // ...(ELASTIC_USERNAME &&
-              //   ELASTIC_PASSWORD && {
-              //     cloud: {
-              //       username: ELASTIC_USERNAME,
-              //       password: ELASTIC_PASSWORD
-              //     }
-              //   })
-
-              // host: [
-              //   {
-              //     host: eshost,
-              //     ...(ELASTIC_USERNAME &&
-              //       ELASTIC_PASSWORD && {
-              //         auth: `${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}`,
-              //       }),
-              //     protocol: ELASTIC_PROTOCOL,
-              //     port: esport,
-              //   },
-              // ],
-              // log: 'info',
-            };
+              region: ELASTIC_REGION,
+            });
             const esClient = new elasticsearch.Client(esClientOptions);
             logger(
               `connecting elastic search client on ${eshost}:${esport}...`,

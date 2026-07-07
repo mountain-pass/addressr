@@ -170,6 +170,7 @@
   "license": "Apache-2.0",
   "private": false,
   "dependencies": {
+    "@aws-sdk/credential-provider-node": "^3.972.63",
     "@changesets/cli": "^2.26.2",
     "@mountainpass/waycharter": "^2.0.30",
     "@opensearch-project/opensearch": "^3.5.1",
