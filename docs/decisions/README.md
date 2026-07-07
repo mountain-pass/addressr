@@ -133,11 +133,12 @@ _32 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Supersedes:** [026-range-number-address-expansion]
 **Confirmation:** Unit test in test/js/**tests**/range-expansion.test.mjs: expandRangeAliases(103, 107, ...) returns exactly ["1...; Unit test (same file): expandRangeAliases(1, 111015, ...) returns 2 elements (outlier-safe; no SPAN_CAP needed...; Unit test in test/js/**tests**/address-service.test.mjs: existing source-pattern tests for sla_range_expanded ...; Cucumber scenario — first-endpoint recall in addressv2.feature: query "103 GAZE RD CHRISTMAS ISLAND" returns...; Cucumber scenario — last-endpoint recall in addressv2.feature: query "107 GAZE RD CHRISTMAS ISLAND" returns ...
 
-### ADR-029 — ADR 029: Two-phase blue/green upgrade off OpenSearch 1.3.20
+### ADR-029 — Two-phase blue/green upgrade off OpenSearch 1.3.20
 
-**Status:** proposed
-**Chosen:** Chosen option: **Option 5 — Two-phase blue/green upgrade (1.3.20 → 2.19 → 3.x), with Phase 1 population via full reindex from G-NAF source (sub-option 5a)**.
-**Confirmation:** ADR 030 is proposed and its module (deploy/modules/opensearch/) is implemented and applied to real infra befor...; Before production cutover, the 14-query symmetric-SSLA baseline (ADR 025) and the full Cucumber suite — both...; Before cutover, package.json's SEARCH_IMAGE is updated to an opensearchproject/opensearch:2.19.x tag and CI pa...; After cutover, the smoke-test suite passes against the production API within 5 minutes of deployment. Rollback...; search-addressr3-… is not destroyed until the 7-day soak completes with no reverts.
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Upgrade off EOL OpenSearch 1.3.20 in two blue/green hops (1.3.20 → 2.19 → 3.x), populating each new AWS-managed domain via full reindex from G-NAF source (5a) rather than snapshot/restore — the only path that holds the zero-outage constraint while bounding per-hop regression surface and forcing mapping/analyzer incompatibilities to surface pre-cutover. Amends ADR-021 on the version axis without superseding it.
+**Confirmation:** ADR-030 module applied to real infra before any ELASTIC_HOST change; 14-query symmetric-SSLA baseline + full Cucumber (test:nogeo + test:geo) green on local 2.19 and the v2 domain; SEARCH_IMAGE bumped to 2.19.x with CI green; post-cutover smoke passes within 5 min and rollback within 10 min; v1 domain not destroyed until the 7-day soak completes with no reverts.
+**Related:** ADR-002, ADR-004, ADR-021, ADR-025, ADR-030, ADR-031, ADR-033
 
 ### ADR-030 — ADR 030: Bring AWS OpenSearch domain under Terraform management
 
