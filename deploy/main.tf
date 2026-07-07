@@ -622,34 +622,84 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
-# ADR 029 Phase 1 re-attempt 2026-07-07 (Stage 1): parallel v2 OpenSearch
-# domain, provisioned QUIET — no ADDRESSR_SHADOW_* EB settings until the
+# ADR 029 Phase 1 re-attempt (Stage 1) + ADR 033 (IAM/SigV4 auth): parallel v2
+# OpenSearch domain, provisioned QUIET — no ADDRESSR_SHADOW_* EB settings until
 # populate completes and validates (ADR 031 amendment 2026-07-06). Sizing is
 # steady-state from day one (t3.small.search × 2 + 12 GB, matching v1) and is
 # NEVER resized in place; escalation is destroy + recreate per the ADR 030
 # never-resize consequence. Domain name addressr4 → endpoint reads
-# search-addressr4-… (attempt 1's literal search-addressr4 name produced a
-# double-prefixed endpoint). Audit logs on by module default (P036 — FGAC
-# clobbers are invisible to CloudTrail). Creds are the fresh 2026-07-06 pair,
-# synced GHA → TFC by .github/workflows/sync-tfc-vars.yml run 28821609857.
+# search-addressr4-….
+#
+# ADR 033: FGAC is OFF. Auth is IAM/SigV4 — the access policy is scoped to the
+# EB instance role (app) + the local loader identity, the sole gate (no
+# clobberable internal password; the 2026-07-07 addressr4 failure reproduced
+# P036+P035 under FGAC). The elastic_v2_username/password vars are now unused
+# (deferred cleanup; sync-tfc-vars.yml's TFC copies are harmless-but-orphaned).
 # ELASTIC_HOST stays pointed at v1 until ADR 029 step 7 cutover.
 module "opensearch_v2" {
   source = "./modules/opensearch"
 
-  name                 = var.elastic_v2_name
-  engine_version       = var.elastic_v2_engine_version
-  master_user_name     = var.elastic_v2_username
-  master_user_password = var.elastic_v2_password
+  name           = var.elastic_v2_name
+  engine_version = var.elastic_v2_engine_version
 
   instance_type   = "t3.small.search"
   instance_count  = 2
   ebs_volume_size = 12
 
+  # ADR 033 scoped principals: the EB app's default instance role +
+  # the local operator identity that runs the loader (SigV4).
+  allowed_principal_arns = [
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
+    var.loader_principal_arn,
+  ]
+
   tags = {
     ManagedBy = "terraform"
     Component = "search"
-    Adr       = "029-030"
+    Adr       = "029-030-033"
   }
+}
+
+# ADR 033: let the EB app (aws-elasticbeanstalk-ec2-role, AWS-managed, not TF-
+# owned) call the v2 domain over SigV4 once it points at v2 (shadow / cutover).
+# Belt-and-suspenders with the domain access policy; scoped to the domain ARN.
+resource "aws_iam_role_policy" "eb_opensearch_v2" {
+  name = "addressr-opensearch-v2-eshttp"
+  role = "aws-elasticbeanstalk-ec2-role"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "es:ESHttp*"
+        Resource = "${module.opensearch_v2.arn}/*"
+      }
+    ]
+  })
+}
+
+# ADR 033 / P035 trip-wire: audit logs are gone with FGAC, so the silent
+# index-deletion symptom (10M→7 docs on 2026-07-07) is watched by a
+# SearchableDocuments-drop alarm — the metric that actually detected it.
+# Fires when searchable docs on v2 fall below a floor while it should hold the
+# full dataset. Treated as breaching on missing data so a wipe-to-zero trips it.
+resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
+  alarm_name          = "addressr-v2-searchable-documents-drop"
+  namespace           = "AWS/ES"
+  metric_name         = "SearchableDocuments"
+  dimensions = {
+    DomainName = var.elastic_v2_name
+    ClientId   = data.aws_caller_identity.current.account_id
+  }
+  statistic           = "Minimum"
+  period              = 300
+  evaluation_periods  = 2
+  comparison_operator = "LessThanThreshold"
+  # ~16.8M at full load; alarm well below that to allow indexing/refresh jitter
+  # but catch a catastrophic drop (the 2026-07-07 wipe went to 7).
+  threshold          = var.v2_searchable_documents_floor
+  treat_missing_data = "breaching"
+  alarm_description  = "ADR 033: v2 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
 }
 
 # ADR 029 re-attempt 2026-07-06, Stage 0d: search-parity dashboard, stood up

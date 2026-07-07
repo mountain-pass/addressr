@@ -34,30 +34,14 @@ variable "ebs_volume_type" {
   description = "EBS volume type. gp3 is the current AWS default for new OpenSearch domains."
 }
 
-variable "master_user_name" {
-  type        = string
-  sensitive   = true
+# ADR 033: FGAC removed — no master user, no internal user DB. Auth is
+# IAM/SigV4 gated by the access policy below. (The former master_user_* and
+# audit-log variables were dropped with FGAC; AUDIT_LOGS requires FGAC.)
+
+variable "allowed_principal_arns" {
+  type        = list(string)
   nullable    = false
-  description = "Fine-grained access control master user. Caller sources from 1Password → GitHub Actions secrets → Terraform (per ADR 030)."
-}
-
-variable "master_user_password" {
-  type        = string
-  sensitive   = true
-  nullable    = false
-  description = "Fine-grained access control master password. Caller sources from 1Password → GitHub Actions secrets → Terraform (per ADR 030)."
-}
-
-variable "enable_audit_logs" {
-  type        = bool
-  default     = true
-  description = "Publish OpenSearch AUDIT_LOGS to a CloudWatch log group. P036: FGAC master-user password clobbers were invisible to CloudTrail (internal-user changes go through the OpenSearch REST API, not the AWS control plane); audit logs make the next occurrence traceable. Requires advanced_security_options (always on in this module)."
-}
-
-variable "audit_log_retention_days" {
-  type        = number
-  default     = 90
-  description = "CloudWatch retention for the audit-log group."
+  description = "IAM principal ARNs allowed to call the domain (SigV4). ADR 033 non-negotiable: the sole access gate with FGAC off. Typically the EB instance role (app) + the loader identity. Never \"*\"."
 }
 
 variable "tags" {

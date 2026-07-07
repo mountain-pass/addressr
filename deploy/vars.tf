@@ -89,13 +89,29 @@ variable "elastic_v2_username" {
   type      = string
   sensitive = true
   nullable  = false
-  description = "ADR 029 Phase 1 amendment 2026-04-29: master user for the v2 OpenSearch domain. Decoupled from var.elastic_username to prevent silent TFC/EB drift from re-introducing P028's 401 failure mode. Sourced from GHA secret TF_VAR_ELASTIC_V2_USERNAME via release.yml."
+  description = "UNUSED as of ADR 033 (FGAC off, no master user). Deferred cleanup. Historically: v2 OpenSearch master user, GHA secret TF_VAR_ELASTIC_V2_USERNAME."
 }
+variable "loader_principal_arn" {
+  type        = string
+  nullable    = false
+  default     = "arn:aws:iam::869772437473:user/tompahoward"
+  description = "ADR 033: IAM principal that runs the loader locally (SigV4) and is granted access to the v2 domain. Since the data load moved off GitHub Actions to the local operator machine (GHA quota), this is the operator's IAM identity. Override if a different identity/role runs the load."
+}
+
+variable "v2_searchable_documents_floor" {
+  type        = number
+  default     = 1000000
+  description = "ADR 033 / P035 trip-wire: alarm fires if v2 SearchableDocuments drops below this. Full dataset is ~16.8M; floor is set low enough to tolerate indexing/refresh jitter but catch a catastrophic wipe (the 2026-07-07 deletion went to 7). Raise toward ~15M once populate is complete and steady."
+}
+
+# ADR 033: elastic_v2_username/password are now UNUSED — FGAC is off, there is
+# no master user. Kept declared (sourced from GHA secrets via release.yml) as
+# deferred cleanup to avoid churning sync-tfc-vars.yml; harmless-but-orphaned.
 variable "elastic_v2_password" {
   type      = string
   sensitive = true
   nullable  = false
-  description = "ADR 029 Phase 1 amendment 2026-04-29: master password for the v2 OpenSearch domain. Decoupled from var.elastic_password. Sourced from GHA secret TF_VAR_ELASTIC_V2_PASSWORD via release.yml. The value in TFC must equal the GHA secret AND the EB ADDRESSR_SHADOW_PASSWORD env var; divergence between any of these three is the failure mode P028 captured."
+  description = "UNUSED as of ADR 033 (FGAC off, no master password). Deferred cleanup. Historically: v2 OpenSearch master password, GHA secret TF_VAR_ELASTIC_V2_PASSWORD."
 }
 
 # ADR 032 / P042 — Cloudflare provider + worker module inputs.

@@ -161,7 +161,7 @@ _32 ADRs. These are the current rules. The architect agent reads this section fi
 
 **Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option B**.
-**Confirmation:** deploy/modules/opensearch/main.tf has advanced*security_options { enabled = false }, no master_user*\*, and acc...; client/elasticsearch.js selects SigV4 vs basic on ELASTIC_AUTH_MODE, default basic; unit-tested both branches ...; A local babel-node loader.js run with ELASTIC_AUTH_MODE=sigv4 authenticates against the recreated addressr4 an...; Cucumber test:nogeo stays green with ELASTIC_AUTH_MODE unset (basic-auth default preserved).; ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.
+**Confirmation:** deploy/modules/opensearch/main.tf has no advanced_security_options block (FGAC off; AWS defaults it disabled),...; client/elasticsearch.js selects SigV4 vs basic on ELASTIC_AUTH_MODE, default basic; unit-tested both branches ...; A local babel-node loader.js run with ELASTIC_AUTH_MODE=sigv4 authenticates against the recreated addressr4 an...; Cucumber test:nogeo stays green with ELASTIC_AUTH_MODE unset (basic-auth default preserved).; ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.
 
 ---
 

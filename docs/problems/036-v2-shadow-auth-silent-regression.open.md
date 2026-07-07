@@ -6,13 +6,19 @@
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Likely (3) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
 
-## Un-parked 2026-07-06
+## Recurrence + resolution direction 2026-07-07
 
-The un-park trigger fired: ADR 029 Phase 1 re-attempt approved (see ADR 029 re-attempt amendment 2026-07-06). The class-of-issue investigation tasks are actionable again:
+**The clobber reproduced a 4th time** on the re-attempt's fresh `addressr4` (steady-state t3.small, never resized). Audit logs — enabled this time — captured the symptom the prior observations lacked: **184 `FAILED_LOGIN`** events from 03:00:59Z, 154 for master user `addressr4admin`; credentials in GHA/TFC/1P mutually consistent and all rejected. It rode alongside a P035-class silent index deletion (CloudWatch `SearchableDocuments` 10M → 7 at 02:00). The cause event was **invisible even to the FGAC audit log** (only failure symptoms recorded), confirming the mechanism is an AWS-internal channel mutating `.opendistro_security`. Forensics: `scratchpad/addressr4-failure-forensics.md` + `audit-window.json`.
 
-- Audit logs at provisioning: **shipped** in the ADR 030 module (`enable_audit_logs`, default true) — lands on the new domain at Stage 1 provision.
-- Snapshot `.opendistro_security` verification: applies to the new domain's first restore, if any.
-- Never-resize / recreate-not-reconfigure recorded as an ADR 030 parallel-domain consequence — removes the reconfiguration trigger behind 2 of the 3 clobber observations.
+**Resolution: ADR 033 (IAM/SigV4 auth) removes FGAC entirely** — no internal user DB, no `.opendistro_security`, nothing to clobber. This closes the P036 mechanism at the root rather than mitigating triggers.
+
+Investigation-task disposition under ADR 033:
+
+- Enable audit logs — **mooted**. FGAC is being removed; AUDIT_LOGS requires FGAC. No FGAC = no clobber to trace. (The P035 index-deletion symptom, which ADR 033 does NOT fix, is now watched by a `SearchableDocuments`-drop CloudWatch alarm instead — the metric that actually detected the 2026-07-07 wipe.)
+- Snapshot `.opendistro_security` verification — **mooted** (no security index under FGAC-off).
+- Never-resize / recreate-not-reconfigure — retained as an ADR 030 consequence (still valid for the non-FGAC domain).
+
+Once ADR 033's FGAC-off `addressr4` is provisioned and the populate completes clean, P036 can transition toward Known Error / Verifying (root cause understood; structural fix shipped).
 
 (Parked 2026-05-14 → 2026-07-06; original park reason: the v2 domain this manifested on was decommissioned in the Phase 1 rollback. Class-of-issue learning preserved below. P035 covers the broader observability-gap class.)
 

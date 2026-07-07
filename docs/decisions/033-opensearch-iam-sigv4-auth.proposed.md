@@ -59,7 +59,13 @@ The user's ratification concern was "random people connecting directly to the Op
 
 **Network posture: IAM scoping only (VPC deferred).** The user chose IAM/SigV4 principal-scoping as sufficient and explicitly deferred VPC/private-endpoint hardening (2026-07-07). A future ADR may add `vpc_options` for defence-in-depth, but it is not required for this decision — the IAM scoping already closes "random people connecting".
 
-**Honesty caveat (do not overclaim, per ADR 023 / ADR-026 grounding):** the catastrophe has two symptoms; this decision directly addresses only one. B removes the `.opendistro_security` auth clobber (P036). It is **NOT proven to fix the silent index deletion (P035 fm2)** — under FGAC-on that delete should have been blocked yet happened and was invisible to audit logs, consistent with an AWS-internal control-plane channel that access-policy scoping does not necessarily govern. The index-deletion symptom stays tracked on the P035/P036 lineage; audit logs at provisioning (ADR 030) remain the trace; destroy+recreate remains recovery.
+**Honesty caveat (do not overclaim, per ADR 023 / ADR-026 grounding):** the catastrophe has two symptoms; this decision directly addresses only one. B removes the `.opendistro_security` auth clobber (P036). It is **NOT proven to fix the silent index deletion (P035 fm2)** — under FGAC-on that delete should have been blocked yet happened and was invisible to audit logs, consistent with an AWS-internal control-plane channel that access-policy scoping does not necessarily govern. The index-deletion symptom stays tracked on the P035/P036 lineage; destroy+recreate remains recovery.
+
+### Audit logs are removed with FGAC; the P035 trip-wire is a doc-count alarm (human-confirmed 2026-07-07)
+
+AWS couples `AUDIT_LOGS` log publishing to FGAC — `log_publishing_options { log_type = "AUDIT_LOGS" }` requires `advanced_security_options.enabled = true`. Disabling FGAC therefore **forces removing** the audit-log group + resource policy + publishing block added in Stage 0b (the ADR 030 audit-log-at-provisioning amendment). This reverses that amendment for FGAC-off domains and moots P036's open "enable audit logs" investigation task (no FGAC = no `.opendistro_security` = no clobber to trace).
+
+The audit logs were the ADR-stated residual trace for the still-open P035 index-deletion symptom. **The user chose (2026-07-07) to accept losing them** and replace them with a **CloudWatch `SearchableDocuments`-drop alarm** — the metric that actually detected the 2026-07-07 wipe (10M → 7), where the audit logs did not capture the cause even under FGAC-on. So their P035 value was already near-zero; the metric alarm is the real detector. The alarm lives in `deploy/main.tf` (`aws_cloudwatch_metric_alarm.v2_searchable_documents_drop`), `treat_missing_data = "breaching"` so a wipe-to-zero trips it, threshold `var.v2_searchable_documents_floor`.
 
 ### Data load moves off GitHub Actions (loader-principal decision)
 
@@ -117,7 +123,7 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 
 ## Confirmation
 
-- `deploy/modules/opensearch/main.tf` has `advanced_security_options { enabled = false }`, no `master_user_*`, and `access_policies` scoped to the EB instance role ARN + `arn:aws:iam::869772437473:user/tompahoward` with `es:ESHttp*`.
+- `deploy/modules/opensearch/main.tf` has **no `advanced_security_options` block** (FGAC off; AWS defaults it disabled), no `master_user_*`, and `access_policies` scoped to the EB instance role ARN + `arn:aws:iam::869772437473:user/tompahoward` with `es:ESHttp*` — never `"*"`.
 - `client/elasticsearch.js` selects SigV4 vs basic on `ELASTIC_AUTH_MODE`, default basic; unit-tested both branches (TDD).
 - A local `babel-node loader.js` run with `ELASTIC_AUTH_MODE=sigv4` authenticates against the recreated `addressr4` and indexes documents (SigV4 as the operator identity).
 - Cucumber `test:nogeo` stays green with `ELASTIC_AUTH_MODE` unset (basic-auth default preserved).
@@ -126,7 +132,7 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 
 ## Amends
 
-- **ADR 030** — module `advanced_security_options` shape (now `enabled = false` for v2/v3); the distinct-credentials-per-parallel-domain and 1P→GHA→sync-tfc-vars→TFC credential-wiring consequences become moot for domains with no internal master password. Audit-log-publishing and never-resize notes stay valid.
+- **ADR 030** — module `advanced_security_options` shape (now removed → `enabled = false` for v2/v3); the distinct-credentials-per-parallel-domain and 1P→GHA→sync-tfc-vars→TFC credential-wiring consequences become moot for domains with no internal master password. The **audit-log-publishing consequence (2026-07-06) is retired for FGAC-off domains** — AUDIT_LOGS requires FGAC (see the audit-log subsection above); the never-resize note stays valid.
 - **ADR 031** — shadow-client gains a SigV4 branch + `ADDRESSR_SHADOW_AUTH_MODE` flag; Configuration and "Where the code lives" sections extend. Primary-path invariant and soak gate unaffected (re-verify with SigV4 on).
 
 ## Reassessment Criteria
