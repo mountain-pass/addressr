@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.6.19
+
+### Patch Changes
+
+- cabe7d5: Resize the v2 OpenSearch parity domain to a larger instance class to measure warmed search latency against v1 (ADR 029). The v2 domain carries no production traffic; this is a sizing measurement, not a cutover.
+
 ## 2.6.18
 
 ### Patch Changes
