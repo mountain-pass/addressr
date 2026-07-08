@@ -1,6 +1,6 @@
 # Problem 037: Loader unnecessarily closes the addressr index every state load AND has no retry on snapshot_in_progress_exception
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-05-12
 **Priority**: 8 (Medium) — Impact: Moderate (4) x Likelihood: Likely (2) (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
@@ -73,6 +73,10 @@ Fix: `initIndex` fast-paths past the close-update-open dance when stored index s
 Exercise evidence from the releasing session: 12 unit tests green (TDD failing-first); live probe against real OpenSearch 2.19.5 confirmed the fast-path fires on the actual stored-config echo and the negative control falls back to the update path; full Cucumber `test:nodejs:nogeo` (13 scenarios / 64 steps) green with the change in the loader path.
 
 Awaiting user verification: first clean 9-of-9 `populate-search-domain.yml` run against the ADR 029 Stage 2 v2 domain (with hourly snapshots active) is the verification event.
+
+## Verified + Closed 2026-07-08
+
+Verification event occurred: the full from-scratch G-NAF load onto the v2 domain (addressr4) completed cleanly — all 9 states (ACT, NSW, NT, OT, QLD, SA, TAS, VIC, WA; 16,905,824 docs) indexed with **zero `snapshot_in_progress_exception` failures**. QLD and WA — the two states that failed with this exact exception in attempt 1 (I001) — loaded clean. Confirms the `initIndex` fast-path + snapshot-retry fix (v2.6.14, commit cb34e20) works against AWS-managed hourly snapshots. Note: the load ran off GitHub Actions (locally, per ADR 033) so the loader source path — not the published package alone — was exercised; same fix code. User-observed clean load 2026-07-08.
 
 ## Dependencies
 

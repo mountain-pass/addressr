@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-07 **P037 verification pending** — initIndex fast-path + snapshot retry released in v2.6.14 (PR #488); verification = first clean 9-of-9 populate against the ADR 029 Stage 2 v2 domain. Stage 0 of the re-attempt complete (audit-log module, parity dashboard, refreshed k6 baseline: gate ≤ ~1,443 ms).
+> Last reviewed: 2026-07-08 **P037 closed** — verified: full 9-of-9 G-NAF load onto v2 (16.9M docs, incl. QLD+WA) completed with zero snapshot_in_progress_exception. ADR 029 Stage 3 read-shadow warming live (v2 addressr4 FGAC-off/IAM per ADR 033); 48h soak underway toward the p95 parity gate.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -41,7 +41,6 @@
 | ID   | Title                                               | Released   | Likely verified?  | Notes                                                                                    |
 | ---- | --------------------------------------------------- | ---------- | ----------------- | ---------------------------------------------------------------------------------------- |
 | P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); awaiting 24h UR observation (shared gate w/ P040) |
-| P037 | Loader index-close races snapshots + no retry       | 2026-07-07 | no — not observed | Fix in v2.6.14 (PR #488); verify via first clean 9-of-9 populate vs v2 (ADR 029 Stage 2) |
 
 ## Parked
 
