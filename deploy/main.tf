@@ -676,16 +676,21 @@ module "opensearch_v2" {
   name           = var.elastic_v2_name
   engine_version = var.elastic_v2_engine_version
 
-  # ADR 029 parity TEST 2026-07-08 (user-approved deviation from never-resize):
-  # t3.small proved too small for 2.19 SERVING — warm p50 ~186ms vs v1 ~50ms,
-  # p90 in the seconds. CloudWatch showed LOW CPU/JVM on v2 at v1's query rate,
-  # so it is I/O-bound (page-cache misses on a 2GB box holding a ~1.7x-larger
-  # 2.19 index), not compute-bound. m6g.large (8GB, Graviton) gives the RAM to
-  # hold the hot set. Resize is now safe: ADR 033 removed FGAC so the P036
-  # clobber that stalled the first resize cannot recur, and v2 takes zero prod
-  # traffic (ELASTIC_HOST=v1). Measuring m6g.large-vs-v1 warm parity; end state
-  # (keep+cutover vs revert) decided on the number, not pre-committed.
-  instance_type  = "m6g.large.search"
+  # ADR 029 parity TEST 2026-07-08/09 (user-approved deviations from never-resize;
+  # steady-state sizing STILL UNDER MEASUREMENT — not a closed outcome):
+  # t3.small was materially slower than v1 for 2.19 SERVING (warm p90 ~919ms vs
+  # v1 ~190ms) — I/O-bound (page-cache misses on a 2GB box holding a ~1.7x-larger
+  # 2.19 index), not compute-bound (v2 CPU/JVM were LOWER than v1). Resized to
+  # m6g.large.search (8GB) 2026-07-08 → warmed to PARITY and slightly ahead
+  # (warm hour: v2 p90 45ms / p99 115ms vs v1 p90 64ms / p99 187ms), confirming
+  # the RAM hypothesis. Reverted to t3.small.search 2026-07-09 (user choice) to
+  # measure empirically whether t3.small reaches parity over a LONGER (48h) soak
+  # before committing to m6g.large's ~$200/mo. Prior: t3.small plateaus above v1
+  # (2GB cannot hold the hot-set regardless of warm time) — measuring to confirm.
+  # Two measurements now feed the deferred steady-state choice: m6g=parity proved,
+  # t3.small=pending 48h. Resize safe: ADR 033 removed the FGAC clobber; v2 takes
+  # zero prod traffic; SearchableDocuments-drop alarm armed for a P035 recurrence.
+  instance_type  = "t3.small.search"
   instance_count = 2
   # ADR 029 amendment 2026-07-08: 20 GB (was 12). OpenSearch 2.19 uses ~1.7x
   # the disk-per-doc of v1's 1.3.20 (v2 hit ~80% of 12 GB at 14M docs where v1
