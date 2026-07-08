@@ -127,15 +127,47 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 029 Phase 1 rolled back 2026-05-14: v2 OpenSearch domain
-  # (search-addressr4) decommissioned after the resize-to-m6g.large blue/green
-  # got stuck (3rd observation of the AWS-managed FGAC clobber pattern in P036).
-  # ADDRESSR_SHADOW_* env vars removed → src/read-shadow.js default-off kicks
-  # in → mirrorRequest no-ops → primary /addresses responses unaffected (always
-  # were; v1 served production throughout). Read-shadow capability remains
-  # shipped in code; ADR 031 default-off posture documented. Phase 1 may be
-  # re-attempted later; the module ./modules/opensearch is retained
-  # intentionally (ADR 030 amendment 2026-05-14).
+  # ADR 029 Stage 3 (read-shadow warming) 2026-07-08: mirror production
+  # /addresses search + /addresses/{id} to the v2 domain (addressr4) so its
+  # filesystem + field-data caches warm to steady state with real query
+  # distribution before cutover (ADR 031). Fire-and-forget in
+  # src/read-shadow.js → primary path (still basic-auth to v1) unaffected.
+  # ADR 033: v2 is FGAC-off/IAM, so the shadow client SigV4-signs
+  # (ADDRESSR_SHADOW_AUTH_MODE=sigv4) as the EB instance role, which holds
+  # es:ESHttp* on the v2 domain ARN. No USERNAME/PASSWORD — there is no
+  # internal credential on v2. Soak-validity gate (ADR 031 / P028): after
+  # deploy, /debug/shadow-config must show successes>0, failures=0 (2xx
+  # confirmed) before the >=48h soak clock starts.
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_HOST"
+    value     = module.opensearch_v2.endpoint
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PORT"
+    value     = "443"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PROTOCOL"
+    value     = "https"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_AUTH_MODE"
+    value     = "sigv4"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_REGION"
+    value     = "ap-southeast-2"
+    resource  = ""
+  }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
