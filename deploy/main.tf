@@ -676,7 +676,16 @@ module "opensearch_v2" {
   name           = var.elastic_v2_name
   engine_version = var.elastic_v2_engine_version
 
-  instance_type  = "t3.small.search"
+  # ADR 029 parity TEST 2026-07-08 (user-approved deviation from never-resize):
+  # t3.small proved too small for 2.19 SERVING — warm p50 ~186ms vs v1 ~50ms,
+  # p90 in the seconds. CloudWatch showed LOW CPU/JVM on v2 at v1's query rate,
+  # so it is I/O-bound (page-cache misses on a 2GB box holding a ~1.7x-larger
+  # 2.19 index), not compute-bound. m6g.large (8GB, Graviton) gives the RAM to
+  # hold the hot set. Resize is now safe: ADR 033 removed FGAC so the P036
+  # clobber that stalled the first resize cannot recur, and v2 takes zero prod
+  # traffic (ELASTIC_HOST=v1). Measuring m6g.large-vs-v1 warm parity; end state
+  # (keep+cutover vs revert) decided on the number, not pre-committed.
+  instance_type  = "m6g.large.search"
   instance_count = 2
   # ADR 029 amendment 2026-07-08: 20 GB (was 12). OpenSearch 2.19 uses ~1.7x
   # the disk-per-doc of v1's 1.3.20 (v2 hit ~80% of 12 GB at 14M docs where v1
