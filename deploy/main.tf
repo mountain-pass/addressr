@@ -149,47 +149,14 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 029 Stage 3 (read-shadow warming) 2026-07-08: mirror production
-  # /addresses search + /addresses/{id} to the v2 domain (addressr4) so its
-  # filesystem + field-data caches warm to steady state with real query
-  # distribution before cutover (ADR 031). Fire-and-forget in
-  # src/read-shadow.js → primary path (still basic-auth to v1) unaffected.
-  # ADR 033: v2 is FGAC-off/IAM, so the shadow client SigV4-signs
-  # (ADDRESSR_SHADOW_AUTH_MODE=sigv4) as the EB instance role, which holds
-  # es:ESHttp* on the v2 domain ARN. No USERNAME/PASSWORD — there is no
-  # internal credential on v2. Soak-validity gate (ADR 031 / P028): after
-  # deploy, /debug/shadow-config must show successes>0, failures=0 (2xx
-  # confirmed) before the >=48h soak clock starts.
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_HOST"
-    value     = module.opensearch_v2.endpoint
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PORT"
-    value     = "443"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PROTOCOL"
-    value     = "https"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_AUTH_MODE"
-    value     = "sigv4"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_REGION"
-    value     = "ap-southeast-2"
-    resource  = ""
-  }
+  # ADR 029 Stage 3 read-shadow REMOVED 2026-07-10 (post-cutover follow-up): its
+  # ADR 031 job — warm v2 (addressr4) with real query distribution before the
+  # cutover — is complete. v2 is now the PRIMARY (ELASTIC_HOST above), so the
+  # shadow would only mirror v2→v2 (redundant 2x read, no warming value). The
+  # ADDRESSR_SHADOW_* targeting is removed → src/read-shadow.js mirrorRequest
+  # no-ops again; the read-shadow capability stays shipped default-off (ADR 031,
+  # same enable/disable pattern as the 2026-05-14 removal). Reverses the 2026-07-08
+  # Stage 3 enable.
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
