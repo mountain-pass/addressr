@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 33 (32 in-force, 1 historical)
+**Total ADRs:** 34 (33 in-force, 1 historical)
 
 ---
 
 ## In-force decisions
 
-_32 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_33 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -162,6 +162,11 @@ _32 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option B**.
 **Confirmation:** deploy/modules/opensearch/main.tf has no advanced_security_options block (FGAC off; AWS defaults it disabled),...; client/elasticsearch.js selects SigV4 vs basic on ELASTIC_AUTH_MODE, default basic; unit-tested both branches ...; A local babel-node loader.js run with ELASTIC_AUTH_MODE=sigv4 authenticates against the recreated addressr4 an...; Cucumber test:nogeo stays green with ELASTIC_AUTH_MODE unset (basic-auth default preserved).; ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.
+
+### ADR-034 — ADR 034: Re-automate the quarterly G-NAF refresh on GitHub Actions via an OIDC-scoped IAM role
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Chosen:** Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to `es:ESHttp*` on the v2 domain ARN only. \*\*Amends ADR ...
 
 ---
 
