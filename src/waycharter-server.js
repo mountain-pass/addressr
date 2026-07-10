@@ -17,6 +17,7 @@ import { version } from '../version';
 import crypto from 'node:crypto';
 import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
 import { validateReadShadowConfig, getShadowStatus } from './read-shadow';
+import { checkEsHealthCached, isEsProbeEnabled } from './es-health';
 
 var app = express();
 
@@ -876,11 +877,21 @@ export function startRest2Server() {
   waycharter.registerResourceType({
     path: '/health',
     loader: async () => {
+      // ADR 029 zero-outage: probe OpenSearch so a misconfigured v2/SigV4
+      // cutover fails EB's health-gated rollout (auto-rollback) rather than
+      // serving query errors. 503 on ES-down; ELB UnhealthyThreshold=5 at a 10s
+      // interval (~50s sustained) absorbs the brief startup-connect window and
+      // transient blips. HEALTH_ES_PROBE=off reverts to always-200 (ops valve).
+      const esHealth = isEsProbeEnabled()
+        ? await checkEsHealthCached(globalThis.esClient)
+        : { ok: true };
       return {
+        status: esHealth.ok ? 200 : 503,
         body: {
-          status: 'healthy',
+          status: esHealth.ok ? 'healthy' : 'unhealthy',
           version: version,
           timestamp: new Date().toISOString(),
+          ...(esHealth.ok ? {} : { reason: esHealth.reason }),
         },
         headers: {
           'cache-control': 'no-cache',
