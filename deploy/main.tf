@@ -96,16 +96,26 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
+  # ADR 029 Stage 5 CUTOVER 2026-07-10: the EB primary now points at the v2
+  # domain (addressr4, OpenSearch 2.19) over IAM/SigV4 (ADR 033). ELASTIC_HOST is
+  # sourced from module.opensearch_v2.endpoint — the completing act of ADR 030
+  # (Terraform-managed domain; endpoint from module output). Username/password
+  # are EMPTIED so buildClientNode (src/client-node-url.js) builds a
+  # credential-less node URL — the exact shape the SigV4 signer wraps, matching
+  # the proven config (38k-clean k6 + Cucumber 13/13 vs real v2). The EB instance
+  # role (aws-elasticbeanstalk-ec2-role) holds es:ESHttp* on the v2 ARN. Rollback
+  # = git-revert this commit + apply → back to v1/basic (v1 untouched + warm;
+  # zero-outage via the rolling deploy + the deepened /health auto-rollback).
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
-    value     = var.elastic_host
+    value     = module.opensearch_v2.endpoint
     resource  = ""
   }
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_PASSWORD"
-    value     = var.elastic_password
+    value     = ""
     resource  = ""
   }
   setting {
@@ -123,7 +133,19 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_USERNAME"
-    value     = var.elastic_username
+    value     = ""
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ELASTIC_AUTH_MODE"
+    value     = "sigv4"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ELASTIC_REGION"
+    value     = "ap-southeast-2"
     resource  = ""
   }
 
@@ -669,7 +691,8 @@ module "cloudflare_worker" {
 # clobberable internal password; the 2026-07-07 addressr4 failure reproduced
 # P036+P035 under FGAC). The elastic_v2_username/password vars are now unused
 # (deferred cleanup; sync-tfc-vars.yml's TFC copies are harmless-but-orphaned).
-# ELASTIC_HOST stays pointed at v1 until ADR 029 step 7 cutover.
+# ELASTIC_HOST was cut over to this v2 domain 2026-07-10 (ADR 029 Stage 5) — the
+# EB primary settings above now reference module.opensearch_v2.endpoint / SigV4.
 module "opensearch_v2" {
   source = "./modules/opensearch"
 

@@ -141,7 +141,7 @@ _32 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-030 — ADR 030: Bring AWS OpenSearch domain under Terraform management
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option 4 — create a new `deploy/modules/opensearch/` Terraform module, use it to provision `search-addressr4-…`, leave `search-addressr3-…` unmanaged until decommissioning at the end of ADR 029 Phase 1 soak.**
 **Confirmation:** deploy/modules/opensearch/main.tf, variables.tf, outputs.tf, and versions.tf exist before any production cutov...; deploy/main.tf consumes the module via at least one module "opensearch\_..." {} block referencing ./modules/ope...; terraform state list (run against the workspace post-apply) includes module.opensearch_v2.aws_opensearch_domai...; terraform plan shows zero changes to search-addressr3-… throughout Phase 1 (the un-IaC'd domain must remain ...; ELASTIC_HOST in deploy/main.tf is sourced from a module output (module.opensearch_v2.endpoint) once the applic...
 
