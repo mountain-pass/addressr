@@ -7,10 +7,18 @@ on:
 
 jobs:
   call-reusable-workflow:
+    # ADR 034: target=v2 → OIDC/SigV4. id-token:write MUST be granted here on
+    # the caller — a reusable workflow's id-token is capped by the caller's
+    # token (verified via the OT caller-chain canary 2026-07-11).
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/reusable-update.yml
     secrets:
       TF_VAR_ELASTIC_HOST: ${{ secrets.TF_VAR_ELASTIC_HOST }}
       TF_VAR_ELASTIC_PASSWORD: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
       TF_VAR_ELASTIC_USERNAME: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
+      TF_VAR_ELASTIC_V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
     with:
       state: SA
+      target: v2
