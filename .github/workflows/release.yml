@@ -139,14 +139,11 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         uses: devcontainers/ci@v0.3
         env:
-          TF_VAR_elastic_host: ${{ secrets.TF_VAR_elastic_host }}
-          TF_VAR_elastic_password: ${{ secrets.TF_VAR_elastic_password }}
-          TF_VAR_elastic_username: ${{ secrets.TF_VAR_elastic_username }}
-          # ADR 029 amendment 2026-04-29: distinct creds for v2 to fix P028's
-          # silent 401 (v2 master user no longer aliases v1's; cutover still
-          # flips only var.elastic_host).
-          TF_VAR_elastic_v2_username: ${{ secrets.TF_VAR_ELASTIC_V2_USERNAME }}
-          TF_VAR_elastic_v2_password: ${{ secrets.TF_VAR_ELASTIC_V2_PASSWORD }}
+          # ADR 029/033/034: v1 basic-auth creds (TF_VAR_elastic_host/username/
+          # password) and the v2 master-user creds (TF_VAR_elastic_v2_username/
+          # password) were removed 2026-07-11 — FGAC is off (SigV4), the EB app
+          # sources ELASTIC_HOST from module.opensearch_v2.endpoint, and v1 is
+          # decommissioned. No search-domain credential vars remain.
           TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
           TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
           TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
@@ -167,11 +164,6 @@ jobs:
           env: |
             TF_IN_AUTOMATION=1
             TF_VAR_elasticapp=mountainpass-addressr
-            TF_VAR_elastic_host
-            TF_VAR_elastic_password
-            TF_VAR_elastic_username
-            TF_VAR_elastic_v2_username
-            TF_VAR_elastic_v2_password
             TF_VAR_aws_secret_key
             TF_VAR_aws_access_key
             TF_VAR_proxy_auth_header
