@@ -165,8 +165,8 @@ _33 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-034 — ADR 034: Re-automate the quarterly G-NAF refresh on GitHub Actions via an OIDC-scoped IAM role
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Chosen:** Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to `es:ESHttp*` on the v2 domain ARN only. \*\*Amends ADR ...
+**Status:** proposed | **Oversight:** confirmed
+**Chosen:** Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to least-privilege data-plane actions (`es:ESHttpGet`/`P...
 
 ---
 

@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-07-11
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-07-11
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
@@ -25,13 +26,13 @@ Post-cutover (ADR 029 Stage 5, 2026-07-10) production reads v2 (`addressr4`, Ope
 
 ## Considered Options
 
-1. **Option A (chosen)** — GitHub OIDC → dedicated IAM role scoped to `es:ESHttp*` on the v2 ARN only; short-lived per-run STS credentials, no long-lived keys.
+1. **Option A (chosen)** — GitHub OIDC → dedicated IAM role scoped to the v2 ARN only, data-plane read/write **without index delete** (`es:ESHttpGet`/`Put`/`Post`/`Head`, no `ESHttpDelete`); short-lived per-run STS credentials, no long-lived keys.
 2. **Option B (rejected)** — dedicated scoped IAM user with long-lived access keys in GHA secrets: consistent with the existing access-key pattern, less setup, but a persistent standing credential to a Level-5 asset that must be rotated and can leak.
 3. **Option C (rejected)** — reuse the existing `TF_VAR_aws_access_key` deploy identity: simplest, but massively over-privileged (EB + domain-destroy + Cloudflare), directly contradicts ADR 033's least-privilege scoping.
 
 ## Decision Outcome
 
-Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to `es:ESHttp*` on the v2 domain ARN only. **Amends ADR 033**: partially reverses its "no GitHub in the data path" property for the delta path only (initial bulk load stays local), and adds a third principal (the GHA OIDC role) to the v2 access policy. **Security requirements (must all hold before the crons flip):** least-privilege `es:ESHttp*` only on the v2 ARN (no `es:Delete*`/config actions, no other services); raise the `SearchableDocuments`-drop alarm floor 1M → ~15M so a bad delta load trips the alarm; the loader performs idempotent per-state delta upserts (not a destructive full rebuild); a single-state canary via `workflow_dispatch` (alarm armed, doc counts + a sample search checked) precedes flipping the crons; a `concurrency` guard prevents a cron overlapping a deploy or a sibling state's write to the same index. **The working + verified v2 write path GATES the v1 decommission.**
+Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to least-privilege data-plane actions (`es:ESHttpGet`/`Put`/`Post`/`Head`, no `ESHttpDelete`) on the v2 domain ARN only. **Amends ADR 033**: partially reverses its "no GitHub in the data path" property for the delta path only (initial bulk load stays local), and adds a third principal (the GHA OIDC role) to the v2 access policy. **Security requirements (must all hold before the crons flip):** least-privilege data-plane actions only on the v2 ARN — `es:ESHttpGet`/`Put`/`Post`/`Head`, **no `es:ESHttpDelete`** (dropped 2026-07-11 ratification tightening: delta upserts never index-delete, and `ESHttpDelete` is the `DELETE /<index>` shape behind the 2026-07-07 P035 wipe) and no `es:Delete*`/config actions or other services; the OIDC trust `sub` is scoped to `repo:mountain-pass/addressr:ref:refs/heads/master` (2026-07-11 ratification tightening: only master-ref workflows — the scheduled crons + the canary `workflow_dispatch` — may assume the role, not any branch/PR); raise the `SearchableDocuments`-drop alarm floor 1M → ~15M so a bad delta load trips the alarm; the loader performs idempotent per-state delta upserts (not a destructive full rebuild); a single-state canary via `workflow_dispatch` (alarm armed, doc counts + a sample search checked) precedes flipping the crons; a `concurrency` guard prevents a cron overlapping a deploy or a sibling state's write to the same index. **The working + verified v2 write path GATES the v1 decommission.**
 
 ## Consequences
 
