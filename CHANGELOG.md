@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.6.25
+
+### Patch Changes
+
+- 9227c96: Restore the automated quarterly refresh of address data on the upgraded search backend, so address results stay current. The refresh now authenticates with short-lived, least-privilege credentials instead of a stored password. No change to the API, and self-hosted deployments are unaffected.
+
 ## 2.6.24
 
 ### Patch Changes
