@@ -48,6 +48,15 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    # ADR 034 guard: serialize a state against ITSELF (a cron overlapping its
+    # own prior run, or a manual dispatch racing the cron) — queue, never kill
+    # a partial ingest. Per-state+target key: distinct states run in parallel
+    # (accepted 2026-07-11 — they write disjoint docs; independent per-state
+    # crons chosen for isolated failure/retry), so a slow NSW load never blocks
+    # OT. cancel-in-progress:false so a running load is never dropped.
+    concurrency:
+      group: reusable-update-${{ inputs.target }}-${{ inputs.state }}
+      cancel-in-progress: false
     # ADR 034: id-token needed for the target=v2 OIDC role assumption; the v1
     # default path does not use it. contents:read keeps checkout working once
     # permissions are declared explicitly.

@@ -2,6 +2,8 @@
 status: validated
 job-id: validate-addresses-against-gnaf
 persona: data-quality-analyst
+human-oversight: confirmed
+oversight-date: 2026-07-11
 date-created: 2026-04-15
 secondary-personas:
   - web-app-developer
