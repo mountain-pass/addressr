@@ -24,16 +24,21 @@ on:
         required: true
       TF_VAR_ELASTIC_USERNAME:
         required: true
+      # ADR 034: target=v2 authenticates via OIDC/SigV4, so only the v2
+      # endpoint is still needed as a secret — the v2 basic-auth master
+      # user/password are gone (FGAC off since ADR 033).
       TF_VAR_ELASTIC_V2_HOST:
-        required: false
-      TF_VAR_ELASTIC_V2_PASSWORD:
-        required: false
-      TF_VAR_ELASTIC_V2_USERNAME:
         required: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    # ADR 034: id-token needed for the target=v2 OIDC role assumption; the v1
+    # default path does not use it. contents:read keeps checkout working once
+    # permissions are declared explicitly.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v3
 
@@ -53,21 +58,18 @@ jobs:
           V1_USER: ${{ secrets.TF_VAR_ELASTIC_USERNAME }}
           V1_PASS: ${{ secrets.TF_VAR_ELASTIC_PASSWORD }}
           V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
-          V2_USER: ${{ secrets.TF_VAR_ELASTIC_V2_USERNAME }}
-          V2_PASS: ${{ secrets.TF_VAR_ELASTIC_V2_PASSWORD }}
         run: |
           set -e
           if [ "$TARGET" = "v2" ]; then
+            # ADR 034: v2 is SigV4 (FGAC off) — no username/password; the
+            # configure-aws-credentials step below supplies the signing creds
+            # via the gha-v2-loader OIDC role.
             [ -n "$V2_HOST" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_HOST is not set"; exit 1; }
-            [ -n "$V2_USER" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_USERNAME is not set"; exit 1; }
-            [ -n "$V2_PASS" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_PASSWORD is not set"; exit 1; }
             echo "RESOLVED_HOST=$V2_HOST" >> "$GITHUB_ENV"
-            echo "RESOLVED_USERNAME=$V2_USER" >> "$GITHUB_ENV"
-            echo "RESOLVED_PASSWORD=$V2_PASS" >> "$GITHUB_ENV"
+            echo "RESOLVED_AUTH_MODE=sigv4" >> "$GITHUB_ENV"
+            echo "RESOLVED_REGION=ap-southeast-2" >> "$GITHUB_ENV"
             echo "::add-mask::$V2_HOST"
-            echo "::add-mask::$V2_USER"
-            echo "::add-mask::$V2_PASS"
-            echo "Resolved target: v2"
+            echo "Resolved target: v2 (SigV4)"
           elif [ "$TARGET" = "v1" ]; then
             [ -n "$V1_HOST" ] || { echo "::error::TF_VAR_ELASTIC_HOST is not set"; exit 1; }
             echo "RESOLVED_HOST=$V1_HOST" >> "$GITHUB_ENV"
@@ -79,11 +81,26 @@ jobs:
             exit 1
           fi
 
+      # ADR 034: assume the least-privilege gha-v2-loader role via GitHub OIDC
+      # so the loader signs SigV4 requests to v2 with short-lived STS creds.
+      # v1 (default target) skips this and uses basic auth as before.
+      - name: Configure AWS credentials (v2 SigV4)
+        if: inputs.target == 'v2'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::869772437473:role/gha-v2-loader
+          aws-region: ap-southeast-2
+
       - name: Upload
         env:
           ELASTIC_HOST: ${{ env.RESOLVED_HOST }}
           ELASTIC_PASSWORD: ${{ env.RESOLVED_PASSWORD }}
           ELASTIC_USERNAME: ${{ env.RESOLVED_USERNAME }}
+          # ADR 034: empty for v1 (es-auth.js defaults to basic); 'sigv4' +
+          # region for v2, where es-auth.js signs with the assumed-role creds
+          # and ignores any username/password.
+          ELASTIC_AUTH_MODE: ${{ env.RESOLVED_AUTH_MODE }}
+          ELASTIC_REGION: ${{ env.RESOLVED_REGION }}
           ELASTIC_PORT: 443
           ELASTIC_PROTOCOL: https
           NODE_ENV: production

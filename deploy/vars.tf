@@ -86,9 +86,9 @@ variable "elastic_v2_engine_version" {
   description = "ADR 029 Phase 1: engine version for the v2 domain. Phase 2 will override to OpenSearch_3.x."
 }
 variable "elastic_v2_username" {
-  type      = string
-  sensitive = true
-  nullable  = false
+  type        = string
+  sensitive   = true
+  nullable    = false
   description = "UNUSED as of ADR 033 (FGAC off, no master user). Deferred cleanup. Historically: v2 OpenSearch master user, GHA secret TF_VAR_ELASTIC_V2_USERNAME."
 }
 variable "loader_principal_arn" {
@@ -100,17 +100,17 @@ variable "loader_principal_arn" {
 
 variable "v2_searchable_documents_floor" {
   type        = number
-  default     = 1000000
-  description = "ADR 033 / P035 trip-wire: alarm fires if v2 SearchableDocuments drops below this. Full dataset is ~16.8M; floor is set low enough to tolerate indexing/refresh jitter but catch a catastrophic wipe (the 2026-07-07 deletion went to 7). Raise toward ~15M once populate is complete and steady."
+  default     = 15000000
+  description = "ADR 033 / P035 trip-wire: alarm fires if v2 SearchableDocuments drops below this. Full dataset is ~16.9M (16,905,824 at 2026-07-11); ADR 034 raised the floor 1M → 15M now that v2 is populated and steady — ~15M leaves headroom for legit per-state churn during a quarterly delta load but catches a delta that drops the index (the 2026-07-07 deletion went to 7)."
 }
 
 # ADR 033: elastic_v2_username/password are now UNUSED — FGAC is off, there is
 # no master user. Kept declared (sourced from GHA secrets via release.yml) as
 # deferred cleanup to avoid churning sync-tfc-vars.yml; harmless-but-orphaned.
 variable "elastic_v2_password" {
-  type      = string
-  sensitive = true
-  nullable  = false
+  type        = string
+  sensitive   = true
+  nullable    = false
   description = "UNUSED as of ADR 033 (FGAC off, no master password). Deferred cleanup. Historically: v2 OpenSearch master password, GHA secret TF_VAR_ELASTIC_V2_PASSWORD."
 }
 

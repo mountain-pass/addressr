@@ -692,9 +692,12 @@ module "opensearch_v2" {
 
   # ADR 033 scoped principals: the EB app's default instance role +
   # the local operator identity that runs the loader (SigV4).
+  # ADR 034: + the GitHub Actions OIDC loader role for the re-automated
+  # quarterly delta loads (see deploy/oidc.tf).
   allowed_principal_arns = [
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
     var.loader_principal_arn,
+    aws_iam_role.gha_v2_loader.arn,
   ]
 
   tags = {
@@ -728,9 +731,9 @@ resource "aws_iam_role_policy" "eb_opensearch_v2" {
 # Fires when searchable docs on v2 fall below a floor while it should hold the
 # full dataset. Treated as breaching on missing data so a wipe-to-zero trips it.
 resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
-  alarm_name          = "addressr-v2-searchable-documents-drop"
-  namespace           = "AWS/ES"
-  metric_name         = "SearchableDocuments"
+  alarm_name  = "addressr-v2-searchable-documents-drop"
+  namespace   = "AWS/ES"
+  metric_name = "SearchableDocuments"
   dimensions = {
     DomainName = var.elastic_v2_name
     ClientId   = data.aws_caller_identity.current.account_id
