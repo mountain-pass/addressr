@@ -29,6 +29,21 @@ on:
       # user/password are gone (FGAC off since ADR 033).
       TF_VAR_ELASTIC_V2_HOST:
         required: false
+  # ADR 034 step-5 canary: run a single-state v2 load directly in GitHub
+  # Actions (via `gh workflow run reusable-update.yml -f state=OT -f target=v2`)
+  # to exercise the gha-v2-loader OIDC role before flipping the 9 crons. A
+  # local run would authenticate as the operator identity, not OIDC, so it
+  # would not test the new path. Under workflow_dispatch, secrets.* read repo
+  # secrets directly. Does NOT change the workflow_call default (target=v1).
+  workflow_dispatch:
+    inputs:
+      state:
+        required: true
+        type: string
+      target:
+        required: false
+        type: string
+        default: 'v2'
 
 jobs:
   update:
