@@ -1,6 +1,7 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-04-21
+accepted-date: 2026-07-11
 human-oversight: confirmed
 oversight-date: 2026-07-09
 decision-makers: [Tom Howard]
@@ -102,6 +103,8 @@ Reasoning: Option 5 is the only option that satisfies the zero-outage constraint
 
 8. **Post-cutover smoke and rollback window**. Run the existing smoke-test suite against the production API immediately after deploy. On failure, revert the `ELASTIC_HOST` variable and re-run `terraform apply` — rollback is bounded by EB env-var propagation plus an ASG rolling replace (single-digit minutes), not instant in the strict sense. `search-addressr3-…` is untouched throughout, so the rollback path has no data-migration risk.
 9. **Soak and decommission**. After a **soak of at least 7 days in production with no regressions**, decommission `search-addressr3-…`. **As part of decommission**, remove the 1.3.20 leg from `release.yml`'s matrix, drop the `start:open-search:1.3.20` and `pull:open-search:1.3.20` scripts from `package.json`, and remove the `config.SEARCH_IMAGE_1_3_20` entry. After this point, `package.json` carries 2.19 only and CI tests 2.19 only.
+
+   > **Step 9 amendment 2026-07-11 — 7-day soak WAIVED; v1 decommissioned + ADRs promoted after ~1 day.** The user waived the 7-day soak (re-affirmed via `AskUserQuestion` "Delete v1 now", 2026-07-11) on positive v2-health evidence: v2 (`addressr4`) served production cleanly from cutover 2026-07-10 (~1 day), `SearchableDocuments` 16.9M matching v1 within 0.1%, the `SearchableDocuments`-drop alarm OK (floor 15M), the re-automated quarterly refresh path (ADR 034) verified green end-to-end via the OT caller-chain canary, and k6 / Cucumber / SSLA all green pre-cutover. `search-addressr3-…` was deleted 2026-07-11 and ADR 029 + 030 promoted to `accepted` on this evidence rather than the calendar gate. **This amends step 9 (this line), Confirmation "promote after 7-day soak" and "not destroyed until 7-day soak", and the soak references at lines ~129/137/216.** **Accepted trades:** (a) rollback is now rebuild-from-G-NAF (hours), not instant-flip to a warm v1; (b) per the line-137 Bad consequence, the 7-day soak was also the compensating control for a subtle scoring/ranking delta slipping past the 14-query baseline — doc-count + `/health` evidence does not detect a ranking regression, so that residual is explicitly accepted (monitor P027-style feedback post-decommission; recovery is rebuild-from-G-NAF, not instant-flip). The orphaned v1 `var.elastic_host`/`_username`/`_password` cascade + v1 loader resolve-branch stay as deferred hygiene (no Confirmation criterion names them).
 
    > **Step 9 amendment 2026-04-28** — additional decommission cleanup for the populate machinery: clear the GHA repository secrets `TF_VAR_ELASTIC_V2_HOST` / `_USERNAME` / `_PASSWORD` (their values are now duplicated in the regular `TF_VAR_ELASTIC_*` secrets post-cutover, and keeping the v2-named copies would create a tribal-knowledge hazard). Decide on `populate-search-domain.yml`: the recommended choice is **retain** (rename `target` enum to add `'v3'` when Phase 2 begins; the workflow is version-agnostic by design) — record the decision in the Phase 2 follow-up problem ticket. Decision Outcome unchanged; this is decommission hygiene.
 

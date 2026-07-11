@@ -125,5 +125,5 @@ Note: OpenSearch 1.3.x (currently pinned per ADR 002) reached end of life in Sep
 
 - Self-hosted user feedback indicates OpenSearch is a significant adoption barrier
 - Typesense or SQLite FTS5 maturity reaches a point where migration risk is low
-- OpenSearch 1.3.x end-of-life forces an upgrade decision (overlaps with ADR 002 reassessment)
+- OpenSearch 1.3.x end-of-life forces an upgrade decision (overlaps with ADR 002 reassessment) — **RESOLVED 2026-07-11 (ADR 029 step 10 downstream):** the 1.3.x EOL upgrade trigger fired ADR 029's blue/green jump to OpenSearch 2.19 (cutover 2026-07-10, v1 decommissioned 2026-07-11). This closes the _version-upgrade_ reassessment trigger; the _multi-backend / pluggable-engine_ reassessment (self-hosted cost, Typesense/SQLite FTS5 maturity) remains open and unaffected — ADR 029 governs the OpenSearch version axis, not the engine-choice axis.
 - Search quality benchmarks demonstrate an alternative matches OpenSearch for address autocomplete

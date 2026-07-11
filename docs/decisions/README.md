@@ -135,13 +135,13 @@ _33 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-029 — ADR 029: Two-phase blue/green upgrade off OpenSearch 1.3.20
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** accepted | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option 5 — Two-phase blue/green upgrade (1.3.20 → 2.19 → 3.x), with Phase 1 population via full reindex from G-NAF source (sub-option 5a)**.
 **Confirmation:** ADR 030 is proposed and its module (deploy/modules/opensearch/) is implemented and applied to real infra befor...; Before production cutover, the 14-query symmetric-SSLA baseline (ADR 025) and the full Cucumber suite — both...; Before cutover, package.json's SEARCH_IMAGE is updated to an opensearchproject/opensearch:2.19.x tag and CI pa...; After cutover, the smoke-test suite passes against the production API within 5 minutes of deployment. Rollback...; search-addressr3-… is not destroyed until the 7-day soak completes with no reverts.
 
 ### ADR-030 — ADR 030: Bring AWS OpenSearch domain under Terraform management
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** accepted | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option 4 — create a new `deploy/modules/opensearch/` Terraform module, use it to provision `search-addressr4-…`, leave `search-addressr3-…` unmanaged until decommissioning at the end of ADR 029 Phase 1 soak.**
 **Confirmation:** deploy/modules/opensearch/main.tf, variables.tf, outputs.tf, and versions.tf exist before any production cutov...; deploy/main.tf consumes the module via at least one module "opensearch\_..." {} block referencing ./modules/ope...; terraform state list (run against the workspace post-apply) includes module.opensearch_v2.aws_opensearch_domai...; terraform plan shows zero changes to search-addressr3-… throughout Phase 1 (the un-IaC'd domain must remain ...; ELASTIC_HOST in deploy/main.tf is sourced from a module output (module.opensearch_v2.endpoint) once the applic...
 

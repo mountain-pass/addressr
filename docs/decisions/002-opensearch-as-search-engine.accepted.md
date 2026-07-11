@@ -44,6 +44,8 @@ Note: codebase retains Elasticsearch naming throughout (file `client/elasticsear
 - CI service container runs `opensearchproject/opensearch:1.3.20`
 - Production runs AWS OpenSearch Service 1.3
 
+> **Amendment 2026-07-11 (ADR 029 step 10 downstream)** — the OpenSearch **engine version is now pinned to 2.19** after the ADR 029 blue/green upgrade completed (v2 `addressr4` cut over 2026-07-10, v1 `addressr3` decommissioned 2026-07-11). Confirmation is now: `package.json config.SEARCH_IMAGE` = `opensearchproject/opensearch:2.19.5`, CI service container + devcontainer run 2.19.5, production runs AWS OpenSearch Service 2.19. The engine choice (OpenSearch) is unchanged; only the version moved off the EOL 1.3.x line.
+
 ### Reassessment Criteria
 
 - OpenSearch 1.3.x reaching end of life
