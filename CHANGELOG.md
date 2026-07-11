@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.6.26
+
+### Patch Changes
+
+- 587ee6d: Complete the infrastructure rollout for the automated quarterly refresh started in the previous release. No API or behaviour change.
+
 ## 2.6.25
 
 ### Patch Changes
