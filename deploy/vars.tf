@@ -66,13 +66,6 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
-variable "elastic_v1_domain_name" {
-  type        = string
-  nullable    = false
-  default     = "addressr3"
-  description = "ADR 029 re-attempt 2026-07-06: DomainName dimension of the CURRENT production OpenSearch domain, used only for CloudWatch metric references on the parity dashboard. NOTE: the domain NAME is addressr3 — the search-addressr3-… string quoted in ADRs is the ENDPOINT prefix (AWS prepends search- to the domain name). Verified via aws opensearch list-domain-names 2026-07-07. The v1 domain resource itself stays out of Terraform scope per ADR 030 — metrics are referenced by name only."
-}
-
 variable "elastic_v2_name" {
   type        = string
   nullable    = false

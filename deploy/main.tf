@@ -757,7 +757,9 @@ resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  search_parity_domains = [var.elastic_v1_domain_name, var.elastic_v2_name]
+  # ADR 029 step 9 (v1 decommissioned 2026-07-11): v1 no longer emits metrics,
+  # so the parity dashboard is now v2-only ongoing monitoring.
+  search_parity_domains = [var.elastic_v2_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
   # the statistic/period choice is validated on v1 during Stage 0d.

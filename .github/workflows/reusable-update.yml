@@ -7,16 +7,15 @@ on:
         required: true
         type: string
       target:
-        # ADR 029 Phase 1: which OpenSearch domain to populate.
-        # 'v1' = the production domain reached via TF_VAR_ELASTIC_HOST (current default).
-        # 'v2' = the parallel-provisioned upgrade-target domain reached via
-        # TF_VAR_ELASTIC_V2_HOST. The v2 secrets must be set in the repo for
-        # target=v2 to succeed; the resolve step below fails loudly if they
-        # are missing. The 9 update-{state}.yml workflows do not pass target,
-        # so they inherit the v1 default and are unchanged by this addition.
+        # ADR 034: which OpenSearch domain to load. 'v2' (default) = the
+        # production domain (addressr4) over OIDC/SigV4. 'v1' is retained only
+        # as a historical resolve branch — v1 (addressr3) was decommissioned
+        # 2026-07-11, so target=v1 now resolves to the v2 host with basic auth
+        # and fails loudly (SigV4-only). The 9 update-{state}.yml crons pass
+        # target: v2 explicitly.
         required: false
         type: string
-        default: 'v1'
+        default: 'v2'
     secrets:
       TF_VAR_ELASTIC_HOST:
         required: true
