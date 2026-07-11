@@ -749,11 +749,10 @@ resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
   alarm_description  = "ADR 033: v2 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
 }
 
-# ADR 029 re-attempt 2026-07-06, Stage 0d: search-parity dashboard, stood up
-# against v1 BEFORE any v2 spend so the parity signal is proven at our real
-# traffic volume first. v1 (search-addressr3) stays out of Terraform scope per
-# ADR 030 — its metrics are referenced by DomainName only. The v2 widgets show
-# no data until the Stage 1 module caller provisions search-addressr4.
+# ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
+# before any v2 spend to prove the parity signal at real traffic volume;
+# post-cutover (v1 decommissioned 2026-07-11) it is v2-only ongoing monitoring
+# of the addressr4 domain (SearchLatency / SearchRate / CPUUtilization).
 data "aws_caller_identity" "current" {}
 
 locals {

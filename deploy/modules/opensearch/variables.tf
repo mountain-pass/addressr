@@ -13,7 +13,7 @@ variable "engine_version" {
 variable "instance_type" {
   type        = string
   default     = "t3.small.search"
-  description = "Data-node instance type. Phase 1 (ADR 029) should match the existing search-addressr3-… class; override via caller if different."
+  description = "Data-node instance type. The v2 domain runs m6g.large.search (ADR 029 steady-state sizing for 2.19); override via caller if different."
 }
 
 variable "instance_count" {
@@ -51,6 +51,6 @@ variable "tags" {
 }
 
 # VPC/subnet placement intentionally omitted in this module version.
-# The existing search-addressr3-… domain is public with basic auth at the app layer,
-# and a network-hardening change is out of scope for ADR 030. A future ADR can add
-# vpc_options to this module without breaking callers.
+# The domain is public with IAM/SigV4 access control (ADR 033, FGAC off) rather
+# than network isolation; a network-hardening change is out of scope for ADR 030.
+# A future ADR can add vpc_options to this module without breaking callers.
