@@ -1,9 +1,10 @@
 name: Populate Search Domain
 
-# ADR 029 Phase 1 step 5: populate the v2 OpenSearch domain (search-addressr4-...)
-# from G-NAF source while v1 (search-addressr3-...) continues to serve production
-# unchanged. Reuses the same loader path as the quarterly update-{state}.yml
-# workflows via reusable-update.yml; the only difference is target=v2.
+# ADR 029: populate the v2 OpenSearch domain (addressr4) from G-NAF source —
+# originally the Phase 1 step-5 pre-cutover bulk load; retained post-cutover for
+# a full re-index or a Phase 2 (2.19 -> 3.x) rebuild. Reuses the same loader path
+# as the quarterly update-{state}.yml workflows via reusable-update.yml (target=v2,
+# OIDC/SigV4). v1 (addressr3) was decommissioned 2026-07-11.
 #
 # Naming is intentionally version-agnostic for Phase 2 reuse: when ADR 029
 # Phase 2 (2.19 -> 3.x) begins, this workflow's `target` enum gains 'v3' and
@@ -13,12 +14,11 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target search domain (v1 = production, v2 = upgrade target)'
+        description: 'Target search domain (v2 = current production; Phase 2 will add v3)'
         required: true
         default: 'v2'
         type: choice
         options:
-          - v1
           - v2
       states:
         description: 'States to load (comma-separated, or "all")'
