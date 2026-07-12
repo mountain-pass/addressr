@@ -18,8 +18,9 @@
   "packageManager": "npm@10.9.4",
   "config": {
     "localport": "6060",
-    "SEARCH_IMAGE": "opensearchproject/opensearch:2.19.5",
-    "SEARCH_IMAGE_2_19": "opensearchproject/opensearch:2.19.5"
+    "SEARCH_IMAGE": "opensearchproject/opensearch:3.5.0",
+    "SEARCH_IMAGE_2_19": "opensearchproject/opensearch:2.19.5",
+    "SEARCH_IMAGE_3_5": "opensearchproject/opensearch:3.5.0"
   },
   "scripts": {
     "gen-install-cmd": "echo \"#!/bin/sh\n\nnpm install -g ${npm_package_name}@${npm_package_version}\" > install.sh",
@@ -32,6 +33,8 @@
     "start:open-search": "docker run -p 9200:9200 -p 9300:9300 -e \"ES_JAVA_OPTS=-Xms1g -Xmx1g\" -e \"discovery.type=single-node\" -e \"plugins.security.disabled=true\" -e \"DISABLE_INSTALL_DEMO_CONFIG=true\" \"${npm_package_config_SEARCH_IMAGE}\"",
     "pull:open-search:2.19": "docker pull ${npm_package_config_SEARCH_IMAGE_2_19}",
     "start:open-search:2.19": "docker run -p 9200:9200 -p 9300:9300 -e \"ES_JAVA_OPTS=-Xms1g -Xmx1g\" -e \"discovery.type=single-node\" -e \"plugins.security.disabled=true\" -e \"DISABLE_INSTALL_DEMO_CONFIG=true\" \"${npm_package_config_SEARCH_IMAGE_2_19}\"",
+    "pull:open-search:3.5": "docker pull ${npm_package_config_SEARCH_IMAGE_3_5}",
+    "start:open-search:3.5": "docker run -p 9200:9200 -p 9300:9300 -e \"ES_JAVA_OPTS=-Xms1g -Xmx1g\" -e \"discovery.type=single-node\" -e \"plugins.security.disabled=true\" -e \"DISABLE_INSTALL_DEMO_CONFIG=true\" \"${npm_package_config_SEARCH_IMAGE_3_5}\"",
     "hmm": "echo mountainpass-addressr-${npm_package_version}.tgz",
     "requirements-check": "scripts/check-version.js",
     "postinstall": "npm run requirements-check",

@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        opensearch_version: ['2.19.5']
+        opensearch_version: ['2.19.5', '3.5.0']
     services:
       opensearch:
         image: opensearchproject/opensearch:${{ matrix.opensearch_version }}
