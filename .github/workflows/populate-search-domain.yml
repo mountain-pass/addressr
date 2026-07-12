@@ -14,12 +14,13 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target search domain (v2 = current production; Phase 2 will add v3)'
+        description: 'Target search domain (v2 = current production 2.19; v3 = the OpenSearch 3.5 upgrade domain, ADR 035 Phase 2)'
         required: true
         default: 'v2'
         type: choice
         options:
           - v2
+          - v3
       states:
         description: 'States to load (comma-separated, or "all")'
         required: false

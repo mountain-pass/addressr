@@ -7,21 +7,21 @@ on:
         required: true
         type: string
       target:
-        # ADR 034: which OpenSearch domain to load. 'v2' (default) = the
-        # production domain (addressr4) over OIDC/SigV4. 'v1' is retained only
-        # as a historical resolve branch — v1 (addressr3) was decommissioned
-        # 2026-07-11, so target=v1 now resolves to the v2 host with basic auth
-        # and fails loudly (SigV4-only). The 9 update-{state}.yml crons pass
-        # target: v2 explicitly.
+        # ADR 034/035: which OpenSearch domain to load, both over OIDC/SigV4.
+        # 'v2' (default) = the production 2.19 domain (addressr4); 'v3' = the
+        # OpenSearch 3.5 domain (addressr5) provisioned for the Phase 2 upgrade.
+        # The 9 update-{state}.yml crons pass target: v2 explicitly and stay on
+        # v2 until cutover; populate + the v3 canary pass target: v3.
         required: false
         type: string
         default: 'v2'
     secrets:
-      # ADR 034: target=v2 authenticates via OIDC/SigV4 — the only secret the
-      # loader needs is the v2 endpoint. The v1 basic-auth secrets
-      # (TF_VAR_ELASTIC_HOST/PASSWORD/USERNAME) were removed 2026-07-11 with the
-      # v1 decommission.
+      # ADR 034/035: each target authenticates via OIDC/SigV4 — the only secret
+      # the loader needs is the target domain's endpoint (the v1 basic-auth
+      # secrets were removed 2026-07-11 with the v1 decommission).
       TF_VAR_ELASTIC_V2_HOST:
+        required: false
+      TF_VAR_ELASTIC_V3_HOST:
         required: false
   # ADR 034 step-5 canary: run a single-state v2 load directly in GitHub
   # Actions (via `gh workflow run reusable-update.yml -f state=OT -f target=v2`)
@@ -66,36 +66,43 @@ jobs:
           node-version: '22.x' # Specify the Node.js version you need
 
       - name: Resolve target host
-        # ADR 034: v2/SigV4 is the only supported target — v1 (addressr3) was
-        # decommissioned 2026-07-11. Fails loudly if the v2 endpoint secret is
-        # missing, or if any target other than v2 is requested.
+        # ADR 034/035: v2 and v3 are both SigV4 (FGAC off) — no username/password.
+        # Resolves the target domain's endpoint + the least-privilege OIDC role
+        # the configure-aws-credentials step below assumes. Fails loudly on a
+        # missing endpoint secret or an unsupported target.
         env:
           TARGET: ${{ inputs.target }}
           V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
+          V3_HOST: ${{ secrets.TF_VAR_ELASTIC_V3_HOST }}
         run: |
           set -e
           if [ "$TARGET" = "v2" ]; then
-            # v2 is SigV4 (FGAC off) — no username/password; the
-            # configure-aws-credentials step below supplies the signing creds
-            # via the gha-v2-loader OIDC role.
             [ -n "$V2_HOST" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_HOST is not set"; exit 1; }
             echo "RESOLVED_HOST=$V2_HOST" >> "$GITHUB_ENV"
-            echo "RESOLVED_AUTH_MODE=sigv4" >> "$GITHUB_ENV"
-            echo "RESOLVED_REGION=ap-southeast-2" >> "$GITHUB_ENV"
+            echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v2-loader" >> "$GITHUB_ENV"
             echo "::add-mask::$V2_HOST"
-            echo "Resolved target: v2 (SigV4)"
+            echo "Resolved target: v2 (SigV4, gha-v2-loader)"
+          elif [ "$TARGET" = "v3" ]; then
+            [ -n "$V3_HOST" ] || { echo "::error::target=v3 but TF_VAR_ELASTIC_V3_HOST is not set"; exit 1; }
+            echo "RESOLVED_HOST=$V3_HOST" >> "$GITHUB_ENV"
+            echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v3-loader" >> "$GITHUB_ENV"
+            echo "::add-mask::$V3_HOST"
+            echo "Resolved target: v3 (SigV4, gha-v3-loader)"
           else
-            echo "::error::Unsupported target: $TARGET (v1 decommissioned 2026-07-11; only 'v2' is supported)"
+            echo "::error::Unsupported target: $TARGET (expected 'v2' or 'v3')"
             exit 1
           fi
+          echo "RESOLVED_AUTH_MODE=sigv4" >> "$GITHUB_ENV"
+          echo "RESOLVED_REGION=ap-southeast-2" >> "$GITHUB_ENV"
 
-      # ADR 034: assume the least-privilege gha-v2-loader role via GitHub OIDC
-      # so the loader signs SigV4 requests to v2 with short-lived STS creds.
-      - name: Configure AWS credentials (v2 SigV4)
-        if: inputs.target == 'v2'
+      # ADR 034/035: assume the target's least-privilege gha-v{2,3}-loader role
+      # via GitHub OIDC so the loader signs SigV4 requests with short-lived STS
+      # creds. RESOLVED_ROLE is set per-target by the resolve step above.
+      - name: Configure AWS credentials (SigV4)
+        if: inputs.target == 'v2' || inputs.target == 'v3'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::869772437473:role/gha-v2-loader
+          role-to-assume: ${{ env.RESOLVED_ROLE }}
           aws-region: ap-southeast-2
 
       - name: Upload
