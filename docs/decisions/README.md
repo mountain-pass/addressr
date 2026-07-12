@@ -170,7 +170,7 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-035 — ADR 035: Upgrade to OpenSearch 3.5; retain 2.19 as CI regression + code compatibility, not a running domain
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it honours "maintain support for v2 until EOL" as **compatibility + regression coverage** (the durable, useful reading) rather than a running rollback domain, and avoi...
 
 ---
