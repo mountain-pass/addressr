@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 34 (33 in-force, 1 historical)
+**Total ADRs:** 35 (34 in-force, 1 historical)
 
 ---
 
 ## In-force decisions
 
-_33 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_34 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -167,6 +167,11 @@ _33 ADRs. These are the current rules. The architect agent reads this section fi
 
 **Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option A** — run the quarterly `reusable-update` loader on GitHub Actions against v2 over SigV4, authenticating via GitHub OIDC assuming a dedicated IAM role scoped to least-privilege data-plane actions (`es:ESHttpGet`/`P...
+
+### ADR-035 — ADR 035: Upgrade to OpenSearch 3.5; retain 2.19 as CI regression + code compatibility, not a running domain
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Chosen:** Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it honours "maintain support for v2 until EOL" as **compatibility + regression coverage** (the durable, useful reading) rather than a running rollback domain, and avoi...
 
 ---
 
