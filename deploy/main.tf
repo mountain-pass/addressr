@@ -749,6 +749,75 @@ resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
   alarm_description  = "ADR 033: v2 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
 }
 
+# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain, provisioned in parallel with v2
+# (the same blue/green pattern that took v1→v2). Mirrors module.opensearch_v2:
+# same m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may
+# reduce the footprint but we don't assume it — right-size later if measured,
+# via from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
+# Not in the serving path yet — ELASTIC_HOST flips to this domain at cutover.
+module "opensearch_v3" {
+  source = "./modules/opensearch"
+
+  name            = var.elastic_v3_name
+  engine_version  = var.elastic_v3_engine_version
+  instance_type   = "m6g.large.search"
+  instance_count  = 2
+  ebs_volume_size = 20
+
+  # ADR 033/035 scoped principals: EB app instance role + local operator loader
+  # + the GitHub Actions OIDC v3 loader role (see deploy/oidc.tf).
+  allowed_principal_arns = [
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
+    var.loader_principal_arn,
+    aws_iam_role.gha_v3_loader.arn,
+  ]
+
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "035"
+  }
+}
+
+# ADR 033/035: let the EB app SigV4-call the v3 domain (belt-and-suspenders with
+# the domain access policy). Granted pre-cutover — permission only; EB does not
+# query v3 until ELASTIC_HOST flips at cutover.
+resource "aws_iam_role_policy" "eb_opensearch_v3" {
+  name = "addressr-opensearch-v3-eshttp"
+  role = "aws-elasticbeanstalk-ec2-role"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "es:ESHttp*"
+        Resource = "${module.opensearch_v3.arn}/*"
+      }
+    ]
+  })
+}
+
+# ADR 035 / P035 trip-wire: v3 SearchableDocuments-drop alarm, mirroring v2.
+# Floor starts at 1M (var default) during provision+populate — a fresh empty
+# domain sits in breach until populate crosses ~1M, then clears; raise to ~15M
+# post-populate.
+resource "aws_cloudwatch_metric_alarm" "v3_searchable_documents_drop" {
+  alarm_name  = "addressr-v3-searchable-documents-drop"
+  namespace   = "AWS/ES"
+  metric_name = "SearchableDocuments"
+  dimensions = {
+    DomainName = var.elastic_v3_name
+    ClientId   = data.aws_caller_identity.current.account_id
+  }
+  statistic           = "Minimum"
+  period              = 300
+  evaluation_periods  = 2
+  comparison_operator = "LessThanThreshold"
+  threshold           = var.v3_searchable_documents_floor
+  treat_missing_data  = "breaching"
+  alarm_description   = "ADR 035: v3 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
+}
+
 # ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
 # before any v2 spend to prove the parity signal at real traffic volume;
 # post-cutover (v1 decommissioned 2026-07-11) it is v2-only ongoing monitoring
@@ -756,9 +825,10 @@ resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  # ADR 029 step 9 (v1 decommissioned 2026-07-11): v1 no longer emits metrics,
-  # so the parity dashboard is now v2-only ongoing monitoring.
-  search_parity_domains = [var.elastic_v2_name]
+  # ADR 035 Phase 2: during the 2.19→3.5 overlap the dashboard plots v2 vs v3
+  # so the parity signal is proven at real traffic volume before cutover; it
+  # reverts to v3-only once v2 (addressr4) is decommissioned post-cutover.
+  search_parity_domains = [var.elastic_v2_name, var.elastic_v3_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
   # the statistic/period choice is validated on v1 during Stage 0d.
@@ -770,7 +840,7 @@ locals {
       width  = 24
       height = 8
       properties = {
-        title  = "${metric} — v1 vs v2"
+        title  = "${metric} — v2 vs v3"
         region = "ap-southeast-2"
         stat   = metric == "SearchLatency" ? "p95" : "Average"
         period = 3600

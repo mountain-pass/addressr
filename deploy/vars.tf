@@ -63,6 +63,26 @@ variable "elastic_v2_engine_version" {
   default     = "OpenSearch_2.19"
   description = "ADR 029 Phase 1: engine version for the v2 domain. Phase 2 will override to OpenSearch_3.x."
 }
+
+# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain provisioned in parallel during
+# the 2.19→3.5 blue/green cutover. Mirrors the elastic_v2_* + v2 floor vars.
+variable "elastic_v3_name" {
+  type        = string
+  nullable    = false
+  default     = "addressr5"
+  description = "ADR 035 Phase 2: domain name for the v3 OpenSearch 3.5 domain, provisioned in parallel during the 2.19→3.5 blue/green cutover. Endpoint reads search-addressr5-…. Mirrors elastic_v2_name."
+}
+variable "elastic_v3_engine_version" {
+  type        = string
+  nullable    = false
+  default     = "OpenSearch_3.5"
+  description = "ADR 035 Phase 2: engine version for the v3 domain (AWS OpenSearch Service latest supported 3.x, GA March 2026)."
+}
+variable "v3_searchable_documents_floor" {
+  type        = number
+  default     = 1000000
+  description = "ADR 035 / P035 trip-wire: alarm fires if v3 SearchableDocuments drops below this. STARTS at 1M during provision + populate (a fresh empty domain would perma-breach a 15M floor); raise to 15000000 once populate completes, exactly as v2's floor went 1M→15M this session."
+}
 variable "loader_principal_arn" {
   type        = string
   nullable    = false

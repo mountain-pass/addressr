@@ -85,3 +85,60 @@ output "gha_v2_loader_role_arn" {
   value       = aws_iam_role.gha_v2_loader.arn
   description = "ADR 034: IAM role GitHub Actions assumes via OIDC to load quarterly G-NAF deltas into the v2 domain over SigV4."
 }
+
+# ADR 035 Phase 2: the loader role GitHub Actions assumes to populate + refresh
+# the v3 (OpenSearch 3.5) domain over SigV4. Mirrors gha_v2_loader exactly —
+# same shared OIDC provider (AWS allows one provider per URL per account, so it
+# is reused, not redeclared), same master-ref trust, same least-privilege
+# Get/Put/Post/Head (no ESHttpDelete) — but scoped to the v3 ARN only.
+resource "aws_iam_role" "gha_v3_loader" {
+  name = "gha-v3-loader"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Federated = aws_iam_openid_connect_provider.github_actions.arn }
+        Action    = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = "repo:mountain-pass/addressr:ref:refs/heads/master"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "035"
+  }
+}
+
+resource "aws_iam_role_policy" "gha_v3_loader_eshttp" {
+  name = "addressr-gha-v3-loader-eshttp"
+  role = aws_iam_role.gha_v3_loader.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "es:ESHttpGet",
+          "es:ESHttpPut",
+          "es:ESHttpPost",
+          "es:ESHttpHead",
+        ]
+        Resource = "${module.opensearch_v3.arn}/*"
+      }
+    ]
+  })
+}
+
+output "gha_v3_loader_role_arn" {
+  value       = aws_iam_role.gha_v3_loader.arn
+  description = "ADR 035: IAM role GitHub Actions assumes via OIDC to populate + refresh the v3 (OpenSearch 3.5) domain over SigV4."
+}
