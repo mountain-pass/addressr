@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.6.28
+
+### Patch Changes
+
+- db2774d: Preparation for the OpenSearch 3.5 upgrade. No API change, no change to search results, and no effect on response times.
+
 ## 2.6.27
 
 ### Patch Changes
