@@ -80,8 +80,8 @@ variable "elastic_v3_engine_version" {
 }
 variable "v3_searchable_documents_floor" {
   type        = number
-  default     = 1000000
-  description = "ADR 035 / P035 trip-wire: alarm fires if v3 SearchableDocuments drops below this. STARTS at 1M during provision + populate (a fresh empty domain would perma-breach a 15M floor); raise to 15000000 once populate completes, exactly as v2's floor went 1M→15M this session."
+  default     = 15000000
+  description = "ADR 035 / P035 trip-wire: alarm fires if v3 SearchableDocuments drops below this. Raised 1M→15M at cutover 2026-07-14 now that v3 is populated (16.9M, exact G-NAF parity) and serving as primary — ~15M leaves headroom for legit per-state churn during a quarterly delta load but catches a delta that drops the index, exactly as v2's floor went 1M→15M."
 }
 variable "loader_principal_arn" {
   type        = string

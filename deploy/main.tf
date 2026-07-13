@@ -96,20 +96,21 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 029 Stage 5 CUTOVER 2026-07-10: the EB primary now points at the v2
-  # domain (addressr4, OpenSearch 2.19) over IAM/SigV4 (ADR 033). ELASTIC_HOST is
-  # sourced from module.opensearch_v2.endpoint — the completing act of ADR 030
-  # (Terraform-managed domain; endpoint from module output). Username/password
-  # are EMPTIED so buildClientNode (src/client-node-url.js) builds a
-  # credential-less node URL — the exact shape the SigV4 signer wraps, matching
-  # the proven config (38k-clean k6 + Cucumber 13/13 vs real v2). The EB instance
-  # role (aws-elasticbeanstalk-ec2-role) holds es:ESHttp* on the v2 ARN. Rollback
-  # = git-revert this commit + apply → back to v1/basic (v1 untouched + warm;
+  # ADR 035 Phase 2 CUTOVER 2026-07-14: the EB primary now points at the v3
+  # domain (addressr5, OpenSearch 3.5) over IAM/SigV4 (ADR 033). ELASTIC_HOST is
+  # sourced from module.opensearch_v3.endpoint. Gated on the ADR 031 read-shadow
+  # soak: ~1 day of real production traffic mirrored to v3 with full read coverage
+  # and 0 failures, plus full doc parity (16.9M) + behavioural CI on 3.5 +
+  # warm-latency parity+. Username/password stay EMPTIED so buildClientNode
+  # (src/client-node-url.js) builds a credential-less node URL — the exact shape
+  # the SigV4 signer wraps. The EB instance role (aws-elasticbeanstalk-ec2-role)
+  # holds es:ESHttp* on the v3 ARN (eb_opensearch_v3). Rollback = git-revert this
+  # commit + apply → back to warm v2 (addressr4 untouched + still populated;
   # zero-outage via the rolling deploy + the deepened /health auto-rollback).
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
-    value     = module.opensearch_v2.endpoint
+    value     = module.opensearch_v3.endpoint
     resource  = ""
   }
   setting {
@@ -149,46 +150,11 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 035 Phase 2 read-shadow RE-ENABLED 2026-07-13: mirror each production read
-  # to the v3 domain (addressr5, OpenSearch 3.5) to exercise the REAL production
-  # query distribution against 3.5 before the cutover — the ADR 031 warming +
-  # error-surfacing pattern that de-risked v1→v2. v2 stays PRIMARY (ELASTIC_HOST
-  # above); this is a genuine v2-primary → v3-shadow mirror (not redundant v2→v2).
-  # src/read-shadow.js mirrorRequest is fire-and-forget (non-blocking, per-request
-  # AbortController timeout) so it CANNOT affect the served response or latency
-  # (ADR 031 primary-path invariant). The EB role holds es:ESHttp* on the v3 ARN
-  # (eb_opensearch_v3), so it SigV4-signs the shadow reads. Removed again at/after
-  # cutover (v3 becomes primary → shadow would be redundant v3→v3).
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_HOST"
-    value     = module.opensearch_v3.endpoint
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PORT"
-    value     = "443"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PROTOCOL"
-    value     = "https"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_AUTH_MODE"
-    value     = "sigv4"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_REGION"
-    value     = "ap-southeast-2"
-    resource  = ""
-  }
+  # ADR 035 Phase 2 read-shadow REMOVED at cutover 2026-07-14: v3 (addressr5) is
+  # now PRIMARY (ELASTIC_HOST above), so mirroring reads to v3 would be a redundant
+  # v3→v3 shadow. The soak served its purpose (~1 day, full read coverage, 0
+  # failures) and is retired. No ADDRESSR_SHADOW_* settings → src/read-shadow.js stays dormant
+  # (validateReadShadowConfig short-circuits on unset ADDRESSR_SHADOW_HOST).
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
@@ -830,9 +796,9 @@ resource "aws_iam_role_policy" "eb_opensearch_v3" {
 }
 
 # ADR 035 / P035 trip-wire: v3 SearchableDocuments-drop alarm, mirroring v2.
-# Floor starts at 1M (var default) during provision+populate — a fresh empty
-# domain sits in breach until populate crosses ~1M, then clears; raise to ~15M
-# post-populate.
+# Floor raised to 15M (var default) at cutover 2026-07-14 now that v3 is populated
+# (16.9M, exact G-NAF parity) and serving as primary — it started at 1M during
+# provision+populate so a fresh empty domain would clear once populate crossed ~1M.
 resource "aws_cloudwatch_metric_alarm" "v3_searchable_documents_drop" {
   alarm_name  = "addressr-v3-searchable-documents-drop"
   namespace   = "AWS/ES"
