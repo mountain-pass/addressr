@@ -203,15 +203,15 @@ jobs:
           echo "$shadow_body" | jq -e '.' > /dev/null || {
             echo "/debug/shadow-config did not return valid JSON"; exit 1;
           }
-          # ADR 029 post-cutover (2026-07-10): the v2 cutover is complete and the
-          # read-shadow is REMOVED (its warming job is done; v2 is now primary).
-          # hostSet=false is the steady state again (ADR 031 default-off posture,
-          # capability still shipped). Assert false so an ACCIDENTAL shadow
-          # re-enable is caught. Flip back to "true" only if a future migration
-          # re-enables the shadow.
+          # ADR 035 Phase 2 (2026-07-13): the read-shadow is RE-ENABLED to warm v3
+          # (addressr5, OpenSearch 3.5) with the real production query distribution
+          # before the v2→v3 cutover (the ADR 031 pattern that de-risked v1→v2).
+          # v2 stays primary. Assert hostSet=true so an ACCIDENTAL shadow disable
+          # (which would silently warm nothing) is caught. Flip back to "false"
+          # after the cutover when the shadow is removed again.
           host_set=$(echo "$shadow_body" | jq -r '.hostSet')
-          if [ "$host_set" != "false" ]; then
-            echo "/debug/shadow-config hostSet=$host_set, expected false (shadow removed post-cutover; flip to true when a future migration re-enables it)"
+          if [ "$host_set" != "true" ]; then
+            echo "/debug/shadow-config hostSet=$host_set, expected true (ADR 035 Phase 2 read-shadow soak to v3; flip to false after cutover removes it)"
             echo "body: $shadow_body"; exit 1
           fi
           last_error_class=$(echo "$shadow_body" | jq -r '.lastError.class // "null"')
@@ -221,7 +221,7 @@ jobs:
               echo "/debug/shadow-config lastError.class=$last_error_class, expected null or one of the closed enum values"
               exit 1 ;;
           esac
-          echo "P035 R3 ok: hostSet=false (shadow removed post-cutover, ADR 029), lastError.class=$last_error_class"
+          echo "P035 R3 ok: hostSet=true (ADR 035 Phase 2 read-shadow soak to v3), lastError.class=$last_error_class"
           echo ""
           # ADR 024 bypass probe: direct-without-header must be rejected.
           # Any status other than 401 fails the release — enforcement is the

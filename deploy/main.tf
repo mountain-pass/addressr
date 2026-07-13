@@ -149,14 +149,46 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 029 Stage 3 read-shadow REMOVED 2026-07-10 (post-cutover follow-up): its
-  # ADR 031 job — warm v2 (addressr4) with real query distribution before the
-  # cutover — is complete. v2 is now the PRIMARY (ELASTIC_HOST above), so the
-  # shadow would only mirror v2→v2 (redundant 2x read, no warming value). The
-  # ADDRESSR_SHADOW_* targeting is removed → src/read-shadow.js mirrorRequest
-  # no-ops again; the read-shadow capability stays shipped default-off (ADR 031,
-  # same enable/disable pattern as the 2026-05-14 removal). Reverses the 2026-07-08
-  # Stage 3 enable.
+  # ADR 035 Phase 2 read-shadow RE-ENABLED 2026-07-13: mirror each production read
+  # to the v3 domain (addressr5, OpenSearch 3.5) to exercise the REAL production
+  # query distribution against 3.5 before the cutover — the ADR 031 warming +
+  # error-surfacing pattern that de-risked v1→v2. v2 stays PRIMARY (ELASTIC_HOST
+  # above); this is a genuine v2-primary → v3-shadow mirror (not redundant v2→v2).
+  # src/read-shadow.js mirrorRequest is fire-and-forget (non-blocking, per-request
+  # AbortController timeout) so it CANNOT affect the served response or latency
+  # (ADR 031 primary-path invariant). The EB role holds es:ESHttp* on the v3 ARN
+  # (eb_opensearch_v3), so it SigV4-signs the shadow reads. Removed again at/after
+  # cutover (v3 becomes primary → shadow would be redundant v3→v3).
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_HOST"
+    value     = module.opensearch_v3.endpoint
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PORT"
+    value     = "443"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PROTOCOL"
+    value     = "https"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_AUTH_MODE"
+    value     = "sigv4"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_REGION"
+    value     = "ap-southeast-2"
+    resource  = ""
+  }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
