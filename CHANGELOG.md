@@ -1,5 +1,11 @@
 # @mountainpass/addressr
 
+## 2.6.29
+
+### Patch Changes
+
+- 1f77c5e: Completes the OpenSearch 3.5 upgrade. No API change, no change to search results, and no effect on response times.
+
 ## 2.6.28
 
 ### Patch Changes
