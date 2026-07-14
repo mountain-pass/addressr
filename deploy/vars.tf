@@ -51,21 +51,11 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
-variable "elastic_v2_name" {
-  type        = string
-  nullable    = false
-  default     = "addressr4"
-  description = "ADR 029 Phase 1 / ADR 030: domain name for the v2 OpenSearch domain provisioned in parallel during blue/green cutover. Re-attempt 2026-07-07: renamed search-addressr4 → addressr4 so the AWS endpoint (search-<name>-<hash>) reads search-addressr4-…, matching the ADR prose; attempt 1's literal search-addressr4 domain name produced a search-search-addressr4-… endpoint. The domain does not exist yet, so the rename is free. Operators: clear any stale elastic_v2_name override in the TFC workspace. Phase 2 can override to addressr5 without touching main.tf."
-}
-variable "elastic_v2_engine_version" {
-  type        = string
-  nullable    = false
-  default     = "OpenSearch_2.19"
-  description = "ADR 029 Phase 1: engine version for the v2 domain. Phase 2 will override to OpenSearch_3.x."
-}
-
-# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain provisioned in parallel during
-# the 2.19→3.5 blue/green cutover. Mirrors the elastic_v2_* + v2 floor vars.
+# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain — the sole production search
+# domain since the v2 (addressr4) decommission 2026-07-14. The elastic_v2_* +
+# v2_searchable_documents_floor vars were removed then (no config references them
+# once module.opensearch_v2 is gone). Operators: clear any stale elastic_v2_*
+# override in the TFC workspace (Terraform ignores undeclared vars — warn, not fail).
 variable "elastic_v3_name" {
   type        = string
   nullable    = false
@@ -87,13 +77,7 @@ variable "loader_principal_arn" {
   type        = string
   nullable    = false
   default     = "arn:aws:iam::869772437473:user/tompahoward"
-  description = "ADR 033: IAM principal that runs the loader locally (SigV4) and is granted access to the v2 domain. Since the data load moved off GitHub Actions to the local operator machine (GHA quota), this is the operator's IAM identity. Override if a different identity/role runs the load."
-}
-
-variable "v2_searchable_documents_floor" {
-  type        = number
-  default     = 15000000
-  description = "ADR 033 / P035 trip-wire: alarm fires if v2 SearchableDocuments drops below this. Full dataset is ~16.9M (16,905,824 at 2026-07-11); ADR 034 raised the floor 1M → 15M now that v2 is populated and steady — ~15M leaves headroom for legit per-state churn during a quarterly delta load but catches a delta that drops the index (the 2026-07-07 deletion went to 7)."
+  description = "ADR 033: IAM principal that runs the loader locally (SigV4) and is granted access to the v3 domain. Since the data load moved off GitHub Actions to the local operator machine (GHA quota), this is the operator's IAM identity. Override if a different identity/role runs the load."
 }
 
 

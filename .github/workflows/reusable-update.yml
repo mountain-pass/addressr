@@ -7,28 +7,21 @@ on:
         required: true
         type: string
       target:
-        # ADR 034/035: which OpenSearch domain to load, both over OIDC/SigV4.
-        # 'v2' (default) = the production 2.19 domain (addressr4); 'v3' = the
-        # OpenSearch 3.5 domain (addressr5) provisioned for the Phase 2 upgrade.
-        # The 9 update-{state}.yml crons pass target: v2 explicitly and stay on
-        # v2 until cutover; populate + the v3 canary pass target: v3.
+        # ADR 034/035: which OpenSearch domain to load, over OIDC/SigV4. 'v3'
+        # (addressr5, OpenSearch 3.5) is the sole production domain since the
+        # v2 (addressr4, 2.19) decommission 2026-07-14 (ADR 035 Phase 2 step 6).
+        # The 9 update-{state}.yml crons and populate-search-domain.yml all pass
+        # target: v3. Kept parameterised for the next version-generation upgrade.
         required: false
         type: string
-        default: 'v2'
+        default: 'v3'
     secrets:
-      # ADR 034/035: each target authenticates via OIDC/SigV4 — the only secret
+      # ADR 034/035: the target authenticates via OIDC/SigV4 — the only secret
       # the loader needs is the target domain's endpoint (the v1 basic-auth
-      # secrets were removed 2026-07-11 with the v1 decommission).
-      TF_VAR_ELASTIC_V2_HOST:
-        required: false
+      # secrets were removed 2026-07-11 with the v1 decommission; the v2
+      # TF_VAR_ELASTIC_V2_HOST input was removed 2026-07-14 with the v2 one).
       TF_VAR_ELASTIC_V3_HOST:
         required: false
-  # ADR 034 step-5 canary: run a single-state v2 load directly in GitHub
-  # Actions (via `gh workflow run reusable-update.yml -f state=OT -f target=v2`)
-  # to exercise the gha-v2-loader OIDC role before flipping the 9 crons. A
-  # local run would authenticate as the operator identity, not OIDC, so it
-  # would not test the new path. Under workflow_dispatch, secrets.* read repo
-  # secrets directly.
   workflow_dispatch:
     inputs:
       state:
@@ -37,7 +30,7 @@ on:
       target:
         required: false
         type: string
-        default: 'v2'
+        default: 'v3'
 
 jobs:
   update:
@@ -51,9 +44,9 @@ jobs:
     concurrency:
       group: reusable-update-${{ inputs.target }}-${{ inputs.state }}
       cancel-in-progress: false
-    # ADR 034: id-token needed for the target=v2 OIDC role assumption; the v1
-    # default path does not use it. contents:read keeps checkout working once
-    # permissions are declared explicitly.
+    # ADR 034/035: id-token needed for the gha-v3-loader OIDC role assumption.
+    # contents:read keeps checkout working once permissions are declared
+    # explicitly.
     permissions:
       id-token: write
       contents: read
@@ -66,40 +59,33 @@ jobs:
           node-version: '22.x' # Specify the Node.js version you need
 
       - name: Resolve target host
-        # ADR 034/035: v2 and v3 are both SigV4 (FGAC off) — no username/password.
-        # Resolves the target domain's endpoint + the least-privilege OIDC role
-        # the configure-aws-credentials step below assumes. Fails loudly on a
+        # ADR 034/035: v3 is SigV4 (FGAC off) — no username/password. Resolves
+        # the target domain's endpoint + the least-privilege OIDC role the
+        # configure-aws-credentials step below assumes. Fails loudly on a
         # missing endpoint secret or an unsupported target.
         env:
           TARGET: ${{ inputs.target }}
-          V2_HOST: ${{ secrets.TF_VAR_ELASTIC_V2_HOST }}
           V3_HOST: ${{ secrets.TF_VAR_ELASTIC_V3_HOST }}
         run: |
           set -e
-          if [ "$TARGET" = "v2" ]; then
-            [ -n "$V2_HOST" ] || { echo "::error::target=v2 but TF_VAR_ELASTIC_V2_HOST is not set"; exit 1; }
-            echo "RESOLVED_HOST=$V2_HOST" >> "$GITHUB_ENV"
-            echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v2-loader" >> "$GITHUB_ENV"
-            echo "::add-mask::$V2_HOST"
-            echo "Resolved target: v2 (SigV4, gha-v2-loader)"
-          elif [ "$TARGET" = "v3" ]; then
+          if [ "$TARGET" = "v3" ]; then
             [ -n "$V3_HOST" ] || { echo "::error::target=v3 but TF_VAR_ELASTIC_V3_HOST is not set"; exit 1; }
             echo "RESOLVED_HOST=$V3_HOST" >> "$GITHUB_ENV"
             echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v3-loader" >> "$GITHUB_ENV"
             echo "::add-mask::$V3_HOST"
             echo "Resolved target: v3 (SigV4, gha-v3-loader)"
           else
-            echo "::error::Unsupported target: $TARGET (expected 'v2' or 'v3')"
+            echo "::error::Unsupported target: $TARGET (expected 'v3')"
             exit 1
           fi
           echo "RESOLVED_AUTH_MODE=sigv4" >> "$GITHUB_ENV"
           echo "RESOLVED_REGION=ap-southeast-2" >> "$GITHUB_ENV"
 
-      # ADR 034/035: assume the target's least-privilege gha-v{2,3}-loader role
-      # via GitHub OIDC so the loader signs SigV4 requests with short-lived STS
-      # creds. RESOLVED_ROLE is set per-target by the resolve step above.
+      # ADR 034/035: assume the least-privilege gha-v3-loader role via GitHub
+      # OIDC so the loader signs SigV4 requests with short-lived STS creds.
+      # RESOLVED_ROLE is set by the resolve step above.
       - name: Configure AWS credentials (SigV4)
-        if: inputs.target == 'v2' || inputs.target == 'v3'
+        if: inputs.target == 'v3'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.RESOLVED_ROLE }}
@@ -107,8 +93,8 @@ jobs:
 
       - name: Upload
         env:
-          # ADR 034: v2/SigV4 — es-auth.js signs with the assumed-role creds; no
-          # username/password (FGAC off).
+          # ADR 034/035: v3/SigV4 — es-auth.js signs with the assumed-role creds;
+          # no username/password (FGAC off).
           ELASTIC_HOST: ${{ env.RESOLVED_HOST }}
           ELASTIC_AUTH_MODE: ${{ env.RESOLVED_AUTH_MODE }}
           ELASTIC_REGION: ${{ env.RESOLVED_REGION }}

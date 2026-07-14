@@ -1,25 +1,23 @@
 name: Populate Search Domain
 
-# ADR 029: populate the v2 OpenSearch domain (addressr4) from G-NAF source —
-# originally the Phase 1 step-5 pre-cutover bulk load; retained post-cutover for
-# a full re-index or a Phase 2 (2.19 -> 3.x) rebuild. Reuses the same loader path
-# as the quarterly update-{state}.yml workflows via reusable-update.yml (target=v2,
-# OIDC/SigV4). v1 (addressr3) was decommissioned 2026-07-11.
+# ADR 029/035: populate the v3 OpenSearch domain (addressr5, OpenSearch 3.5) from
+# G-NAF source — a full re-index / rebuild path. Reuses the same loader path as the
+# quarterly update-{state}.yml workflows via reusable-update.yml (target=v3,
+# OIDC/SigV4). v1 (addressr3) was decommissioned 2026-07-11; v2 (addressr4, 2.19)
+# was decommissioned 2026-07-14 (ADR 035 Phase 2 step 6).
 #
-# Naming is intentionally version-agnostic for Phase 2 reuse: when ADR 029
-# Phase 2 (2.19 -> 3.x) begins, this workflow's `target` enum gains 'v3' and
-# the same matrix runs against search-addressr5-... or its successor.
+# Naming is intentionally version-agnostic: the next version-generation upgrade
+# adds its target to the enum and the same matrix runs against its domain.
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target search domain (v2 = current production 2.19; v3 = the OpenSearch 3.5 upgrade domain, ADR 035 Phase 2)'
+        description: 'Target search domain (v3 = production OpenSearch 3.5, addressr5; v2/addressr4 decommissioned 2026-07-14, ADR 035 Phase 2 step 6)'
         required: true
-        default: 'v2'
+        default: 'v3'
         type: choice
         options:
-          - v2
           - v3
       states:
         description: 'States to load (comma-separated, or "all")'
@@ -58,10 +56,10 @@ jobs:
 
   populate:
     needs: resolve-states
-    # ADR 034/035: target=v2|v3 loads over OIDC/SigV4. id-token:write MUST be
+    # ADR 034/035: target=v3 loads over OIDC/SigV4. id-token:write MUST be
     # granted here on the caller — a reusable workflow's id-token is capped by
     # the caller's token (the ADR-034 caller-chain lesson), so without this the
-    # gha-v{2,3}-loader role assumption fails. contents:read keeps checkout
+    # gha-v3-loader role assumption fails. contents:read keeps checkout
     # working once permissions are declared explicitly.
     permissions:
       id-token: write
@@ -72,7 +70,7 @@ jobs:
       # windows. Sequential default (max-parallel: 1) respects that bulk-load
       # discipline. Operator can edit this workflow file before triggering
       # if they want parallel; doing so puts more concurrent ingest pressure
-      # on the v2 domain instance class. The 'fail-fast: false' lets a
+      # on the v3 domain instance class. The 'fail-fast: false' lets a
       # state's failure not cancel other in-flight states (matters more
       # under operator-overridden parallelism than under sequential).
       fail-fast: false

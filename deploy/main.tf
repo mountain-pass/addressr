@@ -104,9 +104,10 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   # warm-latency parity+. Username/password stay EMPTIED so buildClientNode
   # (src/client-node-url.js) builds a credential-less node URL — the exact shape
   # the SigV4 signer wraps. The EB instance role (aws-elasticbeanstalk-ec2-role)
-  # holds es:ESHttp* on the v3 ARN (eb_opensearch_v3). Rollback = git-revert this
-  # commit + apply → back to warm v2 (addressr4 untouched + still populated;
-  # zero-outage via the rolling deploy + the deepened /health auto-rollback).
+  # holds es:ESHttp* on the v3 ARN (eb_opensearch_v3). Since the v2 (addressr4)
+  # decommission 2026-07-14 (step 6), rollback is rebuild-from-G-NAF (hours), not
+  # an instant flip to a warm v2 — the ADR 035 Option C trade, same as v1 at ADR
+  # 029 step 9. In-deploy safety stays: EB rolling deploy + /health auto-rollback.
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
@@ -641,118 +642,13 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
-# ADR 029 Phase 1 re-attempt (Stage 1) + ADR 033 (IAM/SigV4 auth): parallel v2
-# OpenSearch domain, provisioned QUIET — no ADDRESSR_SHADOW_* EB settings until
-# populate completes and validates (ADR 031 amendment 2026-07-06). Sizing is
-# t3.small.search × 2 + 20 GB (EBS bumped from 12 per the ADR 029 amendment
-# 2026-07-08 — 2.19 needs more disk). The never-resize discipline (ADR 030)
-# applies to the INSTANCE CLASS (blue/green resize under load is the stuck-
-# class that tripped P036); an online EBS volume resize on an empty domain is
-# a different, safe operation. Domain name addressr4 → endpoint reads
-# search-addressr4-….
-#
-# ADR 033: FGAC is OFF. Auth is IAM/SigV4 — the access policy is scoped to the
-# EB instance role (app) + the local loader identity, the sole gate (no
-# clobberable internal password; the 2026-07-07 addressr4 failure reproduced
-# P036+P035 under FGAC). The elastic_v2_username/password vars are now unused
-# (deferred cleanup; sync-tfc-vars.yml's TFC copies are harmless-but-orphaned).
-# ELASTIC_HOST was cut over to this v2 domain 2026-07-10 (ADR 029 Stage 5) — the
-# EB primary settings above now reference module.opensearch_v2.endpoint / SigV4.
-module "opensearch_v2" {
-  source = "./modules/opensearch"
-
-  name           = var.elastic_v2_name
-  engine_version = var.elastic_v2_engine_version
-
-  # ADR 029 steady-state sizing for 2.19 = m6g.large.search x 2 (user-confirmed
-  # via AskUserQuestion 2026-07-09; ADR 029 point 2 amended). CLOSED decision:
-  # t3.small serves 1.3.20 fine but CANNOT serve 2.19 at parity — under real load
-  # it DIVERGED from v1 (p90 climbed 1156→2753ms and rising over 4h vs v1 ~200ms;
-  # p99 ~5-8s). That is a memory/capacity ceiling (2GB can't hold the ~1.7x-larger
-  # 2.19 hot-set), NOT a warming lag — more soak time does not fix it. m6g.large
-  # (8GB) proved parity and slightly ahead of v1 (warm p90 45ms / p99 115ms vs v1
-  # p90 64ms / p99 187ms). In-place resize proved safe (3 clean resizes this cycle;
-  # ADR 033 removed the FGAC clobber that stalled the first attempt), so resize is
-  # an acceptable mechanism alongside destroy+recreate. Cutover to prod is still a
-  # separate later event (ELASTIC_HOST flips at Stage 5 after the formal k6 gate).
-  instance_type  = "m6g.large.search"
-  instance_count = 2
-  # ADR 029 amendment 2026-07-08: 20 GB (was 12). OpenSearch 2.19 uses ~1.7x
-  # the disk-per-doc of v1's 1.3.20 (v2 hit ~80% of 12 GB at 14M docs where v1
-  # holds the full 16.8M at ~56%), so the full dataset with a replica needs
-  # more than 12 GB. The from-scratch 16.8M geo-load is also what overwhelms
-  # the t3.small (v1 grew incrementally and never bulk-loaded from scratch);
-  # the load runs with replicas=0 (index template) to halve disk + write
-  # pressure, then the replica is added post-load. P035 index-deletion
-  # correlated with the t3.small overload and is FGAC-independent (ADR 033
-  # honesty caveat confirmed) — this sizing removes the overload driver.
-  ebs_volume_size = 20
-
-  # ADR 033 scoped principals: the EB app's default instance role +
-  # the local operator identity that runs the loader (SigV4).
-  # ADR 034: + the GitHub Actions OIDC loader role for the re-automated
-  # quarterly delta loads (see deploy/oidc.tf).
-  allowed_principal_arns = [
-    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
-    var.loader_principal_arn,
-    aws_iam_role.gha_v2_loader.arn,
-  ]
-
-  tags = {
-    ManagedBy = "terraform"
-    Component = "search"
-    Adr       = "029-030-033"
-  }
-}
-
-# ADR 033: let the EB app (aws-elasticbeanstalk-ec2-role, AWS-managed, not TF-
-# owned) call the v2 domain over SigV4 once it points at v2 (shadow / cutover).
-# Belt-and-suspenders with the domain access policy; scoped to the domain ARN.
-resource "aws_iam_role_policy" "eb_opensearch_v2" {
-  name = "addressr-opensearch-v2-eshttp"
-  role = "aws-elasticbeanstalk-ec2-role"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "es:ESHttp*"
-        Resource = "${module.opensearch_v2.arn}/*"
-      }
-    ]
-  })
-}
-
-# ADR 033 / P035 trip-wire: audit logs are gone with FGAC, so the silent
-# index-deletion symptom (10M→7 docs on 2026-07-07) is watched by a
-# SearchableDocuments-drop alarm — the metric that actually detected it.
-# Fires when searchable docs on v2 fall below a floor while it should hold the
-# full dataset. Treated as breaching on missing data so a wipe-to-zero trips it.
-resource "aws_cloudwatch_metric_alarm" "v2_searchable_documents_drop" {
-  alarm_name  = "addressr-v2-searchable-documents-drop"
-  namespace   = "AWS/ES"
-  metric_name = "SearchableDocuments"
-  dimensions = {
-    DomainName = var.elastic_v2_name
-    ClientId   = data.aws_caller_identity.current.account_id
-  }
-  statistic           = "Minimum"
-  period              = 300
-  evaluation_periods  = 2
-  comparison_operator = "LessThanThreshold"
-  # ~16.8M at full load; alarm well below that to allow indexing/refresh jitter
-  # but catch a catastrophic drop (the 2026-07-07 wipe went to 7).
-  threshold          = var.v2_searchable_documents_floor
-  treat_missing_data = "breaching"
-  alarm_description  = "ADR 033: v2 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
-}
-
-# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain, provisioned in parallel with v2
-# (the same blue/green pattern that took v1→v2). Mirrors module.opensearch_v2:
-# same m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may
-# reduce the footprint but we don't assume it — right-size later if measured,
-# via from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-# Not in the serving path yet — ELASTIC_HOST flips to this domain at cutover.
+# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain — the SOLE production search
+# domain since the v2 (addressr4, 2.19) cutover 2026-07-14 (Stage 5) and
+# decommission (step 6). Provisioned via the blue/green pattern that took v1→v2→v3.
+# m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
+# footprint but we don't assume it — right-size later if measured, via
+# from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
+# ELASTIC_HOST (EB settings above) sources module.opensearch_v3.endpoint.
 module "opensearch_v3" {
   source = "./modules/opensearch"
 
@@ -817,16 +713,15 @@ resource "aws_cloudwatch_metric_alarm" "v3_searchable_documents_drop" {
 }
 
 # ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
-# before any v2 spend to prove the parity signal at real traffic volume;
-# post-cutover (v1 decommissioned 2026-07-11) it is v2-only ongoing monitoring
-# of the addressr4 domain (SearchLatency / SearchRate / CPUUtilization).
+# before any v2 spend to prove the parity signal at real traffic volume; used
+# v2-vs-v3 during the 2.19→3.5 overlap to prove parity before cutover. Since the
+# v2 (addressr4) decommission 2026-07-14 (ADR 035 Phase 2 step 6) it is v3-only
+# ongoing monitoring of the addressr5 domain (SearchLatency / SearchRate / CPUUtilization).
 data "aws_caller_identity" "current" {}
 
 locals {
-  # ADR 035 Phase 2: during the 2.19→3.5 overlap the dashboard plots v2 vs v3
-  # so the parity signal is proven at real traffic volume before cutover; it
-  # reverts to v3-only once v2 (addressr4) is decommissioned post-cutover.
-  search_parity_domains = [var.elastic_v2_name, var.elastic_v3_name]
+  # ADR 035 Phase 2: v3-only since v2 (addressr4) was decommissioned post-cutover.
+  search_parity_domains = [var.elastic_v3_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
   # the statistic/period choice is validated on v1 during Stage 0d.
@@ -838,7 +733,7 @@ locals {
       width  = 24
       height = 8
       properties = {
-        title  = "${metric} — v2 vs v3"
+        title  = "${metric} — v3"
         region = "ap-southeast-2"
         stat   = metric == "SearchLatency" ? "p95" : "Average"
         period = 3600
