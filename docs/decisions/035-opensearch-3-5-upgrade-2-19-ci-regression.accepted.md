@@ -1,6 +1,7 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-07-13
+accepted-date: 2026-07-14
 human-oversight: confirmed
 oversight-date: 2026-07-13
 decision-makers: [Tom Howard]
@@ -58,11 +59,14 @@ Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it hono
 
 ### Good
 
-- (deferred to /wr-architect:create-adr canonical review)
+- Production runs AWS's latest supported OpenSearch (3.5, Lucene 10) with zero user-facing outage across the cutover; warm-latency held at parity-or-better (v3 domain p95 ~24ms).
+- Genuine 2.19 regression coverage + code compatibility retained at ~$0 ongoing infra cost — no multi-year (~$3.6k–7.2k) parallel-domain spend.
+- Reused the proven Phase 1 machinery end-to-end (blue/green module, reindex-from-G-NAF, OIDC loader, read-shadow soak, drop-alarm, parity dashboard) — no bespoke tooling.
 
 ### Neutral
 
-- (deferred to /wr-architect:create-adr canonical review)
+- The domain-generation naming (v1/v2/v3 = addressr3/4/5) and the loader `target` parameter persist for the next version-generation upgrade; the machinery is now a repeatable pattern.
+- 2.19 lingers only as a CI-matrix image + client compatibility target, not running infrastructure; it drops from the matrix when AWS EOLs 2.19 (Reassessment trigger).
 
 ### Bad
 
@@ -70,7 +74,14 @@ Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it hono
 
 ## Confirmation
 
-(deferred to /wr-architect:create-adr canonical review — testable criteria: CI matrix green on both 2.19.5 and 3.5.x; SSLA 14/14 + Cucumber + k6 on the AWS-managed 3.5 domain pre-cutover; v3 drop-alarm armed; v2 decommissioned post-soak; 2.19 leg retained in the matrix.)
+All criteria satisfied — Phase 2 executed and confirmed 2026-07-14:
+
+1. **CI matrix green on both engines** — `release.yml` build-and-test runs the `['2.19.5', '3.5.0']` matrix; both legs passed on every decommission-era release (the 2.19.5 leg confirms the retained code-compatibility + regression coverage). ✅
+2. **Pre-cutover gate on the AWS-managed 3.5 domain** — SSLA 14/14, Cucumber `test:nogeo` + `test:geo`, and k6 all passed against `addressr5`. A dedicated k6 full-primary-concurrency load test (local server → v3 over SigV4, sustained 20 VUs) returned 4311 requests / 0 failures / search p95 368ms, closing the "un-exercised full-primary-concurrency" gap before cutover. ✅
+3. **v3 drop-alarm armed** — `aws_cloudwatch_metric_alarm.v3_searchable_documents_drop` at the 15M floor (raised from the 1M provisioning floor at cutover); state OK. ✅
+4. **Cutover verified** — production `ELASTIC_HOST` sources `module.opensearch_v3.endpoint`; gated on the ADR 031 read-shadow soak (~1 day, full read coverage, 0 failures) + full 16.9M doc parity; served clean as sole primary (0 server errors, cluster green, p95 24ms) through the post-cutover watch. ✅
+5. **v2 decommissioned post-soak** — `addressr4` (OpenSearch 2.19) destroyed 2026-07-14 via `terraform apply` (module + IAM policy + OIDC loader role + drop-alarm + vars removed; 9 loader crons retargeted to `target=v3`; parity dashboard → v3-only). `addressr5` is the sole remaining domain. Rollback is now rebuild-from-G-NAF, the accepted Option C trade. ✅
+6. **2.19 leg retained** — the `2.19.5` entry stays in the `release.yml` matrix as the standing regression + code-compatibility target until AWS announces 2.19 EOL (Reassessment trigger below). ✅
 
 ## Pros and Cons of the Options
 
