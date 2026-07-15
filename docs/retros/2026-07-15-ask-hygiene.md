@@ -17,3 +17,20 @@ Session: OpenSearch 2.19→3.5 cutover + v2 decommission + ADR-035 promotion.
 **Correction-followup count: 0**
 
 Trend: 2026-05-14 = 0, 2026-07-08 = 1, 2026-07-11 = 0, 2026-07-15 = 1. R6 gate (lazy ≥2 across 3 consecutive retros) does NOT fire.
+
+## Iteration retro — AFK work-problems P019 (K→V transition)
+
+No `AskUserQuestion` calls this iteration (AFK subprocess; ADR-013 Rule 6).
+
+| Call # | Header | Classification | Citation |
+| ------ | ------ | -------------- | -------- |
+| —      | (none) | —              | —        |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
+
+R6 trend check: `wr-retrospective-check-ask-hygiene` shim absent in this adopter repo (P049) — manual read of trail: 2026-05-14 = 0, 2026-07-08 = 1, 2026-07-11 = 0, 2026-07-15 = 1, this iter = 0. R6 gate does NOT fire.
