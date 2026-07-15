@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-15 **P049 captured** — wr-retrospective retro scripts (check-ask-hygiene / check-briefing-budgets / check-tickets-deferred-cause) lack ADR-049 bin shims in adopter repos; retro passes degrade fail-open (lightweight aside via /wr-itil:capture-problem).
+> Last reviewed: 2026-07-15 **P019 verification pending** — root `Link` header rel-completeness probe confirmed shipped in `.github/workflows/release.yml` (commit 98a0ca9, 2026-04-19); ticket moved Known Error → Verifying per ADR-022. Verify via green rel-completeness probe on the next published release run.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,7 +10,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
-| 12.0 | P019 | No deploy-time smoke check for root Link header rels                    | 6 (Medium)   | Known Error | S      | 2026-04-18 | internal |
 | 12.0 | P036 | v2 shadow auth silently regressed (FGAC clobber) — ADR-033 fix shipped  | 12 (High)    | Known Error | M      | 2026-05-11 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
 | 9.0  | P014 | Invalid address ID returns 500 not 404                                  | 9 (Medium)   | Known Error | M      | 2026-04-16 | internal |
@@ -41,10 +40,11 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off `docs/problems/*.verifying.md` per ADR-022). Sorted by `Released date ASC`. <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` carries an evidence-first cell per P186. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
 
-| ID   | Title                                               | Released   | Likely verified?  | Notes                                                                                                          |
-| ---- | --------------------------------------------------- | ---------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| P001 | Stale Dockerfile                                    | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal |
-| P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                    |
+| ID   | Title                                                | Released   | Likely verified?  | Notes                                                                                                                                                       |
+| ---- | ---------------------------------------------------- | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P001 | Stale Dockerfile                                     | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                              |
+| P019 | No deploy-time smoke check for root Link header rels | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release |
+| P042 | Version-control the Cloudflare Worker via Terraform  | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                 |
 
 ## Inbound Upstream Reports
 

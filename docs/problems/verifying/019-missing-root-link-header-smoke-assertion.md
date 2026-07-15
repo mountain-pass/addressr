@@ -1,6 +1,6 @@
 # Problem 019: No deploy-time smoke check for root `Link` header rel completeness
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-18
 **Priority**: 6 (Medium) — Impact: Minor (2) x Likelihood: Possible (3)
 
@@ -53,6 +53,9 @@ For the RapidAPI probe: cache-bust with `?cachebust=$(date +%s)` so we assert on
 ## Fix Released
 
 **Date**: 2026-04-19
+**Release marker**: commit 98a0ca9 — `ci(release): add root / Link header rel-completeness smoke probe (P019)`. Workflow-only change; effective on master from that commit, no npm release vehicle. <!-- no-changeset-reference -->
+
+Awaiting user verification — verify by observing the "Smoke test production" step pass its rel-completeness probe on the next published release run.
 
 Appended a curl+grep rel-completeness probe to the existing "Smoke test production" step in `.github/workflows/release.yml`. The probe uses the ADR 024 auth_header (same one the ranking probes use) to GET root `/`, captures the `Link` response header, and fails the job with an explicit "missing rel" message if any of the 6 expected rels is absent.
 

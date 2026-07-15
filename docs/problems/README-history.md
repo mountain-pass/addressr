@@ -39,3 +39,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-07-15T06:43Z **full re-rank** — P028 (OpenSearch 1.3.20 debt) **CLOSED** (production migrated to 3.5, ADR-035; v1 decommissioned). Auto-transitioned Open→Known Error: P036 (FGAC clobber — ADR-033 structural fix shipped), P041, P047, P048. Re-rated all deferred tickets to concrete Impact×Likelihood/Effort/WSJF. P014 corrected Open→Known Error (README drift). Relevance-close evaluator produced only false positives this pass (every flagged file exists) — no relevance-closes fired.
 
 > Last reviewed: 2026-07-15 **P001 verification pending** — Stale Dockerfile fix (Node 22-alpine base + `addressr-server-2` CMD, commit 1a68e6e, released 2026-04-19) confirmed on origin/master; ticket moved Known Error → Verifying per ADR-022. Verify via local `docker build`.
+
+> Last reviewed: 2026-07-15 **P049 captured** — wr-retrospective retro scripts (check-ask-hygiene / check-briefing-budgets / check-tickets-deferred-cause) lack ADR-049 bin shims in adopter repos; retro passes degrade fail-open (lightweight aside via /wr-itil:capture-problem).
