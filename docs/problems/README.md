@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-15 **P001 verification pending** — Stale Dockerfile fix (Node 22-alpine base + `addressr-server-2` CMD, commit 1a68e6e, released 2026-04-19) confirmed on origin/master; ticket moved Known Error → Verifying per ADR-022. Verify via local `docker build`.
+> Last reviewed: 2026-07-15 **P049 captured** — wr-retrospective retro scripts (check-ask-hygiene / check-briefing-budgets / check-tickets-deferred-cause) lack ADR-049 bin shims in adopter repos; retro passes degrade fail-open (lightweight aside via /wr-itil:capture-problem).
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -26,6 +26,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P048 | external-comms marker hash-exactness forces re-review round-trips       | 4 (Low)      | Known Error | M      | 2026-07-15 | internal |
 | 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses           | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks   | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
+| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos          | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                  | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P015 | Range-number addresses not findable by base number                      | 12 (High)    | Open        | L      | 2026-04-16 | internal |
 | 3.0  | P035 | Read-shadow soak validation has multiple blind spots                    | 12 (High)    | Open        | L      | 2026-05-03 | internal |
