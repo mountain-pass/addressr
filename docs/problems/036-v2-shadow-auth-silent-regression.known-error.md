@@ -1,10 +1,15 @@
 # Problem 036: v2 shadow auth silently regressed mid-soak
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-05-11
 **Un-parked**: 2026-07-06
-**Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Likely (3) (deferred — re-rate at next /wr-itil:review-problems)
-**Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
+**Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
+**Origin**: internal
+**Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3)
+**Effort**: M
+**WSJF**: 12.0
+
+> Review note 2026-07-15: the FGAC master-user-clobber mechanism is **structurally removed** — ADR 033 (IAM/SigV4, FGAC off) shipped and production now runs FGAC-off (v2 `addressr4` cutover complete, upgraded to OpenSearch 3.5 per ADR 035). No internal user DB = nothing to clobber. This is a close candidate pending confirmation the clobber has not recurred on the FGAC-off domain since cutover.
 
 ## Recurrence + resolution direction 2026-07-07
 

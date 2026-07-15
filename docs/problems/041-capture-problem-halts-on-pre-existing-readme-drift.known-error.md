@@ -1,9 +1,12 @@
 # Problem 041: `/wr-itil:capture-problem` Halts on Pre-Existing README Drift Instead of Capturing
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-05-14
-**Priority**: 3 (Medium) — Impact: 3 x Likelihood: 1 (deferred — re-rate at next /wr-itil:review-problems)
-**Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
+**Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
+**Origin**: internal
+**Priority**: 4 (Low) — Impact: Negligible (1) × Likelihood: Likely (4)
+**Effort**: M
+**WSJF**: 4.0
 **Type**: technical
 
 ## Description

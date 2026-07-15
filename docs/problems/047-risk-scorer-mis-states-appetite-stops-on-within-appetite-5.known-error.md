@@ -1,10 +1,12 @@
 # Problem 047: wr-risk-scorer:pipeline mis-states appetite and STOPs on a within-appetite score of 5
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-15
-**Priority**: 3 (Medium) — Impact: 3 × Likelihood: 1 (deferred — re-rate at next review)
+**Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
+**Priority**: 2 (Very Low) — Impact: Negligible (1) × Likelihood: Unlikely (2)
 **Origin**: internal (pipeline-instability / subagent-delegation friction)
-**Effort**: S (deferred — re-rate at next review)
+**Effort**: S
+**WSJF**: 4.0
 
 ## Description
 

@@ -2,9 +2,10 @@
 
 **Status**: Open
 **Reported**: 2026-07-08
-**Priority**: 3 (Medium) — Impact: 3 x Likelihood: 1 (deferred — re-rate at next /wr-itil:review-problems)
+**Priority**: 2 (Very Low) — Impact: Negligible (1) × Likelihood: Unlikely (2)
 **Origin**: internal
-**Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
+**Effort**: M
+**WSJF**: 1.0
 **JTBD**: JTBD-001
 **Persona**: developer
 

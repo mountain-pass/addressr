@@ -2,8 +2,10 @@
 
 **Status**: Open
 **Reported**: 2026-05-14
-**Priority**: 3 (Medium) — Impact: 3 x Likelihood: 1 (deferred — re-rate at next /wr-itil:review-problems)
-**Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
+**Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2)
+**Origin**: internal
+**Effort**: M
+**WSJF**: 2.0
 
 ## Description
 

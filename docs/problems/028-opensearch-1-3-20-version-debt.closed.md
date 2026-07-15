@@ -1,8 +1,10 @@
 # Problem 028: OpenSearch 1.3.20 version debt — increasing exposure to bugs, EOL and compatibility drift
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-21
 **Transitioned to Known Error**: 2026-04-21
+**Closed**: 2026-07-15
+**Origin**: internal
 **Priority**: 15 (High) — Impact: Moderate (3) x Likelihood: Almost certain (5)
 
 ## Description
@@ -264,3 +266,13 @@ Architect re-review PASS (all four prior items resolved); JTBD re-review PASS (p
 - [Problem P025 — GitHub Actions Node.js 20 deprecation](./025-github-actions-node20-deprecation.open.md) — adjacent version-debt ticket on a different axis (CI runtime). Similar pattern: managed-platform deprecation schedule forces our hand.
 - [`package.json`](../../package.json) — `SEARCH_IMAGE: "opensearchproject/opensearch:1.3.20"` and `@opensearch-project/opensearch: ^3.5.1`.
 - [`client/elasticsearch.js`](../../client/elasticsearch.js) — addressr's connection + index mapping code; will need review under 2.x for any DSL or mapping changes.
+
+## Closed — version debt retired (2026-07-15)
+
+- **Evidence (observable, ADR-026 grounding)**: production has migrated **entirely off** the OpenSearch 1.3 engine family — the exact condition this ticket captures no longer holds.
+  - ADR 029 Phase 1 (1.3.20 → 2.19) completed 2026-07-11; v1 domain `search-addressr3-…` decommissioned.
+  - ADR 035 (2.19 → 3.5) **accepted** 2026-07-14 (`human-oversight: confirmed`); production serves from `addressr4` on OpenSearch 3.5.
+  - `deploy/vars.tf` → `elastic_v3_engine_version = "OpenSearch_3.5"`; `deploy/main.tf:656` consumes it. No 1.3.x domain remains in IaC or in production.
+  - CI retains 2.19 as a regression/compat leg per ADR 035 — a deliberate test posture, not running version debt.
+- **Closed by**: /wr-itil:review-problems — fix released (the blue/green upgrade this ticket drove) and verified in production.
+- **Reversibility**: `git mv` back to `.known-error.md` if a 1.3.x dependency resurfaces (none expected — the domains are gone).

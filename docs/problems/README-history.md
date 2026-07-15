@@ -31,3 +31,7 @@ Last reviewed: 2026-07-06 **P045 captured** — RISK-POLICY staleness window har
 Last reviewed: 2026-07-06 **ADR 029 Phase 1 re-attempt begins** — P036 un-parked (trigger fired: re-attempt approved; audit logs shipped in ADR 030 module); P037 fix released ahead of populate (initIndex fast-path + snapshot retry); ADR 029/030/031 re-attempt amendments landed. WSJF re-rank deferred to next `/wr-itil:review-problems`.
 
 Last reviewed: 2026-07-07 **P037 verification pending** — initIndex fast-path + snapshot retry released in v2.6.14 (PR #488); verification = first clean 9-of-9 populate against the ADR 029 Stage 2 v2 domain. Stage 0 of the re-attempt complete (audit-log module, parity dashboard, refreshed k6 baseline: gate ≤ ~1,443 ms).
+
+## 2026-07-15
+
+Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the OpenSearch 2.19→3.5 migration (cutover + v2 decommission complete; ADR-035 accepted). Two upstream wr-risk-scorer frictions ticketed (appetite-misstatement, external-comms marker hash-exactness).

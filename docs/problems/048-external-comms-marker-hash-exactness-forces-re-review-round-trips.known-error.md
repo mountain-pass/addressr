@@ -1,10 +1,12 @@
 # Problem 048: external-comms commit-message marker hash-exactness forces re-review round-trips
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-15
-**Priority**: 3 (Medium) — Impact: 2 × Likelihood: 2 (deferred — re-rate at next review)
+**Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
+**Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2)
 **Origin**: internal (pipeline-instability / hook friction)
-**Effort**: M (deferred — re-rate at next review)
+**Effort**: M
+**WSJF**: 4.0
 
 ## Description
 
