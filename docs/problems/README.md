@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-15 **P019 verification pending** — root `Link` header rel-completeness probe confirmed shipped in `.github/workflows/release.yml` (commit 98a0ca9, 2026-04-19); ticket moved Known Error → Verifying per ADR-022. Verify via green rel-completeness probe on the next published release run.
+> Last reviewed: 2026-07-15 **batch transition** — P014 verifying (404-not-500 fix, commit fda4e3b), P004 verifying (release:watch step-level query, commit e800b05), P036 verifying (FGAC clobber structurally removed — ADR-033 IAM/SigV4 in production, FGAC-off v3 domain per ADR-035; addressr4 decommissioned). All three Known Error → Verification Pending per ADR-022.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,10 +10,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
-| 12.0 | P036 | v2 shadow auth silently regressed (FGAC clobber) — ADR-033 fix shipped  | 12 (High)    | Known Error | M      | 2026-05-11 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 9.0  | P014 | Invalid address ID returns 500 not 404                                  | 9 (Medium)   | Known Error | M      | 2026-04-16 | internal |
-| 8.0  | P004 | release:watch script reports false negative                             | 4 (Low)      | Known Error | S      | 2026-04-04 | internal |
 | 8.0  | P030 | Dependabot reports 46 vulnerabilities on master                         | 16 (High)    | Open        | M      | 2026-04-21 | internal |
 | 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive               | 6 (Medium)   | Open        | S      | 2026-04-28 | internal |
 | 6.0  | P044 | changesets/action swallows publish failure → deploy silently skips      | 6 (Medium)   | Open        | S      | 2026-05-25 | internal |
@@ -43,8 +40,11 @@ Fix released, awaiting user verification (driven off `docs/problems/*.verifying.
 | ID   | Title                                                | Released   | Likely verified?  | Notes                                                                                                                                                       |
 | ---- | ---------------------------------------------------- | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P001 | Stale Dockerfile                                     | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                              |
+| P004 | release:watch script reports false negative          | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                               |
+| P014 | Invalid address ID returns 500 instead of 404        | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                              |
 | P019 | No deploy-time smoke check for root Link header rels | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release |
 | P042 | Version-control the Cloudflare Worker via Terraform  | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                 |
+| P036 | v2 shadow auth silently regressed (FGAC clobber)     | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain      |
 
 ## Inbound Upstream Reports
 

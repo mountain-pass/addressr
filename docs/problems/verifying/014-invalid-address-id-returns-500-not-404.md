@@ -1,7 +1,8 @@
 # Problem 014: Invalid address ID returns 500 instead of 404
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-16
+**Transitioned to Verification Pending**: 2026-07-15
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
 ## Description
@@ -67,6 +68,7 @@ status: statusCode || 200,
 ## Fix Released
 
 **Date**: 2026-04-19
+**Commit**: fda4e3b — `fix(address-service): invalid address ID returns 404 not 500 (P014)`
 
 Added defensive null-checks to the `getAddress` catch block in `service/address-service.js:1825-1840` so:
 

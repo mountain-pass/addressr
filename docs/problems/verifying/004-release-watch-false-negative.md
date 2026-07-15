@@ -1,7 +1,8 @@
 # Problem 004: release:watch Script Reports False Negative
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-04
+**Transitioned to Verification Pending**: 2026-07-15
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
 
 ## Description
@@ -58,6 +59,7 @@ Verified via `gh run view <id> --json jobs`:
 ## Fix Released
 
 **Date**: 2026-04-19
+**Commit**: e800b05 — `fix(release-watch): read Deploy step conclusion instead of nonexistent job (P004)`
 
 Replaced the broken job-name lookup with a step-level conclusion query:
 

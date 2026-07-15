@@ -1,9 +1,10 @@
 # Problem 036: v2 shadow auth silently regressed mid-soak
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-05-11
 **Un-parked**: 2026-07-06
 **Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
+**Transitioned to Verification Pending**: 2026-07-15
 **Origin**: internal
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3)
 **Effort**: M
@@ -139,6 +140,14 @@ Each is invisible to CloudTrail (no `UpdateDomainConfig` events). Pattern is **r
 - [ ] Run `populate-search-domain.yml` to load `addressr` index into the rebuilt v2 cluster (v2 currently has only system indices; `/debug/shadow-config` reports `UnknownError` because shadow searches hit `index_not_found_exception` 404)
 - [ ] Once index is populated: confirm `/debug/shadow-config` shows `successes > 0, failures = 0` then start the ADR 031 soak clock (≥48h business traffic)
 - [ ] After soak passes: re-run the k6 v2-leg comparison and re-evaluate ADR 029 step 7 cutover
+
+## Fix Released
+
+**Date**: 2026-07-15 (structural fix in production)
+
+The FGAC master-user-clobber mechanism is structurally removed by ADR 033 (IAM/SigV4 auth, FGAC off) — no internal user DB, no `.opendistro_security` index, nothing to clobber. The fix is in production: the search domain authenticates via IAM/SigV4 (`deploy/main.tf:144`, auth mode `sigv4`), production cut over to the FGAC-off v3 domain `addressr5` on OpenSearch 3.5 per ADR 035 (commit 1f77c5e), and the old FGAC domain `addressr4` is decommissioned (commit 8ceb019).
+
+**Verification**: no FGAC clobber / silent index deletion recurs on the FGAC-off production domain over an observation window (the `SearchableDocuments`-drop CloudWatch alarm watches the P035 index-deletion symptom). Awaiting user verification.
 
 ## Dependencies
 
