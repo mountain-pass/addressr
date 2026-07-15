@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-15T06:43Z **full re-rank** — P028 (OpenSearch 1.3.20 debt) **CLOSED** (production migrated to 3.5, ADR-035; v1 decommissioned). Auto-transitioned Open→Known Error: P036 (FGAC clobber — ADR-033 structural fix shipped), P041, P047, P048. Re-rated all deferred tickets to concrete Impact×Likelihood/Effort/WSJF. P014 corrected Open→Known Error (README drift). Relevance-close evaluator produced only false positives this pass (every flagged file exists) — no relevance-closes fired.
+> Last reviewed: 2026-07-15 **P001 verification pending** — Stale Dockerfile fix (Node 22-alpine base + `addressr-server-2` CMD, commit 1a68e6e, released 2026-04-19) confirmed on origin/master; ticket moved Known Error → Verifying per ADR-022. Verify via local `docker build`.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,7 +10,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
-| 12.0 | P001 | Stale Dockerfile                                                        | 6 (Medium)   | Known Error | S      | 2026-04-04 | internal |
 | 12.0 | P019 | No deploy-time smoke check for root Link header rels                    | 6 (Medium)   | Known Error | S      | 2026-04-18 | internal |
 | 12.0 | P036 | v2 shadow auth silently regressed (FGAC clobber) — ADR-033 fix shipped  | 12 (High)    | Known Error | M      | 2026-05-11 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
@@ -41,9 +40,10 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off `docs/problems/*.verifying.md` per ADR-022). Sorted by `Released date ASC`. <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` carries an evidence-first cell per P186. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
 
-| ID   | Title                                               | Released   | Likely verified?  | Notes                                                                       |
-| ---- | --------------------------------------------------- | ---------- | ----------------- | --------------------------------------------------------------------------- |
-| P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040 |
+| ID   | Title                                               | Released   | Likely verified?  | Notes                                                                                                          |
+| ---- | --------------------------------------------------- | ---------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| P001 | Stale Dockerfile                                    | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal |
+| P042 | Version-control the Cloudflare Worker via Terraform | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                    |
 
 ## Inbound Upstream Reports
 

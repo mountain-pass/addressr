@@ -1,6 +1,6 @@
 # Problem 001: Stale Dockerfile
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-04
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Unlikely (2)
 
@@ -44,6 +44,9 @@ No Docker-build CI workflow exists, so Docker Hub image currency depends on manu
 ## Fix Released
 
 **Date**: 2026-04-19
+**Release marker**: commit 1a68e6e (`fix(docker): upgrade base image to Node 22-alpine, switch CMD to v2 (P001)`), on origin/master. <!-- no-changeset-reference --> No changeset: the Dockerfile is not an npm-published surface and Docker Hub publish is manual per ADR 013.
+
+Awaiting user verification — run `docker build -t addressr-local .` to confirm the image builds with Node 22 + `addressr-server-2` (no CI signal available).
 
 Minimum-viable Dockerfile update:
 
