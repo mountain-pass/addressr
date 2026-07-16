@@ -44,3 +44,9 @@ Composes with **P039** (decouple deploy from publish) — fixing P039 removes th
 - **P039** — decouple SaaS deployment from npm publish (the coupling; P044 is its silent-failure mode).
 - **P042 / ADR 032** — the Cloudflare Worker cutover during which this surfaced (the expired token blocked the first cutover attempt silently).
 - `.github/workflows/release.yml` — `release` job, `Create Release Pull Request or Publish to npm` + `Deploy new version` steps.
+
+## RFCs
+
+| RFC     | Status   | Title                                           |
+| ------- | -------- | ----------------------------------------------- |
+| RFC-002 | proposed | Fail-loud publish assertion in release workflow |
