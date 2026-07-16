@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-16 **P044 verification pending** — release.yml `release` job now fails loud when a publish was swallowed (package.json ahead of npm while `published != 'true'`, e.g. expired NPM_TOKEN) instead of green-skipping Deploy + Smoke; RFC-002 captured (fix-time, I13); workflow-only, no changeset — verify on next release run.
+> Last reviewed: 2026-07-16 **P026 verification pending** — investigation found the fix already shipped: ADR 027 (`AUTO:5,8` fuzziness, rejecting the ticket's token-split proposal as Option D) landed in v2.4.0 (commit 920fce6, 2026-04-20) with unit + Cucumber regression pins; ticket was never transitioned. Moved Open → Verifying directly; remaining work is the unticked v2.3.0-baseline post-deploy checklist (queries 2 & 3 prod ranking) — user-side.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -11,7 +11,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                       | 12 (High)    | Open        | M      | 2026-04-19 | internal |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only   | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P047 | wr-risk-scorer mis-states appetite; STOPs on within-appetite score of 5 | 2 (Very Low) | Known Error | S      | 2026-07-15 | internal |
@@ -35,16 +34,17 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off `docs/problems/*.verifying.md` per ADR-022). Sorted by `Released date ASC`. <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` carries an evidence-first cell per P186. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
 
-| ID   | Title                                                              | Released   | Likely verified?  | Notes                                                                                                                                                       |
-| ---- | ------------------------------------------------------------------ | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P001 | Stale Dockerfile                                                   | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                              |
-| P004 | release:watch script reports false negative                        | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                               |
-| P014 | Invalid address ID returns 500 instead of 404                      | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                              |
-| P019 | No deploy-time smoke check for root Link header rels               | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release |
-| P042 | Version-control the Cloudflare Worker via Terraform                | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                 |
-| P036 | v2 shadow auth silently regressed (FGAC clobber)                   | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain      |
-| P034 | addressr-loader's COVERED_STATES filter is case-sensitive          | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs        |
-| P044 | changesets/action swallows publish failure → deploy silently skips | 2026-07-16 | no — not observed | Fail-loud publish assertion in release.yml (RFC-002, workflow-only, no changeset); verify the step passes green on the next release run                     |
+| ID   | Title                                                              | Released   | Likely verified?  | Notes                                                                                                                                                          |
+| ---- | ------------------------------------------------------------------ | ---------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P001 | Stale Dockerfile                                                   | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                                 |
+| P004 | release:watch script reports false negative                        | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                                  |
+| P014 | Invalid address ID returns 500 instead of 404                      | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                                 |
+| P019 | No deploy-time smoke check for root Link header rels               | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release    |
+| P026 | Numeric fuzziness in bool_prefix inflates ranking                  | 2026-04-20 | no — not observed | `AUTO:5,8` fuzziness per ADR 027 (v2.4.0, commit 920fce6); verify via v2.3.0-baseline post-deploy checklist queries 2 & 3 (prod ranking); then comment on #367 |
+| P042 | Version-control the Cloudflare Worker via Terraform                | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                    |
+| P036 | v2 shadow auth silently regressed (FGAC clobber)                   | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain         |
+| P034 | addressr-loader's COVERED_STATES filter is case-sensitive          | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs           |
+| P044 | changesets/action swallows publish failure → deploy silently skips | 2026-07-16 | no — not observed | Fail-loud publish assertion in release.yml (RFC-002, workflow-only, no changeset); verify the step passes green on the next release run                        |
 
 ## Inbound Upstream Reports
 

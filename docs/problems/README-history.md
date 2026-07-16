@@ -50,3 +50,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 > Last reviewed: 2026-07-16 **P030 known error** — triage complete: non-breaking `npm audit fix` cleared 21/48 findings (lockfile-only, build green, changeset queued); remaining 27 chain to swagger-tools (prod — ADR-003 reassessment queued for user) + istanbul-middleware/npm-check (dev-only). Re-rated 16 → 12, Effort M → XL, WSJF 3.0.
 > Last reviewed: 2026-07-16 **P034 verification pending** — loader COVERED_STATES filter now case-insensitive (parser extracted to `service/covered-states.js`, all three comparison sites normalised) + fail-loud when the filter matches zero G-NAF detail files; TDD unit tests 4/4, RFC-001 captured, changeset queued; ships with next npm publish.
+
+> Last reviewed: 2026-07-16 **P044 verification pending** — release.yml `release` job now fails loud when a publish was swallowed (package.json ahead of npm while `published != 'true'`, e.g. expired NPM_TOKEN) instead of green-skipping Deploy + Smoke; RFC-002 captured (fix-time, I13); workflow-only, no changeset — verify on next release run.

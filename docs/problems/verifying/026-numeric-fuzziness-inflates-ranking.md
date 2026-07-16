@@ -1,6 +1,6 @@
 # Problem 026: Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-04-19
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
 
@@ -81,9 +81,15 @@ The fuzzy-hit doc has 25% higher summed tf. BM25's field-length normalisation do
 - [x] Confirm numeric fuzziness is the cause — smoke run against v2.3.0 on 2026-04-19 shows the exact pattern described above.
 - [x] Confirm this is pre-existing (not an ADR 026 regression) — ADR 026 only added `sla_range_expanded` to the `phrase_prefix` clause; the `bool_prefix` fuzziness behaviour is unchanged from pre-v2.3.0 (and from pre-v2.0.0).
 - [x] Confirm ADR 025 and ADR 026 ranking invariants still hold — they do. P007 sub-unit ranking unchanged; ADR 026 non-range-outranks-range still holds (there's no non-range 138 or 225-street-number record in these cases).
-- [ ] Decide fix strategy — see Fix Strategy below.
+- [x] Decide fix strategy — decided 2026-04-19 in [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md): Option A `AUTO:5,8`. The token-split proposal below was evaluated as ADR 027 Option D and **rejected** (its `should` → `must` restructure would drop `sla_range_expanded` from the matching contract and regress the range-recall guarantee; query-time token classification judged brittle per ADR 025 Option E precedent).
+
+**Root cause confirmed (2026-07-16 re-verification):** the pre-fix `bool_prefix` clause used `fuzziness: 'AUTO'` (= `AUTO:3,6`, 1 edit for 3-5 char tokens), so 3-4 digit street numbers fuzzy-matched adjacent numbers and tf-inflated neighbouring docs. The fix is live in the query builder at `service/address-service.js:959` (`fuzziness: 'AUTO:5,8'` with the ADR 027 rationale comment at lines 953-958), shipped in commit `920fce6` (v2.4.0, 2026-04-20). Regression-pinned by the source-pattern unit test at `test/js/__tests__/address-service.test.mjs:360-389` and the ADR 027 Cucumber scenarios in `test/resources/features/addressv2.feature` (OT-fixture equivalents; plus the tagged `@known-regression-adr-027` documentation scenario for the accepted 4-char typo-tolerance loss).
 
 ## Fix Strategy (proposed)
+
+> **Superseded by [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md) (2026-04-19).** The token-split proposal below was considered as ADR 027 Option D and rejected; the shipped fix is Option A — tune `fuzziness` from `AUTO` (= `AUTO:3,6`) to `AUTO:5,8`, removing edit tolerance from 3-4 char tokens (street numbers, postcodes) while keeping 1 edit for 5-7 char and 2 edits for 8+ char names. Single-parameter change at `service/address-service.js:959`; no query-shape restructure, no reindex; ADR 025 summation-symmetry and ADR 028 `phrase_prefix` invariants untouched.
+>
+> **Release vehicle**: v2.4.0 (commit `920fce6`, 2026-04-20; changeset drained at release).
 
 **Split the query by token type and apply fuzziness selectively.**
 
@@ -107,7 +113,13 @@ Alternative options considered:
 - **Remove fuzziness entirely** — loses legitimate typo tolerance. Rejected.
 - **Symmetric `sla_range_expanded` + `bool_prefix`** — +40-60% index growth and still doesn't fix the non-range case (carspace vs range). Rejected.
 
-The chosen fix warrants a new ADR (ADR 027) because it changes the outer query shape (`should` → `must`) and introduces query-time token classification.
+The chosen fix warrants a new ADR (ADR 027) because it changes the outer query shape (`should` → `must`) and introduces query-time token classification. _(Historical note: ADR 027 was indeed created, but chose the simpler `AUTO:5,8` parameter tune — see the supersession note above.)_
+
+## Fix Released
+
+Shipped in **v2.4.0** (commit `920fce6`, 2026-04-20) as part of "exact-number ranking + endpoint-only range aliases (ADR 027 + ADR 028)". Fix summary: `bool_prefix` fuzziness tuned `AUTO` → `AUTO:5,8` so numeric tokens (3-4 digits) require exact match while 5+ char name typo tolerance is preserved. Production has since advanced to v2.6.x with the parameter regression-pinned by `test/js/__tests__/address-service.test.mjs:360-389`.
+
+**Awaiting user verification.** The [post-deploy verification checklist](../026-baseline-v2.3.0.md) (rerun of the 14 baseline queries against production, per ADR 027 Confirmation) is still entirely unticked — in particular queries 2 and 3 (`"138 Whitehorse Rd Blackburn"` → `138-144 WHITEHORSE RD` first; `"225 drummond st carlton"` → `TRAVEL INN HOTEL 225-245` at #1/#2). Prod smoke could not be run this session: the addressr MCP surface exposes no search tool and the RapidAPI key in this environment is unsubscribed (403 on `/health`, observed 2026-07-16). Once the checklist queries confirm the ranking, close via `/wr-itil:transition-problem 026 close`; consider a closing comment on upstream [#367](https://github.com/mountain-pass/addressr/issues/367) for reporter `hirani89` (cases 3 and 4).
 
 ## Related
 
@@ -117,4 +129,8 @@ The chosen fix warrants a new ADR (ADR 027) because it changes the outer query s
 - [P015 — Range-number addresses not findable by base number](./015-range-number-addresses-not-searchable-by-base-number.open.md) — originally captured the recall dimension. Closed by ADR 026 for cases 2 and 4 recall. This ticket captures the ranking dimension that P015's framing missed.
 - [ADR 026](../decisions/026-range-number-address-expansion.proposed.md) — the recall fix. Ranking invariants documented there remain satisfied; this problem is orthogonal.
 - [ADR 025](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — `ssla` symmetric-population precedent; the `bool_prefix` summation-symmetry property from ADR 025 is preserved by the proposed fix (field list unchanged).
-- [`service/address-service.js:982-1005`](../../service/address-service.js) — `searchForAddress` query-builder location.
+- [`service/address-service.js:982-1005`](../../service/address-service.js) — `searchForAddress` query-builder location (post-v2.4.0: the `bool_prefix` clause with `AUTO:5,8` sits at lines 947-965).
+- [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md) — the shipped fix (`AUTO:5,8`); documents why the token-split Fix Strategy above was rejected (Option D).
+- [Baseline + post-deploy checklist](../026-baseline-v2.3.0.md) — the 14 v2.3.0 production queries and the unticked post-deploy verification checklist.
+- [P027 — Synonym expansion bypasses AUTO fuzziness](../open/027-synonym-expansion-bypasses-auto-fuzziness.md) — sibling fuzziness ticket, separate root cause; not addressed by ADR 027.
+- **Upstream report pending** -- false positive; detection misfire (the scoped-package mention `@mountainpass/addressr` is this project's own package; root cause is internal query configuration, not an upstream dependency).
