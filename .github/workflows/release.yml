@@ -142,25 +142,26 @@ jobs:
       # Survives a future P039 decouple — this is the publish-failure assertion,
       # independent of what the deploy gates on.
       - name: Fail if a publish was expected but did not happen (P044)
-        if: steps.changesets.outputs.published != 'true'
+        # Only run on the genuine publish-attempted path: published != 'true'
+        # (no successful publish) AND hasChangesets != 'true' (no changesets to
+        # consume, i.e. the release PR was merged so a publish WAS attempted).
+        # When hasChangesets == 'true', changesets/action created/updated a
+        # release PR (deferred publish per ADR-007) — published=false is the
+        # expected state, NOT a swallowed publish. The action's `hasChangesets`
+        # output is authoritative here because `changeset version` deletes the
+        # .changeset/*.md files IN THE WORKSPACE before this step runs, so an
+        # on-disk check would false-negative (P044 false-positive fix v2).
+        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'
         shell: bash
         run: |
           # P044 / RFC-002: changesets/action does NOT fail the job when npm
           # publish is swallowed (e.g. expired NPM_TOKEN) — published stays
           # false and the Deploy + Smoke steps below silently skip on a green
-          # run. Fail loud in that case — but ONLY that case. GitHub's bash runs
-          # set -eo pipefail, so we set +e and decide explicitly to avoid a
-          # transient node/npm read failing the step (P044 false-positive fix).
+          # run. This step reaches here only when a publish was attempted (no
+          # pending changesets) and did not succeed; fail loud if package.json
+          # is ahead of npm. GitHub's bash runs set -eo pipefail, so we set +e
+          # and guard every read to avoid a transient node/npm read failing it.
           set +e
-
-          # A pending changeset means changesets/action created/updated a
-          # release PR (deferred publish per ADR-007) — published=false is the
-          # expected state here, not a swallowed publish. Skip.
-          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' 2>/dev/null | wc -l | tr -d ' ')
-          if [ "${pending:-0}" != "0" ]; then
-            echo "Pending changesets (${pending}) → release-PR / deferred-publish flow; no publish expected this run (P044 assertion skipped)"
-            exit 0
-          fi
 
           name=$(node -p "require('./package.json').name" 2>/dev/null)
           local_version=$(node -p "require('./package.json').version" 2>/dev/null)
