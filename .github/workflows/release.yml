@@ -143,19 +143,47 @@ jobs:
       # independent of what the deploy gates on.
       - name: Fail if a publish was expected but did not happen (P044)
         if: steps.changesets.outputs.published != 'true'
+        shell: bash
         run: |
-          local_version=$(node -p "require('./package.json').version")
-          npm_version=$(npm view "$(node -p "require('./package.json').name")" version 2>/dev/null || true)
+          # P044 / RFC-002: changesets/action does NOT fail the job when npm
+          # publish is swallowed (e.g. expired NPM_TOKEN) — published stays
+          # false and the Deploy + Smoke steps below silently skip on a green
+          # run. Fail loud in that case — but ONLY that case. GitHub's bash runs
+          # set -eo pipefail, so we set +e and decide explicitly to avoid a
+          # transient node/npm read failing the step (P044 false-positive fix).
+          set +e
+
+          # A pending changeset means changesets/action created/updated a
+          # release PR (deferred publish per ADR-007) — published=false is the
+          # expected state here, not a swallowed publish. Skip.
+          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' 2>/dev/null | wc -l | tr -d ' ')
+          if [ "${pending:-0}" != "0" ]; then
+            echo "Pending changesets (${pending}) → release-PR / deferred-publish flow; no publish expected this run (P044 assertion skipped)"
+            exit 0
+          fi
+
+          name=$(node -p "require('./package.json').name" 2>/dev/null)
+          local_version=$(node -p "require('./package.json').version" 2>/dev/null)
+          if [ -z "$name" ] || [ -z "$local_version" ]; then
+            echo "::warning::could not read package.json name/version; skipping publish assertion (P044)"
+            exit 0
+          fi
+          npm_version=$(npm view "$name" version 2>/dev/null)
           if [ -z "$npm_version" ]; then
             echo "::warning::npm view returned no published version (first publish or registry read error); skipping publish assertion (P044)"
             exit 0
           fi
-          if [ "$local_version" != "$npm_version" ]; then
-            echo "::error::package.json is at $local_version but npm has $npm_version and changesets reported published != 'true'."
-            echo "::error::npm publish likely failed silently (e.g. expired NPM_TOKEN) and the deploy was skipped — see P044 / RFC-002. Check the changesets step log for the publish error."
+
+          # Fail ONLY when package.json is STRICTLY AHEAD of npm (a real version
+          # bump that was not published). Equal or behind is not a swallowed
+          # publish (behind = an out-of-band publish, a different condition).
+          highest=$(printf '%s\n%s\n' "$npm_version" "$local_version" | sort -V | tail -1)
+          if [ "$local_version" != "$npm_version" ] && [ "$highest" = "$local_version" ]; then
+            echo "::error::package.json is at $local_version but npm has $npm_version, no pending changesets, and changesets reported published != 'true'."
+            echo "::error::an npm publish was likely swallowed (e.g. expired NPM_TOKEN) and the deploy skipped — see P044 / RFC-002. Check the changesets step log."
             exit 1
           fi
-          echo "No pending publish: package.json $local_version == npm $npm_version (P044 assertion passed)"
+          echo "No pending publish: package.json $local_version, npm $npm_version (P044 assertion passed)"
 
       - name: Deploy new version
         if: steps.changesets.outputs.published == 'true'
