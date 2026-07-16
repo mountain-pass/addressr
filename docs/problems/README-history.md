@@ -43,3 +43,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-07-15 **P049 captured** — wr-retrospective retro scripts (check-ask-hygiene / check-briefing-budgets / check-tickets-deferred-cause) lack ADR-049 bin shims in adopter repos; retro passes degrade fail-open (lightweight aside via /wr-itil:capture-problem).
 
 > Last reviewed: 2026-07-15 **P019 verification pending** — root `Link` header rel-completeness probe confirmed shipped in `.github/workflows/release.yml` (commit 98a0ca9, 2026-04-19); ticket moved Known Error → Verifying per ADR-022. Verify via green rel-completeness probe on the next published release run.
+
+## 2026-07-16
+
+> Last reviewed: 2026-07-15 **batch transition** — P014 verifying (404-not-500 fix, commit fda4e3b), P004 verifying (release:watch step-level query, commit e800b05), P036 verifying (FGAC clobber structurally removed — ADR-033 IAM/SigV4 in production, FGAC-off v3 domain per ADR-035; addressr4 decommissioned). All three Known Error → Verification Pending per ADR-022.

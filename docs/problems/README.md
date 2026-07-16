@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-15 **batch transition** — P014 verifying (404-not-500 fix, commit fda4e3b), P004 verifying (release:watch step-level query, commit e800b05), P036 verifying (FGAC clobber structurally removed — ADR-033 IAM/SigV4 in production, FGAC-off v3 domain per ADR-035; addressr4 decommissioned). All three Known Error → Verification Pending per ADR-022.
+> Last reviewed: 2026-07-16 **P030 known error** — triage complete: non-breaking `npm audit fix` cleared 21/48 findings (lockfile-only, build green, changeset queued); remaining 27 chain to swagger-tools (prod — ADR-003 reassessment queued for user) + istanbul-middleware/npm-check (dev-only). Re-rated 16 → 12, Effort M → XL, WSJF 3.0.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -11,7 +11,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 8.0  | P030 | Dependabot reports 46 vulnerabilities on master                         | 16 (High)    | Open        | M      | 2026-04-21 | internal |
 | 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive               | 6 (Medium)   | Open        | S      | 2026-04-28 | internal |
 | 6.0  | P044 | changesets/action swallows publish failure → deploy silently skips      | 6 (Medium)   | Open        | S      | 2026-05-25 | internal |
 | 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                       | 12 (High)    | Open        | M      | 2026-04-19 | internal |
@@ -23,6 +22,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses           | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks   | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos          | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
+| 3.0  | P030 | Dependabot reports 46 vulnerabilities on master                         | 12 (High)    | Known Error | XL     | 2026-04-21 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                  | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P015 | Range-number addresses not findable by base number                      | 12 (High)    | Open        | L      | 2026-04-16 | internal |
 | 3.0  | P035 | Read-shadow soak validation has multiple blind spots                    | 12 (High)    | Open        | L      | 2026-05-03 | internal |
