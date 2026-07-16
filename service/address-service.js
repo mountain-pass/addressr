@@ -20,6 +20,12 @@ import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { expandRangeAliases } from './range-expansion';
 import { fetchPackageData } from './gnaf-package-fetch';
+import {
+  getCoveredStates,
+  detailFileState,
+  matchesCoveredStatePrefix,
+  hasNoCoveredDetailMatch,
+} from './covered-states';
 import { mirrorRequest } from '../src/read-shadow';
 import crypto from 'node:crypto';
 import { glob } from 'glob';
@@ -35,11 +41,8 @@ var error = debug('error');
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
-function getCoveredStates() {
-  const covered = process.env.COVERED_STATES || '';
-  return covered == '' ? [] : covered.split(',');
-}
-
+// Parsing lives in ./covered-states.js (raw-node importable for the
+// behavioural tests — P033/P034). Entries are uppercased there.
 const COVERED_STATES = getCoveredStates();
 
 const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
@@ -1346,7 +1349,7 @@ async function loadGnafData(directory, { refresh = false } = {}) {
         ? files.filter(
             (f) =>
               f.match(/Authority/) ||
-              COVERED_STATES.some((s) => path.basename(f).startsWith(`${s}_`)),
+              matchesCoveredStatePrefix(f, COVERED_STATES),
           )
         : files;
     for (const file of filesToCount) {
@@ -1375,11 +1378,18 @@ async function loadGnafData(directory, { refresh = false } = {}) {
     (f) => f.match(/ADDRESS_DETAIL/) && f.match(/\/Standard\//),
   );
   logger('addressDetailFiles', addressDetailFiles);
+  if (hasNoCoveredDetailMatch(addressDetailFiles, COVERED_STATES)) {
+    // Fail loud instead of "succeeding" with zero documents (P034).
+    throw new Error(
+      `COVERED_STATES=${COVERED_STATES.join(',')} matched zero G-NAF address detail files; check spelling/case`,
+    );
+  }
   for (const detailFile of addressDetailFiles) {
-    const state = path
-      .basename(detailFile, path.extname(detailFile))
-      .replace(/_.*/, '');
-    if (COVERED_STATES.length === 0 || COVERED_STATES.includes(state)) {
+    const state = detailFileState(detailFile);
+    if (
+      COVERED_STATES.length === 0 ||
+      COVERED_STATES.includes(state.toUpperCase())
+    ) {
       loadContext.state = state;
       loadContext.stateName = await loadState(files, directory, state);
 
@@ -1439,10 +1449,11 @@ async function loadGnafData(directory, { refresh = false } = {}) {
 
     const localityIndexingBody = [];
     for (const detailFile of addressDetailFiles) {
-      const state = path
-        .basename(detailFile, path.extname(detailFile))
-        .replace(/_.*/, '');
-      if (COVERED_STATES.length === 0 || COVERED_STATES.includes(state)) {
+      const state = detailFileState(detailFile);
+      if (
+        COVERED_STATES.length === 0 ||
+        COVERED_STATES.includes(state.toUpperCase())
+      ) {
         const stateName = await loadState(files, directory, state);
         const localities = await loadLocality(files, directory, state);
 

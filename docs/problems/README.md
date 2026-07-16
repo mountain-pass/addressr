@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-16 **P030 known error** — triage complete: non-breaking `npm audit fix` cleared 21/48 findings (lockfile-only, build green, changeset queued); remaining 27 chain to swagger-tools (prod — ADR-003 reassessment queued for user) + istanbul-middleware/npm-check (dev-only). Re-rated 16 → 12, Effort M → XL, WSJF 3.0.
+> Last reviewed: 2026-07-16 **P034 verification pending** — loader COVERED_STATES filter now case-insensitive (parser extracted to `service/covered-states.js`, all three comparison sites normalised) + fail-loud when the filter matches zero G-NAF detail files; TDD unit tests 4/4, RFC-001 captured, changeset queued; ships with next npm publish.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -11,7 +11,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 6.0  | P034 | addressr-loader's COVERED_STATES filter is case-sensitive               | 6 (Medium)   | Open        | S      | 2026-04-28 | internal |
 | 6.0  | P044 | changesets/action swallows publish failure → deploy silently skips      | 6 (Medium)   | Open        | S      | 2026-05-25 | internal |
 | 6.0  | P026 | Numeric fuzziness in bool_prefix inflates ranking                       | 12 (High)    | Open        | M      | 2026-04-19 | internal |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
@@ -37,14 +36,15 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off `docs/problems/*.verifying.md` per ADR-022). Sorted by `Released date ASC`. <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` carries an evidence-first cell per P186. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
 
-| ID   | Title                                                | Released   | Likely verified?  | Notes                                                                                                                                                       |
-| ---- | ---------------------------------------------------- | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P001 | Stale Dockerfile                                     | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                              |
-| P004 | release:watch script reports false negative          | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                               |
-| P014 | Invalid address ID returns 500 instead of 404        | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                              |
-| P019 | No deploy-time smoke check for root Link header rels | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release |
-| P042 | Version-control the Cloudflare Worker via Terraform  | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                 |
-| P036 | v2 shadow auth silently regressed (FGAC clobber)     | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain      |
+| ID   | Title                                                     | Released   | Likely verified?  | Notes                                                                                                                                                       |
+| ---- | --------------------------------------------------------- | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P001 | Stale Dockerfile                                          | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                              |
+| P004 | release:watch script reports false negative               | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                               |
+| P014 | Invalid address ID returns 500 instead of 404             | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                              |
+| P019 | No deploy-time smoke check for root Link header rels      | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release |
+| P042 | Version-control the Cloudflare Worker via Terraform       | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                 |
+| P036 | v2 shadow auth silently regressed (FGAC clobber)          | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain      |
+| P034 | addressr-loader's COVERED_STATES filter is case-sensitive | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs        |
 
 ## Inbound Upstream Reports
 

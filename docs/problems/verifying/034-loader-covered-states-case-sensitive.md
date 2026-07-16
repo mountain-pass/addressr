@@ -1,6 +1,6 @@
 # Problem 034: addressr-loader's COVERED_STATES filter is case-sensitive (silent zero-doc indexing)
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-04-28
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (2)
 
@@ -53,10 +53,20 @@ The 9 `update-{state}.yml` workflows hardcode uppercase state codes. The cucumbe
 
 ### Investigation Tasks
 
-- [ ] Add a defensive normalisation at `service/address-service.js`'s COVERED_STATES parser: `process.env.COVERED_STATES.split(',').map(s => s.trim().toUpperCase())`.
-- [ ] Add a behavioural test (NOT source-inspection per P033) that passes lowercase `ot` to the parser and asserts the resulting filter still matches `OT_ADDRESS_DETAIL_psv.psv`.
-- [ ] Consider also failing loud if the filtered file list is empty: `throw new Error('COVERED_STATES filter matched zero G-NAF files; check spelling/case')`. Better to fail fast than ship 0 docs silently.
-- [ ] Once landed, simplify populate-search-domain.yml's matrix to lowercase if preferred (only needed if the loader normalises; currently uppercase is the workaround).
+- [x] Add a defensive normalisation at `service/address-service.js`'s COVERED_STATES parser: `process.env.COVERED_STATES.split(',').map(s => s.trim().toUpperCase())`. Done — parser extracted to `service/covered-states.js` (babel-only import constraint, same pattern as `gnaf-package-fetch.js`); entries trimmed, uppercased, empties filtered.
+- [x] Add a behavioural test (NOT source-inspection per P033) that passes lowercase `ot` to the parser and asserts the resulting filter still matches `OT_ADDRESS_DETAIL_psv.psv`. Done — `test/js/__tests__/covered-states.test.mjs` (4 tests; written first and watched fail before the fix per TDD).
+- [x] Consider also failing loud if the filtered file list is empty: `throw new Error('COVERED_STATES filter matched zero G-NAF files; check spelling/case')`. Better to fail fast than ship 0 docs silently. Done — loader throws when a non-empty COVERED_STATES matches zero ADDRESS_DETAIL files.
+- [ ] Once landed, simplify populate-search-domain.yml's matrix to lowercase if preferred (only needed if the loader normalises; currently uppercase is the workaround). Optional operator preference — uppercase in the workflows remains correct; no change required for closure.
+
+## Fix Strategy
+
+Per RFC-001 (Make loader COVERED_STATES filter case-insensitive and fail loud on zero match): normalise entries to uppercase at parse time in `service/covered-states.js` (extracted from `address-service.js`), uppercase the file-prefix/state comparison sites in `service/address-service.js`, and throw when a non-empty `COVERED_STATES` matches zero G-NAF address detail files. Behavioural unit tests per P033. Empty `COVERED_STATES` still means no filtering.
+
+**Release vehicle**: .changeset/loader-covered-states-case-insensitive.md
+
+## Fix Released
+
+Fix committed 2026-07-16 (`fix(loader): make COVERED_STATES filter case-insensitive and fail loud on zero match (closes P034)`); ships with the next npm publish (orchestrator-owned release cadence). Parser normalises casing (`service/covered-states.js`), all three comparison sites are case-insensitive, and the loader throws on a zero-match filter instead of silently indexing zero documents. Exercised in-session: `test/js/__tests__/covered-states.test.mjs` 4/4 pass, full `test:js` suite 157/157 pass. Awaiting user verification (e.g. a populate run with lowercase `COVERED_STATES` loading real docs, or the next quarterly refresh completing non-empty).
 
 ## Related
 
