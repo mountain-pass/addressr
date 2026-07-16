@@ -63,3 +63,9 @@ The 9 `update-{state}.yml` workflows hardcode uppercase state codes. The cucumbe
 - Surfaced 2026-04-28 by ADR 029 Phase 1 step 5 v2 populate (run 25033129925) which "succeeded" with 0 docs across all 9 matrix legs. Reproduced locally with `COVERED_STATES=ot` (1.6s, 0 docs) vs `COVERED_STATES=OT` (1.6s, 5186 addresses + 15 localities — OT is tiny).
 - Related to P033 (source-inspection tests anti-pattern) — no behavioural test caught this, only a behavioural test will.
 - Workaround landed in commit XXXXXXX (uppercase fix in populate-search-domain.yml).
+
+## RFCs
+
+| RFC     | Status   | Title                                                                          |
+| ------- | -------- | ------------------------------------------------------------------------------ |
+| RFC-001 | proposed | Make loader COVERED_STATES filter case-insensitive and fail loud on zero match |
