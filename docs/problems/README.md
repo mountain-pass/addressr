@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-16 **P026 verification pending** — investigation found the fix already shipped: ADR 027 (`AUTO:5,8` fuzziness, rejecting the ticket's token-split proposal as Option D) landed in v2.4.0 (commit 920fce6, 2026-04-20) with unit + Cucumber regression pins; ticket was never transitioned. Moved Open → Verifying directly; remaining work is the unticked v2.3.0-baseline post-deploy checklist (queries 2 & 3 prod ranking) — user-side.
+> Last reviewed: 2026-07-16 **P050 captured** — Stale-Open tickets after their fix ships: no surface catches a fix commit that skips the ADR-022 transition fold (P026 sat Open ~3 months after v2.4.0 shipped its fix) (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -25,6 +25,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P035 | Read-shadow soak validation has multiple blind spots                    | 12 (High)    | Open        | L      | 2026-05-03 | internal |
 | 2.5  | P023 | Cross-origin root `/` not browser-cached                                | 10 (High)    | Open        | L      | 2026-04-18 | internal |
 | 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline           | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check   | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess   | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
 | 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence    | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase            | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
