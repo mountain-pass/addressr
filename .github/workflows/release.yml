@@ -135,6 +135,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # P044 / RFC-002: changesets/action does NOT fail the job when npm publish
+      # fails (e.g. expired NPM_TOKEN) — published stays false and the Deploy +
+      # Smoke steps below silently skip on a green run. If package.json is ahead
+      # of npm while published != 'true', a publish was swallowed: fail loud.
+      # Survives a future P039 decouple — this is the publish-failure assertion,
+      # independent of what the deploy gates on.
+      - name: Fail if a publish was expected but did not happen (P044)
+        if: steps.changesets.outputs.published != 'true'
+        run: |
+          local_version=$(node -p "require('./package.json').version")
+          npm_version=$(npm view "$(node -p "require('./package.json').name")" version 2>/dev/null || true)
+          if [ -z "$npm_version" ]; then
+            echo "::warning::npm view returned no published version (first publish or registry read error); skipping publish assertion (P044)"
+            exit 0
+          fi
+          if [ "$local_version" != "$npm_version" ]; then
+            echo "::error::package.json is at $local_version but npm has $npm_version and changesets reported published != 'true'."
+            echo "::error::npm publish likely failed silently (e.g. expired NPM_TOKEN) and the deploy was skipped — see P044 / RFC-002. Check the changesets step log for the publish error."
+            exit 1
+          fi
+          echo "No pending publish: package.json $local_version == npm $npm_version (P044 assertion passed)"
+
       - name: Deploy new version
         if: steps.changesets.outputs.published == 'true'
         uses: devcontainers/ci@v0.3

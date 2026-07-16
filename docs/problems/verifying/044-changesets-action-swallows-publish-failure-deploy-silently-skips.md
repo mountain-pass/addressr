@@ -1,6 +1,6 @@
 # Problem 044: changesets/action swallows a failed npm publish → deploy silently skips while the release job goes green
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-05-25
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2)
 **Origin**: internal
@@ -21,6 +21,10 @@ This is distinct from P039 (deploy _coupled_ to publish). P039 is about the coup
 - Production is not updated despite a "successful" release.
 - Buried in the `Create Release Pull Request or Publish to npm` step log: `🦋 error ... E404` (or other publish error), with the job still green.
 
+## Workaround
+
+Manual post-release check: compare `package.json` version on master against `npm view @mountainpass/addressr version` after each release run; if master is ahead with a green run, re-run the publish after fixing the cause (as done in P042 — refresh the expired `NPM_TOKEN`, then re-trigger the release workflow).
+
 ## Root cause
 
 `changesets/action`'s publish path reports publish failures as log lines but (in this version/config) does not fail the action, so `outputs.published` is `false` and the downstream `if:` gate evaluates false → skip, not fail. There is no assertion that "version ahead of npm ⇒ publish must have succeeded."
@@ -38,6 +42,14 @@ This is distinct from P039 (deploy _coupled_ to publish). P039 is about the coup
 3. Pin/justify `NPM_TOKEN` lifecycle (expiry monitoring) so the most common trigger is pre-empted.
 
 Composes with **P039** (decouple deploy from publish) — fixing P039 removes the skip, but the silent-green-on-publish-failure should be fixed regardless.
+
+**Chosen (2026-07-16)**: candidate 1, scoped in RFC-002 (fail-loud publish assertion in release workflow). Candidates 2 and 3 remain P039 territory.
+
+**Release vehicle**: none — CI-workflow-only change, no changeset (workflow changes ship no package behaviour); the fix is live on master and exercised by the next release run.
+
+## Fix Released
+
+Fail-loud publish assertion added to `.github/workflows/release.yml` `release` job (RFC-002, 2026-07-16): when `steps.changesets.outputs.published != 'true'` and `package.json` version differs from `npm view` published version, the job fails red with a P044-citing error instead of green-skipping Deploy + Smoke; empty `npm view` (first publish / registry read error) warns and passes to avoid false failures. Workflow-only — no changeset; live on master immediately. Exercise evidence: YAML parses; assertion logic verified locally for all three cases (versions equal → pass, version ahead + published false → fail, empty npm view → skip); package.json (2.6.30) == npm (2.6.30) so the next routine run passes green. Awaiting user verification on the next release run (green pass on a routine run, or red on a genuinely swallowed publish).
 
 ## Related
 
