@@ -91,3 +91,20 @@ Preliminary hypotheses, not yet verified:
 - [`package.json`](../../package.json) — direct dependency list; `dotenv@10.0.0` is the most visibly-stale direct dep flagged by `dry-aged-deps`.
 - [ADR-003 — Dual API Architecture](../decisions/003-dual-api-v1-swagger-v2-hateoas.accepted.md) — swagger-tools is load-bearing for the v1 API; ADR-003's "security liability" reassessment trigger is now met (see Fix Strategy).
 - **Upstream report pending** -- false positive; detection misfire (remaining findings are already-published third-party security advisories — there is nothing new to report upstream; remediation is local migration off the affected dependency lines).
+
+## Fix path decided — ADR-036 (2026-07-17)
+
+The residual 9 production-tree vulns all chain to the abandoned `swagger-tools` v1
+middleware. User decided (AskUserQuestion, after wr-architect options analysis +
+wr-jtbd review): **drop the v1 Swagger API entirely** — recorded as
+[ADR-036](../../decisions/036-single-api-v2-waycharter-only.proposed.md), superseding
+ADR-003. Production already runs v2-only, so removal has zero live-service impact and
+clears all 9 findings + the red `check-deps` gate at the root.
+
+- **Decision**: recorded (ADR-036, proposed / human-oversight: unconfirmed — ratify at
+  `/wr-architect:review-decisions`).
+- **Implementation**: deferred to a separate **major-version** change gated by ADR-036's
+  Confirmation criteria (full removal scope enumerated in the ADR). This is what closes
+  P030's residual and unblocks the p030 + p034 release (PR #505).
+- Dev-only vulns (istanbul-middleware / npm-check) remain a separate, smaller cleanup
+  independent of the v1 decision.
