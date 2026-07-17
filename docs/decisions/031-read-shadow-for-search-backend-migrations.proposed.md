@@ -202,7 +202,7 @@ or Option 5 (bigger instances) before any cutover.
 | `src/read-shadow.js` (new)                                                                         | Clean-ESM helper. `validateReadShadowConfig`, `getShadowClient` (lazy singleton), `mirrorRequest` (fire-and-forget). Unit-testable per P033.                                            |
 | `service/address-service.js` (modified)                                                            | Mirror call after `searchForAddress` and `getAddress` primary `client.*()` returns. Annotated `// @jtbd JTBD-201`.                                                                      |
 | `src/waycharter-server.js` (modified, line ~555)                                                   | `validateReadShadowConfig()` call alongside existing `validateProxyAuthConfig()`.                                                                                                       |
-| `swagger.js` (modified)                                                                            | `validateReadShadowConfig()` call at startup. New pattern (no proxy-auth precedent on the legacy v1 server).                                                                            |
+| `swagger.js` (historical — removed per ADR-036, 2026-07-17)                                        | Formerly called `validateReadShadowConfig()` at startup on the v1 server; dropped with the v1 removal. Only `src/waycharter-server.js` validates read-shadow config post-removal.       |
 | `test/js/__tests__/read-shadow.test.mjs` (new)                                                     | `node:test` unit tests with DI mocks per P033. ~12 cases covering pair-validation, no-op, fire-and-forget semantics, error swallowing, timeout abort, and synchronous-throw protection. |
 | `docs/jtbd/self-hosted-operator/JTBD-201-validate-search-backend-before-cutover.proposed.md` (new) | Documents the operator job this capability serves. Persona constraints make consumer-path latency invariants explicit.                                                                  |
 
@@ -307,8 +307,9 @@ This ADR's outcome is satisfied when:
   the pre-commit hook.
 - `service/address-service.js` calls `mirrorRequest` after the `searchForAddress`
   and `getAddress` primary client calls, without await.
-- Both `src/waycharter-server.js` and `swagger.js` call
-  `validateReadShadowConfig()` at startup.
+- `src/waycharter-server.js` calls `validateReadShadowConfig()` at startup.
+  (Amended 2026-07-17 per ADR-036: the v1 `swagger.js` call site is dropped
+  with the v1 removal; only the v2 server validates read-shadow config.)
 - Cucumber suite (`npm run test:nodejs:nogeo`) passes with shadow OFF
   (default).
 - A documented manual local two-OpenSearch probe demonstrates shadow requests

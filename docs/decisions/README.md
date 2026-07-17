@@ -11,7 +11,7 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 35 (34 in-force, 1 historical)
+**Total ADRs:** 36 (34 in-force, 2 historical)
 
 ---
 
@@ -25,10 +25,6 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** npm run release:watch exists and executes scripts/release-watch.sh; Running the script without a passing release risk gate results in a block from git-push-gate; Direct gh pr merge of a release PR (title "chore: release") is intercepted and redirected to release:watch; The script correctly identifies the changesets release PR, merges it, and watches the workflow
 
 ### ADR-002 — ADR 002: OpenSearch as the Search Engine
-
-**Status:** accepted
-
-### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
 **Status:** accepted
 
@@ -149,7 +145,7 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 **Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **"Option 1 — Read-shadow with fire-and-forget mirroring."**
-**Confirmation:** src/read-shadow.js ships with validateReadShadowConfig and mirrorRequest; test/js/**tests**/read-shadow.test.mjs ships with ~12 unit tests covering; service/address-service.js calls mirrorRequest after the searchForAddress; Both src/waycharter-server.js and swagger.js call; Cucumber suite (npm run test:nodejs:nogeo) passes with shadow OFF
+**Confirmation:** src/read-shadow.js ships with validateReadShadowConfig and mirrorRequest; test/js/**tests**/read-shadow.test.mjs ships with ~12 unit tests covering; service/address-service.js calls mirrorRequest after the searchForAddress; src/waycharter-server.js calls validateReadShadowConfig() at startup.; Cucumber suite (npm run test:nodejs:nogeo) passes with shadow OFF
 
 ### ADR-032 — ADR 032: Cloudflare Worker deployed via Terraform (not Wrangler)
 
@@ -173,11 +169,21 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** accepted | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it honours "maintain support for v2 until EOL" as **compatibility + regression coverage** (the durable, useful reading) rather than a running rollback domain, and avoi...
 
+### ADR-036 — ADR 036: Single-API architecture — v2 WayCharter only, v1 Swagger dropped
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** [003-dual-api-v1-swagger-v2-hateoas]
+**Chosen:** Chosen option: **"Drop the v1 Swagger API entirely — serve only v2"**, because it removes the abandoned-dependency liability and all nine production-tree findings at the root, retires a dual-binary maintenance burden ADR 003 already regre...
+**Confirmation:** git ls-files no longer lists swagger.js, server.js, controllers/Default.js, controllers/Addresses.js, bin/addr...; npm ls swagger-tools reports nothing; swagger-tools is absent from package.json and package-lock.json.; No retained module imports the removed v1 layer: git grep -nE "require\(['\"]\./(server|swagger)['\"]\)|from [...; package.json bin lists only addressr-server-2; the v1 start:server* launcher scripts, the rest/cli cucumber pr...; docs/jtbd/self-hosted-operator/JTBD-201-*.md screens: no longer lists swagger.js; no cucumber scenario carries...
+
 ---
 
 ## Historical decisions
 
-_1 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_2 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+
+### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
+
+**Status:** superseded
 
 ### ADR-026 — ADR 026: Range-Number Address Expansion via Multi-Valued Text Alias Field
 

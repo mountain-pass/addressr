@@ -1,12 +1,15 @@
 ---
-status: accepted
+status: superseded
 date: 2022-01-01
+superseded-by: 036-single-api-v2-waycharter-only
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
 ---
 
 # ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
+
+> **Superseded by [ADR 036](036-single-api-v2-waycharter-only.proposed.md) (proposed, pending ratification), 2026-07-17** — the dual-API architecture is retired in favour of a single v2 WayCharter API. The v1 Swagger surface (built on the abandoned `swagger-tools`) is dropped. This supersession was pre-authorised by ADR 003's own Reassessment Criteria ("Decision to deprecate v1 entirely"; "swagger-tools becoming a security liability"), both of which are now met (P030). ADR 036 is `proposed`/`human-oversight: unconfirmed`; if it is rejected at ratification this bookkeeping must be reverted.
 
 ## Context and Problem Statement
 
