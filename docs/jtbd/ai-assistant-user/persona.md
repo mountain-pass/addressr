@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 name: ai-assistant-user
 description: Uses addressr through MCP integration in Claude, Cursor, VS Code Copilot, or similar AI tools.
 ---

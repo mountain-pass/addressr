@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 name: data-quality-analyst
 description: Validates, normalizes, and enriches Australian address datasets against the authoritative G-NAF source.
 ---

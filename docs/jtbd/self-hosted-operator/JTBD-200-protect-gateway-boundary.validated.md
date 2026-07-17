@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: validated
 job-id: protect-gateway-boundary
 persona: self-hosted-operator

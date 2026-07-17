@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: validated
 job-id: lookup-locality-postcode-state
 persona: web-app-developer

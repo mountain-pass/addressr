@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 name: addressr-maintainer
 description: Lands code to the Addressr repo under a trunk-based workflow with automated changeset-driven releases to npm, Docker, and AWS.
 ---
