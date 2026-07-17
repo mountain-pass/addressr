@@ -21,48 +21,48 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 **Confirmation:** npm run release:watch exists and executes scripts/release-watch.sh; Running the script without a passing release risk gate results in a block from git-push-gate; Direct gh pr merge of a release PR (title "chore: release") is intercepted and redirected to release:watch; The script correctly identifies the changesets release PR, merges it, and watches the workflow
 
 ### ADR-002 — ADR 002: OpenSearch as the Search Engine
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-004 — ADR 004: AWS Elastic Beanstalk for Production Deployment
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-005 — ADR 005: Babel Transpilation for ES Module Support
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-006 — ADR 006: G-NAF as the Authoritative Address Data Source
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-007 — ADR 007: Changesets for Version Management and npm Publishing
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-008 — ADR 008: Turbo for Build Orchestration
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-009 — ADR 009: Cucumber.js for BDD Acceptance Testing
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-010 — ADR 010: DevContainer-Based Deployment in CI
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-011 — ADR 011: License Compliance Enforcement via Pre-Commit Hook
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-012 — ADR 012: HATEOAS API Design with WayCharter/WayChaser
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
 
@@ -70,63 +70,63 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-014 — ADR 014: ESLint 9 Flat Configuration with Security and Quality Plugins
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-015 — ADR 015: dry-aged-deps for Dependency Freshness Checking
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-016 — ADR 016: Uptime Robot for External Availability Monitoring
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-017 — ADR 017: RapidAPI as the Primary API Distribution Channel
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-018 — ADR 018: Cloudflare Worker as API Key Proxy
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 
 ### ADR-019 — ADR 019: Session Learning and Briefing System
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 
 ### ADR-020 — ADR 020: MCP Smoke Tests via RapidAPI
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 
 ### ADR-021 — ADR 021: Retain OpenSearch with Future Multi-Backend Support
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 **Confirmation:** Locality/postcode search uses the same OpenSearch client and analyzer pipeline as address search; No new infrastructure dependencies are introduced in this phase; No backend abstraction layer exists yet; search calls go directly to the OpenSearch client in client/elasticse...
 
 ### ADR-022 — ADR 022: Derive Locality Postcodes from ADDRESS_DETAIL During Loading
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 
 ### ADR-023 — ADR 023: Supplementary OpenAPI Spec for v2 API with RapidAPI CI Sync
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 
 ### ADR-024 — ADR 024: Origin Gateway Auth Header Enforcement
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 **Chosen:** Chosen option: **"Option 1 — Opt-in env-var pair"**, because it is the only option that satisfies all decision drivers simultaneously:
 
 ### ADR-025 — ADR 025: Symmetric `ssla` Indexing for Search Ranking
 
-**Status:** accepted
+**Status:** accepted | **Oversight:** confirmed
 **Confirmation:** Unit test at service/address-service.test.js asserts mapAddressDetails populates ssla === sla for street-level...; Un-skipped Cucumber scenario P007 Exact street address ranks first over sub-unit variants in test/resources/fe...; Manual regression probes: query UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND returns GAOT_717882967 first; query 1/1...; Post-deploy smoke: query 278 ROSS RIVER RD AITKENVALE QLD 4814 against the hosted RapidAPI listing returns 278...
 
 ### ADR-027 — ADR 027: Disable fuzziness on short tokens via `AUTO:5,8`
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 **Confirmation:** Unit test in test/js/**tests**/address-service.test.mjs: source-pattern assertion that the bool_prefix multi_m...; Cucumber non-regression: addressv2.feature:95,109 (ADR 025 P007) continues to pass. ADR 028 first-endpoint, la...; New Cucumber scenario — P026 case 3 first result in addressv2.feature: query "138 Whitehorse Rd" against OT ...; New Cucumber scenario — 5-char typo preservation in addressv2.feature: query "19 Muray Rd Christmas Island" ...; New Cucumber scenario — 4-char typo intentional loss (documentation test) in addressv2.feature: query "16 Ga...
 
 ### ADR-028 — ADR 028: Range-Number Address Expansion — Endpoint-Only
 
-**Status:** proposed | **Supersedes:** [026-range-number-address-expansion]
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** [026-range-number-address-expansion]
 **Confirmation:** Unit test in test/js/**tests**/range-expansion.test.mjs: expandRangeAliases(103, 107, ...) returns exactly ["1...; Unit test (same file): expandRangeAliases(1, 111015, ...) returns 2 elements (outlier-safe; no SPAN_CAP needed...; Unit test in test/js/**tests**/address-service.test.mjs: existing source-pattern tests for sla_range_expanded ...; Cucumber scenario — first-endpoint recall in addressv2.feature: query "103 GAZE RD CHRISTMAS ISLAND" returns...; Cucumber scenario — last-endpoint recall in addressv2.feature: query "107 GAZE RD CHRISTMAS ISLAND" returns ...
 
 ### ADR-029 — ADR 029: Two-phase blue/green upgrade off OpenSearch 1.3.20
@@ -149,7 +149,7 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-032 — ADR 032: Cloudflare Worker deployed via Terraform (not Wrangler)
 
-**Status:** proposed
+**Status:** proposed | **Oversight:** confirmed
 **Chosen:** Chosen option: **Option 3 — Cloudflare Terraform provider, encapsulated in `deploy/modules/cloudflare-worker/`. Cutover via `terraform import` of the existing dashboard-managed worker into state, then no-op first apply.**
 **Confirmation:** deploy/cloudflare-worker/worker.js, ip-matcher.mjs, and safe-ips.mjs exist and worker.js imports the matcher a...; deploy/modules/cloudflare-worker/main.tf, variables.tf, outputs.tf, and versions.tf exist; root deploy/main.tf...; node --test test/js/**tests**/cloudflare-worker-ip-matcher.test.mjs passes — at minimum, all 37 assertions p...; node --test deploy/cloudflare-worker/worker.test.js passes — at minimum the module loads and a RAPIDAPI_KEY-...; terraform state list (post-apply against the production workspace) includes module.cloudflare_worker.cloudflar...
 
@@ -171,7 +171,7 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-036 — ADR 036: Single-API architecture — v2 WayCharter only, v1 Swagger dropped
 
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** [003-dual-api-v1-swagger-v2-hateoas]
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** [003-dual-api-v1-swagger-v2-hateoas]
 **Chosen:** Chosen option: **"Drop the v1 Swagger API entirely — serve only v2"**, because it removes the abandoned-dependency liability and all nine production-tree findings at the root, retires a dual-binary maintenance burden ADR 003 already regre...
 **Confirmation:** git ls-files no longer lists swagger.js, server.js, controllers/Default.js, controllers/Addresses.js, bin/addr...; npm ls swagger-tools reports nothing; swagger-tools is absent from package.json and package-lock.json.; No retained module imports the removed v1 layer: git grep -nE "require\(['\"]\./(server|swagger)['\"]\)|from [...; package.json bin lists only addressr-server-2; the v1 start:server* launcher scripts, the rest/cli cucumber pr...; docs/jtbd/self-hosted-operator/JTBD-201-*.md screens: no longer lists swagger.js; no cucumber scenario carries...
 

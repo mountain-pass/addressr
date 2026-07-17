@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: accepted
 date: 2021-01-01
 decision-makers: [Tom Howard]
@@ -45,6 +47,8 @@ Note: codebase retains Elasticsearch naming throughout (file `client/elasticsear
 - Production runs AWS OpenSearch Service 1.3
 
 > **Amendment 2026-07-11 (ADR 029 step 10 downstream)** — the OpenSearch **engine version is now pinned to 2.19** after the ADR 029 blue/green upgrade completed (v2 `addressr4` cut over 2026-07-10, v1 `addressr3` decommissioned 2026-07-11). Confirmation is now: `package.json config.SEARCH_IMAGE` = `opensearchproject/opensearch:2.19.5`, CI service container + devcontainer run 2.19.5, production runs AWS OpenSearch Service 2.19. The engine choice (OpenSearch) is unchanged; only the version moved off the EOL 1.3.x line.
+
+> **Amendment 2026-07-14 (ADR 035 downstream)** — the engine version is now **OpenSearch 3.5** after ADR 029 Phase 2 completed ([ADR 035](035-opensearch-3-5-upgrade-2-19-ci-regression.accepted.md), accepted). Production runs AWS OpenSearch Service 3.5 (`deploy/vars.tf` `elastic_v3_engine_version = "OpenSearch_3.5"`); CI retains 2.19 as a regression/compatibility leg per ADR 035. The `Neutral: Pinned to 1.3.x` / `Production runs AWS OpenSearch Service 1.3` lines above are historical — superseded by this and the 2026-07-11 amendment. The engine choice (OpenSearch) is unchanged.
 
 ### Reassessment Criteria
 

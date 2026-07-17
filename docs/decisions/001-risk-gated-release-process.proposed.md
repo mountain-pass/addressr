@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: proposed
 date: 2026-03-30
 decision-makers: [Tom Howard]
@@ -59,6 +61,7 @@ Use GitHub's built-in environment protection (required reviewers, wait timers) t
 It integrates with the existing hook infrastructure, provides a single command for the release workflow, and enforces risk assessment before releases proceed. No new branches, CI workflows, or GitHub configuration changes are required.
 
 This decision covers:
+
 - Creation of `scripts/release-watch.sh`
 - Addition of `npm run release:watch` script entry in `package.json`
 - The existing `git-push-gate.sh` hook that blocks direct `gh pr merge` and gates `release:watch` on the release risk score

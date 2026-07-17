@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: accepted
 date: 2021-01-01
 decision-makers: [Tom Howard]
@@ -31,6 +33,7 @@ Addressr needs a production hosting environment for the Node.js API server in th
 **Option 1: AWS Elastic Beanstalk** with Terraform for infrastructure-as-code. Terraform state managed in Terraform Cloud (`organization: mountainpass`).
 
 Key configuration:
+
 - Instance types: t2.nano / t3.nano (cost-optimized)
 - 100% Spot instances (no on-demand base)
 - Auto-scaling: min 2, max 4 instances across 3 AZs

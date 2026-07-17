@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: accepted
 date: 2020-01-01
 decision-makers: [Tom Howard]
@@ -30,6 +32,7 @@ Addressr needs a distribution channel for the hosted API service that handles AP
 **Option 1: RapidAPI.** The API is listed publicly on the RapidAPI Hub (category: Data). RapidAPI handles authentication, rate limiting, billing, and developer onboarding.
 
 Gateway configuration:
+
 - Two backend URLs: `https://backend.addressr.io` and `https://backend2.addressr.io`
 - Round-robin load balancing across backends
 - Version v1 (current)

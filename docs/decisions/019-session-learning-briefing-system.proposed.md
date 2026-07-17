@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: proposed
 date: 2026-03-31
 decision-makers: [Tom Howard]
@@ -33,6 +35,7 @@ Additionally, things that fail or are harder than they should be are not systema
 **Option 1: BRIEFING.md + retrospective skill.**
 
 Components:
+
 - **`docs/BRIEFING.md`** — committed file with "What you need to know" and "What will surprise you" sections. Injected into every conversation via UserPromptSubmit hook.
 - **`/retrospective` skill** — invoked at session end. Reflects on the session, updates BRIEFING.md (add new learnings, remove stale ones), and creates/updates problem tickets for failures and friction.
 - **Stop hook** — reminds to run `/retrospective` before ending.

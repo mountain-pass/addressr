@@ -1,4 +1,6 @@
 ---
+human-oversight: confirmed
+oversight-date: 2026-07-18
 status: 'accepted'
 date: 2026-04-15
 accepted-date: 2026-04-15
