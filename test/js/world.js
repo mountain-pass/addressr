@@ -11,10 +11,8 @@ import debug from 'debug';
 import fs from 'node:fs';
 import waitport from 'wait-port';
 import { esConnect } from '../../client/elasticsearch';
-import { startServer, stopServer } from '../../swagger';
-import { AddressrEmbeddedDriver } from './drivers/AddressrEmbeddedDriver';
-import { AddressrRestDriver } from './drivers/AddressrRestDriver';
 import { AddressrRest2Driver } from './drivers/AddressrRest2Driver';
+import { AddressrRest2EmbeddedDriver } from './drivers/AddressrRest2EmbeddedDriver';
 import {
   startRest2Server,
   stopServer as stopRest2Server,
@@ -38,38 +36,19 @@ async function startExternalServer() {
   return `http://localhost:${serverPort}`;
 }
 
-async function ensureDockerServerStarted() {
-  // wait till running
-  return 'pending';
-}
-
 BeforeAll({ timeout: 240_000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
-    case 'rest': {
-      globalThis.driver = new AddressrRestDriver(await startServer());
-      break;
-    }
     case 'rest2': {
       globalThis.driver = new AddressrRest2Driver(await startRest2Server());
-      break;
-    }
-    case 'cli': {
-      globalThis.driver = new AddressrRestDriver(await startExternalServer());
       break;
     }
     case 'cli2': {
       globalThis.driver = new AddressrRest2Driver(await startExternalServer());
       break;
     }
-    case 'docker': {
-      globalThis.driver = new AddressrRestDriver(
-        await ensureDockerServerStarted(),
-      );
-      break;
-    }
     case 'default': {
-      globalThis.driver = new AddressrEmbeddedDriver();
+      globalThis.driver = new AddressrRest2EmbeddedDriver();
       break;
     }
     default: {
@@ -85,7 +64,6 @@ BeforeAll({ timeout: 240_000 }, async function () {
 });
 
 AfterAll({ timeout: 30_000 }, async function () {
-  stopServer();
   stopRest2Server();
   //delete global.esClient;
   if (this.logStream) {

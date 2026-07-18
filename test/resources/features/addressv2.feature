@@ -1,4 +1,4 @@
-@rest2 @not-rest @not-nodejs @not-cli
+@rest2
 Feature: Addresses v2
 
 

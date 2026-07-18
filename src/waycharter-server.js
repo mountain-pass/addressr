@@ -19,8 +19,6 @@ import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
 import { validateReadShadowConfig, getShadowStatus } from './read-shadow';
 import { checkEsHealthCached, isEsProbeEnabled } from './es-health';
 
-var app = express();
-
 const ONE_DAY = 60 * 60 * 24;
 const ONE_WEEK = ONE_DAY * 7;
 
@@ -553,9 +551,12 @@ let server;
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
-export function startRest2Server() {
-  validateProxyAuthConfig();
-  validateReadShadowConfig();
+// Build and return the configured v2 Express app WITHOUT starting a listener.
+// Used by startRest2Server() (production) and by the in-process test tier
+// (light-my-request injection via waychaser's pluggable fetch). A fresh app is
+// created per call so repeated builds do not double-register middleware/routes.
+export function buildRest2App() {
+  const app = express();
   app.use((_request, response, next) => {
     if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
       response.append(
@@ -957,6 +958,13 @@ export function startRest2Server() {
     },
   });
 
+  return app;
+}
+
+export function startRest2Server() {
+  validateProxyAuthConfig();
+  validateReadShadowConfig();
+  const app = buildRest2App();
   server = createServer(app);
   return new Promise((resolve) => {
     server.listen(serverPort, function () {

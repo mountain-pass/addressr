@@ -86,8 +86,10 @@ describe('startRest2Server — /debug/shadow-config endpoint (P035)', () => {
   });
 
   it('registers /debug/shadow-config as a waycharter resource type', async () => {
+    // The app wiring (incl. resource-type registration) lives in buildRest2App()
+    // since the ADR-036 refactor; startRest2Server() calls it then listens.
     const source = await readFile(serverPath, 'utf8');
-    const startIndex = source.indexOf('export function startRest2Server');
+    const startIndex = source.indexOf('export function buildRest2App');
     const endIndex = source.indexOf('\nexport ', startIndex + 1);
     const fnBody = source.slice(
       startIndex,
@@ -96,7 +98,7 @@ describe('startRest2Server — /debug/shadow-config endpoint (P035)', () => {
     assert.match(
       fnBody,
       /registerResourceType\(\{[\s\S]*?path:\s*['"]\/debug\/shadow-config['"]/,
-      'startRest2Server must register /debug/shadow-config via waycharter.registerResourceType',
+      'buildRest2App must register /debug/shadow-config via waycharter.registerResourceType',
     );
   });
 

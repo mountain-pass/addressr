@@ -17,7 +17,7 @@ Lands code to the Addressr repo under a trunk-based workflow: commits go straigh
 - Changesets-driven release: `.changeset/*.md` is the version-bump contract
 - Pre-commit chain (lint-staged, husky, license check, `test:js`) gates every commit
 - A failed release is only discovered after push and costs a recovery commit and a wasted pipeline run
-- Multiple cucumber test profiles (default, rest, rest2, cli, cli2) plus geo/no-geo split — coverage drift can hide
+- Multiple cucumber test profiles (default, rest2, cli2) plus geo/no-geo split — coverage drift can hide
 
 ## Pain Points
 

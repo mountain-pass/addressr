@@ -10,10 +10,9 @@ function generateConfig(profile) {
   let TAGS = process.env.ADDRESSR_ENABLE_GEO
     ? `--tags 'not(@not-${profile}) and not(@not-geo)`
     : `--tags 'not(@not-${profile}) and not(@geo)`;
-  if (profile === 'rest2') {
-    TAGS = `${TAGS} and @rest2`;
-  }
-  if (profile === 'cli2') {
+  // rest2 / cli2 / nodejs (the in-process v2 embedded tier per ADR-036) all run
+  // the v2 @rest2 scenarios. The v1 rest/cli profiles were removed with the v1 API.
+  if (profile === 'rest2' || profile === 'cli2' || profile === 'nodejs') {
     TAGS = `${TAGS} and @rest2`;
   }
   TAGS = `${TAGS}'`;
@@ -31,26 +30,11 @@ function generateConfig(profile) {
   const BASE_CONFIG = `${FEATURE_GLOB} --format-options '${JSON.stringify(
     FORMAT_OPTIONS,
   )}' ${MODULES} --require ${REQUIRE_GLOB} ${NO_STRICT} --format rerun:${RERUN} --format json:test-results/${profile}/results.cucumber ${FAIL_FAST}`;
-  if (profile === 'rest') {
-    const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
-      client: 'rest',
-    })}'`;
-    console.log('BASE_CONFIG - rest', rval);
-    return rval;
-  }
   if (profile === 'rest2') {
     const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
       client: 'rest2',
     })}'`;
     console.log('BASE_CONFIG - rest2', rval);
-    return rval;
-  }
-  if (profile === 'cli') {
-    const rval = `${BASE_CONFIG} --world-parameters '${JSON.stringify({
-      client: 'rest',
-      starter: 'cli',
-    })}'`;
-    console.log('BASE_CONFIG - cli', rval);
     return rval;
   }
   if (profile === 'cli2') {
@@ -64,8 +48,6 @@ function generateConfig(profile) {
 
 module.exports = {
   default: generateConfig('nodejs'),
-  rest: generateConfig('rest'),
   rest2: generateConfig('rest2'),
-  cli: generateConfig('cli'),
   cli2: generateConfig('cli2'),
 };

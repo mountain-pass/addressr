@@ -46,13 +46,13 @@ Feature: Root API
             | rel                                                       | uri              | title                 | type             | var-base                                    |
             | https://addressr.mountain-pass.com.au/rels/address-search | /addresses{?q,p} | Get List of Addresses | application/json | /api-docs#/paths/~1addresses/get/parameters |
 
-    @not-nodejs @not-cli
+    @not-nodejs
     Scenario: Allow CORS for Root
         When CORS is set to "*"
         When the root api is requested
         Then the reponse will have a "access-control-allow-origin" of "*"
 
-    @not-nodejs @not-cli
+    @not-nodejs
     Scenario: No CORS for Root
         When CORS is not set
         When the root api is requested

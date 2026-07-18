@@ -1,4 +1,4 @@
-@rest2 @not-rest @not-nodejs @not-cli
+@rest2 @not-nodejs
 Feature: Proxy auth header enforcement at the origin
 
     Per ADR 024, when operators front Addressr with a gateway (RapidAPI, Kong,

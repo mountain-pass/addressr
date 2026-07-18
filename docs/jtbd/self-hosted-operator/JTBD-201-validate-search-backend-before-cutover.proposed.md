@@ -9,7 +9,6 @@ screens:
   - src/read-shadow.js
   - service/address-service.js
   - src/waycharter-server.js
-  - swagger.js
   - src/proxy-auth.js
   - /debug/shadow-config
   - src/init-index-config.js
