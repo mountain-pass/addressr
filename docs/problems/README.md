@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-16 **P050 captured** — Stale-Open tickets after their fix ships: no surface catches a fix commit that skips the ADR-022 transition fold (P026 sat Open ~3 months after v2.4.0 shipped its fix) (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-18 **P051–P052 captured** — release:watch stalls on the changesets PR action_required approval gate; red-master push guard blocks the CI-fix commit that would green it (retro captures via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,8 +10,10 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
+| 10.0 | P051 | release:watch stalls on changesets PR action_required approval gate     | 10 (Medium)  | Open        | M      | 2026-07-18 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
+| 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it      | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only   | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P047 | wr-risk-scorer mis-states appetite; STOPs on within-appetite score of 5 | 2 (Very Low) | Known Error | S      | 2026-07-15 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift           | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |

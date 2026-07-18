@@ -54,3 +54,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-07-16 **P044 verification pending** — release.yml `release` job now fails loud when a publish was swallowed (package.json ahead of npm while `published != 'true'`, e.g. expired NPM_TOKEN) instead of green-skipping Deploy + Smoke; RFC-002 captured (fix-time, I13); workflow-only, no changeset — verify on next release run.
 
 > Last reviewed: 2026-07-16 **P026 verification pending** — investigation found the fix already shipped: ADR 027 (`AUTO:5,8` fuzziness, rejecting the ticket's token-split proposal as Option D) landed in v2.4.0 (commit 920fce6, 2026-04-20) with unit + Cucumber regression pins; ticket was never transitioned. Moved Open → Verifying directly; remaining work is the unticked v2.3.0-baseline post-deploy checklist (queries 2 & 3 prod ranking) — user-side.
+
+## 2026-07-18
+
+> Last reviewed: 2026-07-16 **P050 captured** — Stale-Open tickets after their fix ships: no surface catches a fix commit that skips the ADR-022 transition fold (P026 sat Open ~3 months after v2.4.0 shipped its fix) (lightweight aside via /wr-itil:capture-problem)
