@@ -1,5 +1,20 @@
 # @mountainpass/addressr
 
+## 3.0.0
+
+### Major Changes
+
+- 15ec1c6: Remove the v1 Swagger API — Addressr now serves only the v2 WayCharter HATEOAS API (ADR-036, superseding ADR-003).
+
+  **Breaking:** the `addressr-server` binary and the v1 REST contract (`api/swagger.yaml`: `GET /addresses?q=&p=` returning a JSON array with link/link-template headers, `GET /addresses/{addressId}`) are removed. Self-hosted operators running the v1 `addressr-server` binary must migrate to `addressr-server-2` (the v2 HATEOAS API) or pin the last v1-bearing major. RapidAPI consumers are unaffected — production has served v2 exclusively since the v1 decommission.
+
+  This removes the abandoned `swagger-tools` dependency (~8 years unmaintained) and the production-tree vulnerabilities it rooted (`validator`, `z-schema`, and the swagger-tools-chained `body-parser`/`path-to-regexp`). The v1-embedded test tier is replaced by a fast in-process v2 tier that drives the real WayCharter app via `@mountainpass/waychaser`'s pluggable `fetch` + `light-my-request` injection (no socket, real HATEOAS behaviour).
+
+### Patch Changes
+
+- 38ea0e9: The loader's `COVERED_STATES` filter is now case-insensitive: entries are trimmed and uppercased before matching G-NAF's uppercase state file prefixes, so `COVERED_STATES=nsw` loads the NSW files instead of silently indexing zero documents. The loader now also fails with an error when a non-empty `COVERED_STATES` matches zero G-NAF address detail files, rather than completing with an empty index.
+- c12404d: Patch transitive dependency vulnerabilities via non-breaking `npm audit fix` (P030). Resolves 21 of 48 `npm audit` findings, including the critical advisories in handlebars and shell-quote (dev-only). Remaining findings are confined to the swagger-tools, istanbul-middleware, and npm-check dependency lines and are tracked for follow-up in P030.
+
 ## 2.6.30
 
 ### Patch Changes
