@@ -84,3 +84,13 @@ Option 1 is the most surgical — it preserves the fail-fast for genuinely scary
 - This ticket is meta — it is a ticket about the skill that captures tickets. Surfaced 2026-05-14 when Step 0 halted P040's capture, forcing the user to issue an override.
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
+
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/363 (2026-07-18) — repro-confirmed in 0.59.1 (halt still fires, now auto-routes to reconcile)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/363
+- **Reported**: 2026-07-18
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the P041 downstream reference)

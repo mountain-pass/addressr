@@ -69,3 +69,12 @@ In the meantime, the addressr-side workaround stands: manual delegation per file
 - Upstream skill: `/Users/tomhoward/.claude/plugins/cache/windyroad/wr-architect/0.3.1/skills/create-adr` (and `/Users/tomhoward/.claude/plugins/cache/windyroad/wr-architect/0.3.1/agents/wr-architect.md`).
 - Upstream hook scripts (project-side): `${CLAUDE_PLUGIN_ROOT}/hooks/architect-enforce-edit.sh`, `${CLAUDE_PLUGIN_ROOT}/hooks/jtbd-enforce-edit.sh`.
 - [Problem P024 — Architect agent misses performance implications](024-architect-agent-misses-performance-implications.parked.md) — different concern (review quality, not hook integration); listed for proximity only.
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/364 (2026-07-18) — repro-confirmed in 0.20.0 (self-satisfies oversight marker, still no pre-Write edit-gate delegation)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/364
+- **Reported**: 2026-07-18
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the P031 downstream reference)

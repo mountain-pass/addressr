@@ -48,3 +48,12 @@ Invoke the cached script directly: `bash ~/.claude/plugins/cache/windyroad/wr-re
 - Upstream candidate: windyroad plugin suite (wr-retrospective 0.27.0) — report via /wr-itil:report-upstream when ready
 - P317/RFC-009 class (upstream): repo-relative script references from SKILL.md
 - Hang-off pre-filter: 0 candidates shared signals (packages/retrospective, check-ask-hygiene, check-briefing-budgets) across open/ + verifying/ — PROCEED_NEW without subagent dispatch (empty-candidates short-circuit)
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/362 (2026-07-18) — repro-confirmed in 0.27.0
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/362
+- **Reported**: 2026-07-18
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the P049 downstream reference)

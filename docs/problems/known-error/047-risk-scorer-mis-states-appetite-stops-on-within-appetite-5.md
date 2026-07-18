@@ -36,7 +36,9 @@ Upstream (`wr-risk-scorer` plugin) prose computes "above appetite" as `score > t
 
 ### Investigation Tasks
 
-- [ ] Confirm the scorer agent prose / template that emits the ">4" framing
+**Repro-check 2026-07-18 (wr-risk-scorer 0.17.0): appears FIXED upstream — close candidate.** The current `pipeline.md` and `wip.md` agent prose reads the threshold from RISK-POLICY.md (`Threshold: N ... do NOT hardcode`) and frames within-appetite as `≤ the appetite threshold` (inclusive), not the old `> threshold - 1` / ">4". Observed all this session: the pipeline scorer phrased verdicts as "within appetite threshold (5, inclusive)". No ">4" / STOP-on-5 framing remains in the 0.17.0 agent definitions. NOT reported upstream (would be a stale/duplicate). Recommend closing after a live at-threshold (score exactly 5) scorer run confirms no STOP.
+
+- [x] Confirm the scorer agent prose / template that emits the ">4" framing — **done**: 0.17.0 agents read the threshold and use `≤` (inclusive); the ">4" framing is gone
 - [ ] Align the scorer's "above appetite" definition with `risk-gate.sh` (`score > threshold`, threshold parsed from RISK-POLICY.md)
 - [ ] Re-rate Priority and Effort at next review
 
