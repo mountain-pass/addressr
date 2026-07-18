@@ -8,7 +8,7 @@ first-released: '2026-04-15 (v2.1.5)'
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
-reassessment-date: 2026-07-15
+reassessment-date: 2027-01-15
 ---
 
 # ADR 024: Origin Gateway Auth Header Enforcement
@@ -193,3 +193,7 @@ Revisit this decision if any of the following occur:
 - [Problem 008](../problems/008-rapidapi-gateway-rejecting-all-keys-for-listing.known-error.md) — outage that formally raised this follow-up
 - [Problem 009](../problems/009-upstream-backends-openly-callable-bypassing-rapidapi.open.md) — the problem this ADR resolves
 - [RISK-POLICY.md](../../RISK-POLICY.md) — Confidential Information section; secret values stay out of the repository
+
+## Reassessment Log
+
+- **2026-07-18** — Reconfirmed; decision still holds. Live prod probe (this ADR's Confirmation #5): direct `backend.addressr.io/addresses?q=sydney` without the secret header returned **401**; `/health` and `/api-docs` returned **200**. Topology unchanged (RapidAPI + Cloudflare Worker). Next reassessment pushed to **2027-01-15** (6-month cadence — the mechanism is stable). Remains load-bearing as P030 containment.
