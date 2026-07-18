@@ -1,0 +1,114 @@
+name: Report a problem
+description: Report a problem with @mountainpass/addressr. You do not need to pre-classify it as a bug or feature -- triage decides.
+title: "[problem] "
+labels: ["problem", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. This project practises ITIL problem management -- you describe what you observed, and triage decides whether the root cause is a defect, a missing capability, a documentation gap, or something else. You do not need to choose in advance.
+
+        For security vulnerabilities, **do not file here** -- use [GitHub Security Advisories](https://github.com/mountain-pass/addressr/security/advisories/new) instead. For usage questions, use [Discussions](https://github.com/mountain-pass/addressr/discussions).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is happening? What did you expect instead? Describe the observation, not the fix.
+      placeholder: |
+        e.g. "When I run the tool in a fresh project, it reports no items even though the source data has them. I expected it to list them."
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: Symptoms
+      description: Observable behaviour -- error messages, command output, transcript snippets, screenshots. Redact secrets.
+      placeholder: |
+        - Command returns exit code 1
+        - Output contains "project root not found"
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Anything you tried that got you unstuck, even if temporary. "None found" is a valid answer.
+      placeholder: |
+        Retried after restarting -- same result. No workaround found.
+
+  - type: input
+    id: affected-component
+    attributes:
+      label: Affected component
+      description: Which part of @mountainpass/addressr is involved? "multiple" or "unsure" is a valid answer -- triage will re-scope.
+      placeholder: "e.g. CLI / UI / specific module"
+    validations:
+      required: true
+
+  - type: input
+    id: frequency
+    attributes:
+      label: Frequency
+      description: How often does this happen? (every time, intermittently, once, ...)
+      placeholder: "e.g. every time I run the command"
+    validations:
+      required: true
+
+  - type: input
+    id: version-local-plugin
+    attributes:
+      label: Local plugin / project version
+      description: The version of @mountainpass/addressr you are running. Enter `not detected` if you cannot determine the version.
+      placeholder: "x.y.z"
+    validations:
+      required: true
+
+  - type: input
+    id: version-upstream-package
+    attributes:
+      label: Upstream package version
+      description: If the problem involves a non-@mountainpass/addressr upstream package, the package name and version. Enter `not applicable` or `not detected` if neither.
+      placeholder: "<pkg>@<version>"
+
+  - type: input
+    id: version-claude-code
+    attributes:
+      label: Claude Code CLI version
+      description: Output of `claude --version`. Enter `not detected` if not running through Claude Code.
+      placeholder: "1.x.x"
+
+  - type: input
+    id: version-node
+    attributes:
+      label: Node version
+      description: Output of `node --version`. Enter `not detected` if Node is not part of the failure path.
+      placeholder: "v20.11.0"
+
+  - type: input
+    id: version-os
+    attributes:
+      label: Operating system
+      description: Output of `uname -srm` (POSIX) or platform-equivalent. Enter `not detected` if you cannot determine.
+      placeholder: "Darwin 25.3.0 arm64"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Minimal reproduction steps, transcript links, screenshots, or related prior discussions. Feeds the investigation tasks triage will open.
+      placeholder: |
+        1. Clone the repo
+        2. Run the failing command
+        3. Observe output
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else relevant -- related tickets, prior art, a hypothesis you already formed.

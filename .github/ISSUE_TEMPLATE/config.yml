@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question (GitHub Discussions)
+    url: https://github.com/mountain-pass/addressr/discussions
+    about: For usage help, configuration questions, and pattern advice. The issue tracker is for problems -- triage decides whether the root cause is a defect, a missing capability, or something else.
+  - name: Report a security vulnerability
+    url: https://github.com/mountain-pass/addressr/security/advisories/new
+    about: Use GitHub Security Advisories for private disclosure. Do not file a public issue. See SECURITY.md.
