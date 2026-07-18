@@ -1,6 +1,8 @@
 ---
 status: accepted
 date: 2020-01-01
+human-oversight: rejected-pending-supersede
+supersede-ticket: P055
 decision-makers: [Tom Howard]
 consulted: []
 informed: []

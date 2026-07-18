@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P053-P054 captured** — two wr-risk-scorer upstream findings from the P047 investigation: scorer defers to policy prose over the gate numeric at the appetite boundary (P053, reported #365), and label bands disagree across the plugin skill vs validator (P054, reported #366) (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-18 **P055 captured** — migrate the Docker image from Alpine to Distroless (distroless/nodejs22) for a smaller attack surface; user decision during the review-decisions oversight drain, supersedes the ADR-013 base-image pick (now rejected-pending-supersede) (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -26,6 +26,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
 | 2.0  | P053 | wr-risk-scorer scorer defers to policy prose over gate numeric at 5   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P054 | wr-risk-scorer label bands disagree (skill 3-5 Low vs validator 5-9)  | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
 | 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
