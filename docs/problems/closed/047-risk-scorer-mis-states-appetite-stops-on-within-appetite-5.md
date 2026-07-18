@@ -1,7 +1,18 @@
 # Problem 047: wr-risk-scorer:pipeline mis-states appetite and STOPs on a within-appetite score of 5
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-07-15
+**Closed**: 2026-07-18
+
+## Resolution
+
+**Root cause (confirmed 2026-07-18):** RISK-POLICY.md § Risk Appetite was internally contradictory at the boundary — the `Threshold: 5` line is enforced by the gate (`hooks/lib/risk-gate.sh`, `score > 5`, so 5 passes) while the prose said "residual risk score of **5 or above** require remediation" (reads as 5 blocking). The scorer agent defers to the explicit policy prose over its own `≤ threshold` default framing, so it returned STOP at 5 — contradicting the gate. The scorer was not itself buggy; it correctly followed a wrong policy statement.
+
+**Fix (released 2026-07-18):** reworded RISK-POLICY.md § Risk Appetite via `/wr-risk-scorer:update-policy` so it unambiguously states a residual of exactly 5 is within appetite and only scores strictly above 5 (6 or above) require remediation — matching the enforced gate and memory `feedback_risk_appetite_is_5_inclusive.md`. User decision 2026-07-18: 5 passes (inclusive). No upstream fix needed (the scorer follows the policy correctly).
+
+**Verified (2026-07-18):** a live pipeline-scorer run on a residual of exactly 5/25 returned **CONTINUE (within appetite)**, quoting the clarified prose, and agreeing with the gate's `score > 5`. Before the fix the same run returned STOP.
+
+**Related follow-up (not blocking this closure):** the label bands drifted — this policy uses "5-9 Medium" while the plugin's update-policy SKILL cites ADR-086 "3-5 Low / 6-9 Medium" (yet the plugin's own policy-validator accepts 5-9 Medium). A band/skill/validator inconsistency worth reporting upstream separately.
 **Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
 **Priority**: 2 (Very Low) — Impact: Negligible (1) × Likelihood: Unlikely (2)
 **Origin**: internal (pipeline-instability / subagent-delegation friction)

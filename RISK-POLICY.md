@@ -2,7 +2,7 @@
 
 _Per ISO 31000 — Risk Management_
 
-**Last reviewed:** 2026-07-06
+**Last reviewed:** 2026-07-18
 **Review cadence:** quarterly (next review due 2026-10-06) — user-directed 2026-07-06
 
 ## Business Context
@@ -31,9 +31,9 @@ When writing governance documents, risk reports, or any committed file, use gene
 
 ## Risk Appetite
 
-**Threshold: 5 (Medium)**
+**Threshold: 5 (Medium)** — inclusive. A residual risk score of exactly 5 is within appetite; the gate blocks only scores strictly above 5.
 
-Pipeline actions (commit, push, release) with a residual risk score of 5 or above require remediation or explicit acceptance before proceeding. This threshold reflects the product's status as a revenue-generating service with paying customers and active API consumers.
+Pipeline actions (commit, push, release) with a residual risk score above 5 (i.e. 6 or above) require remediation or explicit acceptance before proceeding. A residual of exactly 5/25 is within appetite and proceeds without remediation. This threshold reflects the product's status as a revenue-generating service with paying customers and active API consumers.
 
 ## Impact Levels
 

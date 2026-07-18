@@ -1,34 +1,33 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P051 verification pending** — release:watch action_required stall fixed: step 1b in scripts/release-watch.sh auto-approves the release-PR run, SHA-bound to the PR head (repo-wide gate untouched); shipped on master push commit 4622682 (script not in npm package, no changeset); verify next release no longer times out (via /wr-itil:transition-problem)
+> Last reviewed: 2026-07-18 **P047 closed** — appetite-boundary contradiction fixed + verified: RISK-POLICY.md prose reworded so a residual of exactly 5 is within appetite (matching the gate's score > 5); live at-threshold scorer run now returns CONTINUE (was STOP). No upstream bug — scorer correctly follows the policy prose (via /wr-risk-scorer:update-policy)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
 Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) and Parked (`.parked.md`, multiplier 0) tickets are excluded per ADR-022 — surfaced in their own sections below. Rows render **tier-first** (Tier 0 Critical-bypass [Severity Very High ≥17 OR security-classified OR incident-linked] → Tier 1 Inbound-reported → Tier 2 Internal), then within each tier by `(WSJF desc, Known-Error-first, Effort-divisor asc, Reported-date asc, ID asc)`. All tickets are Tier 2 (Origin internal; max Severity 16 < 17). <!-- REPORTED-FIRST-TIER-SOURCE: /wr-itil:work-problems SKILL.md Step 3 (ADR-076) -->
 
-| WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
-| ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
-| 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it      | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
-| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only   | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
-| 4.0  | P047 | wr-risk-scorer mis-states appetite; STOPs on within-appetite score of 5 | 2 (Very Low) | Known Error | S      | 2026-07-15 | internal |
-| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift           | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P048 | external-comms marker hash-exactness forces re-review round-trips       | 4 (Low)      | Known Error | M      | 2026-07-15 | internal |
-| 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses           | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
-| 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks   | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
-| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos          | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
-| 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                  | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
-| 3.0  | P015 | Range-number addresses not findable by base number                      | 12 (High)    | Open        | L      | 2026-04-16 | internal |
-| 3.0  | P035 | Read-shadow soak validation has multiple blind spots                    | 12 (High)    | Open        | L      | 2026-05-03 | internal |
-| 2.5  | P023 | Cross-origin root `/` not browser-cached                                | 10 (High)    | Open        | L      | 2026-04-18 | internal |
-| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline           | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
-| 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check   | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
-| 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess   | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
-| 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence    | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
-| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase            | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
-| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions   | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
+| WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
+| ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
+| 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                         | 12 (High)    | Open        | M      | 2026-04-21 | internal |
+| 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it    | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
+| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
+| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P048 | external-comms marker hash-exactness forces re-review round-trips     | 4 (Low)      | Known Error | M      | 2026-07-15 | internal |
+| 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses         | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
+| 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
+| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos        | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
+| 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
+| 3.0  | P015 | Range-number addresses not findable by base number                    | 12 (High)    | Open        | L      | 2026-04-16 | internal |
+| 3.0  | P035 | Read-shadow soak validation has multiple blind spots                  | 12 (High)    | Open        | L      | 2026-05-03 | internal |
+| 2.5  | P023 | Cross-origin root `/` not browser-cached                              | 10 (High)    | Open        | L      | 2026-04-18 | internal |
+| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
+| 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
+| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
+| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
 
 ## Verification Queue
 
@@ -66,6 +65,8 @@ _No inbound discovery pass has run yet (`docs/problems/.upstream-channels.json` 
 | P038 | Scale v2 back to steady-state sizing post-populate                      | **Permanently superseded** (2026-07-15): v2 (2.19) domain decommissioned, production on 3.5 per ADR-035 — close candidate | 2026-05-14   |
 
 ## Review notes (2026-07-15)
+
+**Closed (2026-07-18)** — P047 (scorer STOPs on within-appetite 5): fixed + verified. RISK-POLICY.md § Risk Appetite prose was internally contradictory with the enforced gate (`score > 5`); reworded via `/wr-risk-scorer:update-policy` so a residual of exactly 5 is unambiguously within appetite (user decision: inclusive). A live at-threshold scorer run now returns CONTINUE at 5/25 (was STOP). No upstream bug — the scorer correctly follows the policy prose; the policy was the wrong artefact. Follow-up flagged: label-band drift (5-9 Medium here vs ADR-086's 3-5 Low in the plugin's update-policy skill).
 
 **Closed** — P028 (OpenSearch 1.3.20 version debt): production migrated entirely off 1.3.x (Phase 1 → 2.19 on 2026-07-11, Phase 2 → 3.5 per ADR-035 accepted 2026-07-14; v1 `addressr3` decommissioned; `deploy/main.tf` on `OpenSearch_3.5`). The condition the ticket captures no longer holds. Fix released + verified in production → `.closed.md`.
 
