@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P040 verification pending** — Uptime Robot 401s: CIDR-aware matcher + re-synced safeIps live since 2026-05-25 (P042 cutover, commit 3969b9e); session probe 200-with-Referer / correct-401-without, zero UR IP drift (206/206 covered); awaiting dashboard confirmation alerts ceased (via /wr-itil:manage-problem)
+> Last reviewed: 2026-07-18 **P051 known error** — release:watch stall root-caused: repo Actions first-time-contributor approval policy gates github-actions[bot]-triggered release-PR runs at action_required; fix strategy = scoped auto-approve in release-watch.sh; Effort M → S, WSJF 20.0 (via /wr-itil:manage-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,7 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 10.0 | P051 | release:watch stalls on changesets PR action_required approval gate     | 10 (Medium)  | Open        | M      | 2026-07-18 | internal |
+| 20.0 | P051 | release:watch stalls on changesets PR action_required approval gate     | 10 (Medium)  | Known Error | S      | 2026-07-18 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
 | 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it      | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
