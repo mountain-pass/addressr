@@ -51,4 +51,12 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
 
-- **Upstream report pending** -- external dependency identified (`@windyroad/risk-scorer` `check_ci_status`); invoke /wr-itil:report-upstream when ready
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/360 (2026-07-18)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/360
+- **Reported**: 2026-07-18
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the P052 downstream reference)
