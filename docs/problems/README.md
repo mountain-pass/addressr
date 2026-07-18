@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P051–P052 captured** — release:watch stalls on the changesets PR action_required approval gate; red-master push guard blocks the CI-fix commit that would green it (retro captures via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-18 **P030 verification pending** — Dependabot-vulns fix released across v3.0.0 (swagger-tools removed, ADR-036) + v3.0.1 (dev-vuln cleanup); npm audit now 0, awaiting Dependabot-banner confirmation on next push (via /wr-itil:transition-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -21,7 +21,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses           | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks   | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos          | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
-| 3.0  | P030 | Dependabot reports 46 vulnerabilities on master                         | 12 (High)    | Known Error | XL     | 2026-04-21 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                  | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P015 | Range-number addresses not findable by base number                      | 12 (High)    | Open        | L      | 2026-04-16 | internal |
 | 3.0  | P035 | Read-shadow soak validation has multiple blind spots                    | 12 (High)    | Open        | L      | 2026-05-03 | internal |
@@ -37,17 +36,18 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off `docs/problems/*.verifying.md` per ADR-022). Sorted by `Released date ASC`. <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` carries an evidence-first cell per P186. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 -->
 
-| ID   | Title                                                              | Released   | Likely verified?  | Notes                                                                                                                                                          |
-| ---- | ------------------------------------------------------------------ | ---------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P001 | Stale Dockerfile                                                   | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                                 |
-| P004 | release:watch script reports false negative                        | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                                  |
-| P014 | Invalid address ID returns 500 instead of 404                      | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                                 |
-| P019 | No deploy-time smoke check for root Link header rels               | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release    |
-| P026 | Numeric fuzziness in bool_prefix inflates ranking                  | 2026-04-20 | no — not observed | `AUTO:5,8` fuzziness per ADR 027 (v2.4.0, commit 920fce6); verify via v2.3.0-baseline post-deploy checklist queries 2 & 3 (prod ranking); then comment on #367 |
-| P042 | Version-control the Cloudflare Worker via Terraform                | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                    |
-| P036 | v2 shadow auth silently regressed (FGAC clobber)                   | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain         |
-| P034 | addressr-loader's COVERED_STATES filter is case-sensitive          | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs           |
-| P044 | changesets/action swallows publish failure → deploy silently skips | 2026-07-16 | no — not observed | Fail-loud publish assertion in release.yml (RFC-002, workflow-only, no changeset); verify the step passes green on the next release run                        |
+| ID   | Title                                                              | Released   | Likely verified?  | Notes                                                                                                                                                            |
+| ---- | ------------------------------------------------------------------ | ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P001 | Stale Dockerfile                                                   | 2026-04-19 | no — not observed | Node 22-alpine base + `addressr-server-2` CMD (commit 1a68e6e); verify via local `docker build` — no CI signal                                                   |
+| P004 | release:watch script reports false negative                        | 2026-04-19 | no — not observed | Step-level query fix (commit e800b05); verify release:watch reports correctly on next release                                                                    |
+| P014 | Invalid address ID returns 500 instead of 404                      | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                                   |
+| P019 | No deploy-time smoke check for root Link header rels               | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release      |
+| P026 | Numeric fuzziness in bool_prefix inflates ranking                  | 2026-04-20 | no — not observed | `AUTO:5,8` fuzziness per ADR 027 (v2.4.0, commit 920fce6); verify via v2.3.0-baseline post-deploy checklist queries 2 & 3 (prod ranking); then comment on #367   |
+| P042 | Version-control the Cloudflare Worker via Terraform                | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                      |
+| P036 | v2 shadow auth silently regressed (FGAC clobber)                   | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain           |
+| P034 | addressr-loader's COVERED_STATES filter is case-sensitive          | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs             |
+| P044 | changesets/action swallows publish failure → deploy silently skips | 2026-07-16 | no — not observed | Fail-loud publish assertion in release.yml (RFC-002, workflow-only, no changeset); verify the step passes green on the next release run                          |
+| P030 | Dependabot reports 46 vulnerabilities on master                    | 2026-07-18 | no — not observed | swagger-tools prod line removed (v3.0.0, ADR-036) + dev-vuln cleanup (v3.0.1); `npm audit` now 0. Verify the Dependabot banner clears on the next push to master |
 
 ## Inbound Upstream Reports
 

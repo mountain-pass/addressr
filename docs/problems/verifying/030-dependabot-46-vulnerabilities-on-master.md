@@ -1,6 +1,6 @@
 # Problem 030: Dependabot reports 46 vulnerabilities on master (2 critical, 23 high, 19 moderate, 2 low)
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-21
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3) _(re-rated 2026-07-16: non-breaking patch batch cleared all critical advisories from the prod path and cut prod-reachable findings 15 → 9)_
 **Effort**: XL _(remaining fix = migrate off swagger-tools; requires ADR-003 reassessment — see Fix Strategy)_
@@ -108,3 +108,16 @@ clears all 9 findings + the red `check-deps` gate at the root.
   P030's residual and unblocks the p030 + p034 release (PR #505).
 - Dev-only vulns (istanbul-middleware / npm-check) remain a separate, smaller cleanup
   independent of the v1 decision.
+
+## Fix Released
+
+**Released**: 2026-07-18 (across v3.0.0 and v3.0.1).
+
+The entire remediation shipped:
+
+- **v3.0.0 (ADR-036)** removed the v1 Swagger API and the `swagger-tools` dependency, clearing the whole prod-reachable vuln line (body-parser / qs / path-to-regexp / multer / validator / z-schema). Fix Strategy item 2 (the XL residual). Commit `15ec1c6`; release vehicle `.changeset/drop-v1-swagger-api.md` (consumed into v3.0.0).
+- **v3.0.1** removed the dead `istanbul-middleware` + `istanbul` and the abandoned `npm-check` (replaced by maintained `depcheck` + `npm-check-updates`), clearing the last 20 dev-only findings including the critical lodash. Fix Strategy item 3. Commits `df9086a` + `242d186` + `79c697b`; release vehicle `.changeset/deps-maintenance-vuln-cleanup.md` (consumed into v3.0.1).
+
+`npm audit` is now **0** (was 46 at report time; 20 dev-only after v3.0.0; 0 after v3.0.1). The `check-deps` gate is green (Babel 8 toolchain + lint-staged 17 deferred with documented reasons in `.dry-aged-deps.json`).
+
+**Awaiting user verification**: confirm the GitHub Dependabot banner on `push:watch` output clears (or drops to only advisories unrelated to the removed swagger-tools line and removed dev tools) on the next push to master. Dependabot scans differ from `npm audit`, so a residual banner is possible; the swagger-tools root and the dev-tool roots are provably gone from the tree.
