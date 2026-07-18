@@ -1,36 +1,37 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P055 captured** — migrate the Docker image from Alpine to Distroless (distroless/nodejs22) for a smaller attack surface; user decision during the review-decisions oversight drain, supersedes the ADR-013 base-image pick (now rejected-pending-supersede) (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-18 **P056 captured** — wr-itil SKILL.md bodies exceed the ADR-054 runtime budget (work-problems/SKILL.md 245KB, ~5x the P097 50KB anchor); surfaced by the analyze-context deep-layer run, reported upstream #367 (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
 Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) and Parked (`.parked.md`, multiplier 0) tickets are excluded per ADR-022 — surfaced in their own sections below. Rows render **tier-first** (Tier 0 Critical-bypass [Severity Very High ≥17 OR security-classified OR incident-linked] → Tier 1 Inbound-reported → Tier 2 Internal), then within each tier by `(WSJF desc, Known-Error-first, Effort-divisor asc, Reported-date asc, ID asc)`. All tickets are Tier 2 (Origin internal; max Severity 16 < 17). <!-- REPORTED-FIRST-TIER-SOURCE: /wr-itil:work-problems SKILL.md Step 3 (ADR-076) -->
 
-| WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
-| ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                         | 12 (High)    | Open        | M      | 2026-04-21 | internal |
-| 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it    | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
-| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
-| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P048 | external-comms marker hash-exactness forces re-review round-trips     | 4 (Low)      | Known Error | M      | 2026-07-15 | internal |
-| 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses         | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
-| 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
-| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos        | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
-| 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
-| 3.0  | P015 | Range-number addresses not findable by base number                    | 12 (High)    | Open        | L      | 2026-04-16 | internal |
-| 3.0  | P035 | Read-shadow soak validation has multiple blind spots                  | 12 (High)    | Open        | L      | 2026-05-03 | internal |
-| 2.5  | P023 | Cross-origin root `/` not browser-cached                              | 10 (High)    | Open        | L      | 2026-04-18 | internal |
-| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
-| 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
-| 2.0  | P053 | wr-risk-scorer scorer defers to policy prose over gate numeric at 5   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
-| 2.0  | P054 | wr-risk-scorer label bands disagree (skill 3-5 Low vs validator 5-9)  | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
-| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
-| 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
-| 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
-| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
-| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
+| WSJF | ID   | Title                                                                       | Severity     | Status      | Effort | Reported   | Origin   |
+| ---- | ---- | --------------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
+| 9.0  | P006 | RapidAPI CI sync deferred                                                   | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                               | 12 (High)    | Open        | M      | 2026-04-21 | internal |
+| 6.0  | P052 | red-master push guard blocks the CI-fix commit that would green it          | 6 (Medium)   | Open        | M      | 2026-07-18 | internal |
+| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
+| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P048 | external-comms marker hash-exactness forces re-review round-trips           | 4 (Low)      | Known Error | M      | 2026-07-15 | internal |
+| 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses               | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
+| 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
+| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
+| 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
+| 3.0  | P015 | Range-number addresses not findable by base number                          | 12 (High)    | Open        | L      | 2026-04-16 | internal |
+| 3.0  | P035 | Read-shadow soak validation has multiple blind spots                        | 12 (High)    | Open        | L      | 2026-05-03 | internal |
+| 2.5  | P023 | Cross-origin root `/` not browser-cached                                    | 10 (High)    | Open        | L      | 2026-04-18 | internal |
+| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline               | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 2.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check       | 4 (Low)      | Open        | M      | 2026-07-16 | internal |
+| 2.0  | P053 | wr-risk-scorer scorer defers to policy prose over gate numeric at 5         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P054 | wr-risk-scorer label bands disagree (skill 3-5 Low vs validator 5-9)        | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P056 | wr-itil SKILL.md bodies exceed ADR-054 runtime budget (work-problems 245KB) | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess       | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence        | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
+| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase                | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
+| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions       | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
 
 ## Verification Queue
 
