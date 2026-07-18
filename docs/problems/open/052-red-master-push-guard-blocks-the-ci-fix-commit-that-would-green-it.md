@@ -33,9 +33,11 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 
 ## Root Cause Analysis
 
+**Confirmed 2026-07-18** — the red-master guard is **not in this repo**. `.claude/settings.json` has an empty `PreToolUse` array and no `git-push-gate.sh` exists under `.claude/hooks/` or `scripts/`. The blocking check lives **upstream** in the `@windyroad/risk-scorer` plugin: `hooks/git-push-gate.sh` calls `check_ci_status "$SESSION_ID" "push"` (the P208 "CI-status precondition"), which denies the push when master's latest CI run concluded `failure`. In the installed v0.17.0 there is **no ancestor carve-out** — the check compares only the latest-run conclusion, never whether the pushing HEAD supersedes the failing run's head SHA. So the fix (allow the push when the failing run's head SHA is an ancestor of the pushing HEAD, i.e. `git merge-base --is-ancestor <failing-run-head> HEAD`) belongs **upstream in `@windyroad/risk-scorer`'s `check_ci_status`**, not in addressr. addressr can only work around it locally (`--no-verify`, which over-broadly skips the risk + external-comms gates too).
+
 ### Investigation Tasks
 
-- [ ] Locate the red-master check in the push-gate hook (`.claude/hooks/git-push-gate.sh` or equivalent)
+- [x] Locate the red-master check in the push-gate hook — **found**: `@windyroad/risk-scorer` `hooks/git-push-gate.sh` → `check_ci_status` (P208); not in this repo (`.claude/settings.json` PreToolUse is empty)
 - [ ] Design a carve-out: allow when the failing run's head SHA is an ancestor of the pushing HEAD, OR a scoped CI-fix affordance that still runs the risk + external-comms gates
 - [ ] Create regression coverage
 
@@ -48,3 +50,5 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 ## Related
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
+
+- **Upstream report pending** -- external dependency identified (`@windyroad/risk-scorer` `check_ci_status`); invoke /wr-itil:report-upstream when ready
