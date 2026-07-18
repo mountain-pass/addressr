@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { version } from '../version';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 export function printVersion() {
   let environment = process.env.NODE_ENV || 'development';

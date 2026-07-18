@@ -3,6 +3,8 @@
     "@eslint/js": "Version 10.x requires ESLint 10, blocked by @babel/eslint-parser peer dependency (eslint ^9)",
     "eslint": "Upgrade to 10.x blocked by @babel/eslint-parser peer dependency (eslint ^9)",
     "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
-    "express": "Major version 5.x upgrade deferred - significant API breaking changes"
+    "express": "Major version 5.x upgrade deferred - significant API breaking changes",
+    "@babel/runtime": "Major version 8.x requires the coordinated Babel 8 toolchain migration - the entire @babel/* stack (core, cli, node, preset-env, register) is on 7.x and cannot move piecemeal",
+    "babel-plugin-istanbul": "Major version 8.x targets Babel 8 - deferred with @babel/runtime until the toolchain migrates"
   }
 }
