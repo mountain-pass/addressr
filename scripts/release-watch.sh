@@ -45,6 +45,28 @@ echo "Found release PR #$PR_NUMBER: $PR_TITLE"
 echo "  $PR_URL"
 echo ""
 
+# ── 1b. Approve gated release-PR CI runs (P051) ─────────────────────────────
+# The repo's first-time-contributor approval policy gates github-actions[bot]-
+# triggered runs at conclusion=action_required, so the release PR's build check
+# never starts and step 2 below times out. Auto-approve ONLY runs bound to this
+# PR's exact head commit, leaving the repo-wide gate untouched for all other PRs.
+HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid 2>/dev/null)
+HEAD_BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName 2>/dev/null)
+if [ -n "$HEAD_SHA" ] && [ -n "$HEAD_BRANCH" ]; then
+  GATED_RUNS=$(gh api "repos/$REPO/actions/runs?branch=$HEAD_BRANCH&event=pull_request" \
+    --jq ".workflow_runs[] | select(.head_sha == \"$HEAD_SHA\" and .conclusion == \"action_required\") | .id" 2>/dev/null || true)
+  for run_id in $GATED_RUNS; do
+    echo "Approving gated release-PR run $run_id (action_required)..."
+    if gh api -X POST "repos/$REPO/actions/runs/$run_id/approve" >/dev/null 2>&1; then
+      echo "  Approved: https://github.com/$REPO/actions/runs/$run_id"
+    else
+      echo "Failed to approve run $run_id." >&2
+      echo "Approve it manually, then re-run: gh api -X POST repos/$REPO/actions/runs/$run_id/approve" >&2
+      exit 1
+    fi
+  done
+fi
+
 # ── 2. Check CI status on the PR ────────────────────────────────────────────
 echo "Checking CI status..."
 # Wait for the build check (the one that runs tests). check-deps is advisory
