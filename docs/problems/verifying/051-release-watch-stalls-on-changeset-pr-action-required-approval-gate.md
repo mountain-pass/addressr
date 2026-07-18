@@ -1,6 +1,6 @@
 # Problem 051: release:watch stalls on the changesets release PR's action_required approval gate
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-07-18
 **Priority**: 10 (Medium) — Impact: 2 (Minor — maintainer-only friction, manual workaround exists, does not break the release itself) × Likelihood: 5 (Almost Certain — fired on every release observed) — derived at capture
 **Origin**: internal
@@ -56,6 +56,16 @@ Recurring release-path instability. Candidate fix: make `scripts/release-watch.s
 Insert an approval step in `scripts/release-watch.sh` between step 1 (find the release PR) and step 2 (wait for the `build` check): fetch the PR's `headRefOid` via `gh pr view`, list `pull_request` runs on the head branch via `gh api`, and approve ONLY runs whose `head_sha` matches the PR's `headRefOid` AND `conclusion == "action_required"`, via `gh api -X POST repos/<repo>/actions/runs/<id>/approve`, echoing each approved run URL for the release audit trail. A failed approve call (e.g. 403) is a hard stop that prints the manual workaround command, not a silent fall-through into the timeout. The SHA binding (architect review 2026-07-18) prevents the branch-name filter from matching a fork PR that happens to share the branch name — approval is bound to the exact commit the release PR points at, so the repo-wide first-time-contributor approval gate is untouched for all other PRs. The existing 5-minute build-check wait loop then observes the now-running checks unchanged. No workflow-file or repo-settings changes.
 
 **Architect verdict** (2026-07-18): PASS with the SHA-scoping fix applied; no new ADR needed — bug fix making the ADR-001 (risk-gated release:watch) workflow function deterministically; auto-approve sits inside the risk-gated entry point (git-push-gate.sh still gates release:watch itself). Auto-approve-vs-instruct-only resolution recorded in Investigation Tasks above per architect advisory.
+
+**Release vehicle**: master push of commit `4622682` (`fix(release): auto-approve gated release-PR CI runs in release:watch (P051)`). `scripts/release-watch.sh` is not in the published npm package (`files` ships only `api/`, `lib/`, `scripts/check-version.js`), so the fix ships on the master push, not an npm release — no changeset. <!-- no-changeset-reference -->
+
+## Fix Released
+
+**Released**: 2026-07-18 — master push of commit `4622682` (`fix(release): auto-approve gated release-PR CI runs in release:watch (P051)`). `scripts/release-watch.sh` is not in the published npm package, so the master push IS the release vehicle (no npm publish, no changeset). <!-- no-changeset-reference -->
+
+Fix: inserted step 1b in `scripts/release-watch.sh` that auto-approves the changesets release PR's `action_required` CI runs, SHA-bound to the PR's exact head commit (repo-wide first-time-contributor gate untouched for all other PRs); a failed approve is a hard stop printing the manual command.
+
+**Awaiting user verification** — verify on the next release that `release:watch` no longer times out at "Waiting for build check to complete..." and that step 1b prints an "Approved: ..." line for the gated release-PR run. No exercise evidence yet (fix ships the moment it lands on master; first exercise is the next release).
 
 ## Dependencies
 
