@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-18 **P030 verification pending** — Dependabot-vulns fix released across v3.0.0 (swagger-tools removed, ADR-036) + v3.0.1 (dev-vuln cleanup); npm audit now 0, awaiting Dependabot-banner confirmation on next push (via /wr-itil:transition-problem)
+> Last reviewed: 2026-07-18 **P040 verification pending** — Uptime Robot 401s: CIDR-aware matcher + re-synced safeIps live since 2026-05-25 (P042 cutover, commit 3969b9e); session probe 200-with-Referer / correct-401-without, zero UR IP drift (206/206 covered); awaiting dashboard confirmation alerts ceased (via /wr-itil:manage-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,7 +9,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                   | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | ----------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 20.0 | P040 | Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug    | 10 (High)    | Known Error | S      | 2026-05-14 | internal |
 | 10.0 | P051 | release:watch stalls on changesets PR action_required approval gate     | 10 (Medium)  | Open        | M      | 2026-07-18 | internal |
 | 9.0  | P006 | RapidAPI CI sync deferred                                               | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
 | 6.0  | P027 | Synonym expansion bypasses AUTO:5,8 fuzziness                           | 12 (High)    | Open        | M      | 2026-04-21 | internal |
@@ -43,6 +42,7 @@ Fix released, awaiting user verification (driven off `docs/problems/*.verifying.
 | P014 | Invalid address ID returns 500 instead of 404                      | 2026-04-19 | no — not observed | 404-not-500 error-handling fix (commit fda4e3b); verify an invalid address ID returns HTTP 404                                                                   |
 | P019 | No deploy-time smoke check for root Link header rels               | 2026-04-19 | no — not observed | curl+grep rel probe in release.yml "Smoke test production" (commit 98a0ca9, no changeset — workflow-only); verify via green probe on next published release      |
 | P026 | Numeric fuzziness in bool_prefix inflates ranking                  | 2026-04-20 | no — not observed | `AUTO:5,8` fuzziness per ADR 027 (v2.4.0, commit 920fce6); verify via v2.3.0-baseline post-deploy checklist queries 2 & 3 (prod ranking); then comment on #367   |
+| P040 | Uptime Robot 401 alerts — worker CIDR-match bug + UR IP drift      | 2026-05-25 | no — not observed | CIDR matcher + re-synced safeIps live via P042 cutover (3969b9e); session probe green, zero UR IP drift (206/206); verify UR dashboard shows no 401 alerts       |
 | P042 | Version-control the Cloudflare Worker via Terraform                | 2026-05-25 | no — not observed | Worker cut over (ADR 032, v2.6.12/13); shared UR-observation gate with P040                                                                                      |
 | P036 | v2 shadow auth silently regressed (FGAC clobber)                   | 2026-07-15 | no — not observed | FGAC clobber structurally removed — ADR-033 IAM/SigV4 FGAC-off in production (ADR-035); verify no clobber/index-deletion recurs on the FGAC-off domain           |
 | P034 | addressr-loader's COVERED_STATES filter is case-sensitive          | 2026-07-16 | no — not observed | Case-insensitive filter + fail-loud zero-match guard (RFC-001); ships next publish; verify via a lowercase COVERED_STATES populate loading real docs             |

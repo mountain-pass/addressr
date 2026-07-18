@@ -59,3 +59,4 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 > Last reviewed: 2026-07-16 **P050 captured** — Stale-Open tickets after their fix ships: no surface catches a fix commit that skips the ADR-022 transition fold (P026 sat Open ~3 months after v2.4.0 shipped its fix) (lightweight aside via /wr-itil:capture-problem)
 > Last reviewed: 2026-07-18 **P051–P052 captured** — release:watch stalls on the changesets PR action_required approval gate; red-master push guard blocks the CI-fix commit that would green it (retro captures via /wr-itil:capture-problem)
+> Last reviewed: 2026-07-18 **P030 verification pending** — Dependabot-vulns fix released across v3.0.0 (swagger-tools removed, ADR-036) + v3.0.1 (dev-vuln cleanup); npm audit now 0, awaiting Dependabot-banner confirmation on next push (via /wr-itil:transition-problem)

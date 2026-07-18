@@ -1,6 +1,6 @@
 # Problem 040: Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug + UR IP drift
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-05-14
 **Priority**: 10 (High) — Impact: Minor (2) x Likelihood: Almost certain (5)
 **Effort**: S
@@ -68,6 +68,18 @@ Two-layer fix; operator chooses which layers to deploy:
 **Option 4 — Version-control the worker via Terraform (follow-up — see P042).** Resolves ADR 018's known limitation (worker exists only in Cloudflare's platform) and ADR 018 Reassessment Criterion at line 63. The corrected worker source moves into the repo, the RapidAPI key moves into Cloudflare secrets via the Cloudflare Terraform provider, the deploy step joins the existing 1Password Voder → GH Actions → Terraform secret flow (per `reference_addressr_secrets`), and a proper CIDR-matcher unit test lands alongside (the TDD red/green that P040 itself could not host because the source was not yet in the repo). Tracked in **P042**.
 
 This ticket transitions to Known Error on option 2 being scheduled and to Verification Pending after the operator pastes the patched worker and the alerts stop. P042 covers the structural follow-up.
+
+**Release vehicle**: Terraform-managed worker deploy, commit 3969b9e (`feat(deploy): version-control Cloudflare Worker via Terraform (P042, ADR 032)`), applied to Cloudflare 2026-05-25. No `.changeset/` entry — the fix ships via infrastructure deploy, not npm.
+
+## Fix Released
+
+Deployed 2026-05-25 via the P042 Terraform cutover (commit 3969b9e, ADR 032): CIDR-aware IP matcher replacing the broken `safeIps.includes(srcIp)` exact-match, plus a re-synced `safeIps` list. Awaiting user verification that Uptime Robot 401 alerts have ceased on the dashboard.
+
+Exercise evidence (2026-07-18, this session):
+
+- Live probe `api.addressr.io/addresses/GANSW718804790` with `Referer: https://addressr.io/` → 200; without Referer → 401 `no-origin not permitted from <ip>` (correct rejection of a non-allowlisted IP — probe origin was not a UR IP).
+- Drift re-check: all 206 IPs currently published at `uptimerobot.com/inc/files/ips/` (103 IPv4 + 103 IPv6) are exact-matched in the deployed `deploy/cloudflare-worker/safe-ips.mjs` — zero drift since the 2026-05-25 sync.
+- ~54 days elapsed since deploy, far exceeding the 24-hour observation window named in the task list; dashboard confirmation remains the user-side step.
 
 ## Investigation Tasks
 
