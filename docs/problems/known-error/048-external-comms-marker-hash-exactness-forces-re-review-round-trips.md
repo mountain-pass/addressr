@@ -49,3 +49,12 @@ The marker's hash key spans the entire message including auto-appended trailers,
 - Captured via session retrospective 2026-07-15 (OpenSearch 3.5 migration).
 - `docs/BRIEFING.md` "What Will Surprise You" — external-comms marker + traffic-count caveats.
 - Sibling tooling-friction tickets: P004, P005, P047.
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/361 (2026-07-18)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/361
+- **Reported**: 2026-07-18
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the P048 downstream reference; extended with fresh gh-issue-create shell-escaping evidence hit this session)
