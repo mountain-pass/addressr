@@ -109,3 +109,17 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P025 (GitHub Actio
 **Silent-framework count: 0**
 **Taste count: 0**
 **Correction-followup count: 0**
+
+## P054 AFK iter (parked upstream-blocked, evidence re-verified against wr-risk-scorer 0.17.0 + agent-plugins#366)
+
+| Call # | Header                                    | Classification | Citation                                                                                                                                                                                                                          |
+| ------ | ----------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| —      | (no AskUserQuestion calls this iteration) | —              | Gap: AFK iter; all decisions framework-resolved (evidence-based park per P052/P048/P049/P053/P058/P060 upstream-blocked precedent; P080 upstream comment reconciled-and-skipped per P060 workaround; commit within appetite 2/25) |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Deviation-approval count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
