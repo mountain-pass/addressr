@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P026 closed** — numeric-fuzziness ranking fix (`AUTO:5,8`, ADR 027, v2.4.0) closed on evidence per run-retro Step 4a: prior-session prod battery clean on OpenSearch 3.5 (exact-`138` sole hit, `Gazz` empty, `Muray`→MURRAY) + current-session restored ADR 027 fuzz-exclusion assertion green (109 GAZE RD non-vacuously absent for `107 GAZE RD` query, rest2 38/38). Recovery: /wr-itil:transition-problem 026 known-error (via run-retro Step 4a close-on-evidence, AFK iter)
+> Last reviewed: 2026-07-19 **P031 known error** — `wr-architect:create-adr` still writes ADRs without pre-Write delegation to the adopter-side architect/jtbd edit-gate agents (re-verified against installed wr-architect 0.20.0; upstream filed as windyroad/agent-plugins#364 on 2026-07-18). Root cause + manual-delegation workaround documented; local shim-vs-accept decision queued for user. WSJF 4.0 → 8.0 (Known Error ×2, Effort S) (via /wr-itil:manage-problem AFK iter)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,9 +10,9 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                       | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 9.0  | P006 | RapidAPI CI sync deferred                                                   | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P058 | `wr-risk-scorer-restage-commit` bypasses external-comms commit-message gate | 6 (Medium)   | Open        | M      | 2026-07-19 | internal |

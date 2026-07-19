@@ -1,8 +1,10 @@
 # Problem 031: `wr-architect:create-adr` skill does not auto-satisfy the architect / JTBD edit-gate hooks
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-21
 **Priority**: 4 (Low) — Impact: Negligible (1) x Likelihood: Likely (4)
+**Effort**: S (S retained at Known Error transition 2026-07-19 — remaining local work is the shim-vs-accept decision plus verify-on-upstream-release; a local shim, if chosen, would re-rate M)
+**WSJF**: 8.0 — (4 × 2.0) / 1
 
 ## Description
 
@@ -47,8 +49,9 @@ The hooks are project-level (addressr's CLAUDE.md / hook config), not plugin-lev
 
 - [x] Confirm the skill does not delegate before write _(2026-04-21 — verified by reading `/Users/tomhoward/.claude/plugins/cache/windyroad/wr-architect/0.3.1/skills/create-adr` and observing two `BLOCKED` responses during ADR 029 + 030 drafting)_
 - [x] Confirm the unlock markers are filename-specific (not session-wide) _(2026-04-21 — observed during the same session: architect review of ADR 029 unlocked 029 only; ADR 030 required a second architect delegation)_
-- [ ] Open an upstream issue / PR against `windyroad/wr-architect` with one of the proposed fix shapes (see Fix Strategy)
-- [ ] Decide whether to add a project-level shim in the meantime (e.g., a `Skill` wrapper that auto-delegates) or accept the manual workaround
+- [x] Open an upstream issue / PR against `windyroad/wr-architect` with one of the proposed fix shapes _(2026-07-18 — filed as [windyroad/agent-plugins#364](https://github.com/windyroad/agent-plugins/issues/364); see `## Reported Upstream`)_
+- [x] Re-verify the gap against the currently installed plugin version _(2026-07-19 — wr-architect 0.20.0 `create-adr` Step 4 "Write the ADR" still has no pre-Write delegation to `wr-architect:agent` / `wr-jtbd:agent`; it self-satisfies only its own plugin's oversight-marker hook, not adopter-side edit gates)_
+- [ ] Decide whether to add a project-level shim in the meantime (e.g., a `Skill` wrapper that auto-delegates) or accept the manual workaround _(queued for user decision 2026-07-19 — see AFK iter outstanding questions; genuinely direction-setting, not framework-derivable)_
 
 ## Fix Strategy
 
@@ -78,3 +81,11 @@ In the meantime, the addressr-side workaround stands: manual delegation per file
 - **Template used**: problem-report.yml (problem-shaped structured body)
 - **Disclosure path**: public issue
 - **Cross-reference confirmed**: yes (issue body records the P031 downstream reference)
+
+## Upstream Lifecycle Updates
+
+- **2026-07-19** — Open → Known Error
+  - **Target URL**: https://github.com/windyroad/agent-plugins/issues/364
+  - **Comment URL**: (none — post skipped; already communicated at filing)
+  - **Disclosure path**: already-communicated-at-filing — the 2026-07-18 issue body already carries the full root cause, workaround, and 0.20.0 re-verification this transition would announce (verified via `gh issue view 364`: 0 comments, body matches). A next-day restating comment is the "restating prior as new" credibility self-own the external-comms gate guards against; skipped per the update-upstream idempotency defence-in-depth (treat matching prior communication as already-logged, reconcile, skip the post).
+  - **Gate verdict**: not run — no outbound post
