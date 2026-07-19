@@ -99,3 +99,9 @@ Eligible to transition straight to Known Error once the reproduction test is in 
 - [`test/js/steps.js:379-393`](../../test/js/steps.js) — the buggy step.
 - [`test/resources/features/addressv2.feature`](../../test/resources/features/addressv2.feature) — scenarios 164-188 and 228-259 currently use the workaround.
 - Commit `cccac53` — fix-forward that introduced the workaround.
+
+## RFCs
+
+| RFC     | Status   | Title                                                                            |
+| ------- | -------- | -------------------------------------------------------------------------------- |
+| RFC-004 | proposed | Fix v2 fallback in Cucumber will-NOT-include step and restore absence assertions |
