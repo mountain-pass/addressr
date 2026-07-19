@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P031 known error** — `wr-architect:create-adr` still writes ADRs without pre-Write delegation to the adopter-side architect/jtbd edit-gate agents (re-verified against installed wr-architect 0.20.0; upstream filed as windyroad/agent-plugins#364 on 2026-07-18). Root cause + manual-delegation workaround documented; local shim-vs-accept decision queued for user. WSJF 4.0 → 8.0 (Known Error ×2, Effort S) (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-19 **P060 captured** — `wr-itil:update-upstream` O→KE lifecycle comment restates the issue body when the upstream filing already carried Known-Error-level content (no already-communicated-at-filing branch in Step 3; observed on P031/agent-plugins#364; fix belongs upstream in `@windyroad/itil`) (lightweight aside via /wr-itil:capture-problem, P031 iter retro)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -14,6 +14,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
+| 3.0  | P060 | `wr-itil:update-upstream` O→KE comment restates issue body (filing current) | 3 (Low)      | Open        | S      | 2026-07-19 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P058 | `wr-risk-scorer-restage-commit` bypasses external-comms commit-message gate | 6 (Medium)   | Open        | M      | 2026-07-19 | internal |
 | 3.0  | P015 | Range-number addresses not findable by base number                          | 12 (High)    | Open        | L      | 2026-04-16 | internal |
