@@ -26,6 +26,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P056 | wr-itil SKILL.md bodies exceed ADR-054 runtime budget (work-problems 245KB) | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets            | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 2.0  | P059 | wr-itil fix-time RFC authoring contract skew — Tasks vs stories             | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess       | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
 | 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence        | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase                | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
