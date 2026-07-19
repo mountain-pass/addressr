@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P060 captured** — `wr-itil:update-upstream` O→KE lifecycle comment restates the issue body when the upstream filing already carried Known-Error-level content (no already-communicated-at-filing branch in Step 3; observed on P031/agent-plugins#364; fix belongs upstream in `@windyroad/itil`) (lightweight aside via /wr-itil:capture-problem, P031 iter retro)
+> Last reviewed: 2026-07-19 **P049 known error → parked** — wr-retrospective 0.27.0 ships no bin shims for check-ask-hygiene / check-briefing-budgets / check-tickets-deferred-cause while run-retro SKILL.md invokes them repo-relatively; root cause confirmed (cache bin/ listing + upstream HEAD still lacking the shims), `command -v` repro exit 1, direct-cache-invocation workaround verified green. Local scope (report upstream + document workaround) complete → parked upstream-blocked on windyroad/agent-plugins#362 (via /wr-itil:manage-problem AFK iter)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -13,7 +13,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
 | 3.0  | P060 | `wr-itil:update-upstream` O→KE comment restates issue body (filing current) | 3 (Low)      | Open        | S      | 2026-07-19 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
 | 3.0  | P058 | `wr-risk-scorer-restage-commit` bypasses external-comms commit-message gate | 6 (Medium)   | Open        | M      | 2026-07-19 | internal |
@@ -69,6 +68,7 @@ _No inbound discovery pass has run yet (`docs/problems/.upstream-channels.json` 
 | P038 | Scale v2 back to steady-state sizing post-populate                      | **Permanently superseded** (2026-07-15): v2 (2.19) domain decommissioned, production on 3.5 per ADR-035 — close candidate          | 2026-05-14   |
 | P052 | red-master push guard blocks the CI-fix commit that would green it      | Upstream-blocked: fix belongs in `@windyroad/risk-scorer` `check_ci_status` (windyroad/agent-plugins#360 open)                     | 2026-07-19   |
 | P048 | external-comms marker hash-exactness forces re-review round-trips       | Upstream-blocked: marker-key construction lives in `@windyroad/risk-scorer` external-comms hook (windyroad/agent-plugins#361 open) | 2026-07-19   |
+| P049 | wr-retrospective retro scripts lack bin shims in adopter repos          | Upstream-blocked: fix is three ADR-049 shims + SKILL reword in `@windyroad/wr-retrospective` (windyroad/agent-plugins#362 open)    | 2026-07-19   |
 
 ## Review notes (2026-07-15)
 
