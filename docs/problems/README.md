@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P058 captured** — `wr-risk-scorer-restage-commit` commits bypass the git-commit-message external-comms leak gate (surface regex matches only literal `git commit`; helper wraps it — confirmed at v0.17.0 hook source; fix belongs upstream in `@windyroad/risk-scorer`) (lightweight aside via /wr-itil:capture-problem, P048 park iter retro)
+> Last reviewed: 2026-07-19 **P029 known error** — Cucumber `will NOT include:` step reads `this.current.json` without the `|| this.current.content` fallback its sibling `will include:` step has; crashes with TypeError on v2 API responses. Root cause confirmed at steps.js:383, workaround (first-result assertion) in use in addressv2.feature. WSJF 4.0 → 8.0 (Known Error ×2, Effort S) (via /wr-itil:manage-problem AFK iter)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,9 +10,9 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                       | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 9.0  | P006 | RapidAPI CI sync deferred                                                   | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 8.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses               | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses               | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |

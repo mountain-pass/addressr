@@ -1,6 +1,6 @@
 # Problem 029: Cucumber `will NOT include:` step crashes on v2 API responses
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-21
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
 
