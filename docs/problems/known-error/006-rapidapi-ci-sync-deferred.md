@@ -44,6 +44,10 @@ When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" featu
 
 ## Fix Strategy (proposed)
 
+Fix vehicle: [RFC-003 (RapidAPI listing CI sync via GraphQL Platform API)](../../rfcs/RFC-003-rapidapi-listing-ci-sync-graphql-platform-api.proposed.md) — auto-created 2026-07-19 by the I13 fix-time gate; scopes option 2 below (preferred).
+
+**Blocked on user (2026-07-19)**: implementation cannot start — `RAPIDAPI_OWNER_ID` / `RAPIDAPI_KEY` secrets are absent (verified via `gh secret list`; only the unrelated `TF_VAR_CLOUDFLARE_RAPIDAPI_KEY` exists) and the GraphQL Platform API subscription is an account-level action only the user can take. Queued as an outstanding question for the user's return.
+
 Either:
 
 1. Pin `RapidAPI/create_or_update_rapidapi_listing` to SHA `4590a109931fe324ceaa8144b8d9f58df226a7b3` (current `main` HEAD, dormant since 2023-04-17). **Short-term only** — the action uses `node16`, which GitHub Actions has deprecated and will remove.
@@ -59,3 +63,9 @@ Both require:
 
 - [ADR 023: OpenAPI Spec RapidAPI CI Sync](../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md)
 - [ADR 017: RapidAPI Distribution](../decisions/017-rapidapi-distribution.accepted.md)
+
+## RFCs
+
+| RFC     | Status   | Title                                             |
+| ------- | -------- | ------------------------------------------------- |
+| RFC-003 | proposed | RapidAPI listing CI sync via GraphQL Platform API |
