@@ -29,6 +29,8 @@ Judgement-call applied 2026-07-19 (RFC-004): author a populated `## Scope` from 
 
 ## Root Cause Analysis
 
+**Corroborating occurrence (2026-07-19, P025 AFK iter)**: the I13 gate on P025 auto-fired `/wr-itil:capture-rfc --fix-time` (wr-itil 0.59.1). The SKILL's `--fix-time` branch instructs authoring the fix's work-breakdown as **stories on a story map** (route through `/wr-itil:capture-story-map` + `/wr-itil:capture-story`, ADR-089/095/096) — but this adopter repo has no story tier (`docs/stories/` absent), and the AFK loop contract forbids extra capture-* invocations mid-iter. Resolution used: authored RFC-005 with populated `## Scope`, `stories: []`, and a prose `## Stories` note explaining the repo does not use the story tier. Works, but the SKILL text offers no sanctioned no-story-tier path for adopter repos — each fix-time auto-create re-derives this deviation ad hoc.
+
 ### Investigation Tasks
 
 - [ ] Investigate root cause
