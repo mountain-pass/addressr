@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P048 parked** — external-comms marker hash-exactness is upstream-blocked: v0.17.0 hashes the full `git commit -m` message (trailers included, no carve-out — confirmed at hook source, investigation tasks closed); fix belongs in `@windyroad/risk-scorer` (windyroad/agent-plugins#361 open, no response); un-park when #361 closes or a trailer-aware plugin release ships (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-19 **P058 captured** — `wr-risk-scorer-restage-commit` commits bypass the git-commit-message external-comms leak gate (surface regex matches only literal `git commit`; helper wraps it — confirmed at v0.17.0 hook source; fix belongs upstream in `@windyroad/risk-scorer`) (lightweight aside via /wr-itil:capture-problem, P048 park iter retro)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -16,6 +16,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
 | 4.0  | P049 | wr-retrospective retro scripts lack bin shims in adopter repos              | 4 (Low)      | Open        | S      | 2026-07-15 | internal |
 | 3.0  | P025 | GitHub Actions using Node.js 20 runtime are deprecated                      | 6 (Medium)   | Open        | M      | 2026-04-19 | internal |
+| 3.0  | P058 | `wr-risk-scorer-restage-commit` bypasses external-comms commit-message gate | 6 (Medium)   | Open        | M      | 2026-07-19 | internal |
 | 3.0  | P015 | Range-number addresses not findable by base number                          | 12 (High)    | Open        | L      | 2026-04-16 | internal |
 | 3.0  | P035 | Read-shadow soak validation has multiple blind spots                        | 12 (High)    | Open        | L      | 2026-05-03 | internal |
 | 2.5  | P023 | Cross-origin root `/` not browser-cached                                    | 10 (High)    | Open        | L      | 2026-04-18 | internal |
