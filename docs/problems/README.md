@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P054 known error → parked (upstream-blocked)** — wr-risk-scorer band-label split re-verified live in latest installed 0.17.0 (update-policy SKILL.md + pipeline.md say ADR-086 3-5 Low / 6-9 Medium; policy/plan/wip validator agents say 3-4 Low / 5-9 Medium); upstream windyroad/agent-plugins#366 open, unacknowledged; no local work remains (RISK-POLICY.md carries validator-accepted bands + "strictly above 5" gate wording from P047). NOT a close candidate — the review-sweep evaluator caveat routed to this ticket ("driver P007 / ADR-026 / v2.3.0") actually describes P015 (briefing cross-wire, feeds P057). Upstream lifecycle comment reconciled-and-skipped per the P060 already-communicated-at-filing workaround (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-19 **P061 captured** — work-problems iter briefing carries another ticket's evaluator caveat (P054 iter dispatched with P015's CLOSE-CANDIDATE caveat; blind-close risk on unfixed tickets; fix locus upstream `@windyroad/itil` orchestrator briefing assembly; workaround: verify caveats against this README's Caveated CLOSE-CANDIDATEs list) (lightweight aside via /wr-itil:capture-problem, P054 iter retro)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -22,6 +22,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline               | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
 | 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets            | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat       | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
 | 2.0  | P035 | Read-shadow soak validation has multiple blind spots                        | 8 (Medium)   | Open        | L      | 2026-05-03 | internal |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase                | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
 | 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions       | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
