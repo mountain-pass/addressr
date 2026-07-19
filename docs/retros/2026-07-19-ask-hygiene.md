@@ -31,3 +31,19 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P027 (synonym expa
 **Silent-framework count: 0**
 **Taste count: 0**
 **Correction-followup count: 0**
+
+# Ask Hygiene — 2026-07-19 (P048 AFK iteration)
+
+Session scope: `/wr-itil:work-problems` AFK iteration working P048 (external-comms marker hash-exactness) — RCA source-confirmation, park upstream-blocked, P058 capture.
+
+| Call # | Header                                  | Classification | Citation                                                                                                                                                  |
+| ------ | --------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| —      | (no AskUserQuestion calls this session) | —              | Gap: AFK iteration; park + capture were framework-mediated (P052 precedent, ADR-013 Rule 6 queue-and-continue) — no user-judgment decision arose mid-loop |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Deviation-approval count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
