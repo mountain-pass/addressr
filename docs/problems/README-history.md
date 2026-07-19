@@ -66,3 +66,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-07-18 **P047 closed** — appetite-boundary contradiction fixed + verified: RISK-POLICY.md prose reworded so a residual of exactly 5 is within appetite (matching the gate's score > 5); live at-threshold scorer run now returns CONTINUE (was STOP). No upstream bug — scorer correctly follows the policy prose (via /wr-risk-scorer:update-policy)
 > Last reviewed: 2026-07-18 **P053-P054 captured** — two wr-risk-scorer upstream findings from the P047 investigation: scorer defers to policy prose over the gate numeric at the appetite boundary (P053, reported #365), and label bands disagree across the plugin skill vs validator (P054, reported #366) (lightweight aside via /wr-itil:capture-problem)
 > Last reviewed: 2026-07-18 **P055 captured** — migrate the Docker image from Alpine to Distroless (distroless/nodejs22) for a smaller attack surface; user decision during the review-decisions oversight drain, supersedes the ADR-013 base-image pick (now rejected-pending-supersede) (lightweight aside via /wr-itil:capture-problem)
+
+## 2026-07-19
+
+> Last reviewed: 2026-07-18 **P056 captured** — wr-itil SKILL.md bodies exceed the ADR-054 runtime budget (work-problems/SKILL.md 245KB, ~5x the P097 50KB anchor); surfaced by the analyze-context deep-layer run, reported upstream #367 (lightweight aside via /wr-itil:capture-problem)

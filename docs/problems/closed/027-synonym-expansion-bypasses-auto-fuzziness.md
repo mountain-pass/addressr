@@ -1,8 +1,16 @@
 # Problem 027: Synonym expansion on short-form street type bypasses AUTO:5,8 fuzziness
 
-**Status**: Open
+**Status**: Closed
 **Reported**: 2026-04-21
 **Priority**: 12 (High) — Impact: Moderate (3) x Likelihood: Likely (4)
+
+## Closed as no longer relevant
+
+**Closed**: 2026-07-19. Evidence shapes (cumulative, per ADR-079): `ADR-shipped-confirmed` (ADR 035 accepted; production cut over to the OpenSearch 3.5 `addressr5` domain 2026-07-14, commit 1f77c5e; the 1.3.20 domain that exhibited the symptom is decommissioned — same basis as the P028 close) + in-session production verification (2026-07-19 full 8-query battery via the RapidAPI gateway, all clean — see "2026-07-19 investigation findings" under Root Cause Analysis).
+
+The defect is not reproducible on the current production stack, the original root-cause hypothesis is falsified (both query forms analyze identically, so synonym expansion cannot explain the April observation), and the environment where the symptom occurred no longer exists. No fix was released for this ticket — the platform migration resolved it — so the close bypasses Verification Pending per ADR-022's relevance-close path.
+
+**Reopen path**: if adjacent-number fuzzy leak recurs on any query shape, capture a fresh ticket via `/wr-itil:capture-problem` with `_search?explain=true` output capture as the FIRST investigation task (the missing evidence that left this ticket's April mechanism unknowable).
 
 ## Description
 
@@ -83,13 +91,35 @@ OpenSearch 1.3.20's `match_bool_prefix` query builder, when encountering a synon
 
 ### Investigation Tasks
 
-- [ ] Add request-body logging to `service/address-service.js:searchForAddress` (DEBUG=es) and capture the exact OpenSearch query DSL generated for `138 Whitehorse Rd Blackburn` vs `138 WHITEHORSE ROAD BLACKBURN`. Compare the `fuzziness` parameter placement in the two bodies.
-- [ ] Capture the OpenSearch `_search?explain=true` output for the same query to see which clause matched 135-137 and what edit distance was applied to `138`.
-- [ ] Reproduce against a minimal OpenSearch 1.3.20 local instance with a hand-written query to confirm the synonym-in-middle + fuzziness:AUTO:m,n interaction.
-- [ ] Search the OpenSearch and Elasticsearch issue trackers for known bugs matching this pattern (AUTO:m,n + synonyms + match_bool_prefix).
-- [ ] Decide on fix approach — see Fix Strategy below.
-- [ ] Create a reproduction Cucumber scenario (skipped until fix lands).
-- [ ] Update ADR 027 Reassessment Criteria to reference this problem.
+- [ ] Add request-body logging to `service/address-service.js:searchForAddress` (DEBUG=es) and capture the exact OpenSearch query DSL generated for `138 Whitehorse Rd Blackburn` vs `138 WHITEHORSE ROAD BLACKBURN`. Compare the `fuzziness` parameter placement in the two bodies. _(Obsolete — defect not reproducible on current prod engine; see 2026-07-19 investigation.)_
+- [ ] Capture the OpenSearch `_search?explain=true` output for the same query to see which clause matched 135-137 and what edit distance was applied to `138`. _(Obsolete — the 1.3.20 domain that exhibited the symptom is decommissioned; the fuzzy-leak inference was never explain-verified and now cannot be.)_
+- [x] Reproduce against a minimal OpenSearch 1.3.20 local instance with a hand-written query to confirm the synonym-in-middle + fuzziness:AUTO:m,n interaction. _(Done 2026-07-19 — does NOT reproduce; see findings below.)_
+- [ ] Search the OpenSearch and Elasticsearch issue trackers for known bugs matching this pattern (AUTO:m,n + synonyms + match_bool_prefix). _(Obsolete — hypothesis falsified at the analysis layer; nothing concrete left to search for.)_
+- [ ] Decide on fix approach — see Fix Strategy below. _(Obsolete — no defect remains to fix.)_
+- [ ] Create a reproduction Cucumber scenario (skipped until fix lands). _(Not feasible — CI runs the OT fixture only, and the OT-analog query shape never failed; the symptom needed VIC-scale data that CI does not load.)_
+- [ ] Update ADR 027 Reassessment Criteria to reference this problem. _(Obsolete with the close; ADR 027's correctness claim is re-verified below.)_
+
+### 2026-07-19 investigation findings (AFK iteration)
+
+Two results, both **against** the original hypothesis:
+
+1. **Minimal repro on OpenSearch 1.3.20 does NOT reproduce.** A local 1.3.20 single-node with the exact production analyzer chain (`whitecomma` pattern tokenizer, `uppercase`/`asciifolding`/`my_synonym_filter`/`comma_stripper`/`trim`), the exact street-type synonym rules, the exact mapping, and the exact two-clause `searchForAddress` query DSL, loaded with the three Whitehorse range docs (135-137, 128-132, 138-144) plus controls: `138 Whitehorse Rd Blackburn` returns **only** `138-144 WHITEHORSE RD` — `AUTO:5,8` honoured, no fuzzy leak. The failure therefore required VIC-scale data or domain-specific state even on 1.3.20; it was never a pure analyzer/query-builder interaction.
+2. **The Rd-vs-ROAD behavioural difference cannot exist at the analysis layer.** `buildSynonyms` emits one-way contraction rules `CODE => NAME` and G-NAF `STREET_TYPE_AUT` has `CODE=ROAD, NAME=RD` — so the rule is `ROAD => RD`. Query token `RD` matches no rule (passes through); query token `ROAD` is replaced by `RD`. Both query forms analyze to the identical token stream `[138, WHITEHORSE, RD, BLACKBURN]`. The April observation that the two forms ranked differently is thus unexplainable by synonym expansion at all — the original hypothesis (synonym-expanded token bypassing fuzziness propagation) is falsified. What actually caused the April observation on the 1.3.20 domain is now unknowable (that domain is decommissioned, and the `explain=true` capture was never taken); gateway-edge caching of the heavily-re-tested `138` query string remains the least-implausible surviving candidate.
+
+**Production re-verification (2026-07-19, OpenSearch 3.5 — sole prod domain since the 2026-07-14 v3 cutover, ADR 035 / commit 1f77c5e).** Full ticket battery re-run via the RapidAPI gateway:
+
+| Query                                       | Result                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| `138 Whitehorse Rd Blackburn` (symptom)     | Clean — sole hit `138-144 WHITEHORSE RD, BLACKBURN VIC 3130`.       |
+| `138 WHITEHORSE ROAD BLACKBURN`             | Clean — same sole hit.                                              |
+| `139 Whitehorse Rd Blackburn` (control)     | Clean — sole hit `139-141 WHITEHORSE RD`.                           |
+| `138 Whitehorse Blackburn` (no street type) | Clean — sole hit.                                                   |
+| `138 Whitehorse Rd` (no locality)           | Exact-`138` docs only (DEEPDENE, BLACKBURN, UNIT 138 BALWYN…).      |
+| `104 GAZE RD CHRISTMAS ISLAND` (OT fixture) | Clean — sole hit.                                                   |
+| `16 Gazz Rd Christmas Island` (4-char typo) | Empty — 0 edits under AUTO:5,8, as designed.                        |
+| `1 Muray St Pyrmont` (5-char 1-edit typo)   | `1 MURRAY ST, PYRMONT` found — 1-edit tolerance intact for 5+ char. |
+
+ADR 027's `AUTO:5,8` contract holds end-to-end on the current stack, including the previously-failing query shape.
 
 ## Fix Strategy (proposed — not chosen yet)
 
