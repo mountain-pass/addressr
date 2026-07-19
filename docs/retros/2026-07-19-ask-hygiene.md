@@ -47,3 +47,19 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P048 (external-com
 **Silent-framework count: 0**
 **Taste count: 0**
 **Correction-followup count: 0**
+
+# Ask Hygiene — 2026-07-19 (P031 AFK iteration)
+
+Session scope: `/wr-itil:work-problems` AFK iteration working P031 (create-adr edit-gate delegation gap) — 0.20.0 re-verification, Open → Known Error transition, update-upstream reconcile-and-skip, P060 capture.
+
+| Call # | Header                                  | Classification | Citation                                                                                                                                                                             |
+| ------ | --------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| —      | (no AskUserQuestion calls this session) | —              | Gap: AFK iteration; KE transition + capture were framework-mediated (ADR-022 semantics, ADR-013 Rule 6 queue-and-continue); shim-vs-accept direction queued to outstanding_questions |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Deviation-approval count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
