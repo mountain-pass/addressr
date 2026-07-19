@@ -95,3 +95,17 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P025 (GitHub Actio
 **Silent-framework count: 0**
 **Taste count: 0**
 **Correction-followup count: 0**
+
+## P058 AFK iter (parked upstream-blocked, reported windyroad/agent-plugins#368)
+
+| Call # | Header                                    | Classification | Citation                                                                                                                                                                                                |
+| ------ | ----------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| —      | (no AskUserQuestion calls this iteration) | —              | Gap: AFK iter; all decisions framework-resolved (P063 external-root-cause AFK auto-invoke per ADR-024 2026-06-04 amendment; park per P048/P049 upstream-blocked precedent; commit within appetite 1/25) |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Deviation-approval count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
