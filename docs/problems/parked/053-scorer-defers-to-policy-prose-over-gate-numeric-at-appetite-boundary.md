@@ -1,7 +1,8 @@
 # Problem 053: wr-risk-scorer scorer defers to RISK-POLICY.md prose over the gate numeric at the appetite boundary
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-07-18
+**Parked**: 2026-07-19 (upstream-blocked — fix belongs in `@windyroad/risk-scorer` scorer + update-policy; reported as windyroad/agent-plugins#365)
 **Priority**: 4 (Low) — Impact: 2 (Minor — false STOP at the boundary is friction, no wrong outcome; the gate is correct) × Likelihood: 2 (Unlikely — only when a change scores exactly the threshold value) — derived at capture
 **Origin**: internal (pipeline-instability / upstream plugin friction)
 **Effort**: M — derived at capture (upstream fix in the wr-risk-scorer plugin: scorer + update-policy)
@@ -47,6 +48,12 @@ Word the adopter RISK-POLICY.md § Risk Appetite as "above N" / "N+1 or above", 
 - Discovered during the P047 (closed) verification + fix, 2026-07-18.
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/365 (2026-07-18)
 
+## Parked
+
+- **Reason**: upstream-blocked — both fix candidates ((a) scorer interprets `Threshold: N` numerically consistent with the gate regardless of prose; (b) update-policy generates unambiguous "above N" prose) live in `@windyroad/risk-scorer` (`agents/pipeline.md` + `skills/update-policy/`), synced from windyroad/agent-plugins `packages/risk-scorer/`. Nothing in addressr can change the scorer's prose-deference; the local surface (RISK-POLICY.md § Risk Appetite) already carries the workaround wording ("Threshold: 5 (Medium) — inclusive … blocks only scores strictly above 5", landed with the P047 resolution 2026-07-18). Root cause confirmed and workaround documented + applied, so Known Error entry criteria were met at park time.
+- **Un-park trigger**: `@windyroad/risk-scorer` releases a fix for [windyroad/agent-plugins#365](https://github.com/windyroad/agent-plugins/issues/365) (check via `/wr-itil:check-upstream-responses`); on release, verify the installed plugin's pipeline scorer returns CONTINUE (not STOP) on a residual of exactly 5 regardless of policy prose phrasing, then close.
+- **Date parked**: 2026-07-19
+
 ## Reported Upstream
 
 - **URL**: https://github.com/windyroad/agent-plugins/issues/365
@@ -54,3 +61,7 @@ Word the adopter RISK-POLICY.md § Risk Appetite as "above N" / "N+1 or above", 
 - **Template used**: problem-report.yml (problem-shaped structured body)
 - **Disclosure path**: public issue
 - **Cross-reference confirmed**: yes (issue body records the P053 downstream reference)
+
+## Upstream Lifecycle Updates
+
+- 2026-07-19 — **Known Error → Parked (upstream-blocked): lifecycle comment reconciled-and-skipped.** The 2026-07-18 filing (windyroad/agent-plugins#365) already carried the confirmed root cause, the boundary evidence from the P047 resolution, and the prose-wording workaround — a comment now would restate the issue body as new (the P060 already-communicated-at-filing defect; its documented workaround, applied here as on P031: treat matching prior communication as already-logged and back-write the skip). No upstream state advanced from the reporter's perspective; the park is a local queue-hygiene move awaiting the upstream fix.
