@@ -63,3 +63,19 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P031 (create-adr e
 **Silent-framework count: 0**
 **Taste count: 0**
 **Correction-followup count: 0**
+
+# Ask Hygiene — 2026-07-19 (P049 AFK iteration)
+
+Session scope: `/wr-itil:work-problems` AFK iteration working P049 (wr-retrospective bin-shim gap) — RCA confirmed with cache + upstream-HEAD evidence, `command -v` repro, workaround verified, Open → Known Error → Parked (upstream-blocked on agent-plugins#362).
+
+| Call # | Header                                  | Classification | Citation                                                                                                                                                                     |
+| ------ | --------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| —      | (no AskUserQuestion calls this session) | —              | Gap: AFK iteration; park transition framework-mediated (ADR-022 + P048 precedent, ADR-013 Rule 6); P060-class upstream-comment skip queued to outstanding_questions per P352 |
+
+**Lazy count: 0**
+**Direction count: 0**
+**Deviation-approval count: 0**
+**Override count: 0**
+**Silent-framework count: 0**
+**Taste count: 0**
+**Correction-followup count: 0**
