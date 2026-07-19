@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P029 known error** — Cucumber `will NOT include:` step reads `this.current.json` without the `|| this.current.content` fallback its sibling `will include:` step has; crashes with TypeError on v2 API responses. Root cause confirmed at steps.js:383, workaround (first-result assertion) in use in addressv2.feature. WSJF 4.0 → 8.0 (Known Error ×2, Effort S) (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-19 **P029 verification pending** — `will NOT include:` step fixed with the v2 `.content` fallback + v2-safe matcher (pid alternative, guarded links branch); both addressv2.feature absence assertions restored to the original v2.4.0 dual-assertion form (RFC-004 fix-time capture per I13). TDD red observed, then rest2 38/38 + nodejs 32/32 green locally; test-only, no changeset; verify CI green after the orchestrator's push (via /wr-itil:manage-problem AFK iter)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,7 +10,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                       | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 9.0  | P006 | RapidAPI CI sync deferred                                                   | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 8.0  | P029 | Cucumber `will NOT include:` step crashes on v2 API responses               | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Open        | S      | 2026-04-21 | internal |
@@ -50,6 +49,7 @@ Fix released, awaiting user verification (driven off `docs/problems/*.verifying.
 | P044 | changesets/action swallows publish failure → deploy silently skips | 2026-07-16 | no — not observed                                                                                         | Fail-loud publish assertion in release.yml (RFC-002, workflow-only, no changeset); verify the step passes green on the next release run                                                                            |
 | P030 | Dependabot reports 46 vulnerabilities on master                    | 2026-07-18 | no — not observed                                                                                         | swagger-tools prod line removed (v3.0.0, ADR-036) + dev-vuln cleanup (v3.0.1); `npm audit` now 0. Verify the Dependabot banner clears on the next push to master                                                   |
 | P051 | release:watch stalls on release-PR action_required approval gate   | 2026-07-18 | no — not observed                                                                                         | Step 1b in `scripts/release-watch.sh` auto-approves the release-PR run, SHA-bound to the PR head (commit 4622682, master push, no changeset). Verify next release no longer times out at "Waiting for build check" |
+| P029 | Cucumber `will NOT include:` step crashes on v2 API responses      | 2026-07-19 | no — not observed                                                                                         | v2 fallback + v2-safe matcher in NOT-include step; both addressv2.feature absence assertions restored (RFC-004, test-only, no changeset). rest2 38/38 + nodejs 32/32 green locally; verify CI green on next push   |
 
 ## Inbound Upstream Reports
 

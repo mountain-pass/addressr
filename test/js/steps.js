@@ -380,12 +380,17 @@ Then(
   'the returned address list will NOT include:',
   async function (documentString) {
     const entity = JSON.parse(documentString);
-    const found = this.current.json.find((a) => {
+    const responseBody = this.current.json || this.current.content;
+    const found = responseBody.find((a) => {
       return (
         a.sla === entity.sla &&
         // SCORE is non-deterministic
         // a.score === e.score &&
-        a.links.self.href === entity.links.self.href
+        // v2 items carry pid but no links object (P029); guard the links
+        // branch so it can't match vacuously on undefined === undefined
+        (a.pid === entity.pid ||
+          (entity.links?.self?.href !== undefined &&
+            a.links?.self?.href === entity.links.self.href))
       );
     });
     expect(found).to.be.undefined;

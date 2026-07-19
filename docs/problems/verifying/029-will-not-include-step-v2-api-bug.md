@@ -1,6 +1,6 @@
 # Problem 029: Cucumber `will NOT include:` step crashes on v2 API responses
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-21
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
 
@@ -73,10 +73,10 @@ Currently in use in `addressv2.feature` lines 164-188 (ADR 028 mid-range scenari
 
 - [x] Root cause confirmed — `will NOT include:` step reads `.json` without `.content` fallback.
 - [x] Workaround documented and in use in `addressv2.feature`.
-- [ ] Add failing test or convert the workaround scenarios back to `will NOT include:` form as the regression test.
-- [ ] Fix `steps.js:383` to use the same `|| this.current.content` fallback as line 335.
-- [ ] Verify v2 scenarios pass with the fix.
-- [ ] Audit steps.js for any other steps that read `this.current.json` directly without the fallback — same class of bug may exist on `contain many`, `NOT include` siblings for localities/postcodes/states (lines 428, 448, 471).
+- [x] Add failing test or convert the workaround scenarios back to `will NOT include:` form as the regression test — both `addressv2.feature` scenarios restored to direct absence assertions; observed failing with the exact TypeError at steps.js:383 before the fix (TDD red, 2026-07-19).
+- [x] Fix `steps.js:383` to use the same `|| this.current.content` fallback as line 335 — plus the sibling's `pid` matcher alternative and a guarded `links` branch (v2 items carry no `links` object, so the unconditional `a.links.self.href` would throw and an unguarded optional-chain would match vacuously on `undefined === undefined`).
+- [x] Verify v2 scenarios pass with the fix — `test:rest2:nogeo` 38/38 scenarios green, `test:nodejs:nogeo` 32/32 green (2026-07-19, local OpenSearch 2.19.5, OT fixture). Both asserted-absent docs confirmed present in the index with the exact slas, so the absence assertions are non-vacuous.
+- [x] Audit steps.js for any other steps that read `this.current.json` directly without the fallback — locality/postcode/state list steps (lines 421, 431, 443, 451, 467, 473, 484) all already carry the fallback; no other step affected. The sibling `will include:` step keeps its unconditional `a.links.self.href` (safe in practice — the `pid` alternative short-circuits first).
 
 ## Fix Strategy (proposed)
 
@@ -89,6 +89,14 @@ One-line change plus follow-up audit:
 Estimated effort: 30-60 minutes including running the full Cucumber suite locally.
 
 Eligible to transition straight to Known Error once the reproduction test is in place — root cause is confirmed and workaround is documented.
+
+**Release vehicle**: test-only change — no `.changeset/` entry (no package behaviour change; changeset omitted per changeset discipline for test-only commits). Released via the `test(cucumber)` fix commit on master (see `## Fix Released`); lands with the orchestrator's next push.
+
+## Fix Released
+
+Fixed in the `test(cucumber)` commit that rides this transition (2026-07-19, master; lands with the orchestrator's next push — test-only, no npm release vehicle). One-sentence summary: the `will NOT include:` step gained the `this.current.json || this.current.content` v2 fallback plus a v2-safe matcher (pid alternative, guarded links branch), and both `addressv2.feature` workaround scenarios were restored to direct absence assertions (RFC-004).
+
+Exercise evidence from the releasing session: TDD red observed (`TypeError: Cannot read properties of undefined (reading 'find')` at steps.js:383) before the fix; after the fix `test:rest2:nogeo` 38/38 scenarios and `test:nodejs:nogeo` 32/32 scenarios green against local OpenSearch 2.19.5 with the OT fixture; both asserted-absent docs (GAOT_717321171, GAOT_717321172) confirmed present in the index with the exact asserted slas, proving the absence assertions are non-vacuous. Awaiting user verification (CI green on master after push).
 
 ## Related
 
