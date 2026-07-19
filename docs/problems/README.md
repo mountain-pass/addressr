@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P027 closed** — synonym-fuzziness leak not reproducible on current prod (OpenSearch 3.5, post-ADR-035 cutover): full 8-query battery clean via RapidAPI gateway; original hypothesis falsified (Rd/ROAD analyze identically under the one-way `ROAD => RD` contraction); 1.3.20 domain decommissioned; relevance-close per ADR-079, no fix released (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-19 **P057 captured** — relevance-close evaluator misses platform-version-rooted tickets after engine migrations (P027 sat mooted through two engine migrations; P028 closed manually); proposed upstream @windyroad/itil fix: version-pin detection shape in wr-itil-evaluate-relevance (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -27,6 +27,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 2.0  | P054 | wr-risk-scorer label bands disagree (skill 3-5 Low vs validator 5-9)        | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
 | 2.0  | P056 | wr-itil SKILL.md bodies exceed ADR-054 runtime budget (work-problems 245KB) | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets            | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
 | 1.5  | P043 | `wr-itil` SID-helper fallback picks subagent UUID in multi-agent sess       | 3 (Low)      | Open        | M      | 2026-05-14 | internal |
 | 1.5  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence        | 3 (Low)      | Open        | M      | 2026-07-06 | internal |
 | 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase                | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
