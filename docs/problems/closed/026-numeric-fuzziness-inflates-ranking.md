@@ -1,6 +1,6 @@
 # Problem 026: Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-19
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
 
@@ -114,6 +114,15 @@ Alternative options considered:
 - **Symmetric `sla_range_expanded` + `bool_prefix`** — +40-60% index growth and still doesn't fix the non-range case (carspace vs range). Rejected.
 
 The chosen fix warrants a new ADR (ADR 027) because it changes the outer query shape (`should` → `must`) and introduces query-time token classification. _(Historical note: ADR 027 was indeed created, but chose the simpler `AUTO:5,8` parameter tune — see the supersession note above.)_
+
+## Closed
+
+Closed 2026-07-19 on evidence per run-retro Step 4a close-on-evidence (ADR-022 evidence semantics). Two independent evidence sources:
+
+1. Prior-session (2026-07-19 P027 close battery, prod via RapidAPI gateway): exact-`138` query returned the sole exact hit, `Gazz` returned empty, `Muray` fuzz-matched MURRAY — the `AUTO:5,8` contract held on production OpenSearch 3.5 (recorded in the README Verification Queue `Likely verified?` cell).
+2. Current-session (local, OpenSearch 2.19.5 + OT fixture): the P029 fix restored the direct ADR 027 fuzz-exclusion assertion — fuzzy-adjacent 109 GAZE RD (GAOT_717321172) confirmed absent from the `107 GAZE RD` result list, non-vacuously (doc verified present in the index) — and the "P026 Exact street number excludes fuzzy-adjacent numbers" scenario passed in the `test:rest2:nogeo` 38/38 green run.
+
+Recovery path if this close is wrong: `/wr-itil:transition-problem 026 known-error`.
 
 ## Fix Released
 
