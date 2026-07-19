@@ -1,7 +1,8 @@
 # Problem 060: `wr-itil:update-upstream` O→KE lifecycle comment restates the issue body when the filing already carried Known-Error-level content
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-07-19
+**Parked**: 2026-07-19 (upstream-blocked — fix belongs in `@windyroad/itil`; reported as windyroad/agent-plugins#369)
 **Priority**: 3 (Low) — Impact: Negligible (1) × Likelihood: Possible (3) — derived at capture from the description per Step 4a
 **Origin**: internal
 **Effort**: S — derived at capture per Step 4a (local action is an upstream report; the contract branch itself is a bounded upstream SKILL edit — cf. P058 same fix-belongs-upstream shape)
@@ -30,10 +31,12 @@ Apply the update-upstream `--catchup` C2 reconcile-and-skip judgement manually (
 
 ## Root Cause Analysis
 
+Confirmed 2026-07-19 (re-verified against installed wr-itil 0.59.1): `skills/update-upstream/SKILL.md` Step 3 derives the fired transition purely from the filename-suffix vs last-logged-status table; a grep for any already-communicated / status-at-filing branch returns nothing. The `## Reported Upstream` back-write (report-upstream Step 7) records URL / date / template / disclosure path but NOT the ticket's status at filing time, so Step 3 has no signal that the filing already carried Known-Error-level content. Fix belongs upstream in `@windyroad/itil` (this repo is an adopter with no local `packages/` tree).
+
 ### Investigation Tasks
 
-- [ ] Investigate root cause
-- [ ] Create reproduction test
+- [x] Investigate root cause _(2026-07-19 — confirmed at 0.59.1 Step 3 SKILL source; see above)_
+- [x] Create reproduction test _(not applicable locally — the defect is upstream SKILL prose logic in `@windyroad/itil`; no local runtime surface to test. Reproduction is documented behaviourally in windyroad/agent-plugins#369 Evidence)_
 
 ## Dependencies
 
@@ -46,3 +49,18 @@ Apply the update-upstream `--catchup` C2 reconcile-and-skip judgement manually (
 - P031 (`wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks) — the transition whose update-upstream dispatch surfaced this gap; its `## Upstream Lifecycle Updates` entry records the manual reconcile-and-skip.
 - P058 (`wr-risk-scorer-restage-commit` bypasses external-comms commit-message gate) — same locally-tracked, fix-belongs-upstream-in-`@windyroad` shape.
 - Hang-off pre-filter: no open/verifying ticket bodies reference `/wr-itil:update-upstream`; subagent dispatch skipped (empty candidate set). Captured via /wr-itil:capture-problem; expand at next investigation.
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/369 (2026-07-19)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/369
+- **Reported**: 2026-07-19
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the downstream P060 reference and the ticket's repo-relative path)
+
+## Parked
+
+- **Reason**: upstream-blocked — the fix (an already-communicated-at-filing branch in update-upstream Step 3, plus a status-at-filing field in the report-upstream Step 7 back-write) lives in `@windyroad/itil`; this repo is an adopter with no local `packages/` tree. Dedup search 2026-07-19 found no existing upstream issue covering it (#348 / #349 / #256 are different problems); filed as windyroad/agent-plugins#369.
+- **Un-park trigger**: windyroad/agent-plugins#369 closes, or a `@windyroad/itil` release ships the already-communicated-at-filing branch — then verify the manual reconcile-and-skip workaround can be retired and close.
+- **Date parked**: 2026-07-19
