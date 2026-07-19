@@ -1,11 +1,11 @@
 # Problem 054: wr-risk-scorer label bands disagree across the plugin (update-policy skill vs policy-validator)
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-18
 **Priority**: 4 (Low) — Impact: 2 (Minor — the label for score 5 differs across surfaces; affects severity display + appetite reasoning, not the enforced gate numeric) × Likelihood: 2 (Unlikely to bite in practice, though structurally present on every policy) — derived at capture
 **Origin**: internal (upstream plugin inconsistency)
 **Effort**: M — derived at capture (reconcile bands across skill + validator + pipeline.md)
-**WSJF**: 2.0
+**WSJF**: 4.0 — (4 × 2.0) / 2 (Known Error transition 2026-07-19 review: root cause confirmed 2026-07-18; validator-accepted band set retained as workaround)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

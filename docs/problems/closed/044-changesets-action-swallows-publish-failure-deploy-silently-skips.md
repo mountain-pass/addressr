@@ -1,6 +1,6 @@
 # Problem 044: changesets/action swallows a failed npm publish → deploy silently skips while the release job goes green
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-05-25
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2)
 **Origin**: internal
@@ -62,3 +62,7 @@ Fail-loud publish assertion added to `.github/workflows/release.yml` `release` j
 | RFC     | Status   | Title                                           |
 | ------- | -------- | ----------------------------------------------- |
 | RFC-002 | proposed | Fail-loud publish assertion in release workflow |
+
+## Verified (2026-07-19 — review close-on-evidence)
+
+Recorded verification condition was "verify the step passes green on the next release run". Observed: the fail-loud step "Fail if a publish was expected but did not happen (P044)" executed with conclusion `success` on release.yml run 29676393589 (head `0ced418`, 2026-07-19). Note the residual: this run had no expected publish, so it verifies the step wiring and the no-false-positive leg; the failure-detection leg only fires on an actual swallowed publish failure. Closed per ADR-044 framework-mediated verification close. Recovery: rerun `/wr-itil:transition-problem 044 known-error` to reopen.

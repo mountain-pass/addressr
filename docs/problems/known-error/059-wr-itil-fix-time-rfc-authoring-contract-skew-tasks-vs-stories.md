@@ -1,10 +1,11 @@
 # Problem 059: wr-itil fix-time RFC authoring contract skew — Tasks vs stories
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-19
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture from the description per Step 4a (governance-doc ambiguity only; no runtime or release surface; fires only on I13 fix-time auto-creates, which are occasional)
 **Origin**: internal
 **Effort**: M — derived at capture per Step 4a (upstream two-SKILL prose alignment + a clarifying rule; cf. P056's upstream SKILL-body ticket shape)
+**WSJF**: 4.0 — (4 × 2.0) / 2 (Known Error transition 2026-07-19 review: root cause is the observed SKILL-prose contradiction in wr-itil 0.59.1, corroborated twice; judgement-call workaround documented)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

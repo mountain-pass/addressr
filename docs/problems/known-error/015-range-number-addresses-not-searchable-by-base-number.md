@@ -1,8 +1,10 @@
 # Problem 015: Range-number addresses not findable by base number
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-16
-**Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3)
+**Priority**: 4 (Low) — Impact: Significant (4) x Likelihood: Rare (1) — re-rated 2026-07-19 (review): ADR 026 range expansion shipped in v2.3.0 with post-deploy smoke green on all three #367 reporter cases; the ranking dimension this ticket stayed open for (P026) closed 2026-07-19 with the 8-query battery clean on the prod 3.5 stack
+**Effort**: S (L → S — fix shipped; remaining work is the three #367 reporter-case verification queries, the issue #367 response, and close)
+**WSJF**: 8.0 — (4 × 2.0) / 1
 
 > **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](./026-numeric-fuzziness-inflates-ranking.open.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1.
 

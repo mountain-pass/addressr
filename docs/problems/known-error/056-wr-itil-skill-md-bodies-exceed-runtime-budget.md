@@ -1,11 +1,11 @@
 # Problem 056: wr-itil SKILL.md bodies exceed the ADR-054 runtime budget (work-problems 245KB)
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-18
 **Priority**: 4 (Low) — Impact: 2 (Minor — per-invocation context cost on the calling agent; no defect) × Likelihood: 2 (Unlikely to bite per session — large skills load on demand) — derived at capture
 **Origin**: internal (upstream plugin context-budget)
 **Effort**: M — upstream fix (REFERENCE.md split per ADR-054 / ADR-038)
-**WSJF**: 2.0
+**WSJF**: 4.0 — (4 × 2.0) / 2 (Known Error transition 2026-07-19 review: root cause confirmed 2026-07-18 via analyze-context measurement; on-demand-load workaround documented)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

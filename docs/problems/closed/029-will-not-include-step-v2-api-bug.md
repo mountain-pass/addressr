@@ -1,6 +1,6 @@
 # Problem 029: Cucumber `will NOT include:` step crashes on v2 API responses
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-21
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
 
@@ -113,3 +113,7 @@ Exercise evidence from the releasing session: TDD red observed (`TypeError: Cann
 | RFC     | Status   | Title                                                                            |
 | ------- | -------- | -------------------------------------------------------------------------------- |
 | RFC-004 | proposed | Fix v2 fallback in Cucumber will-NOT-include step and restore absence assertions |
+
+## Verified (2026-07-19 — review close-on-evidence)
+
+Recorded verification condition was "verify CI green on next push". Observed: release.yml run 29676393589 (head `0ced418`, 2026-07-19) — `build-and-test (2.19.5)` and `build-and-test (3.5.0)` both green including "Run tests (no geo)" + "Run tests (geo)", and four consecutive green runs since the fix commit `2fc5423` (RFC-004). Closed per ADR-044 framework-mediated verification close. Recovery: rerun `/wr-itil:transition-problem 029 known-error` to reopen.

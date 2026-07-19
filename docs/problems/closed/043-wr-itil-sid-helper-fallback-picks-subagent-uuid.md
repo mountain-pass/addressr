@@ -1,6 +1,6 @@
 # Problem 043: `wr-itil` session-ID helper fallback picks subagent UUID in multi-agent sessions
 
-**Status**: Open
+**Status**: Closed
 **Reported**: 2026-05-14
 **Priority**: 3 (Low) — Impact: Negligible (1) × Likelihood: Possible (3)
 **Origin**: internal
@@ -82,3 +82,12 @@ Type: `improve` — targeted edit to an existing skill / hook lib in upstream `@
 - P040 work session, 2026-05-14 — capture of P042 failed initially; manual recovery applied per the Workaround block.
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
+
+## Closed as no longer relevant
+
+- **Evidence shape**: file-no-longer-exists (ADR-079 Phase 1 + Phase 2), with a review-time verification note: the three cited paths are upstream `@windyroad/itil` plugin paths that were never in this repo's git, so the raw path-absence cite is the known repo-external false-positive class — the close proceeds on the corroborating upstream-fix evidence below, not on path absence alone
+- **Closed on**: 2026-07-19
+- **Closed by**: /wr-itil:review-problems Step 4.6 relevance-close pass (AFK sweep; orchestrator-designated clean candidate)
+- **Cite (per-shape evidence)**: evaluator verdict: all 3 file paths absent from `git ls-files` (packages/itil/hooks/itil-runtime-sid-marker.sh; packages/itil/hooks/lib/session-id.sh; packages/itil/hooks/manage-problem-enforce-create.sh); review verification: wr-itil 0.59.1 `hooks/lib/session-id.sh` now derives a candidate-SID **set** (every `*-announced-*` UUID within a 24h mtime window) and marker writes fan out across all candidates ("Extra markers under recently-stale UUIDs are HARMLESS — empty files"), structurally removing the single-wrong-SID pick this ticket reported against 0.27.1; corroborated by zero create-gate denies across the 2026-07-19 AFK session's multi-agent captures (P057, P059, P060)
+- **Persist**: this section is committed in the ticket file itself; `packages/itil/scripts/evaluate-relevance.sh` is the re-runnable verdict source per ADR-026
+- **Uncertainty / reversibility**: if a create-gate deny with a mismatched SID recurs on a future wr-itil version, reopen — `git revert` the relevance-close commit OR `git mv` the ticket back to `open/`

@@ -2,9 +2,9 @@
 
 **Status**: Open
 **Reported**: 2026-05-03
-**Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3)
+**Priority**: 8 (Medium) — Impact: Significant (4) × Likelihood: Unlikely (2) — re-rated 2026-07-19 (review): ADR-035 migration complete (v2 decommissioned, prod on 3.5); the silent-failure class is dormant until the next search-backend migration, which per user direction must again be zero-outage blue/green
 **Effort**: L
-**WSJF**: 3.0
+**WSJF**: 2.0 — (8 × 1.0) / 4
 
 ## Description
 

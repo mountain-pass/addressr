@@ -2,9 +2,10 @@
 
 **Status**: Open
 **Reported**: 2026-07-16
-**Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture: maintainer-workflow harm only (no consumer impact), one confirmed occurrence across ~50 tickets, but each occurrence silently corrupts WSJF ranking for months — cf. P041 (4, Low)
+**Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3) — re-rated 2026-07-19 (review): now two confirmed multi-week occurrences (P026 ~3 months stale-Open; P040 ~54 days stale-Known-Error) across ~50 tickets, per this ticket's own re-rate note
 **Origin**: internal
 **Effort**: M — derived at capture: commit-time advisory hook + review-problems evidence-shape extension, few files — cf. P041 (M)
+**WSJF**: 3.0 — (6 × 1.0) / 2
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

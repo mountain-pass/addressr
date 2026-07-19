@@ -1,10 +1,11 @@
 # Problem 060: `wr-itil:update-upstream` O→KE lifecycle comment restates the issue body when the filing already carried Known-Error-level content
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-19
 **Priority**: 3 (Low) — Impact: Negligible (1) × Likelihood: Possible (3) — derived at capture from the description per Step 4a
 **Origin**: internal
 **Effort**: S — derived at capture per Step 4a (local action is an upstream report; the contract branch itself is a bounded upstream SKILL edit — cf. P058 same fix-belongs-upstream shape)
+**WSJF**: 6.0 — (3 × 2.0) / 1 (Known Error transition 2026-07-19 review: root cause confirmed at update-upstream Step 3 SKILL source — no already-communicated-at-filing branch; reconcile-and-skip workaround documented and applied on P031)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

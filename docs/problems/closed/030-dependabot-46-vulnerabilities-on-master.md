@@ -1,6 +1,6 @@
 # Problem 030: Dependabot reports 46 vulnerabilities on master (2 critical, 23 high, 19 moderate, 2 low)
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-21
 **Priority**: 12 (High) — Impact: Significant (4) x Likelihood: Possible (3) _(re-rated 2026-07-16: non-breaking patch batch cleared all critical advisories from the prod path and cut prod-reachable findings 15 → 9)_
 **Effort**: XL _(remaining fix = migrate off swagger-tools; requires ADR-003 reassessment — see Fix Strategy)_
@@ -121,3 +121,7 @@ The entire remediation shipped:
 `npm audit` is now **0** (was 46 at report time; 20 dev-only after v3.0.0; 0 after v3.0.1). The `check-deps` gate is green (Babel 8 toolchain + lint-staged 17 deferred with documented reasons in `.dry-aged-deps.json`).
 
 **Awaiting user verification**: confirm the GitHub Dependabot banner on `push:watch` output clears (or drops to only advisories unrelated to the removed swagger-tools line and removed dev tools) on the next push to master. Dependabot scans differ from `npm audit`, so a residual banner is possible; the swagger-tools root and the dev-tool roots are provably gone from the tree.
+
+## Verified (2026-07-19 — review close-on-evidence)
+
+Recorded verification condition was "verify the Dependabot banner clears on the next push to master". Observed: `gh api repos/mountain-pass/addressr/dependabot/alerts?state=open` returned **0 open alerts** (probe 2026-07-19, after multiple pushes to master since the v3.0.0 swagger-tools removal per ADR-036 and the v3.0.1 dev-vuln cleanup). Closed per ADR-044 framework-mediated verification close. Recovery: rerun `/wr-itil:transition-problem 030 known-error` to reopen.

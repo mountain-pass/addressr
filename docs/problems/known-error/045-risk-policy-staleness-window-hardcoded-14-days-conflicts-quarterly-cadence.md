@@ -1,11 +1,11 @@
 # Problem 045: RISK-POLICY staleness window hardcoded at 14 days conflicts with the quarterly review cadence
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-06
 **Priority**: 3 (Low) — Impact: Negligible (1) × Likelihood: Possible (3)
 **Origin**: internal
 **Effort**: M
-**WSJF**: 1.5
+**WSJF**: 3.0 — (3 × 2.0) / 2 (Known Error transition 2026-07-19 review: root cause confirmed at `risk-score-commit-gate.sh:50` hardcode; date-bump workaround documented)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

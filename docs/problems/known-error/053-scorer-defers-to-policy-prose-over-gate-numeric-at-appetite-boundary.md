@@ -1,11 +1,11 @@
 # Problem 053: wr-risk-scorer scorer defers to RISK-POLICY.md prose over the gate numeric at the appetite boundary
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-18
 **Priority**: 4 (Low) — Impact: 2 (Minor — false STOP at the boundary is friction, no wrong outcome; the gate is correct) × Likelihood: 2 (Unlikely — only when a change scores exactly the threshold value) — derived at capture
 **Origin**: internal (pipeline-instability / upstream plugin friction)
 **Effort**: M — derived at capture (upstream fix in the wr-risk-scorer plugin: scorer + update-policy)
-**WSJF**: 2.0
+**WSJF**: 4.0 — (4 × 2.0) / 2 (Known Error transition 2026-07-19 review: root cause confirmed 2026-07-18; prose-wording workaround documented)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 
