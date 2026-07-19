@@ -1,6 +1,6 @@
 # Problem 052: red-master push guard blocks the CI-fix commit that would green it
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-07-18
 **Priority**: 6 (Medium) — Impact: 2 (Minor — maintainer-only, `--no-verify` workaround exists) × Likelihood: 3 (Possible — only when a pushed commit breaks CI and needs a follow-up fix) — derived at capture
 **Origin**: internal
@@ -18,7 +18,9 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 
 ## Symptoms
 
-(deferred to investigation)
+- `git push` / `npm run push:watch` denied by the `wr-risk-scorer` push-gate whenever master's latest CI run concluded `failure`, even when the pushing HEAD contains the fix for that failure (the failing run's head SHA is an ancestor of HEAD)
+- Only escape is `git push --no-verify`, which also skips the risk-score and external-comms push gates — broader bypass than the situation warrants
+- Observed on v3.0.1: `df9086a` broke CI's `npm ci`; fix commit `242d186` was blocked until pushed with `--no-verify`
 
 ## Workaround
 
@@ -38,8 +40,8 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 ### Investigation Tasks
 
 - [x] Locate the red-master check in the push-gate hook — **found**: `@windyroad/risk-scorer` `hooks/git-push-gate.sh` → `check_ci_status` (P208); not in this repo (`.claude/settings.json` PreToolUse is empty)
-- [ ] Design a carve-out: allow when the failing run's head SHA is an ancestor of the pushing HEAD, OR a scoped CI-fix affordance that still runs the risk + external-comms gates
-- [ ] Create regression coverage
+- [x] Design a carve-out: allow when the failing run's head SHA is an ancestor of the pushing HEAD — **designed and handed upstream** in [windyroad/agent-plugins#360](https://github.com/windyroad/agent-plugins/issues/360); implementation belongs in `@windyroad/risk-scorer` `check_ci_status`
+- [ ] Create regression coverage — belongs upstream alongside the fix (`hooks/test/ci-status-gate.bats` in `@windyroad/risk-scorer`); not implementable from addressr
 
 ## Dependencies
 
@@ -52,6 +54,12 @@ The guard's intent (don't pile changes onto a red master) is sound, but it has n
 (captured via /wr-itil:capture-problem; expand at next investigation)
 
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/360 (2026-07-18)
+
+## Parked
+
+- **Reason**: upstream-blocked — the red-master check lives in `@windyroad/risk-scorer`'s `check_ci_status` (P208 CI-status precondition), not in this repo. Verified 2026-07-19: latest published plugin release is still 0.17.0 (2026-07-11) with no `git merge-base --is-ancestor` carve-out in its hooks, and upstream issue [windyroad/agent-plugins#360](https://github.com/windyroad/agent-plugins/issues/360) is open with no response. Nothing in addressr can implement the fix (`.claude/settings.json` `PreToolUse` is empty — the gate ships inside the plugin).
+- **Un-park trigger**: issue #360 closes, or a `@windyroad/risk-scorer` release > 0.17.0 ships the ancestor carve-out (or a scoped CI-fix affordance). Then: update the installed plugin, verify a superseding-HEAD push is allowed on a red master, and close.
+- **Parked**: 2026-07-19
 
 ## Reported Upstream
 
