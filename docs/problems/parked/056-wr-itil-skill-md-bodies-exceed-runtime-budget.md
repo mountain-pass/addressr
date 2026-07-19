@@ -1,6 +1,6 @@
 # Problem 056: wr-itil SKILL.md bodies exceed the ADR-054 runtime budget (work-problems 245KB)
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-07-18
 **Priority**: 4 (Low) — Impact: 2 (Minor — per-invocation context cost on the calling agent; no defect) × Likelihood: 2 (Unlikely to bite per session — large skills load on demand) — derived at capture
 **Origin**: internal (upstream plugin context-budget)
@@ -39,6 +39,12 @@ Invoke large skills only when needed (on-demand load, not per-session). No adopt
 
 - Surfaced by `docs/retros/2026-07-19-context-analysis.md` (Top-N offenders + P097 breach row).
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/367 (2026-07-18)
+
+## Parked
+
+- **Reason**: upstream-blocked — the fix (REFERENCE.md split of the oversized SKILL.md bodies per ADR-054 / ADR-038) lives in `@windyroad/itil`, synced from windyroad/agent-plugins `packages/itil/`; this repo is an adopter with no local `packages/` tree and no adopter-side trim possible (the SKILL.md bodies ship in the plugin cache). Evidence re-verified live at park time 2026-07-20: installed wr-itil 0.59.1 `skills/work-problems/SKILL.md` = 245,245 bytes (exact match to the 2026-07-18 analyze-context measurement), `skills/manage-problem/SKILL.md` = 145,718 bytes. Root cause confirmed and on-demand-load workaround documented, so Known Error entry criteria were met at park time. Filed upstream 2026-07-18 as windyroad/agent-plugins#367 (OPEN, 0 comments, unacknowledged as of 2026-07-20 — no park-status comment posted; the filing already communicated the confirmed root cause, and posting a redundant update is the P060 already-communicated-at-filing defect).
+- **Un-park trigger**: [windyroad/agent-plugins#367](https://github.com/windyroad/agent-plugins/issues/367) closes, or a `@windyroad/itil` release ships the REFERENCE.md split (check via `/wr-itil:check-upstream-responses`); on release, verify the installed plugin's largest SKILL.md bodies are within the ADR-054 budget (e.g. `work-problems/SKILL.md` well under the P097 50 KB anchor), then close.
+- **Date parked**: 2026-07-20
 
 ## Reported Upstream
 

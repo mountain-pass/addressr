@@ -1,31 +1,30 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-19 **P061 captured** — work-problems iter briefing carries another ticket's evaluator caveat (P054 iter dispatched with P015's CLOSE-CANDIDATE caveat; blind-close risk on unfixed tickets; fix locus upstream `@windyroad/itil` orchestrator briefing assembly; workaround: verify caveats against this README's Caveated CLOSE-CANDIDATEs list) (lightweight aside via /wr-itil:capture-problem, P054 iter retro)
+> Last reviewed: 2026-07-20 **P056 known error → parked (upstream-blocked)** — wr-itil SKILL.md bodies exceed the ADR-054 runtime budget; breach re-verified live at park time (installed 0.59.1 `work-problems/SKILL.md` = 245,245 bytes, exact match to the 2026-07-18 analyze-context measurement); no adopter-side trim possible (bodies ship in the plugin cache), on-demand-load workaround documented; upstream windyroad/agent-plugins#367 open, 0 comments, unacknowledged; upstream lifecycle comment reconciled-and-skipped per the P060 already-communicated-at-filing workaround; fix locus is `@windyroad/itil` REFERENCE.md split per ADR-054/ADR-038 (via /wr-itil:manage-problem AFK iter)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
 Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) and Parked (`.parked.md`, multiplier 0) tickets are excluded per ADR-022 — surfaced in their own sections below. Rows render **tier-first** (Tier 0 Critical-bypass [Severity Very High ≥17 OR security-classified OR incident-linked] → Tier 1 Inbound-reported → Tier 2 Internal), then within each tier by `(WSJF desc, Known-Error-first, Effort-divisor asc, Reported-date asc, ID asc)`. All tickets are Tier 2 (Origin internal; max Severity 9 < 17). <!-- REPORTED-FIRST-TIER-SOURCE: /wr-itil:work-problems SKILL.md Step 3 (ADR-076) -->
 
-| WSJF | ID   | Title                                                                       | Severity     | Status      | Effort | Reported   | Origin   |
-| ---- | ---- | --------------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 9.0  | P006 | RapidAPI CI sync deferred                                                   | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
-| 8.0  | P015 | Range-number addresses not findable by base number                          | 4 (Low)      | Known Error | S      | 2026-04-16 | internal |
-| 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks       | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
-| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only       | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
-| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift               | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P056 | wr-itil SKILL.md bodies exceed ADR-054 runtime budget (work-problems 245KB) | 4 (Low)      | Known Error | M      | 2026-07-18 | internal |
-| 4.0  | P059 | wr-itil fix-time RFC authoring contract skew — Tasks vs stories             | 4 (Low)      | Known Error | M      | 2026-07-19 | internal |
-| 3.0  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence        | 3 (Low)      | Known Error | M      | 2026-07-06 | internal |
-| 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check       | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
-| 2.5  | P023 | Cross-origin root `/` not browser-cached                                    | 10 (High)    | Open        | L      | 2026-04-18 | internal |
-| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline               | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
-| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)         | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
-| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets            | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
-| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat       | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
-| 2.0  | P035 | Read-shadow soak validation has multiple blind spots                        | 8 (Medium)   | Open        | L      | 2026-05-03 | internal |
-| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase                | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
-| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions       | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
+| WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
+| ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
+| 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 8.0  | P015 | Range-number addresses not findable by base number                    | 4 (Low)      | Known Error | S      | 2026-04-16 | internal |
+| 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
+| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
+| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P059 | wr-itil fix-time RFC authoring contract skew — Tasks vs stories       | 4 (Low)      | Known Error | M      | 2026-07-19 | internal |
+| 3.0  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | 3 (Low)      | Known Error | M      | 2026-07-06 | internal |
+| 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
+| 2.5  | P023 | Cross-origin root `/` not browser-cached                              | 10 (High)    | Open        | L      | 2026-04-18 | internal |
+| 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
+| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 2.0  | P035 | Read-shadow soak validation has multiple blind spots                  | 8 (Medium)   | Open        | L      | 2026-05-03 | internal |
+| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
+| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
 
 ## Verification Queue
 
@@ -66,6 +65,7 @@ _No inbound discovery pass has run yet (`docs/problems/.upstream-channels.json` 
 | P060 | `wr-itil:update-upstream` O→KE comment restates issue body (filing current) | Upstream-blocked: fix is an already-communicated-at-filing branch in `@windyroad/itil` update-upstream Step 3 (windyroad/agent-plugins#369 open)                                       | 2026-07-19   |
 | P053 | wr-risk-scorer scorer defers to policy prose over gate numeric at 5         | Upstream-blocked: scorer prose-deference + update-policy prose live in `@windyroad/risk-scorer` (windyroad/agent-plugins#365 open); local RISK-POLICY.md wording workaround applied    | 2026-07-19   |
 | P054 | wr-risk-scorer label bands disagree (skill 3-5 Low vs validator 5-9)        | Upstream-blocked: band reconciliation lives in `@windyroad/risk-scorer` (windyroad/agent-plugins#366 open); split re-verified in 0.17.0; local policy carries validator-accepted bands | 2026-07-19   |
+| P056 | wr-itil SKILL.md bodies exceed ADR-054 runtime budget (work-problems 245KB) | Upstream-blocked: REFERENCE.md split lives in `@windyroad/itil` (windyroad/agent-plugins#367 open); breach re-verified in 0.59.1; on-demand-load workaround documented                 | 2026-07-20   |
 
 ## Review notes (2026-07-19 mid-loop AFK sweep)
 
