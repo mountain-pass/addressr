@@ -42,7 +42,7 @@ The project needs automated semantic versioning and npm publishing, triggered by
 ### Confirmation
 
 - `.changeset/config.json` configured on `master` branch
-- `release.yml` uses `changesets/action@v1.4.5`
+- `release.yml` uses `changesets/action` (v1.x — version-agnostic since 2026-07-19; routine pin bumps such as the RFC-005 Node 24 bump don't invalidate this criterion)
 - `ci:version` and `ci:publish` scripts in package.json
 
 ### Reassessment Criteria

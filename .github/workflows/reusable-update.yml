@@ -51,10 +51,10 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: '22.x' # Specify the Node.js version you need
 
@@ -86,7 +86,7 @@ jobs:
       # RESOLVED_ROLE is set by the resolve step above.
       - name: Configure AWS credentials (SigV4)
         if: inputs.target == 'v3'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.RESOLVED_ROLE }}
           aws-region: ap-southeast-2
