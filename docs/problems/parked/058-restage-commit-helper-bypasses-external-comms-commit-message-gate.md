@@ -1,6 +1,6 @@
 # Problem 058: `wr-risk-scorer-restage-commit` commits bypass the git-commit-message external-comms gate
 
-**Status**: Open
+**Status**: Parked
 **Reported**: 2026-07-19
 **Priority**: 6 (Medium) — Impact: Moderate (3 — confidential-info disclosure class if realised, cf. R011) × Likelihood: Unlikely (2 — bypass fires on every helper commit, but harm needs a leaking message AND the pipeline scorer missing it)
 **Origin**: internal
@@ -37,8 +37,8 @@ Confirmed at source 2026-07-19 (installed plugin v0.17.0): `external-comms-gate.
 ### Investigation Tasks
 
 - [x] Investigate root cause — confirmed at hook source (see above)
-- [ ] Report upstream to windyroad/agent-plugins (`@windyroad/risk-scorer`)
-- [ ] Create reproduction test — belongs upstream alongside the fix (`hooks/test/external-comms-gate.bats`)
+- [x] Report upstream to windyroad/agent-plugins (`@windyroad/risk-scorer`) — filed as [windyroad/agent-plugins#368](https://github.com/windyroad/agent-plugins/issues/368) (2026-07-19)
+- [x] Create reproduction test — **handed upstream** in [windyroad/agent-plugins#368](https://github.com/windyroad/agent-plugins/issues/368); belongs alongside the fix (`hooks/test/external-comms-gate.bats`), which lives in `@windyroad/risk-scorer`, not this repo
 
 ## Dependencies
 
@@ -48,8 +48,23 @@ Confirmed at source 2026-07-19 (installed plugin v0.17.0): `external-comms-gate.
 
 ## Related
 
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/368 (2026-07-19)
 - Captured via `/wr-itil:capture-problem` during the P048 park iter retro (2026-07-19).
 - Hang-off-check verdict: PROCEED_NEW — sole candidate P043 (`wr-itil` SID-helper fallback picks subagent UUID) has a distinct root cause and fix locus (`@windyroad/itil` session-ID race, false-positive deny) vs this ticket's `@windyroad/risk-scorer` surface-regex gap (false-negative pass); only shared signal is a `/wr-itil:manage-problem` reference on different steps. If a common "helper-wrapped commands evade command-surface regex gates" parent emerges, cluster at a later `/wr-itil:review-problems` pass.
 - Duplicate-check filename matches (not duplicates): P016 (external comms posted without voice/tone check, parked), P048 (marker hash-exactness, parked).
 - `~/.claude/plugins/cache/windyroad/wr-risk-scorer/0.17.0/hooks/external-comms-gate.sh` — surface-detection regex.
 - P326 (upstream) — the `wr-risk-scorer-restage-commit` helper this gate never sees.
+
+## Parked
+
+- **Reason**: upstream-blocked — both candidate fixes (extend the gate's surface-detection regex, or make the helper compose through the gate/marker contract) live in `@windyroad/risk-scorer` (`hooks/external-comms-gate.sh` + `bin/wr-risk-scorer-restage-commit`), synced from windyroad/agent-plugins `packages/shared/` / `packages/risk-scorer/`. Nothing in addressr can change the surface detection. Root cause confirmed at hook source (v0.17.0 line 184) and workaround documented, so Known Error entry criteria were met at park time.
+- **Un-park trigger**: `@windyroad/risk-scorer` releases a fix for [windyroad/agent-plugins#368](https://github.com/windyroad/agent-plugins/issues/368) (check via `/wr-itil:check-upstream-responses`); on release, verify the installed plugin version gates a `wr-risk-scorer-restage-commit -m` commit, then close.
+- **Parked**: 2026-07-19
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/368
+- **Reported**: 2026-07-19
+- **Template used**: problem-report.yml (problem-shaped structured body)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes (issue body records the downstream P058 reference and the parked-path ticket URL)
