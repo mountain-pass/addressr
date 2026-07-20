@@ -2,8 +2,9 @@
 
 _Per ISO 31000 — Risk Management_
 
-**Last reviewed:** 2026-07-18
-**Review cadence:** quarterly (next review due 2026-10-06) — user-directed 2026-07-06
+**Last reviewed:** 2026-07-20
+
+> Reviewed quarterly — next review due 2026-10-06 (user-directed cadence, 2026-07-06)
 
 ## Business Context
 
