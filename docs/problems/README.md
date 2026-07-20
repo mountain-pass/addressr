@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-20 **P045 verification pending** — re-verification found the upstream 14-day hardcode already removed in installed wr-risk-scorer 0.17.0 (cadence-parsing hook, upstream ADR-091/P408); residual defect was local cadence-line format; one-line RISK-POLICY.md reformat shipped per RFC-006 (scorer-validated); no upstream report needed (fix pre-shipped); date-bump workaround retired
+> Last reviewed: 2026-07-21 **P063 captured** — work-problems pre-flight subprocess dispatch exceeds harness 600s foreground Bash cap (Step 0d check-upstream-responses subprocess killed mid-run, partial writes reverted per P358, $2.31 burned; fix locus upstream `@windyroad/itil` work-problems Steps 0b/0c/0d: backgrounded dispatch or internal time budget) (lightweight aside via /wr-itil:capture-problem, work-problems session retro)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -15,6 +15,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content         | 6 (Medium)   | Open        | S      | 2026-07-20 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s fg Bash cap    | 8 (Medium)   | Open        | M      | 2026-07-21 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
 | 2.5  | P023 | Cross-origin root `/` not browser-cached                              | 10 (High)    | Open        | L      | 2026-04-18 | internal |
 | 2.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Open        | M      | 2026-05-14 | internal |
