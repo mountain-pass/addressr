@@ -49,3 +49,9 @@ Bump the `Last reviewed:` date in RISK-POLICY.md whenever the gate blocks (a for
 (captured via /wr-itil:capture-problem; expand at next investigation)
 
 - RISK-POLICY.md quarterly-cadence amendment (commit d2ee199, 2026-07-06) — the user direction the hook contradicts.
+
+## RFCs
+
+| RFC     | Status   | Title                                                                                     |
+| ------- | -------- | ----------------------------------------------------------------------------------------- |
+| RFC-006 | proposed | Align RISK-POLICY.md cadence line with the installed wr-risk-scorer machine-read contract |
