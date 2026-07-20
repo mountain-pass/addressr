@@ -1,16 +1,16 @@
-# Risk R011: Read Shadow Soak Traffic Count In Committed Docs
+# Risk R013: Severe But Rare Single Change Uncontrolled
 
 **Status**: Active (auto-scaffolded — pending review)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
-**Identified**: 2026-07-18
+**Identified**: 2026-07-20
 **Owner**: pending review
-**Last reviewed**: 2026-07-18
-**Next review**: 2026-07-18
-**Curation**: pending review (auto-scaffolded 2026-07-18)
+**Last reviewed**: 2026-07-20
+**Next review**: 2026-07-20
+**Curation**: pending review (auto-scaffolded 2026-07-20)
 
 ## Description
 
-A scrubbed production read-shadow traffic figure was re-committed verbatim into docs/BRIEFING.md; committed docs are a standing traffic-volume disclosure surface the gate does not scan.
+Single staged change scores impact 5 / likelihood 1 = 5/25 Medium with no mitigating control; breaches the Threshold-5 appetite and is standing-risk-shaped until a control is added.
 
 > Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
 > RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
@@ -58,9 +58,8 @@ pending review — treatment decision deferred until scoring is curated.
 
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
-- 2026-07-14T21:31:09Z: fired in `.risk-reports/2026-07-14T21-31-09-commit.md` (reason: confidentiality-disclosure)
-- 2026-07-18T03:17:05Z: fired in `.risk-reports/2026-07-18T03-17-05-commit.md` (reason: confidentiality-disclosure)
+- 2026-07-18T09:06:20Z: fired in `.risk-reports/2026-07-18T09-06-20-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
 
-- 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+- 2026-07-20: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.

@@ -48,6 +48,7 @@ Template: `TEMPLATE.md`
 | [R010](R010-warm-standby-decommission-removes-instant-rollback-net.active.md) | Warm Standby Decommission Removes Instant Rollback Net | pending | — | — | pending | pending | 2026-07-18 |
 | [R011](R011-read-shadow-soak-traffic-count-in-committed-docs.active.md) | Read Shadow Soak Traffic Count In Committed Docs | pending | — | — | pending | pending | 2026-07-18 |
 | [R012](R012-loader-covered-states-refactor-untested-integration-throw-path.active.md) | Loader Covered States Refactor Untested Integration Throw Path | pending | — | — | pending | pending | 2026-07-18 |
+| [R013](R013-severe-but-rare-single-change-uncontrolled.active.md) | Severe But Rare Single Change Uncontrolled | pending | — | — | pending | pending | 2026-07-20 |
 
 ## Retired
 
