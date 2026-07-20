@@ -1,6 +1,6 @@
 # Problem 059: wr-itil fix-time RFC authoring contract skew — Tasks vs stories
 
-**Status**: Known Error
+**Status**: Parked
 **Reported**: 2026-07-19
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture from the description per Step 4a (governance-doc ambiguity only; no runtime or release surface; fires only on I13 fix-time auto-creates, which are occasional)
 **Origin**: internal
@@ -49,5 +49,20 @@ Judgement-call applied 2026-07-19 (RFC-004): author a populated `## Scope` from 
 - [RFC-004](../../rfcs/RFC-004-v2-fallback-will-not-include-step-absence-assertions.proposed.md) — the fix-time auto-create during which the skew was observed
 - [P029](../verifying/029-will-not-include-step-v2-api-bug.md) — the ticket whose I13 gate surfaced the skew
 - Upstream fix home: `@windyroad/itil` (windyroad/agent-plugins) — align `packages/itil/skills/manage-problem/SKILL.md` I13 prose with `packages/itil/skills/capture-rfc/SKILL.md` ADR-089 story mandate
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/370 (2026-07-20)
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
+
+## Parked
+
+- **Reason**: upstream-blocked — the root cause is a SKILL-prose contradiction inside `@windyroad/itil` 0.59.1 (manage-problem I13 gate vs capture-rfc `--fix-time`); no adopter-side fix is possible (both SKILL bodies ship in the plugin cache). Reported upstream as windyroad/agent-plugins#370. Local workaround (Scope + `stories: []` + `Refs:` trailer judgement-call) is documented above and suffices for future I13 fix-time auto-creates.
+- **Un-park trigger**: upstream ships the I13/capture-rfc prose alignment (issue #370 closed or a `@windyroad/itil` release noting the fix) — then verify the new contract on the next fix-time auto-create and close.
+- **Parked**: 2026-07-20
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/370
+- **Reported**: 2026-07-20
+- **Template used**: problem-report.yml (problem-first shape, body composed per ADR-033 structured mapping)
+- **Disclosure path**: public issue
+- **Cross-reference confirmed**: yes — the issue body's Cross-reference section names P059 and the downstream addressr `docs/problems/` directory
