@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-20 **P059 known error → parked (upstream-blocked)** — wr-itil fix-time RFC authoring contract skew: manage-problem I13 gate says `--fix-time` authors Scope + a real Tasks decomposition while capture-rfc (same plugin, 0.59.1) says Tasks is superseded per ADR-089 and mandates stories on a story map, with `stories: []` simultaneously a permitted structural state; no adopter-side fix (both SKILL bodies ship in the plugin cache); judgement-call workaround documented (Scope + `stories: []` + `Refs:` trailer, RFC-004/RFC-005 precedents); reported upstream as windyroad/agent-plugins#370 (dedup-checked vs #321 — related I13 surface, different root cause); fix locus is `@windyroad/itil` I13/capture-rfc prose alignment (via /wr-itil:manage-problem AFK iter)
+> Last reviewed: 2026-07-20 **P062 captured** — AFK iter subprocess sessions missing docs/BRIEFING.md content (wr-retrospective SessionStart surface expects the docs/briefing/ tree; legacy single-file never migrated, so briefed traps get re-derived at cost — the line-37 external-comms --body-file trap recurred on the #370 filing after being documented post-#368; fix: run /wr-retrospective:migrate-briefing then verify next AFK iter) (lightweight aside via /wr-itil:capture-problem, P059 iter retro)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -12,6 +12,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
 | 8.0  | P015 | Range-number addresses not findable by base number                    | 4 (Low)      | Known Error | S      | 2026-04-16 | internal |
 | 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
+| 6.0  | P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content         | 6 (Medium)   | Open        | S      | 2026-07-20 | internal |
 | 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 3.0  | P045 | RISK-POLICY 14-day staleness window conflicts with quarterly cadence  | 3 (Low)      | Known Error | M      | 2026-07-06 | internal |
