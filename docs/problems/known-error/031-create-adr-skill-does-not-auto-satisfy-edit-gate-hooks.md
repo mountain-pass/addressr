@@ -51,7 +51,7 @@ The hooks are project-level (addressr's CLAUDE.md / hook config), not plugin-lev
 - [x] Confirm the unlock markers are filename-specific (not session-wide) _(2026-04-21 — observed during the same session: architect review of ADR 029 unlocked 029 only; ADR 030 required a second architect delegation)_
 - [x] Open an upstream issue / PR against `windyroad/wr-architect` with one of the proposed fix shapes _(2026-07-18 — filed as [windyroad/agent-plugins#364](https://github.com/windyroad/agent-plugins/issues/364); see `## Reported Upstream`)_
 - [x] Re-verify the gap against the currently installed plugin version _(2026-07-19 — wr-architect 0.20.0 `create-adr` Step 4 "Write the ADR" still has no pre-Write delegation to `wr-architect:agent` / `wr-jtbd:agent`; it self-satisfies only its own plugin's oversight-marker hook, not adopter-side edit gates)_
-- [ ] Decide whether to add a project-level shim in the meantime (e.g., a `Skill` wrapper that auto-delegates) or accept the manual workaround _(queued for user decision 2026-07-19 — see AFK iter outstanding questions; genuinely direction-setting, not framework-derivable)_
+- [x] Decide whether to add a project-level shim in the meantime (e.g., a `Skill` wrapper that auto-delegates) or accept the manual workaround _(resolved 2026-07-21 — user decision via AFK-loop Step 2.5b AskUserQuestion: **accept the manual workaround**; no local shim. Effort stays S; remaining work is verify-on-upstream-release of windyroad/agent-plugins#364)_
 
 ## Fix Strategy
 
