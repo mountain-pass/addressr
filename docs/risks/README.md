@@ -50,6 +50,9 @@ Template: `TEMPLATE.md`
 | [R012](R012-loader-covered-states-refactor-untested-integration-throw-path.active.md) | Loader Covered States Refactor Untested Integration Throw Path | pending | — | — | pending | pending | 2026-07-18 |
 | [R013](R013-severe-but-rare-single-change-uncontrolled.active.md) | Severe But Rare Single Change Uncontrolled | pending | — | — | pending | pending | 2026-07-20 |
 
+| [R014](R014-cors-preflight-exempts-options-from-proxy-auth-ahead-of-gate.active.md) | Cors Preflight Exempts Options From Proxy Auth Ahead Of Gate | pending | — | — | pending | pending | 2026-07-24 |
+| [R015](R015-npm-publish-coupled-to-prod-deploy-p039-unresolved.active.md) | Npm Publish Coupled To Prod Deploy P039 Unresolved | pending | — | — | pending | pending | 2026-07-24 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
