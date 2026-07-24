@@ -580,6 +580,36 @@ export function buildRest2App() {
     next();
   });
 
+  // P023 / ADR-037: answer CORS preflight (OPTIONS) with Access-Control-Max-Age
+  // so cross-origin browsers cache the preflight instead of re-running it on
+  // every GET. This handler MUST be registered BEFORE proxyAuthMiddleware():
+  // a raw preflight carries no gateway secret, so on a proxy-auth-enabled
+  // origin it would otherwise be 401-ed and the browser would never see the
+  // cache directive. OPTIONS exposes no user data — the data-carrying methods
+  // still fall through to proxyAuthMiddleware and remain enforced.
+  //
+  // Risk remediation R1 (STOP 6/25 → within appetite): gated behind the SAME
+  // ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN opt-in as the sibling CORS response
+  // headers above. Access-Control-Max-Age is meaningless without
+  // Access-Control-Allow-Origin, so when CORS is not enabled the handler is not
+  // registered at all — no cache directive, and the OPTIONS auth-exemption does
+  // not exist (preflight reverts to prior behaviour). When CORS IS enabled the
+  // fix applies as approved: Max-Age 86400 + Allow-Methods GET,OPTIONS defaults,
+  // 204, registered before proxyAuthMiddleware.
+  if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
+    app.options(/.*/, (_request, response) => {
+      response.append(
+        'Access-Control-Max-Age',
+        process.env.ADDRESSR_ACCESS_CONTROL_MAX_AGE || '86400',
+      );
+      response.append(
+        'Access-Control-Allow-Methods',
+        process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS || 'GET,OPTIONS',
+      );
+      response.status(204).end();
+    });
+  }
+
   app.use(proxyAuthMiddleware());
 
   const waycharter = new WayCharter();

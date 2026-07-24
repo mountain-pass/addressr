@@ -82,7 +82,16 @@ The `fromDiskCache: false` on the GET is **not** an origin defect. Live probe sh
 
 **Impact scoping (per JTBD review):** the browser-disk-cache root cause is **Web/App Developer**-specific (drop-in components doing cross-origin `fetch()` from a Chromium context). The **AI Assistant User** persona calls Addressr via MCP tools in a Node/tool runtime, not a Chromium disk cache, so the `fromDiskCache` root cause does not literally reach it — it is affected only insofar as an MCP server itself makes browser-context cross-origin fetches. Original Impact Assessment over-attributed to that persona.
 
-### Fix Strategy (proposed — QUEUED for user approval, NOT applied)
+### Fix Strategy (Option A — user-approved 2026-07-24; IMPLEMENTED, Fix Released pending)
+
+**Implemented 2026-07-24** via [RFC-008](../../rfcs/RFC-008-cors-preflight-max-age-at-origin.proposed.md) + [ADR-037](../../decisions/037-cors-preflight-caching-policy.proposed.md): explicit `app.options(/.*/, ...)` handler in `buildRest2App()` (`src/waycharter-server.js`) emitting `Access-Control-Max-Age` (`ADDRESSR_ACCESS_CONTROL_MAX_AGE`, default 86400) + `Access-Control-Allow-Methods` (`ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS`, default `GET,OPTIONS`), returning 204, ordered before `proxyAuthMiddleware` (OPTIONS method-level exemption; narrows ADR-024 — cross-referenced there). No new dependency. Covered by `test/resources/features/cors-preflight.feature` (rest2, live HTTP — both profiles + the GET-still-401 ordering guard) and `test/js/__tests__/waycharter-server.test.mjs` (source-inspection ordering invariant).
+
+This fix targets the **preflight-flood half** only. The GET disk-cache-miss half (Layer 2, gateway-owned) is out of scope — SDK memoisation remains its workaround. **Status stays Known Error**: the through-gateway efficacy probe (investigation task 4) is unresolved, so end-to-end efficacy through the RapidAPI gateway is not yet proven. Fix Released fires at the next release (K→V transition, orchestrator-owned).
+
+**Release vehicle**: .changeset/p023-cors-preflight-max-age.md
+
+**Original proposal (retained for lineage):**
+
 
 The one origin-side, in-our-control lever is to **emit `Access-Control-Max-Age` on preflight responses** so cross-origin GETs stop re-preflighting on every call (cuts preflight round-trips to ~1 per origin per max-age window). This does **not** unlock GET disk caching (Layer 2, gateway-owned).
 
@@ -115,7 +124,7 @@ This is a **NEEDS-DIRECTION** decision (no CORS/preflight-policy ADR exists; ≥
 - [x] Decide the preferred fix. **Done** — origin-side `Access-Control-Max-Age` (Option A lean) for the preflight half + SDK-side memoisation for the GET half; queued for user approval (see Fix Strategy). This is the transition-to-Known-Error basis.
 - [ ] **(efficacy gate — blocks the header commit)** Probe through the RapidAPI gateway with a subscribed key: does an origin `Access-Control-Max-Age` on OPTIONS actually reach the browser, or does the gateway intercept OPTIONS independently? (Origin-only probe here got 401 through the auth gate; a subscribed key is needed to test the prod browser→gateway path.)
 - [ ] Reproduce the Playwright CDP probe in our repo OR obtain the reporter's harness so the finding is locally repeatable.
-- [ ] Write a failing test — ideally a Playwright test asserting 2 back-to-back `fetch('/')` produce ≤1 preflight + ≤1 GET with `fromDiskCache: true` on the second.
+- [x] Write a failing test — the preflight-flood half is now covered by `test/resources/features/cors-preflight.feature` (rest2 live HTTP: OPTIONS→204 + `Access-Control-Max-Age`/`Access-Control-Allow-Methods` in both self-hosted and proxy-auth profiles, plus GET-without-secret→401 ordering guard) and `test/js/__tests__/waycharter-server.test.mjs` (source-inspection: handler exists, defaults, 204, ordered before `proxyAuthMiddleware`). **Done 2026-07-24.** The Playwright/CDP `fromDiskCache` assertion belongs to the Layer-2 (gateway) half and stays with task 5.
 
 ## Related
 
@@ -126,3 +135,9 @@ This is a **NEEDS-DIRECTION** decision (no CORS/preflight-policy ADR exists; ≥
 - [ADR 024: Origin gateway auth header enforcement](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — relevant because proxy-auth headers affect cross-origin request patterns.
 - `src/waycharter-server.js:560-581` — current CORS middleware (env-var-driven, no Access-Control-Max-Age); `proxyAuthMiddleware()` at line 583 gates OPTIONS (ADR-024 interaction, see Fix Strategy).
 - SDK team's Playwright CDP probe (external — not yet in this repo).
+
+## RFCs
+
+| RFC | Status | Title |
+|-----|--------|-------|
+| RFC-008 | proposed | Emit `Access-Control-Max-Age` on CORS preflight at the origin |

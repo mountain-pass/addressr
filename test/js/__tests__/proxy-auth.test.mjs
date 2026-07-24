@@ -4,6 +4,12 @@
 /* eslint-disable unicorn/consistent-function-scoping */
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serverPath = path.resolve(__dirname, '../../../src/waycharter-server.js');
 
 // ADR 024 Confirmation criteria 3 & 4:
 // Partial configuration of the ADDRESSR_PROXY_AUTH_* env var pair must fail
@@ -300,5 +306,52 @@ describe('proxy-auth ALLOWLIST membership (ADR 024 closed list)', () => {
         `path ${path} must NOT be exempt from proxy auth`,
       );
     }
+  });
+});
+
+// Risk remediation R2 (P023 amend): the CORS preflight fix inserts an
+// app.options handler AHEAD of proxyAuthMiddleware in buildRest2App. That
+// exemption must stay scoped to the OPTIONS method — a data-carrying method
+// must still fall through to proxyAuthMiddleware and 401. Two guards:
+//   (a) the runMiddleware GET /addresses → 401 coverage above already pins
+//       that proxyAuthMiddleware enforces data paths; this describe adds
+//   (b) a source-inspection guard that the ONLY pre-proxyAuth method
+//       short-circuit registered in buildRest2App is app.options — no
+//       app.all / app.get / bare data-method responder was inserted ahead
+//       of proxyAuthMiddleware that would widen the bypass beyond OPTIONS.
+describe('proxy-auth OPTIONS exemption stays OPTIONS-scoped (R2 / ADR-037 × ADR-024)', () => {
+  async function preAuthRegion() {
+    const source = await readFile(serverPath, 'utf8');
+    const start = source.indexOf('export function buildRest2App');
+    assert.notEqual(start, -1, 'buildRest2App must exist');
+    const proxyAuth = source.indexOf(
+      'app.use(proxyAuthMiddleware())',
+      start,
+    );
+    assert.notEqual(
+      proxyAuth,
+      -1,
+      'app.use(proxyAuthMiddleware()) must be registered',
+    );
+    // Everything registered in buildRest2App BEFORE proxy-auth enforcement.
+    return source.slice(start, proxyAuth);
+  }
+
+  it('registers app.options as the only method-scoped short-circuit before proxyAuthMiddleware', async () => {
+    const region = await preAuthRegion();
+    assert.match(
+      region,
+      /app\.options\(/,
+      'the OPTIONS preflight handler must be registered before proxyAuthMiddleware',
+    );
+  });
+
+  it('does not register a data-method (all/get/post/put/delete/patch) responder ahead of proxyAuthMiddleware', async () => {
+    const region = await preAuthRegion();
+    assert.doesNotMatch(
+      region,
+      /app\.(all|get|post|put|delete|patch)\(/,
+      'no data-carrying method may be answered ahead of proxyAuthMiddleware — the auth exemption must not widen beyond OPTIONS',
+    );
   });
 });

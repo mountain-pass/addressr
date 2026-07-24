@@ -42,6 +42,96 @@ describe('root / cache-control directive (P018 parked — long-lived by design)'
 // ADR 031: read-shadow startup validator must be invoked alongside
 // validateProxyAuthConfig() in startRest2Server so misconfigured shadow
 // env vars fail the process at startup rather than silently degrade.
+// P023 / ADR-037: the origin must answer CORS preflight (OPTIONS) with
+// Access-Control-Max-Age so cross-origin browsers stop re-preflighting every
+// GET. The handler MUST be registered BEFORE proxyAuthMiddleware so an
+// unauthenticated preflight (which carries no gateway secret) is answered 204,
+// not 401 — the ADR-037 ordering invariant / P023 regression guard.
+//
+// Source-inspection here per this file's established precedent (buildRest2App
+// is babel-only and cannot be imported under raw `node --test`; see the
+// /debug/shadow-config block below). Live 204/header/not-401 behaviour is
+// covered behaviourally by test/resources/features/cors-preflight.feature
+// (rest2 profile, real HTTP through the auth chain).
+describe('CORS preflight caching — OPTIONS handler (P023 / ADR-037)', () => {
+  async function buildAppBody() {
+    const source = await readFile(serverPath, 'utf8');
+    const startIndex = source.indexOf('export function buildRest2App');
+    assert.notEqual(startIndex, -1, 'buildRest2App must exist');
+    const endIndex = source.indexOf('\nexport ', startIndex + 1);
+    return source.slice(startIndex, endIndex === -1 ? source.length : endIndex);
+  }
+
+  it('registers an app.options preflight handler', async () => {
+    assert.match(
+      await buildAppBody(),
+      /app\.options\(/,
+      'buildRest2App must register an app.options preflight handler',
+    );
+  });
+
+  // Risk remediation R1 (STOP 6/25 → within appetite): the preflight-cache
+  // handler (and its OPTIONS-before-proxyAuth exemption) must be inert unless
+  // the operator has opted into CORS. Gate the app.options registration behind
+  // the SAME ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN presence check the sibling
+  // CORS response headers use — Access-Control-Max-Age is meaningless without
+  // Access-Control-Allow-Origin. Behavioural inert-when-unset coverage is in
+  // cors-preflight.feature; this pins the gating in source.
+  it('gates the app.options handler behind ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN (R1)', async () => {
+    assert.match(
+      await buildAppBody(),
+      /ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN\s*!==\s*undefined\s*\)\s*\{\s*app\.options\(/,
+      'app.options must be registered only inside an ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined guard',
+    );
+  });
+
+  it('emits Access-Control-Max-Age from ADDRESSR_ACCESS_CONTROL_MAX_AGE (default 86400)', async () => {
+    const body = await buildAppBody();
+    assert.match(body, /['"]Access-Control-Max-Age['"]/i);
+    assert.match(
+      body,
+      /ADDRESSR_ACCESS_CONTROL_MAX_AGE\s*\|\|\s*['"]86400['"]/,
+      'Max-Age must default to 86400 when the env var is unset',
+    );
+  });
+
+  it('emits Access-Control-Allow-Methods from ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS (default GET,OPTIONS)', async () => {
+    const body = await buildAppBody();
+    assert.match(body, /['"]Access-Control-Allow-Methods['"]/i);
+    assert.match(
+      body,
+      /ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS\s*\|\|\s*['"]GET,OPTIONS['"]/,
+      'Allow-Methods must default to GET,OPTIONS when the env var is unset',
+    );
+  });
+
+  it('responds 204 to the preflight', async () => {
+    assert.match(
+      await buildAppBody(),
+      /\.status\(204\)|\.sendStatus\(204\)/,
+      'preflight handler must respond 204',
+    );
+  });
+
+  it('registers the OPTIONS handler BEFORE proxyAuthMiddleware (ADR-037 ordering invariant)', async () => {
+    const body = await buildAppBody();
+    const optionsIndex = body.indexOf('app.options(');
+    // Anchor on the actual middleware registration, not any prose mention
+    // of proxyAuthMiddleware in comments.
+    const proxyAuthIndex = body.indexOf('app.use(proxyAuthMiddleware())');
+    assert.notEqual(optionsIndex, -1, 'app.options handler must exist');
+    assert.notEqual(
+      proxyAuthIndex,
+      -1,
+      'app.use(proxyAuthMiddleware()) must be registered',
+    );
+    assert.ok(
+      optionsIndex < proxyAuthIndex,
+      'the preflight OPTIONS handler must precede proxyAuthMiddleware() so an unauthenticated preflight is 204, not 401',
+    );
+  });
+});
+
 describe('startRest2Server — read-shadow startup validator (ADR 031)', () => {
   it('imports validateReadShadowConfig from ./read-shadow', async () => {
     const source = await readFile(serverPath, 'utf8');
