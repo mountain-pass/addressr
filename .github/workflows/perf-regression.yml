@@ -1,0 +1,120 @@
+# Perf regression detection (P032 / RFC-007)
+#
+# @jtbd JTBD-001 (Search and Autocomplete — defends the "results within 200 ms"
+#   outcome) via JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI).
+#
+# A SEPARATE workflow from release.yml on purpose: it runs on a decoupled
+# cadence (nightly + on-demand), NOT per-push and NOT in the build-and-test
+# matrix. Folding OpenSearch spin-up + fixture load + build + a 60 s k6 run into
+# every push would slow the trunk-based release loop; the release gate stays on
+# correctness (cucumber) only. A regression here is advisory-loud (a failed
+# nightly / dispatch run), not a release blocker. Run the same probe locally
+# with `npm run test:perf:regression` before a risky merge.
+name: Perf Regression
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 14:30 UTC nightly (~00:30 AEST) — off-peak, avoids the release workflow.
+    - cron: '30 14 * * *'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  perf-regression:
+    runs-on: ubuntu-latest
+    services:
+      opensearch:
+        # Single engine = production (3.5.0). The 2.19 leg in release.yml exists
+        # for cross-version behavioural compat, not perf; perf is a wall-clock
+        # trend on the engine prod actually runs.
+        image: opensearchproject/opensearch:3.5.0
+        env:
+          discovery.type: single-node
+          ES_JAVA_OPTS: '-Xms1g -Xmx1g'
+          plugins.security.disabled: 'true'
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+      - name: Cache npm dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate version file
+        # loader.js / server2.js printVersion() import ./version.js.
+        run: npm run genversion
+      - name: Cache G-NAF zip
+        uses: actions/cache@v6
+        id: gnaf-cache
+        with:
+          path: target/gnaf/*.zip
+          key: gnaf-zip-${{ hashFiles('service/address-service.js') }}
+          restore-keys: |
+            gnaf-zip-
+      - name: Prepare OT test fixture
+        run: |
+          # Same slim-OT-fixture prep as release.yml build-and-test.
+          if [ ! -f target/gnaf/*.zip ]; then
+            node -e "
+              require('@babel/register');
+              require('@babel/polyfill');
+              require('./service/address-service').fetchGnafFile().then(f => console.log('Downloaded:', f));
+            "
+          fi
+          GNAF_ZIP=$(ls target/gnaf/*.zip | head -1)
+          FIXTURE_DIR=target/gnaf-fixture
+          mkdir -p "$FIXTURE_DIR"
+          unzip -o -j "$GNAF_ZIP" '*/Authority Code/*' -d "$FIXTURE_DIR/Authority Code/" 2>/dev/null || true
+          unzip -o -j "$GNAF_ZIP" '*/Standard/OT_*' -d "$FIXTURE_DIR/Standard/" 2>/dev/null || true
+          echo "Fixture contents:"
+          find "$FIXTURE_DIR" -type f | head -20
+      - name: Load OT fixture into OpenSearch
+        env:
+          GNAF_TEST_FIXTURE_DIR: target/gnaf-fixture
+          ES_INDEX_NAME: ot
+          COVERED_STATES: OT
+          DEBUG: error,api,es
+        # ELASTIC_HOST defaults to 127.0.0.1:9200 (the service container).
+        # babel-node runs the source directly — the same loader invocation the
+        # cucumber pretest hooks use in release.yml (no lib/ build needed).
+        run: npx babel-node loader.js
+      - name: Start Addressr API server
+        env:
+          ES_INDEX_NAME: ot
+          PORT: '6060'
+          DEBUG: error,api,es
+        run: |
+          npx babel-node src/server2.js &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          # Wait for /health (on the ADR 024 no-auth allowlist) to come up.
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:6060/health > /dev/null; then
+              echo "server up after ${i} attempt(s)"; exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not become healthy on :6060"; exit 1
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+      - name: Run perf regression probe
+        # k6 exits non-zero on a threshold breach, failing the job.
+        run: npm run test:perf:regression
+      - name: Stop Addressr API server
+        if: always()
+        run: '[ -n "$SERVER_PID" ] && kill "$SERVER_PID" || true'

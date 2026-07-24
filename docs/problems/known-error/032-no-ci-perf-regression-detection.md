@@ -1,6 +1,6 @@
 # Problem 032: No CI perf regression detection — k6 stress profile is on-demand only
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-27
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
@@ -27,7 +27,7 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 
 ## Impact Assessment
 
-- **Who is affected**: Addressr Contributor/Maintainer (J7 — Ship releases reliably from trunk) directly. Indirectly, Web/App Developer (J1 — search/autocomplete) and AI Assistant User (J2) via undetected p95 latency regressions affecting their own SLA commitments.
+- **Who is affected**: Web/App Developer (JTBD-001 — Search and Autocomplete) is the **primary** job served: its desired outcome "results appear within 200 ms of input" is exactly what a p95 regression gate defends (corrected from the original framing per the 2026-07-24 jtbd review — this is a directly-served documented outcome, not merely indirect). Addressr Maintainer (JTBD-400 — Ship Releases Reliably From Trunk) is the persona/CI vehicle that runs the probe. AI Assistant User participates as a secondary persona on JTBD-001/JTBD-002. Adjacent-but-distinct: JTBD-201 (Validate a New Search Backend Before Cutover) owns the cutover-warming use of k6 — related, not the served job.
 - **Frequency**: Continuous risk surface — every commit can theoretically introduce a perf regression. Materialises rarely (most commits don't touch hot paths) but undetected regressions accumulate over time.
 - **Severity**: Moderate (3) — a perf regression on the search/retrieve path is an SLA risk for the RapidAPI-listed service but is not data loss or a correctness break; production monitoring would eventually catch it. Likelihood Possible (3) — perf regressions are a known class of issue, especially with engine-family changes (P028) or scoring/analyzer changes (ADRs 026–028).
 - **Analytics**: N/A — perf data is not captured systematically today; introducing a probe is a prerequisite for analytics here.
@@ -42,13 +42,29 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 
 ### Investigation Tasks
 
-- [ ] Decide the right shape for a regression detector: fixed seed, ~60 seconds, 5 concurrent users, tight p95 thresholds (e.g. p95 < 500 ms for `/addresses?q=…` against the OT fixture). Document the chosen shape.
-- [ ] Decide the right cadence: per-push (gate the release), per-PR comment (advisory), nightly (`schedule:`), or `workflow_dispatch` only.
-- [ ] Decide the right target: local addressr + OpenSearch in CI (cheap but small dataset), or a hosted staging environment (realistic but ops-heavy). Local + OT fixture is the lower-cost starting point.
-- [ ] Decide whether to add to the existing `release.yml` matrix (every leg gates on perf) or a separate workflow file (decoupled cadence, doesn't double the matrix runtime). Strong lean toward separate.
-- [ ] Author a smaller `test/k6/regression.js` (or equivalent) and a corresponding `test:perf:regression` npm script. Keep the existing 38-min stress script for on-demand use.
-- [ ] If hosted on GitHub-hosted runners: characterise runner-noise variance; pick thresholds that survive routine variance without flapping. May need warm-up runs and percentile sampling.
-- [ ] Tie a perf gate into ADR 029 Phase 1 step 6 (validate against `search-addressr4-…` AWS-managed v2 domain) — running the stress profile once against the new domain pre-cutover would directly validate ADR 029's "Performance" Decision Driver. Independent of the per-push CI question; this is a one-shot manual run.
+- [x] **Shape decided** — fixed deterministic query sequence (no `Math.random`), 15 s warm-up + 60 s at 5 constant VUs, both search + retrieve paths. Thresholds set **conservatively** (search p95 < 1500 ms, retrieve p95 < 1000 ms, checks rate > 0.95) rather than the 500 ms first-guess, to survive GitHub-hosted-runner variance. See `test/k6/regression.js`.
+- [x] **Cadence decided** — `workflow_dispatch` + nightly `schedule:`, NOT per-push. Per-push gating would slow the trunk-based release loop (jtbd review confirmed). Advisory-loud (a failed nightly/dispatch run), not a release blocker.
+- [x] **Target decided** — local addressr + OpenSearch 3.5.0 in CI with the OT G-NAF fixture (the lower-cost starting point). Single production-engine target, not the 2.19/3.5 matrix (that matrix is for cross-version compat, not perf).
+- [x] **Workflow placement decided** — SEPARATE workflow file (`.github/workflows/perf-regression.yml`), not the `release.yml` matrix. Decouples cadence, doesn't double matrix runtime. Architect confirmed this mirrors the existing `update-*.yml` cron pattern and does not conflict with ADR-001 (release gate).
+- [x] **Authored** — `test/k6/regression.js` + `test:perf:regression` npm script. Existing 38-min `test/k6/script.js` stress profile retained for on-demand use.
+- [ ] **Runner-noise variance — first cut committed, characterisation pending.** Thresholds are a deliberate first cut; tighten after a few real nightly baselines establish the runner's spread (do NOT tighten from quieter local-dev numbers). This is P032's verification gate: first green nightly/dispatch run confirms the thresholds don't flap → then Verifying → Closed.
+- [ ] **ADR 029 Phase 1 step 6 one-shot** — running the stress profile once against the candidate AWS-managed domain pre-cutover to validate ADR 029's "Performance" driver. Independent of this CI probe; a one-shot manual run, left open.
+
+## Fix Strategy
+
+Traced by [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) (CI perf-regression probe). Three artefacts, authored together as one atomic change (CI + test infra only, so no changeset per the workflow-only discipline — cf. RFC-002):
+
+1. [`test/k6/regression.js`](../../test/k6/regression.js) — small deterministic regression profile (warm-up + 60 s / 5 VU measured window, conservative gating thresholds).
+2. `test:perf:regression` npm script in [`package.json`](../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
+3. [`.github/workflows/perf-regression.yml`](../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
+
+**Status**: fix authored + committed locally, **not yet pushed or exercised**. Transitioned to Known Error (root cause = capability gap documented, workaround = manual stress run documented, fix vehicle RFC-007 exists). Remaining before Verifying: push, then the first nightly/dispatch run validates that the thresholds survive real runner variance without flapping.
+
+**Follow-on (architect, non-blocking)**: record a proposed ADR capturing the standing perf-regression methodology (seeded probe / separate nightly cadence / conservative-threshold philosophy). Direction pinned same-turn per ADR-064, so no user question needed; deferred from this AFK iter because `capture-*` skills are out of scope for the iter.
+
+## RFCs
+
+- [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) — CI perf-regression probe. Proposed. The fix vehicle for this problem (I13 fix-time trace).
 
 ## Related
 

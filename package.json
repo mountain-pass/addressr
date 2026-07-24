@@ -112,6 +112,7 @@
     "check:not-cli2-tags": "node scripts/check-not-cli2-tags.mjs",
     "check-deps": "dry-aged-deps --check",
     "test:performance": "k6 run --out csv=target/stress.csv test/k6/script.js",
+    "test:perf:regression": "k6 run test/k6/regression.js",
     "add-changeset": "changeset add --open",
     "ci:version": "[ \"$CI\" = true ] && changeset version || echo \"Dry run: changeset version\"",
     "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\"",

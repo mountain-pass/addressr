@@ -1,6 +1,7 @@
 # Problem Backlog
 
 > Last reviewed: 2026-07-24 **full WSJF re-rate (AFK)** — all 15 open/known-error scores held (RISK-POLICY.md unchanged since 2026-07-20; no fix commits shipped for any open/KE ticket since the 2026-07-21 review). P045 (staleness-window cadence-line) closed on Bucket 1 evidence — the cadence line is live in the hook-parsed blockquote form, re-confirmed this pass. No auto-transitions: P023/P035/P046 carry documented workarounds but their root cause is still multi-phase/unconfirmed. Step 4.6 relevance pass surfaced 9 CLOSE-CANDIDATE-WITH-CAVEAT (all `multi-phase-mixed-progress`), all deferred to next-interactive-confirm per the AFK branch — no silent closes. Step 4.5 inbound-discovery skipped (channels absent). P006 stays top (WSJF 9.0), blocked on RapidAPI Provisioning-API subscription (403 not-subscribed). (via /wr-itil:review-problems AFK re-rate)
+> Since this sweep: **P032 worked (Open → Known Error)** — CI perf-regression probe authored (small deterministic k6 profile + `test:perf:regression` + separate nightly/dispatch workflow) via RFC-007; WSJF 4.5 → 9.0. Fix authored + committed, awaiting push + first CI run to validate thresholds don't flap (→ Verifying → Closed).
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,9 +11,9 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 9.0  | P006 | RapidAPI CI sync deferred                                             | 9 (Medium)   | Known Error | M      | 2026-04-15 | internal |
+| 9.0  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Known Error | M      | 2026-04-27 | internal |
 | 8.0  | P015 | Range-number addresses not findable by base number                    | 4 (Low)      | Known Error | S      | 2026-04-16 | internal |
 | 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
-| 4.5  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Open        | M      | 2026-04-27 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s fg Bash cap    | 8 (Medium)   | Open        | M      | 2026-07-21 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
