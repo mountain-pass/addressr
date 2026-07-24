@@ -8,6 +8,7 @@ date-created: 2026-04-15
 screens:
   - .changeset/
   - .github/workflows/release.yml
+  - .github/workflows/rapidapi-listing-sync.yml
   - .github/workflows/update-*.yml
   - pre-commit hook chain
 ---

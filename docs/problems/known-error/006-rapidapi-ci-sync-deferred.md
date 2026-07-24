@@ -29,7 +29,8 @@ When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" featu
 
 ### Investigation Findings
 
-- **RapidAPI OpenAPI Provisioning REST API** (`openapi-provisioning.p.rapidapi.com`) — the listing is defunct. URL `https://rapidapi.com/rapidapi3-rapidapi-tools/api/openapi-provisioning` redirects to NOT_FOUND
+- **RapidAPI OpenAPI Provisioning REST API** (`openapi-provisioning.p.rapidapi.com`) — ~~the listing is defunct~~ **CORRECTED 2026-07-24**: only the hub _listing page_ is gone (`https://rapidapi.com/rapidapi3-rapidapi-tools/api/openapi-provisioning` redirects to NOT_FOUND); the endpoint itself is live — unauthenticated `GET /v1/apis/...` returns HTTP 401 (auth-gated, not dead). The original "defunct" conclusion over-read the listing-page 404.
+- **GraphQL Platform API and REST Platform API are Enterprise-Hub-only** (2026-07-24): docs.rapidapi.com describes both as Enterprise features, and the user confirmed no subscribable "GraphQL Platform" listing exists in the hub for the addressr account. Fix Strategy option 2 (GraphQL-direct) and the official `create_or_update_rapidapi_listing` action (which calls the same GraphQL API) are therefore unavailable to non-Enterprise providers — option 1 (SHA-pin) falls with it.
 - **`RapidAPI/create_or_update_rapidapi_listing` GitHub Action** — the repository exists but has no tagged versions or releases, only a `main` branch. Reference `@v0` fails to resolve in the workflow runner
 - Both attempts documented in ADR 023 Implementation Notes
 
@@ -39,25 +40,16 @@ When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" featu
 - [x] Try official GitHub Action — no tagged versions
 - [x] Investigate direct GraphQL calls to `platform-graphql.p.rapidapi.com` — **endpoint is live**. Probed 2026-04-19: `GET https://platform-graphql.p.rapidapi.com/` returns 401 (auth required), `POST` with a GraphQL introspection query returns 429 (rate-limited without a key). Confirms the GraphQL-direct path is viable if a key with the correct scope is obtained.
 - [x] Check if pinning the Action to a `main` commit SHA works — the repo's `main` HEAD is `4590a109931fe324ceaa8144b8d9f58df226a7b3` (last commit 2023-04-17, no activity since). `action.yml` uses `using: node16`, which GitHub Actions now emits a deprecation warning for and will eventually remove. **SHA-pin is feasible short-term** but carries deprecation risk — the GraphQL-direct path (option 2 in Fix Strategy) is more durable.
-- [ ] Confirm which RapidAPI key scope is needed (the subscribed `X-RapidAPI-Key` vs a separate management key) — **blocked on user**: requires subscribing to the GraphQL Platform API on RapidAPI, which is an account-level action.
+- [x] Confirm which RapidAPI key scope is needed — **overtaken by re-scope (2026-07-24)**: the GraphQL Platform API subscription is impossible for non-Enterprise accounts, so the question moved to the Provisioning REST path. `RAPIDAPI_KEY` (the account's app key) provisioned as a GH secret 2026-07-24; whether it clears the provisioning endpoint's auth is answered by the `rapidapi-listing-sync.yml` `check` dispatch (RFC-003 Stage 1).
 - [x] Action inputs catalogued (from `action.yml` at SHA `4590a10`): `owner_id`, `x_rapidapi_key`, `x_rapidapi_identity_key` (optional), `x_rapidapi_graphql_host`, `spec_path`, `graphql_url`. Outputs: `api_id`, `api_version_name`, `api_version_id`.
 
 ## Fix Strategy (proposed)
 
-Fix vehicle: [RFC-003 (RapidAPI listing CI sync via GraphQL Platform API)](../../rfcs/RFC-003-rapidapi-listing-ci-sync-graphql-platform-api.proposed.md) — auto-created 2026-07-19 by the I13 fix-time gate; scopes option 2 below (preferred).
+Fix vehicle: [RFC-003 (RapidAPI listing CI sync via OpenAPI Provisioning API)](../../rfcs/RFC-003-rapidapi-listing-ci-sync.proposed.md) — auto-created 2026-07-19 by the I13 fix-time gate; **re-scoped 2026-07-24** after both original options proved Enterprise-gated (see Investigation Findings).
 
-**Blocked on user (2026-07-19)**: implementation cannot start — `RAPIDAPI_OWNER_ID` / `RAPIDAPI_KEY` secrets are absent (verified via `gh secret list`; only the unrelated `TF_VAR_CLOUDFLARE_RAPIDAPI_KEY` exists) and the GraphQL Platform API subscription is an account-level action only the user can take. Queued as an outstanding question for the user's return.
+Current strategy (RFC-003 staged plan): direct `curl` `PUT https://openapi-provisioning.p.rapidapi.com/v1/apis/{apiId}` uploading the spec fetched from `https://backend.addressr.io/api-docs`, authenticated by `X-RapidAPI-Key` alone. Staging: `workflow_dispatch` probe/manual-sync workflow first (`rapidapi-listing-sync.yml`), Studio verification of listing gateway/pricing config after the first sync (ADR-017 Confirmation), then `release.yml` wiring (ADR-023 Confirmation).
 
-Either:
-
-1. Pin `RapidAPI/create_or_update_rapidapi_listing` to SHA `4590a109931fe324ceaa8144b8d9f58df226a7b3` (current `main` HEAD, dormant since 2023-04-17). **Short-term only** — the action uses `node16`, which GitHub Actions has deprecated and will remove.
-2. Implement a direct `curl` call to the GraphQL Platform API with the `updateApisFromRapidOas` mutation. Endpoint verified live at `https://platform-graphql.p.rapidapi.com/` (2026-04-19 probe). **Preferred** — no deprecated runtime dependency.
-
-Both require:
-
-- `RAPIDAPI_OWNER_ID` and `RAPIDAPI_KEY` GitHub secrets
-- Subscribe to the GraphQL Platform API on RapidAPI
-- Obtain the API Version ID (not just the API ID) via a GraphQL query
+Unblocked 2026-07-24: `RAPIDAPI_KEY` secret provisioned; listing API ID `api_5f12dd58-ab01-419e-8c9b-91d19208d16a` supplied (public identifier). `RAPIDAPI_OWNER_ID` not needed on this path. Superseded options (both Enterprise-gated, kept for the record): SHA-pinning `RapidAPI/create_or_update_rapidapi_listing`, and the GraphQL `updateApisFromRapidOas` mutation.
 
 ## Related
 
@@ -66,6 +58,6 @@ Both require:
 
 ## RFCs
 
-| RFC     | Status   | Title                                             |
-| ------- | -------- | ------------------------------------------------- |
-| RFC-003 | proposed | RapidAPI listing CI sync via GraphQL Platform API |
+| RFC     | Status   | Title                                                 |
+| ------- | -------- | ----------------------------------------------------- |
+| RFC-003 | proposed | RapidAPI listing CI sync via OpenAPI Provisioning API |

@@ -1,0 +1,53 @@
+# RapidAPI listing sync (RFC-003 / P006 / ADR-023).
+# Stage 1: workflow_dispatch only. Wire into release.yml after the first
+# sync is verified against ADR-017's listing-config criteria (RFC-003 Stage 2/3).
+name: rapidapi-listing-sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check = auth probe only; sync = upload deployed spec to the listing"
+        type: choice
+        options:
+          - check
+          - sync
+        default: check
+
+env:
+  RAPIDAPI_HOST: openapi-provisioning.p.rapidapi.com
+  # Public listing identifier (visible in Studio/hub URLs) — not a secret.
+  RAPIDAPI_API_ID: api_5f12dd58-ab01-419e-8c9b-91d19208d16a
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auth probe
+        run: |
+          code=$(curl -s -o body.json -w '%{http_code}' \
+            -H "X-RapidAPI-Key: ${{ secrets.RAPIDAPI_KEY }}" \
+            -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}" \
+            "https://${RAPIDAPI_HOST}/v1/apis/${RAPIDAPI_API_ID}")
+          echo "GET /v1/apis/${RAPIDAPI_API_ID} -> HTTP ${code}"
+          cat body.json; echo
+          # 401/403 = key not accepted; anything else means auth cleared
+          # (a 404/405 on GET is still informative — the PUT is the real op).
+          if [ "$code" = "401" ] || [ "$code" = "403" ]; then
+            echo "::error::RAPIDAPI_KEY was not accepted by the provisioning API"
+            exit 1
+          fi
+
+      - name: Fetch deployed spec and upload
+        if: inputs.mode == 'sync'
+        run: |
+          curl -sf https://backend.addressr.io/api-docs -o openapi.json
+          code=$(curl -s -o body.json -w '%{http_code}' -X PUT \
+            -H "X-RapidAPI-Key: ${{ secrets.RAPIDAPI_KEY }}" \
+            -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}" \
+            -F "file=@openapi.json;type=application/json" \
+            "https://${RAPIDAPI_HOST}/v1/apis/${RAPIDAPI_API_ID}")
+          echo "PUT /v1/apis/${RAPIDAPI_API_ID} -> HTTP ${code}"
+          cat body.json; echo
+          # Fail-loud per ADR-023: non-2xx fails the pipeline.
+          case "$code" in 2??) ;; *) exit 1 ;; esac
