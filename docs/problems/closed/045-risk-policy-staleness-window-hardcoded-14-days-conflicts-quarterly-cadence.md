@@ -1,6 +1,6 @@
 # Problem 045: RISK-POLICY staleness window hardcoded at 14 days conflicts with the quarterly review cadence
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-07-06
 **Priority**: 3 (Low) — Impact: Negligible (1) × Likelihood: Possible (3)
 **Origin**: internal
@@ -26,6 +26,8 @@ The hardcode is at `wr-risk-scorer/0.13.5/hooks/risk-score-commit-gate.sh:50` (`
 ## Fix Released
 
 Committed to master 2026-07-20 (fix commit, doc-only — no changeset/npm surface). One-line reformat of RISK-POLICY.md's cadence line to the installed wr-risk-scorer 0.17.0 machine-read form (`> Reviewed quarterly ...`), per RFC-006. In-session evidence: the hook's exact parsing logic run against the edited policy yields `cadence='quarterly' threshold=90 stale=False` (pre-fix it yielded cadence unmatched → 14-day fallback). Awaiting user verification — expected observable: no "stale policy" commit-gate deny before 2026-10-06 (next quarterly review), no more fortnightly date-bump touch commits.
+
+**Closed on evidence 2026-07-24** (`/wr-itil:review-problems` Step 4 Bucket 1, ADR-044 framework-mediated close-on-evidence): re-confirmed live this pass — RISK-POLICY.md line 7 is in the blockquote cadence form (`> Reviewed quarterly — next review due 2026-10-06 …`) the installed wr-risk-scorer 0.17.0 hook regex `^>?\s*Reviewed\s+([A-Za-z]+)` parses to quarterly → 90-day threshold; the fix is committed and in-tree. Recovery: rerun `/wr-itil:transition-problem 045 known-error` to reopen.
 
 ## Impact Assessment
 
