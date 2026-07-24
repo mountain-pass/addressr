@@ -96,3 +96,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 > Last reviewed: 2026-07-20 **P062 captured** — AFK iter subprocess sessions missing docs/BRIEFING.md content (wr-retrospective SessionStart surface expects the docs/briefing/ tree; legacy single-file never migrated, so briefed traps get re-derived at cost — the line-37 external-comms --body-file trap recurred on the #370 filing after being documented post-#368; fix: run /wr-retrospective:migrate-briefing then verify next AFK iter) (lightweight aside via /wr-itil:capture-problem, P059 iter retro)
 > Last reviewed: 2026-07-20 **P045 verification pending** — re-verification found the upstream 14-day hardcode already removed in installed wr-risk-scorer 0.17.0 (cadence-parsing hook, upstream ADR-091/P408); residual defect was local cadence-line format; one-line RISK-POLICY.md reformat shipped per RFC-006 (scorer-validated); no upstream report needed (fix pre-shipped); date-bump workaround retired
+
+## 2026-07-24
+
+> Last reviewed: 2026-07-21 **P063 captured** — work-problems pre-flight subprocess dispatch exceeds harness 600s foreground Bash cap (Step 0d check-upstream-responses subprocess killed mid-run, partial writes reverted per P358, $2.31 burned; fix locus upstream `@windyroad/itil` work-problems Steps 0b/0c/0d: backgrounded dispatch or internal time budget) (lightweight aside via /wr-itil:capture-problem, work-problems session retro)
