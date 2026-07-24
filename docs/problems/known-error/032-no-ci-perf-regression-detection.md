@@ -43,11 +43,11 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 ### Investigation Tasks
 
 - [x] **Shape decided** — fixed deterministic query sequence (no `Math.random`), 15 s warm-up + 60 s at 5 constant VUs, both search + retrieve paths. Thresholds set **conservatively** (search p95 < 1500 ms, retrieve p95 < 1000 ms, checks rate > 0.95) rather than the 500 ms first-guess, to survive GitHub-hosted-runner variance. See `test/k6/regression.js`.
-- [x] **Cadence decided** — `workflow_dispatch` + nightly `schedule:`, NOT per-push. Per-push gating would slow the trunk-based release loop (jtbd review confirmed). Advisory-loud (a failed nightly/dispatch run), not a release blocker.
+- [x] **Cadence decided** — `workflow_dispatch` + nightly `schedule:`, NOT per-push. Per-push gating would slow the trunk-based release loop (jtbd review confirmed). Advisory, not a release blocker. **Mechanism amended 2026-07-25**: the advisory signal is no longer "a failed nightly/dispatch run" — the k6 step now carries `continue-on-error: true`, so a breach surfaces as a `::warning::` plus a `$GITHUB_STEP_SUMMARY` entry on a **green** run. See "First-run breakage" below.
 - [x] **Target decided** — local addressr + OpenSearch 3.5.0 in CI with the OT G-NAF fixture (the lower-cost starting point). Single production-engine target, not the 2.19/3.5 matrix (that matrix is for cross-version compat, not perf).
 - [x] **Workflow placement decided** — SEPARATE workflow file (`.github/workflows/perf-regression.yml`), not the `release.yml` matrix. Decouples cadence, doesn't double matrix runtime. Architect confirmed this mirrors the existing `update-*.yml` cron pattern and does not conflict with ADR-001 (release gate).
 - [x] **Authored** — `test/k6/regression.js` + `test:perf:regression` npm script. Existing 38-min `test/k6/script.js` stress profile retained for on-demand use.
-- [ ] **Runner-noise variance — first cut committed, characterisation pending.** Thresholds are a deliberate first cut; tighten after a few real nightly baselines establish the runner's spread (do NOT tighten from quieter local-dev numbers). This is P032's verification gate: first green nightly/dispatch run confirms the thresholds don't flap → then Verifying → Closed.
+- [ ] **Runner-noise variance — first cut committed, characterisation pending.** Thresholds are a deliberate first cut; tighten after a few real nightly baselines establish the runner's spread (do NOT tighten from quieter local-dev numbers). **Verification gate restated 2026-07-25**: job colour is no longer evidence — under `continue-on-error: true` the run is green by construction. The gate is now the *content* of the job summary: a nightly/dispatch run whose summary shows all three thresholds `✓` and a non-zero `http_reqs` with `checks_succeeded` at 100% → then Verifying → Closed. A run that is green but whose summary carries the `::warning::` is a FAILED verification.
 - [ ] **ADR 029 Phase 1 step 6 one-shot** — running the stress profile once against the candidate AWS-managed domain pre-cutover to validate ADR 029's "Performance" driver. Independent of this CI probe; a one-shot manual run, left open.
 
 ## Fix Strategy
@@ -58,7 +58,41 @@ Traced by [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) (CI
 2. `test:perf:regression` npm script in [`package.json`](../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
 3. [`.github/workflows/perf-regression.yml`](../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
 
-**Status**: fix authored + committed locally, **not yet pushed or exercised**. Transitioned to Known Error (root cause = capability gap documented, workaround = manual stress run documented, fix vehicle RFC-007 exists). Remaining before Verifying: push, then the first nightly/dispatch run validates that the thresholds survive real runner variance without flapping.
+**Status**: fix authored, pushed, and exercised once — the first real nightly run FAILED and reddened master. Repaired 2026-07-25 (see below). Stays **Known Error**: the repair itself has not yet had a clean validation run.
+
+### First-run breakage (2026-07-25) — the shipped probe measured an error path
+
+The first nightly run ([30103898200](https://github.com/mountain-pass/addressr/actions/runs/30103898200)) failed and reddened master, blocking the release pipeline.
+
+**What did NOT fail** (recorded because the initial read of the log misattributed the cause): the G-NAF OT fixture prep worked, the loader indexed **5186 OT address rows** into OpenSearch 3.5.0, and the server came up healthy on `:6060` after 2 attempts. The `Error: ENOENT ... 'target/gnaf-fixture/Counts.csv'` line in the log is a **benign** `fileExists()` debug log — `loadGnafData()` (`service/address-service.js:1332-1344`) explicitly handles a missing `Counts.csv` (the may21+ G-NAF layout has none) and falls through to directory scanning. It is not an error condition.
+
+**Actual root cause**: `test/k6/regression.js` built its search URL with k6's `http.url` tagged template — `` http.url`${BASE_URL}/addresses?q=${query}` ``. **k6's `http.url` does not percent-encode interpolated values.** Every query in the fixed sequence contains a space (`CHRISTMAS ISLAND`, `MURRAY RD`, …), so a raw space went into the HTTP request line and Node's server rejected it with a bare 47-byte `HTTP/1.1 400 Bad Request`. The probe was timing an error path, not the search path.
+
+Confirmed two ways locally:
+
+- A raw-space request line against a Node `http` server returns exactly `HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n` — **47 bytes**. 35 requests × 47 B = the **1.6 kB `data_received`** the failed run reported. Exact match.
+- Running the real k6 binary against a stub: `` http.url`…?q=${'CHRISTMAS ISLAND'}` `` → **status 400**; `encodeURIComponent(query)` → **status 200**, server sees `?q=CHRISTMAS%20ISLAND`.
+
+That gave `checks_succeeded: 0.00%` / `http_req_failed: 100%`, which breached `checks{phase:main}: rate>0.95`. That threshold carried `abortOnFail: true`, so k6 aborted 1 s into the measured window and exited **99** → job failed → workflow failed → master red.
+
+**Fix applied** (CI + test infra only, no `src/` runtime change, so no changeset per the workflow-only discipline):
+
+1. `test/k6/regression.js` — `encodeURIComponent(query)` with a plain template literal (the explicit `name: 'search'` tag already does the URL grouping `http.url` existed for). **This is the real defect fix.**
+2. `test/k6/regression.js` — added a `'search returns results'` check (`status === 200 && JSON.parse(body).length > 0`). Status alone could not prove the probe measured anything: an empty result set is a valid 200 *and is faster than a real search*, so a fixture or index-name regression would have made p95 look **better** while staying green.
+3. `test/k6/regression.js` — removed `abortOnFail: true`. No threshold aborts now, so the full 75 s window always completes and yields the p95 series this ticket's open runner-variance task needs.
+4. `.github/workflows/perf-regression.yml` — the k6 step is now `continue-on-error: true` (with `id: k6` and `shell: bash` for `-eo pipefail`, without which the `| tee` would mask k6's exit code and make `steps.k6.outcome` permanently `success`). A threshold breach, or any other nonzero k6 exit, can no longer fail this workflow.
+5. `.github/workflows/perf-regression.yml` — new `if: always()` reporting step writes the k6 THRESHOLDS / TOTAL RESULTS block to `$GITHUB_STEP_SUMMARY` and emits `::warning::` when the probe did not pass, so the result stays visible.
+
+**Verified locally** (the 38-min stress profile was NOT run): YAML parses; the k6 script babel-parses and passes `k6 inspect`; and a duration-shortened copy of the fixed probe run against a stub gives all three checks ✓, `http_req_failed: 0.00%`, all three thresholds ✓, with the stub receiving properly-encoded `?q=GAZE%20RD%20CHRISTMAS%20ISLAND`.
+
+### Outstanding questions from this repair
+
+Both the architect and JTBD reviews independently objected to the blanket `continue-on-error: true` and recommended discriminating k6's exit code (tolerate 99 = threshold breach; still fail on any other nonzero = broken probe). The user pinned the blanket form deliberately. Recorded, not re-litigated:
+
+- **A broken probe now reports green.** This exact incident was a probe-validity failure, not a perf regression; under the new posture an identical future breakage would not redden anything. Item 2 above (the results check) is the partial mitigation — it converts a silent pass into a `::warning::` — but the warning is pull-based.
+- **No push notification.** GitHub notifies on *failed* scheduled runs; it does not notify on `::warning::` or step summaries. On a nightly cron nobody watches by hand, advisory-loud has become advisory-pull-only. A follow-on channel (e.g. open/update an issue when `steps.k6.outcome != 'success'`) is the natural remedy.
+- **RFC-007 line 33** still asserts "k6 exits non-zero on a breach, failing the job", which this change falsifies — deferred, out of this iteration's committed scope.
+- **`screens:` backfill** — `.github/workflows/perf-regression.yml` is not in JTBD-400's `screens:` list, nor `test/k6/regression.js` in JTBD-001's. Forward `@jtbd` annotations are correct; only the reverse index is missing.
 
 **Follow-on (architect, non-blocking)**: record a proposed ADR capturing the standing perf-regression methodology (seeded probe / separate nightly cadence / conservative-threshold philosophy). Direction pinned same-turn per ADR-064, so no user question needed; deferred from this AFK iter because `capture-*` skills are out of scope for the iter.
 

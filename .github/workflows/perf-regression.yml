@@ -7,9 +7,11 @@
 # cadence (nightly + on-demand), NOT per-push and NOT in the build-and-test
 # matrix. Folding OpenSearch spin-up + fixture load + build + a 60 s k6 run into
 # every push would slow the trunk-based release loop; the release gate stays on
-# correctness (cucumber) only. A regression here is advisory-loud (a failed
-# nightly / dispatch run), not a release blocker. Run the same probe locally
-# with `npm run test:perf:regression` before a risky merge.
+# correctness (cucumber) only. A regression here is ADVISORY — the k6 step is
+# `continue-on-error: true`, so a threshold breach surfaces as a ::warning::
+# plus a job-summary entry on a green run, never as a red master or a blocked
+# release. Run the same probe locally with `npm run test:perf:regression`
+# before a risky merge.
 name: Perf Regression
 
 on:
@@ -113,8 +115,39 @@ jobs:
       - name: Install k6
         uses: grafana/setup-k6-action@v1
       - name: Run perf regression probe
-        # k6 exits non-zero on a threshold breach, failing the job.
-        run: npm run test:perf:regression
+        id: k6
+        # NON-GATING BY DESIGN. k6 still exits non-zero on a threshold breach
+        # (99), but `continue-on-error` absorbs it — a breach, or ANY other
+        # nonzero k6 exit, records a result and never fails this workflow. The
+        # nightly probe reports numbers; it must never redden master or block
+        # the trunk/release pipeline. The "Report" step below carries the
+        # signal instead. See P032.
+        continue-on-error: true
+        # `shell: bash` is load-bearing: the default `run:` shell is `bash -e`
+        # WITHOUT pipefail, so `| tee` would mask k6's exit status and
+        # steps.k6.outcome would always be 'success' — silently disarming the
+        # warning below.
+        shell: bash
+        run: npm run test:perf:regression 2>&1 | tee target/perf-regression.log
+      - name: Report perf regression result
+        if: always()
+        shell: bash
+        # `outcome` is the pre-continue-on-error result; `conclusion` is coerced
+        # to success and would never warn.
+        run: |
+          {
+            echo "## Perf regression probe (advisory — never gates)"
+            echo ""
+            echo "Probe outcome: \`${{ steps.k6.outcome }}\`"
+            echo ""
+            echo '```'
+            sed -n '/THRESHOLDS/,$p' target/perf-regression.log 2>/dev/null \
+              || echo "(no k6 summary captured — see the probe step log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.k6.outcome }}" != "success" ]; then
+            echo "::warning::Perf regression probe did not pass (advisory only — this does not fail the build). See the job summary for the k6 thresholds."
+          fi
       - name: Stop Addressr API server
         if: always()
         run: '[ -n "$SERVER_PID" ] && kill "$SERVER_PID" || true'
