@@ -53,6 +53,8 @@ Template: `TEMPLATE.md`
 | [R014](R014-cors-preflight-exempts-options-from-proxy-auth-ahead-of-gate.active.md) | Cors Preflight Exempts Options From Proxy Auth Ahead Of Gate | pending | — | — | pending | pending | 2026-07-24 |
 | [R015](R015-npm-publish-coupled-to-prod-deploy-p039-unresolved.active.md) | Npm Publish Coupled To Prod Deploy P039 Unresolved | pending | — | — | pending | pending | 2026-07-24 |
 
+| [R016](R016-read-shadow-soak-traffic-figures-in-committed-docs.active.md) | Read Shadow Soak Traffic Figures In Committed Docs | pending | — | — | pending | pending | 2026-07-25 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |

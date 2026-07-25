@@ -1,16 +1,16 @@
-# Risk R011: Read Shadow Soak Traffic Count In Committed Docs
+# Risk R016: Read Shadow Soak Traffic Figures In Committed Docs
 
 **Status**: Active (auto-scaffolded — pending review)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
-**Identified**: 2026-07-18
+**Identified**: 2026-07-25
 **Owner**: pending review
-**Last reviewed**: 2026-07-18
-**Next review**: 2026-07-18
-**Curation**: pending review (auto-scaffolded 2026-07-18)
+**Last reviewed**: 2026-07-25
+**Next review**: 2026-07-25
+**Curation**: pending review (auto-scaffolded 2026-07-25)
 
 ## Description
 
-A scrubbed production read-shadow traffic figure was re-committed verbatim into docs/BRIEFING.md; committed docs are a standing traffic-volume disclosure surface the gate does not scan.
+P035 known-error doc restates production query rate (~0.5 q/s) and raw shadow attempt/success/failure counts in committed public-repo prose; standing R011 surface awaiting curation
 
 > Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
 > RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
@@ -18,7 +18,7 @@ A scrubbed production read-shadow traffic figure was re-committed verbatim into 
 
 ## Inherent Risk
 
-Impact × Likelihood _before_ controls.
+Impact × Likelihood *before* controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -31,7 +31,7 @@ Impact × Likelihood _before_ controls.
 
 ## Residual Risk
 
-Impact × Likelihood _after_ controls.
+Impact × Likelihood *after* controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -58,10 +58,8 @@ pending review — treatment decision deferred until scoring is curated.
 
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
-- 2026-07-14T21:31:09Z: fired in `.risk-reports/2026-07-14T21-31-09-commit.md` (reason: confidentiality-disclosure)
-- 2026-07-18T03:17:05Z: fired in `.risk-reports/2026-07-18T03-17-05-commit.md` (reason: confidentiality-disclosure)
-- 2026-07-25T12:58:55Z: fired in `.risk-reports/2026-07-25T12-58-55-commit.md` (reason: confidentiality-disclosure)
+- 2026-07-25T13:18:35Z: fired in `.risk-reports/2026-07-25T13-18-35-commit.md` (reason: confidentiality-disclosure)
 
 ## Change Log
 
-- 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+- 2026-07-25: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
