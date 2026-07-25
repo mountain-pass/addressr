@@ -769,4 +769,110 @@ describe('getShadowStatus (P035)', () => {
     process.off('unhandledRejection', onUnhandled);
     assert.equal(unhandled, false, 'shadow code path must not raise unhandled rejection');
   });
+
+  // P035 BS-2 — CHARACTERISATION TESTS. See
+  // docs/problems/known-error/035-shadow-soak-validation-blind-spots.md
+  //
+  // These pin the CURRENT, DEFECTIVE counter behaviour — not the desired
+  // behaviour. The invariant an operator would reasonably assume when reading
+  // /debug/shadow-config is:
+  //
+  //     attempts === successes + failures + in-flight
+  //
+  // It does not hold, it is broken in both directions, and neither direction
+  // surfaces on the endpoint. Asserting the buggy values (rather than skipping)
+  // means these go red the day the behaviour changes EITHER way — which is
+  // exactly the silent-divergence-between-configured-intent-and-actual-
+  // behaviour pattern P035 exists to close. When Fix Strategy tier-1 item 1
+  // lands, UPDATE these to the corrected values. Do not delete them.
+
+  it('P035 BS-2: construction throw records a failure with NO matching attempt (characterisation)', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      constructor() {
+        throw new Error('synthetic client construction failure');
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const status = getShadowStatus();
+    // src/read-shadow.js:216-221 — swallowError() increments failures, but
+    // shadowAttempts += 1 sits at :225, AFTER the try/catch. So failures
+    // exceed attempts. This is the 2026-05-03 URL-encode-creds bug shape: an
+    // operator reads `attempts: 0` and concludes shadow is not being invoked
+    // (a config problem) when in fact the constructor is throwing every time.
+    assert.equal(
+      status.attempts,
+      0,
+      'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — the attempt is not counted on the construction-throw path. If this went red, the fix may have landed: update to the corrected value.',
+    );
+    assert.equal(
+      status.failures,
+      1,
+      'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — the failure IS counted, so failures > attempts.',
+    );
+    assert.equal(status.successes, 0);
+    assert.ok(status.lastError, 'the failure is at least visible as a lastError');
+  });
+
+  it('P035 BS-2: non-thenable client return leaves an attempt with no terminal outcome (characterisation)', async () => {
+    process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
+    const FakeClient = class {
+      // Deliberately NOT async — returns a plain object, so mirrorRequest's
+      // thenable check at src/read-shadow.js:240-243 bails out early.
+      search() {
+        return { body: {} };
+      }
+    };
+    const {
+      getShadowStatus,
+      mirrorRequest,
+      _resetShadowClientForTesting,
+      _resetShadowCountersForTesting,
+    } = await import('../../../src/read-shadow.js');
+    _resetShadowClientForTesting();
+    _resetShadowCountersForTesting();
+
+    mirrorRequest({
+      method: 'search',
+      params: { index: 'addressr', body: {} },
+      ClientClass: FakeClient,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const status = getShadowStatus();
+    // src/read-shadow.js:240-243 — attempts was incremented at :225, but the
+    // early return means neither successes nor failures ever will be. The
+    // request reads as permanently in-flight on /debug/shadow-config.
+    assert.equal(status.attempts, 1, 'the attempt IS counted');
+    assert.equal(
+      status.successes,
+      0,
+      'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — no terminal outcome is ever recorded on the non-thenable path. If this went red, the fix may have landed: update to the corrected value.',
+    );
+    assert.equal(
+      status.failures,
+      0,
+      'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — not recorded as a failure either, so the attempt reads as permanently in-flight.',
+    );
+    assert.equal(
+      status.lastError,
+      null,
+      'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — nothing surfaces on /debug/shadow-config.',
+    );
+  });
 });
