@@ -50,3 +50,15 @@ Dispatch pre-flight `claude -p` subprocesses via backgrounded Bash (`run_in_back
 - P358 (upstream @windyroad/itil partial-write revert contract) — governed the revert of the killed pre-flight's partial writes.
 - P062 (AFK iter subprocess sessions missing BRIEFING.md content) — sibling AFK-subprocess structural gap.
 - Duplicate-check matches (title-only, listed per contract, capture proceeded): P061 (matches "work-problems" keyword — different defect: iter-briefing caveat cross-wiring).
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/327#issuecomment-5078457044 (2026-07-25)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/327#issuecomment-5078457044
+- **Reported**: 2026-07-25
+- **Template used**: n/a — Step 5c comment path (P070 dedup match), condensed cross-reference shape
+- **Disclosure path**: commented-on-existing-issue
+- **Dedup verdict**: `same-problem` against windyroad/agent-plugins#327 ("work-problems Step 5 iter/pre-flight dispatch exceeds the interactive-harness 10min foreground Bash ceiling") — same root cause (dispatch prose assumes unbounded foreground shell), same kill signature at exactly 600s, same fix locus. This capture adds a second reproduction on Step 0d rather than Step 0b, at `@windyroad/itil@0.59.2` rather than 0.56.0, plus confirmation that the backgrounded-dispatch workaround holds.
+- **Gates**: `wr-risk-scorer:external-comms` PASS; `wr-voice-tone:external-comms` PASS (rev 3 — rev 1 failed on em-dashes, rev 2 on a deictic that resolved to the wrong repo upstream)
+- **Cross-reference confirmed**: yes — the comment names P063 and this repo's `docs/problems/` ticket path
+- **Local status unchanged**: remains upstream-blocked. Reporting does not fix it locally.

@@ -46,3 +46,15 @@ Relevance-close evaluator misses platform-version-rooted tickets after engine mi
 
 - Duplicate-check filename match (list-only, unrelated): P002 waycharter-v2-migration (resolved).
 - [P027 close](../closed/027-synonym-expansion-bypasses-auto-fuzziness.md) — the driver case for this capture.
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/391 (2026-07-25)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/391
+- **Reported**: 2026-07-25
+- **Template used**: problem-report.yml (problem-first shape, body composed per ADR-033 structured mapping)
+- **Disclosure path**: public issue
+- **Dedup verdict**: `different-problem` against windyroad/agent-plugins#306 ("evaluate-relevance over-fires CLOSE-CANDIDATE on tickets that merely cite a shipped ADR") and #220 — same script, opposite direction. #306 is the false-positive/over-fire direction; this ticket is the missed-positive direction. Both are cross-referenced in the filed body so a fix for one does not regress the other.
+- **Gates**: `wr-risk-scorer:external-comms` PASS; `wr-voice-tone:external-comms` PASS (rev 2 — rev 1 failed on em-dashes)
+- **Cross-reference confirmed**: yes — the issue body's Cross-reference section names P057 and this repo's `docs/problems/` directory
+- **Local status unchanged**: remains upstream-blocked. Reporting does not fix it locally.

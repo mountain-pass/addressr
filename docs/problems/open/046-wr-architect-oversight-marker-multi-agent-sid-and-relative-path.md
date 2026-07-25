@@ -55,3 +55,15 @@ Pass the ADR's **absolute** path to `wr-architect-mark-oversight-confirmed`; if 
 
 - **P043** — wr-itil SID-helper fallback picks subagent UUID in multi-agent session. This is the wr-architect sibling: same multi-agent SID-discovery root class, plus the additional relative-vs-absolute path-hash bug. Both need the same upstream SID-resolution fix in their respective @windyroad plugins.
 - Captured via /wr-itil:capture-problem during the 2026-07-08 ADR 029 Phase 1 retro.
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/393 (2026-07-25)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/393
+- **Reported**: 2026-07-25
+- **Template used**: problem-report.yml (problem-first shape, body composed per ADR-033 structured mapping)
+- **Disclosure path**: public issue
+- **Dedup verdict**: no match. The only nearby hit, windyroad/agent-plugins#364 ("create-adr does not delegate to architect/jtbd edit-gate agents before Write"), is a different defect in a different command — it is about which agents create-adr delegates to, not about the marker key the mark command writes.
+- **Gates**: `wr-risk-scorer:external-comms` PASS; `wr-voice-tone:external-comms` PASS (rev 2 — rev 1 failed on em-dashes)
+- **Cross-reference confirmed**: yes — the issue body's Cross-reference section names P046 and this repo's `docs/problems/` directory
+- **Local status unchanged**: remains upstream-blocked. Reporting does not fix it locally.

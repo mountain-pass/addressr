@@ -49,3 +49,15 @@ Iter agents verify any CLOSE-CANDIDATE caveat in the dispatch briefing against t
 - Hang-off-check verdict: PROCEED_NEW. P057 (Relevance-close evaluator misses platform-version-rooted tickets) is a sibling, not a parent — its defect is a missed-positive evidence-shape gap inside the `wr-itil-evaluate-relevance` evaluator, with the fix inside the evaluator; this ticket's evaluator output was per-ticket correct (the caveat genuinely belonged to P015) and the defect is downstream in the orchestrator's briefing assembly attaching it to the wrong ticket. P050 (stale-Open transition-fold check) shares only lifecycle vocabulary — opposite failure direction (work on already-fixed tickets vs blind-close of unfixed ones). Cluster relationship for the "trust-the-pipeline" family deferred to the next /wr-itil:review-problems pass.
 - P054 (wr-risk-scorer label bands disagree — the mis-briefed iter's ticket, parked upstream-blocked same day).
 - P015 (the ticket the caveat actually described).
+- **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/392 (2026-07-25)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/392
+- **Reported**: 2026-07-25
+- **Template used**: problem-report.yml (problem-first shape, body composed per ADR-033 structured mapping)
+- **Disclosure path**: public issue
+- **Dedup verdict**: no match. Searches on briefing/iter/caveat/misattribution keywords returned nothing upstream. #306 is the nearest neighbour and is cross-referenced in the filed body as a sibling with a distinct fix locus — what the evaluator concludes, versus which ticket the orchestrator attaches a conclusion to.
+- **Gates**: `wr-risk-scorer:external-comms` PASS; `wr-voice-tone:external-comms` PASS (rev 2 — rev 1 failed on em-dashes)
+- **Cross-reference confirmed**: yes — the issue body's Cross-reference section names P061 and this repo's `docs/problems/` directory
+- **Local status unchanged**: remains upstream-blocked. Reporting does not fix it locally.
