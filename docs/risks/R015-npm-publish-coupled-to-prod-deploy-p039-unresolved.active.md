@@ -59,6 +59,8 @@ pending review — treatment decision deferred until scoring is curated.
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-24T14:05:16Z: fired in `.risk-reports/2026-07-24T14-05-16-commit.md` (reason: user-stated-precondition)
+- 2026-07-24T14:36:33Z: fired in `.risk-reports/2026-07-24T14-36-33-commit.md` (reason: above-appetite-residual)
+- 2026-07-24T14:36:33Z: fired in `.risk-reports/2026-07-24T14-36-33-commit.md` (reason: user-stated-precondition)
 
 ## Change Log
 
