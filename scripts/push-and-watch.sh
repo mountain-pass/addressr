@@ -3,9 +3,10 @@
 # Pushes to origin, watches the Release workflow's build-and-test job, and
 # reports results. If a release PR exists or is created, shows its URL.
 #
-# Risk gate: This script is gated by .claude/hooks/git-push-gate.sh which
-# checks the push risk score before allowing execution. If the score is
-# >= 5 (Medium), the command is blocked.
+# Risk gate: this script is gated by the PLUGIN-OWNED wr-risk-scorer
+# git-push-gate hook (NOT a repo-local .claude/hooks/ script — that directory
+# does not exist), which checks the push risk score before allowing execution.
+# If the score is above appetite, the command is blocked.
 
 set -euo pipefail
 

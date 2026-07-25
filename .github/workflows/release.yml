@@ -8,6 +8,25 @@ on:
     branches:
       - '*'
   workflow_dispatch:
+    inputs:
+      # P039 / ADR 001 amendment 2026-07-26: publish-free prod deploy. Dispatch
+      # with deploy_only=true to run the deploy + smoke steps against the
+      # CURRENT published version without touching the npm registry. Use for
+      # EB env-var and Terraform-only changes that previously needed a no-op
+      # changeset and a churned public version.
+      #
+      # BOOLEAN, not string, and the `if:` predicates below MUST compare against
+      # `true` unquoted. The `inputs` context PRESERVES the declared type (only
+      # `github.event.inputs.*` is always-string), and GitHub coerces mismatched
+      # operands to number — so comparing it against a QUOTED "true" evaluates
+      # `1 == NaN` => false, the deploy gates never fire, and the run goes GREEN
+      # with the deploy silently skipped. Pinned by
+      # test/js/__tests__/release-workflow-deploy-only.test.mjs.
+      deploy_only:
+        description: 'Deploy the current published version to prod without publishing to npm'
+        required: false
+        type: boolean
+        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -124,6 +143,10 @@ jobs:
           npm ci
       - name: Create Release Pull Request or Publish to npm
         id: changesets
+        # P039: a deploy-only dispatch must never reach the registry. On every
+        # other path (push to master, plain dispatch) `inputs` is null, so
+        # `null != true` => true and this runs exactly as before.
+        if: inputs.deploy_only != true
         uses: changesets/action@v1.9.0
         with:
           publish: npm run turbo:ci:publish
@@ -151,7 +174,12 @@ jobs:
         # output is authoritative here because `changeset version` deletes the
         # .changeset/*.md files IN THE WORKSPACE before this step runs, so an
         # on-disk check would false-negative (P044 false-positive fix v2).
-        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'
+        # P039: `&& inputs.deploy_only != true` keeps the assertion off the
+        # deploy-only path. Such a run attempts no publish, so there is no
+        # swallowed publish to detect — it would pass vacuously while asserting
+        # something the run is not doing. Both original conjuncts are retained,
+        # so the publish path is unchanged.
+        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true' && inputs.deploy_only != true
         shell: bash
         run: |
           # P044 / RFC-002: changesets/action does NOT fail the job when npm
@@ -186,8 +214,21 @@ jobs:
           fi
           echo "No pending publish: package.json $local_version, npm $npm_version (P044 assertion passed)"
 
+      # P039 / ADR 001 amendment 2026-07-26: SINGLE DEFINITION. The deploy path
+      # has exactly one set of steps, shared by both entry points — the publish
+      # path (`published == 'true'`) and the publish-free dispatch
+      # (`deploy_only`). Never fork this into a second job or duplicate these
+      # steps: divergence between the two prod-deploy paths is the failure this
+      # widening exists to prevent, and the master-HEAD-only job guard above is
+      # what keeps both entry points on the same source.
+      #
+      # `success() && (...)` is explicit on purpose. `deploy_only` is a constant
+      # on the dispatch path, carrying no upstream dependency, so without it the
+      # deploy would rest on GitHub's implicit success() default. The PARENTHESES
+      # are load-bearing: `&&` binds tighter than `||`, so `success() && A || B`
+      # would deploy after an upstream failure.
       - name: Deploy new version
-        if: steps.changesets.outputs.published == 'true'
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         uses: devcontainers/ci@v0.3
         env:
           # ADR 029/033/034: v1 basic-auth creds (TF_VAR_elastic_host/username/
@@ -226,11 +267,11 @@ jobs:
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
-        if: steps.changesets.outputs.published == 'true'
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         run: sleep 120
 
       - name: Smoke test production
-        if: steps.changesets.outputs.published == 'true'
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         run: |
           set -e
           echo "Testing health endpoint..."

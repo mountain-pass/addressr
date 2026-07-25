@@ -1,11 +1,11 @@
 # Problem 039: Decouple SaaS Deployment From npm Publish in Release Pipeline
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-05-14
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2)
 **Origin**: internal
 **Effort**: M
-**WSJF**: 2.0
+**WSJF**: 4.0
 
 ## Description
 
@@ -34,19 +34,19 @@ Discussion needed to pick a shape; investigation should examine how the current 
 
 1. **Forced version churn on infra-only changes.** 20 commits in the recent `deploy/` history carried a `.changeset/*.md` while touching zero files that ship in the published tarball. Each published an npm version whose content differed from its predecessor only in `lib/version.js` and `package.json`. Sample:
 
-   | Commit | Date | Subject |
-   | --- | --- | --- |
+   | Commit    | Date       | Subject                                                      |
+   | --------- | ---------- | ------------------------------------------------------------ |
    | `cabe7d5` | 2026-07-09 | resize v2 parity domain to m6g.large to measure warm latency |
-   | `b17952a` | 2026-07-09 | revert v2 domain to t3.small for a longer soak |
-   | `35cf2cc` | 2026-07-09 | set v2 steady-state sizing to m6g.large for 2.19 |
-   | `db2774d` | 2026-07-13 | re-enable read-shadow to v3 for pre-cutover soak |
-   | `8ceb019` | 2026-07-14 | decommission v2 OpenSearch domain (addressr4) |
+   | `b17952a` | 2026-07-09 | revert v2 domain to t3.small for a longer soak               |
+   | `35cf2cc` | 2026-07-09 | set v2 steady-state sizing to m6g.large for 2.19             |
+   | `db2774d` | 2026-07-13 | re-enable read-shadow to v3 for pre-cutover soak             |
+   | `8ceb019` | 2026-07-14 | decommission v2 OpenSearch domain (addressr4)                |
 
-   Three of these (`cabe7d5`, `b17952a`, `35cf2cc`) are a *single* instance-sizing experiment iterated three times — three public npm versions to resize a search cluster.
+   Three of these (`cabe7d5`, `b17952a`, `35cf2cc`) are a _single_ instance-sizing experiment iterated three times — three public npm versions to resize a search cluster.
 
 2. **Changelog entries addressed to the wrong audience.** `CHANGELOG.md` carries entries such as "Set the v2 OpenSearch domain to the larger instance class… The v2 domain still carries no production traffic" and "Revert the v2 OpenSearch parity domain to the smaller instance class for a longer soak measurement" — statements about SaaS infrastructure that a self-hosting library consumer cannot act on. Several end with a hand-written "Self-hosted deployments are unaffected" disclaimer, which is the symptom acknowledging itself.
 
-3. **Inverse: infra committed but not applied.** An infra commit *without* a changeset never deploys. It sits unapplied on `master` until an unrelated publish carries it out as a rider. `58d7b34` (deploy comment hygiene) is a benign instance. The two events "commit the Terraform" and "apply the Terraform" have no explicit link.
+3. **Inverse: infra committed but not applied.** An infra commit _without_ a changeset never deploys. It sits unapplied on `master` until an unrelated publish carries it out as a rider. `58d7b34` (deploy comment hygiene) is a benign instance. The two events "commit the Terraform" and "apply the Terraform" have no explicit link.
 
 4. **Release-risk contamination.** Every prod deploy is bundled with a registry publish, so the risk assessment of a deploy-only change inherits the blast radius of a public package release, and vice versa. R015 was raised on exactly this basis: a CORS/middleware-ordering release could not be published without also deploying to the live RapidAPI origin.
 
@@ -73,7 +73,7 @@ For a pure EB env-var flip with no repo change at all, there is no workaround sh
 - `Wait for deployment to stabilize` — same (release.yml:229)
 - `Smoke test production` — same (release.yml:233)
 
-`published` is set to `true` only when `changesets/action@v1.9.0` actually publishes to the npm registry. Production deploy is therefore a strict *consequence* of an npm publish, with no other entry point.
+`published` is set to `true` only when `changesets/action@v1.9.0` actually publishes to the npm registry. Production deploy is therefore a strict _consequence_ of an npm publish, with no other entry point.
 
 **The delivery channel.** The coupling is deeper than the gate. `deploy/deploy.sh` derives everything from `npm_package_version`:
 
@@ -81,15 +81,15 @@ For a pure EB env-var flip with no repo change at all, there is no workaround sh
 - the deployment zip is named `mountainpass-addressr-deployment-${npm_package_version}.zip`;
 - the generated `deployment/package.json` pins `"@mountainpass/addressr": "${npm_package_version}"`.
 
-So the EB instance installs the running artifact **from the public npm registry**. The deployed artifact's identity *is* an npm version. This is load-bearing and should not be changed casually — it is the ADR-004 / ADR-010 deployment shape.
+So the EB instance installs the running artifact **from the public npm registry**. The deployed artifact's identity _is_ an npm version. This is load-bearing and should not be changed casually — it is the ADR-004 / ADR-010 deployment shape.
 
-**Why that does not require a *new* publish.** `deploy/main.tf` names the S3 object (`main.tf:11-12`) and the EB application version (`main.tf:16`) off `var.elasticapp_version`, and the environment's `version_label` off that application version (`main.tf:28`). Re-running the deploy with an *unchanged* version therefore produces no diff on those resources — `aws_s3_object` carries no `etag`/`source_hash`, so Terraform does not inspect the re-zipped bundle's contents. A changed `setting {}` block (the EB env vars at `main.tf:39-116+`) applies as an in-place environment update. And `deploy.sh` already runs `terraform plan -refresh=true -detailed-exitcode` and only applies on exit code 2, so a re-run with genuinely nothing changed is a clean no-op.
+**Why that does not require a _new_ publish.** `deploy/main.tf` names the S3 object (`main.tf:11-12`) and the EB application version (`main.tf:16`) off `var.elasticapp_version`, and the environment's `version_label` off that application version (`main.tf:28`). Re-running the deploy with an _unchanged_ version therefore produces no diff on those resources — `aws_s3_object` carries no `etag`/`source_hash`, so Terraform does not inspect the re-zipped bundle's contents. A changed `setting {}` block (the EB env vars at `main.tf:39-116+`) applies as an in-place environment update. And `deploy.sh` already runs `terraform plan -refresh=true -detailed-exitcode` and only applies on exit code 2, so a re-run with genuinely nothing changed is a clean no-op.
 
-**Conclusion: a "deploy the current latest published version" run is already safe and idempotent, with zero change to `deploy.sh` or `main.tf`.** The `workflow_dispatch:` trigger already exists (release.yml:10) and the `release` job already accepts it (`if: github.ref == 'refs/heads/master'`). The *only* thing preventing a publish-free deploy today is the three `published == 'true'` step gates.
+**Conclusion: a "deploy the current latest published version" run is already safe and idempotent, with zero change to `deploy.sh` or `main.tf`.** The `workflow_dispatch:` trigger already exists (release.yml:10) and the `release` job already accepts it (`if: github.ref == 'refs/heads/master'`). The _only_ thing preventing a publish-free deploy today is the three `published == 'true'` step gates.
 
 ### The one-way asymmetry (must be preserved)
 
-**publish ⇒ deploy must stay.** The EB bundle pins the just-published version, so a publish that is not followed by a deploy leaves prod behind the registry. `release.yml:144-187` (the P044 assertion) exists specifically to make a *swallowed* publish loud rather than silently skipping the deploy — and its own comment (release.yml:142-143) states it is designed to "survive a future P039 decouple… independent of what the deploy gates on."
+**publish ⇒ deploy must stay.** The EB bundle pins the just-published version, so a publish that is not followed by a deploy leaves prod behind the registry. `release.yml:144-187` (the P044 assertion) exists specifically to make a _swallowed_ publish loud rather than silently skipping the deploy — and its own comment (release.yml:142-143) states it is designed to "survive a future P039 decouple… independent of what the deploy gates on."
 
 **deploy ⇏ publish is what must become possible.** Any fix therefore adds a **second entry point** to the deploy path. It must not reroute or re-gate the existing publish→deploy path, and must not weaken the P044 assertion on that path.
 
@@ -101,11 +101,51 @@ So the EB instance installs the running artifact **from the public npm registry*
 
 - [ ] Re-rate Priority and Effort at next /wr-itil:review-problems — evidence now supports a higher Likelihood than the pre-investigation guess of Unlikely (2): 20 realised instances. Effort is shape-dependent (S for Option 4, M–L for 1–3). Header fields deliberately left unchanged so `/wr-itil:review-problems` owns the re-rank and the README ranking stays consistent.
 - [x] Investigate root cause — audit current release.yml / deploy.yml workflows and how changesets drive npm + EB deploys (2026-07-25; see Confirmed mechanism above. There is no `deploy.yml` — the deploy lives inside `release.yml`'s `release` job.)
-- [ ] Discuss decoupling shape with user (changelog stream split vs changeset typing vs separate deploy trigger) — **queued as an outstanding question; Option 4 recommended below.**
-- [ ] Create reproduction test / acceptance criteria for "deploy-only" path — draft criteria in Fix Strategy; finalise once the shape is chosen.
-- [ ] Follow-on: parameterise the `/debug/shadow-config` smoke assertion so an env-driven shadow flip does not fail its own deploy (secondary finding above).
+- [x] Discuss decoupling shape with user (changelog stream split vs changeset typing vs separate deploy trigger) — **Option 4 + Option B approved 2026-07-26; implemented, see Fix Strategy.**
+- [x] Create reproduction test / acceptance criteria for "deploy-only" path — `test/js/__tests__/release-workflow-deploy-only.test.mjs` pins the predicates (2026-07-26). Acceptance criteria below stand; they need a real dispatch to exercise.
+- [ ] **Verification dispatch** — run `npm run release:watch -- --deploy-only` against the acceptance criteria below, then transition Known Error → Verifying → Closed. Not doable from CI-on-push: a push-triggered run never sets `deploy_only`.
+- [ ] Follow-on: parameterise the `/debug/shadow-config` smoke assertion so an env-driven shadow flip does not fail its own deploy (secondary finding above). Serves JTBD-201. **Blocks the shadow-flip use case; P039 does not close without it.**
+- [ ] Separate ticket: ADR 004's Decision Outcome and Consequences still say `AllAtOnce`, but `deploy/main.tf:253-254` is `DeploymentPolicy = "Rolling"` with health-based batching. Doc-vs-infra drift found during this work; deliberately not fixed here (amending a confirmed ADR is its own governance act).
 
 ## Fix Strategy
+
+### IMPLEMENTED 2026-07-26 — Option 4 + Option B risk-gating (Known Error)
+
+User-approved after a full wr-architect review (four rounds; PASS on round 4) and wr-jtbd review (PASS). Shipped shape:
+
+**1. `.github/workflows/release.yml` — single-definition `if:`-widening.** No second job, no duplicated deploy steps. Four predicates:
+
+| Location                                      | Predicate                                                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `workflow_dispatch.inputs.deploy_only`        | `type: boolean`, `default: false`                                                                                                    |
+| `release` job guard (unchanged, load-bearing) | `if: github.ref == 'refs/heads/master'`                                                                                              |
+| changesets/publish step                       | `if: inputs.deploy_only != true`                                                                                                     |
+| P044 assertion                                | `if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true' && inputs.deploy_only != true` |
+| Deploy / Wait / Smoke (×3)                    | `if: success() && (steps.changesets.outputs.published == 'true' \|\| inputs.deploy_only == true)`                                    |
+
+**Correction to the Option 4 sketch below: the boolean form is mandatory; the string form was wrong.** Lines in "Option 4" originally specified `inputs.deploy_only == 'true'` / `!= 'true'`. Because the input is declared `type: boolean` and the `inputs` context _preserves_ the declared type (only `github.event.inputs.*` is always-string), GitHub coerces mismatched operands to number — so `true == 'true'` evaluates `1 == NaN` → **false**. The deploy gates would never fire on a deploy-only dispatch: the run would go **green with the Deploy step skipped** and the fix would ship inert. Corrected in the Option 4 text below.
+
+`success() && (...)` is explicit rather than implicit because `deploy_only` is a constant on the dispatch path carrying no upstream dependency. The parentheses are load-bearing — `&&` binds tighter than `||`, so `success() && A || B` would deploy after an upstream failure.
+
+**2. Risk gate (Option B).** The gated entry point is `npm run release:watch -- --deploy-only` — a flag on `scripts/release-watch.sh`, not a separate script. The wr-risk-scorer gate matches on the `npm run release:watch` command _prefix_, so the flagged form is gated **by construction** at release tier. A `npm run deploy:watch` alias would be ungated (npm spawns the inner command in a child shell the hook never sees), so `deploy:watch` ships as a fail-closed signpost that prints the correct command and exits 1. Note the gate is **plugin-owned** (wr-risk-scorer), not the repo-local `.claude/hooks/git-push-gate.sh` named at line 158 below and in both wrapper scripts — that directory does not exist; corrected in this commit.
+
+The `--deploy-only` branch skips PR discovery, the gated-run approval, the CI check, the merge, and the post-release hooks; adds `--event workflow_dispatch` to run discovery (two entry points now produce runs on master); and **exits non-zero when the Deploy step concludes anything but `success`** — a skipped deploy on a deploy-only run is the exact symptom of a mis-typed predicate, which otherwise presents as a fully green run.
+
+**3. Regression guard.** `test/js/__tests__/release-workflow-deploy-only.test.mjs` (runs under the existing `npm run test:js`, already in the pre-commit chain) pins all four predicates as exact strings, asserts the deploy gate appears exactly 3×, and fails if anyone re-quotes `deploy_only` against `'true'`.
+
+**4. Governance.** ADR 001 amended (new publish-free trigger, the single-definition anti-divergence constraint, the prefix-match gating mechanism, the corrected gate location, the accepted raw-`gh workflow run` residual, ADR 004's Rolling/health-batched disruption inheritance, the ADR 007 one-run release-PR deferral, and the scope limitation below); two new Confirmation criteria and one new Reassessment criterion; compendium regenerated. R015 links this as a **partial** treatment. JTBD-400 gains the infra-only-deploy job story, matching desired outcome, and the two wrapper scripts in `screens:`.
+
+**Architect conditions carried:** ADR 004's own text still claims `AllAtOnce` while `deploy/main.tf:253-254` is `Rolling` — that drift is queued as a separate ticket, deliberately not fixed here.
+
+### Deferred, NOT delivered — smoke-test parameterisation
+
+The smoke block hard-asserts `hostSet != false` (`release.yml:263-267`) and runs _after_ the deploy (`189`) and the wait (`228-230`). A deploy-only dispatch that flips the shadow config therefore **applies the Terraform first** and only then fails the assertion — prod is left flipped behind a red run with no automatic rollback (`RollbackLaunchOnFailure` at `deploy/main.tf:513-514` covers EB launch failure, not a red smoke test). The Description's motivating use case (toggling `SHADOW` soaking via an EB env var) is therefore still not deliverable through this path. Parameterising the assertion is an independent decision — where does the expected value live: a dispatch input, a repo variable, or a Terraform output? — and is scoped beyond this change. It is the open investigation task below and serves JTBD-201.
+
+### Verification status
+
+The `deploy_only` branch **cannot be fully verified without a real `workflow_dispatch`**. CI on push validates only that the YAML parses and that the normal published-gate path is unaffected — a push-triggered run never sets `deploy_only`, so the widened branch is not exercised. Hence Known Error, not Verifying. Verification is a deliberate deploy-only dispatch (ideally with no pending infra change, so `terraform plan -detailed-exitcode` returns 0 and the run is a clean no-op) against the draft acceptance criteria below. Not triggered as part of this commit.
+
+### Options as originally costed
 
 Four options, costed against this repo. Change surface is per-file; effort is S/M/L.
 
@@ -121,9 +161,10 @@ Four options, costed against this repo. Change surface is per-file; effort is S/
 
 ### Option 2 — Changeset typing (`npm` / `saas` / `both`)
 
-**Change surface**: changesets has no type/tag concept, so this is a convention plus custom pipeline logic — a new parse step in `release.yml` placed *before* the changesets action, a routing script, changed gates on all four deploy-path steps, and rework of the P044 assertion.
+**Change surface**: changesets has no type/tag concept, so this is a convention plus custom pipeline logic — a new parse step in `release.yml` placed _before_ the changesets action, a routing script, changed gates on all four deploy-path steps, and rework of the P044 assertion.
 
 **What breaks**: several load-bearing invariants at once.
+
 - `changeset version` **deletes** `.changeset/*.md` from the workspace before later steps run — documented in the P044 comment (release.yml:148-153) as the reason an on-disk check false-negatives. The routing decision must be captured into a step output before the action runs.
 - The P044 assertion's entire premise is "no pending changesets + `published != 'true'` ⇒ swallowed publish". A `saas`-typed changeset that is consumed without publishing lands exactly in that hole.
 - A `saas`-typed changeset would still be version-bumped by `changeset version` unless additionally excluded via `ignore` semantics or deletion — more custom logic.
@@ -146,8 +187,8 @@ Four options, costed against this repo. Change surface is per-file; effort is S/
 
 - `workflow_dispatch:` already exists (release.yml:10) — add a `deploy_only` boolean input under it. No new trigger, no new workflow file.
 - Gate the changesets step: `if: inputs.deploy_only != true` (so a deploy-only run never touches the registry).
-- Widen the three deploy-path gates from `steps.changesets.outputs.published == 'true'` to `steps.changesets.outputs.published == 'true' || inputs.deploy_only == 'true'` (release.yml:190, 229, 233).
-- Add `&& inputs.deploy_only != 'true'` to the P044 assertion (release.yml:154). Without it a deploy-only run reaches the assertion and *passes* (local version equals npm version), but it would be asserting something the run is not doing.
+- Widen the three deploy-path gates from `steps.changesets.outputs.published == 'true'` to `success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)` (release.yml:190, 229, 233). **Unquoted `true`** — see the boolean-form correction above; the string form ships the fix inert.
+- Add `&& inputs.deploy_only != true` to the P044 assertion (release.yml:154). Without it a deploy-only run reaches the assertion and _passes_ (local version equals npm version), but it would be asserting something the run is not doing.
 
 **Unchanged**: `deploy/deploy.sh`, `deploy/main.tf`, `deploy/vars.tf`, `package.json`, `.changeset/**`, `CHANGELOG.md` generation, `scripts/release-watch.sh`. The publish→deploy path is byte-identical, so the one-way asymmetry holds **by construction** rather than by careful re-gating.
 
@@ -155,7 +196,7 @@ Four options, costed against this repo. Change surface is per-file; effort is S/
 
 **Costs and open risks** (the user should decide with these visible):
 
-1. **ADR-001 risk gate is bypassed.** The release risk gate lives in `.claude/hooks/git-push-gate.sh` and fires on `npm run release:watch`. A `workflow_dispatch` deploy has no equivalent wrapper, so it reaches prod without a risk score. Mitigations: accept it (a manual dispatch is a deliberate human action, and the full smoke-test block still runs and still fails the deploy), or add a thin `npm run deploy:watch` wrapper later that dispatches and watches under the same gate.
+1. **ADR-001 risk gate is bypassed.** The release risk gate is plugin-owned (wr-risk-scorer's `git-push-gate.sh`; there is no repo-local `.claude/hooks/` directory) and fires on `npm run release:watch`. A `workflow_dispatch` deploy has no equivalent wrapper, so it reaches prod without a risk score. Mitigations: accept it (a manual dispatch is a deliberate human action, and the full smoke-test block still runs and still fails the deploy), or add a thin `npm run deploy:watch` wrapper later that dispatches and watches under the same gate.
 2. **Symptom 3 is not fixed.** Infra committed without a changeset still does not auto-apply; someone must remember to dispatch. See variant 4b.
 3. **An ADR is required** — an amendment to ADR-001 and/or ADR-010 recording that prod deploy has a second, publish-free trigger and how the risk gate applies to it. Smallest ADR footprint of the four options; ADR-007 is untouched.
 4. **The shadow-flip use case additionally needs the secondary finding fixed** (parameterised `/debug/shadow-config` assertion). Independent of the option chosen.

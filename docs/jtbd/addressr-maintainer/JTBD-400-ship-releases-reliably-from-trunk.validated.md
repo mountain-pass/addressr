@@ -10,6 +10,8 @@ screens:
   - .github/workflows/release.yml
   - .github/workflows/rapidapi-listing-sync.yml
   - .github/workflows/update-*.yml
+  - scripts/release-watch.sh
+  - scripts/push-and-watch.sh
   - pre-commit hook chain
 ---
 
@@ -26,6 +28,7 @@ Help contributors trust that every commit which declares a changeset will actual
 - When pre-commit tooling (lint-staged, husky, license check) would drop, rewrite, or silently exclude any staged file, I want the commit to fail loudly instead of succeeding with missing content. This class of silent-drop bug is guarded by a regression test so it cannot regress unnoticed.
 - When a cucumber scenario is tagged to skip a test profile (e.g. `@not-cli2` per P010) without a `docs/problems/NNN-` cross-reference justifying the exemption, I want the commit to fail, so profile-specific coverage can never silently erode as new scenarios copy the pattern.
 - When releasing a zero-outage upgrade across infrastructure boundaries (e.g. ADR 029 OpenSearch blue/green), I want each operator step to be an artefact (script, workflow, ADR step) rather than tribal knowledge, so the release pipeline stays deterministic.
+- When I land an infra-only change that ships no published artifact, I want an explicit, risk-governed trigger that applies it to prod, so committed infra does not sit unapplied waiting for an unrelated publish to carry it out as a rider.
 
 ## Desired Outcomes
 
@@ -34,6 +37,7 @@ Help contributors trust that every commit which declares a changeset will actual
 - When a release-critical file is missing, the developer finds out locally, not from a failed release pipeline in GitHub Actions.
 - Test-profile exemption tags carry mandatory cross-references; their addition fails the commit if the cross-reference is missing.
 - Infra-boundary release steps (Terraform apply, domain population, cutover) are checkable artefacts, not memory.
+- An infra-only change reaches prod through a single prompted, risk-scored command (`npm run release:watch -- --deploy-only`) rather than an unreviewed out-of-band `terraform apply`. The dispatch remains operator-initiated by design; the compensating control is that it is the one gated path, and auto-dispatch on infra change (P039 variant 4b) is deliberately deferred until the manual path has been exercised.
 
 ## Persona Constraints
 

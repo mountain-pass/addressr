@@ -52,7 +52,7 @@ pending review — treatment decision deferred until scoring is curated.
 
 - Criteria: `RISK-POLICY.md`
 - Realised-as: <!-- link to docs/problems/P<NNN> when known -->
-- Treatment ADRs: <!-- link to docs/decisions/ADR-<NNN> when treatment lands -->
+- Treatment ADRs: [ADR 001 amendment 2026-07-26](../decisions/001-risk-gated-release-process.proposed.md) — publish-free `deploy_only` prod-deploy trigger (P039 Option 4), gated via `npm run release:watch -- --deploy-only`. **Partial treatment**: the coupling is broken for infra and env-var changes, but a shadow-config flip still applies and then fails its own smoke assertion (see the amendment's scope limitation), so this risk stays active until P039's smoke-parameterisation task lands.
 
 ## Evidence Log
 

@@ -1,14 +1,36 @@
 #!/bin/bash
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+#
 # Usage: npm run release:watch
-# Merges the open changesets release PR, watches the Release workflow, and
-# reports publish + deploy status. On failure: shows what failed and prompts
+#        npm run release:watch -- --deploy-only
+#
+# Default: merges the open changesets release PR, watches the Release workflow,
+# and reports publish + deploy status. On failure: shows what failed and prompts
 # for a fix.
 #
-# Risk gate: This script is gated by .claude/hooks/git-push-gate.sh which
-# checks the release risk score before allowing execution. If the score is
-# >= 5 (Medium), the command is blocked.
+# --deploy-only (P039 / ADR 001 amendment 2026-07-26): deploys the CURRENT
+# published version to prod without publishing anything. Dispatches release.yml
+# with deploy_only=true and watches the same run. Use for EB env-var and
+# Terraform-only changes that previously needed a no-op changeset and a churned
+# public npm version.
+#
+# Risk gate: this script is gated by the PLUGIN-OWNED wr-risk-scorer
+# git-push-gate hook (NOT a repo-local .claude/hooks/ script — that directory
+# does not exist), which checks the release risk score before allowing
+# execution. If the score is above appetite, the command is blocked.
+#
+# The gate matches on the `npm run release:watch` command PREFIX, so the
+# --deploy-only form is gated by construction — which is exactly why the
+# deploy-only path lives here as a flag rather than in a separate
+# scripts/deploy-watch.sh. A `npm run deploy:watch` alias would reach prod
+# UNGATED: npm spawns the inner command in a child shell the hook never sees.
 
 set -euo pipefail
+
+DEPLOY_ONLY=0
+if [ "${1:-}" = "--deploy-only" ]; then
+  DEPLOY_ONLY=1
+fi
 
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
@@ -28,6 +50,18 @@ show_failure_guidance() {
   echo "CLAUDE: The release pipeline failed. Show the user which checks failed above,"
   echo "help them fix the issue, then run \`npm run release:watch\` again."
 }
+
+if [ "$DEPLOY_ONLY" = "1" ]; then
+
+# ── 1-3 (deploy-only). No PR to find, approve, check or merge — dispatch. ────
+# The workflow's `release` job is guarded on refs/heads/master, so --ref master
+# is required, not merely conventional. build-and-test is an unconditional
+# `needs:`, so the full OpenSearch matrix still runs before anything deploys.
+echo "Dispatching deploy-only run of release.yml (no npm publish)..."
+gh workflow run release.yml --ref master -f deploy_only=true
+echo ""
+
+else
 
 # ── 1. Find the open changesets release PR ───────────────────────────────────
 PR_JSON=$(gh pr list --base master --state open --search "chore: release in:title" --limit 1 --json number,url,title 2>/dev/null)
@@ -118,13 +152,25 @@ echo "Merging release PR #$PR_NUMBER..."
 gh pr merge "$PR_NUMBER" --merge
 echo ""
 
+fi
+
 # ── 4. Find the triggered Release workflow run ──────────────────────────────
+# With two entry points there are now two kinds of run on master, so filter by
+# event — otherwise this loop can latch onto whichever run is in flight.
+# Deliberately a string, not an array: under `set -u`, bash 3.2 (still the
+# system bash on macOS) errors on "${arr[@]}" when the array is empty. These
+# two tokens contain no whitespace or globs, so word splitting is safe.
+RUN_EVENT_FILTER=""
+if [ "$DEPLOY_ONLY" = "1" ]; then
+  RUN_EVENT_FILTER="--event workflow_dispatch"
+fi
 printf 'Waiting for Release workflow'
 RUN_ID=""
 for i in $(seq 1 40); do
   RUN_ID=$(gh run list \
     --workflow=release.yml \
     --branch master \
+    $RUN_EVENT_FILTER \
     --limit 5 \
     --json databaseId,status,createdAt \
     --jq '[.[] | select(.status != "completed")] | sort_by(.createdAt) | reverse | .[0].databaseId' 2>/dev/null)
@@ -177,9 +223,24 @@ case "$DEPLOY_STATUS" in
 esac
 echo ""
 
+# On a deploy-only run a skipped Deploy step is a FAILURE, not the benign
+# "nothing to publish" outcome it means on the release path. It is the exact
+# symptom of a mis-typed `deploy_only` predicate in release.yml (a quoted
+# "true" comparison never matches a boolean input), which otherwise presents
+# as a fully green run that deployed nothing. Fail loud.
+if [ "$DEPLOY_ONLY" = "1" ] && [ "$DEPLOY_STATUS" != "success" ]; then
+  echo "Deploy-only run did not deploy: Deploy step conclusion was '${DEPLOY_STATUS:-unknown}', expected 'success'." >&2
+  echo "Check the deploy_only gate predicates in .github/workflows/release.yml (see P039)." >&2
+  echo "  $RUN_URL" >&2
+  exit 1
+fi
+
 # ── 7. Run post-release hooks ───────────────────────────────────────────────
+# Skipped on the deploy-only path: nothing was published, and the hooks' own
+# PREV_MERGE derivation walks 'chore: release' commits that this run did not
+# create — it would diff and potentially commit unrelated content.
 HOOK_DIR="scripts/post-release.d"
-if [ -d "$HOOK_DIR" ]; then
+if [ "$DEPLOY_ONLY" = "0" ] && [ -d "$HOOK_DIR" ]; then
   PREV_MERGE=$(git log --grep='chore: release' -1 --format=%H HEAD~1 2>/dev/null || true)
   if [ -n "$PREV_MERGE" ]; then
     CHANGED_FILES=$(git diff --name-only "$PREV_MERGE"..HEAD~1 2>/dev/null || true)
@@ -207,7 +268,9 @@ fi
 
 echo ""
 echo "CLAUDE: The release workflow completed. Report the results above to the user."
-if [ "$DEPLOY_STATUS" = "success" ]; then
+if [ "$DEPLOY_ONLY" = "1" ]; then
+  echo "The currently published version has been deployed to AWS. Nothing was published to npm (P039 deploy-only)."
+elif [ "$DEPLOY_STATUS" = "success" ]; then
   echo "The new version has been published to npm and deployed to AWS."
 elif [ "$DEPLOY_STATUS" = "skipped" ]; then
   echo "No new version published (no actionable changesets). The release job completed but no deploy occurred."

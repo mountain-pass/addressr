@@ -118,6 +118,7 @@
     "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\"",
     "push:watch": "bash scripts/push-and-watch.sh",
     "release:watch": "bash scripts/release-watch.sh",
+    "deploy:watch": "echo 'Use: npm run release:watch -- --deploy-only (the risk gate matches on release:watch; an alias here would reach prod ungated -- ADR 001 / P039)' >&2 && exit 1",
     "prepare": "husky",
     "pretest:nodejs:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,test,es babel-node loader.js"
   },
