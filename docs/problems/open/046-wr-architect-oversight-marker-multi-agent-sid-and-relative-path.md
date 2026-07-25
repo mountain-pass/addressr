@@ -23,7 +23,19 @@ Upstream fix needed in `@windyroad/wr-architect`: (a) normalise the path arg to 
 
 ## Symptoms
 
-(deferred to investigation)
+- The edit gate stays BLOCKED after a genuine review PASS, because the marker was written under a session ID that is not the one the hook reads.
+
+### Recurrence evidence — 2026-07-25 (P035 investigation iter)
+
+First observation of this failing on the **edit-gate** marker (`architect-reviewed-*`) rather than the oversight marker, and the first with concrete SID evidence. Both governance subagents wrote markers under **their own** session IDs, never the parent's:
+
+- Parent session: `8acaaf59-b35f-44a3-9943-495e720e571b`. It had `/tmp/architect-announced-8acaaf59-…` (written at announce time, in-process) but **no** `/tmp/architect-reviewed-8acaaf59-…`.
+- The `wr-architect:agent` subagents instead produced `/tmp/architect-reviewed-0c817bfd-…` and `/tmp/architect-reviewed-b9f9b263-…` — subagent SIDs, invisible to the parent's hook.
+- Net effect: a fresh-spawn review whose output led with the exact literal `**Architecture Review: PASS**` still left the edit blocked. Cleared only via the manual escape the hook's own error message documents (`touch /tmp/architect-reviewed-$SID && rm -f …$SID.hash`).
+
+This confirms investigation task 3 (the SID-discovery gap) for the edit-gate marker path: the marker writer runs in the subagent's process and stamps the subagent SID, while the `PreToolUse` hook resolves the _parent_ session from stdin. Any `Agent`-tool-mediated review therefore cannot satisfy the gate it exists to satisfy — the P400 note in the hook message ("must be a FRESH Agent spawn") is a workaround for a symptom, not the cause, and does not help because a fresh spawn has the same SID mismatch.
+
+**Likelihood is under-rated.** The ticket carries Likelihood: Unlikely (2), but this fired on _both_ governance gates in a single routine iteration (architect and, transitively, the review round-trip for JTBD). Every `manage-problem` iteration that edits a gated file will hit it. Recommend re-rating at the next `/wr-itil:review-problems`.
 
 ## Workaround
 
