@@ -1,6 +1,6 @@
 # Problem 023: Browser does not cache root `/` for cross-origin fetches despite `public, max-age=604800`
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-18
 **Root cause confirmed**: 2026-07-24 (live origin probe + source attribution)
 **Priority**: 10 (High) — Impact: Minor (2) x Likelihood: Almost certain (5)
@@ -86,12 +86,11 @@ The `fromDiskCache: false` on the GET is **not** an origin defect. Live probe sh
 
 **Implemented 2026-07-24** via [RFC-008](../../rfcs/RFC-008-cors-preflight-max-age-at-origin.proposed.md) + [ADR-037](../../decisions/037-cors-preflight-caching-policy.proposed.md): explicit `app.options(/.*/, ...)` handler in `buildRest2App()` (`src/waycharter-server.js`) emitting `Access-Control-Max-Age` (`ADDRESSR_ACCESS_CONTROL_MAX_AGE`, default 86400) + `Access-Control-Allow-Methods` (`ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS`, default `GET,OPTIONS`), returning 204, ordered before `proxyAuthMiddleware` (OPTIONS method-level exemption; narrows ADR-024 — cross-referenced there). No new dependency. Covered by `test/resources/features/cors-preflight.feature` (rest2, live HTTP — both profiles + the GET-still-401 ordering guard) and `test/js/__tests__/waycharter-server.test.mjs` (source-inspection ordering invariant).
 
-This fix targets the **preflight-flood half** only. The GET disk-cache-miss half (Layer 2, gateway-owned) is out of scope — SDK memoisation remains its workaround. **Status stays Known Error**: the through-gateway efficacy probe (investigation task 4) is unresolved, so end-to-end efficacy through the RapidAPI gateway is not yet proven. Fix Released fires at the next release (K→V transition, orchestrator-owned).
+This fix targets the **preflight-flood half** only. The GET disk-cache-miss half (Layer 2, gateway-owned) is out of scope — SDK memoisation remains its workaround. The through-gateway efficacy probe (investigation task 4) is still unresolved, so end-to-end efficacy through the RapidAPI gateway is not yet proven. **Released in v3.0.2 on 2026-07-25 (Known Error → Verification Pending) — see [Fix Released](#fix-released) below.**
 
 **Release vehicle**: .changeset/p023-cors-preflight-max-age.md
 
 **Original proposal (retained for lineage):**
-
 
 The one origin-side, in-our-control lever is to **emit `Access-Control-Max-Age` on preflight responses** so cross-origin GETs stop re-preflighting on every call (cuts preflight round-trips to ~1 per origin per max-age window). This does **not** unlock GET disk caching (Layer 2, gateway-owned).
 
@@ -136,8 +135,18 @@ This is a **NEEDS-DIRECTION** decision (no CORS/preflight-policy ADR exists; ≥
 - `src/waycharter-server.js:560-581` — current CORS middleware (env-var-driven, no Access-Control-Max-Age); `proxyAuthMiddleware()` at line 583 gates OPTIONS (ADR-024 interaction, see Fix Strategy).
 - SDK team's Playwright CDP probe (external — not yet in this repo).
 
+## Fix Released
+
+Released 2026-07-25 in **v3.0.2** — published to npm as `@mountainpass/addressr@3.0.2` and deployed to production via Terraform; the release-pipeline prod smoke test PASSED. Fix commit: `5a36b79` `fix(cors): cache CORS preflight via Access-Control-Max-Age at origin (P023)`, shipped via `.changeset/p023-cors-preflight-max-age.md` (now consumed).
+
+Ships the Option A origin-side fix only: an explicit `app.options(/.*/, ...)` handler in `buildRest2App()` returning 204 with `Access-Control-Max-Age` (`ADDRESSR_ACCESS_CONTROL_MAX_AGE`, default 86400) and `Access-Control-Allow-Methods` (`ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS`, default `GET,OPTIONS`), ordered ahead of `proxyAuthMiddleware` per the ADR-024 method-level exemption.
+
+**Verification criterion**: confirm an `OPTIONS` preflight to the production root `/` returns **204** and carries **`Access-Control-Max-Age`**.
+
+**Caveat — through-gateway efficacy remains unproven.** This closes the preflight-flood half (Layer 1, origin) only. Investigation task 4 (probe through the RapidAPI gateway with a subscribed key: does the origin's `Access-Control-Max-Age` actually reach the browser, or does the gateway answer/intercept `OPTIONS` independently?) is still open. The GET disk-cache-miss half (Layer 2, gateway-injected credentialed CORS × Chromium cache partitioning) is out of scope and keeps SDK memoisation as its workaround.
+
 ## RFCs
 
-| RFC | Status | Title |
-|-----|--------|-------|
+| RFC     | Status   | Title                                                         |
+| ------- | -------- | ------------------------------------------------------------- |
 | RFC-008 | proposed | Emit `Access-Control-Max-Age` on CORS preflight at the origin |
