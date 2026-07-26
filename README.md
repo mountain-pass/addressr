@@ -181,10 +181,11 @@ npm release, so an older version tag may still be the previous Alpine-based imag
 Distroless one described above.
 
 Two things are changing, per
-[ADR 040](docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md). Publishing
-moves into CI, and every build will carry an immutable `:<version>-<gitsha>` tag alongside `:latest`
-— that sha tag is the one to pin if you want a build that can never be re-pointed under you. Neither
-is live yet, so do not pin a `-<gitsha>` tag until this section says it resolves.
+[ADR 040](docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md). A local build
+already writes an immutable `:<version>-<gitsha>` tag alongside `:latest`, and that sha tag is the
+one to pin if you want a build that can never be re-pointed under you. What is not live yet is
+publishing: nothing pushes those tags to Docker Hub automatically, so no `-<gitsha>` tag resolves
+there today. Do not pin one until this section says it does.
 
 Note that `:latest` moves. If you track it, watch
 [the Docker image changelog](docs/DOCKER-IMAGE-CHANGELOG.md) — a change to the image no longer

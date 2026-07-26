@@ -15,7 +15,10 @@ rebuild.
 
 ## Unpublished
 
-Built and smoke-tested in CI but not yet pushed to Docker Hub. The tag is recorded here when it is.
+Not pushed to Docker Hub, and **not yet built or booted anywhere** — the `Docker Image` CI workflow
+that builds and smoke-tests it has never run. See
+[P055](problems/known-error/055-migrate-docker-image-alpine-to-distroless.md). The tag is recorded
+here once the image is published.
 
 ### Distroless runtime
 
