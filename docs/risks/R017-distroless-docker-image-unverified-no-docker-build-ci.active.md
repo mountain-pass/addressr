@@ -18,7 +18,7 @@ Published self-hosted Docker image migrated to a multi-stage Distroless runtime 
 
 ## Inherent Risk
 
-Impact × Likelihood *before* controls.
+Impact × Likelihood _before_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -31,7 +31,7 @@ Impact × Likelihood *before* controls.
 
 ## Residual Risk
 
-Impact × Likelihood *after* controls.
+Impact × Likelihood _after_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -60,7 +60,23 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-26T05:23:23Z: fired in `.risk-reports/2026-07-26T05-23-23-commit.md` (reason: above-appetite-residual)
 - 2026-07-26T05:23:23Z: fired in `.risk-reports/2026-07-26T05-23-23-commit.md` (reason: user-stated-precondition)
+- 2026-07-26: **Partially discharged.** The `build-and-smoke` job in
+  `.github/workflows/docker-image.yml` ran for the first time on master (run `30195417720`). The
+  Distroless image **built successfully** and the runtime-user step printed `runtime user: 65532`
+  (the Distroless nonroot uid) — the two properties this risk called unverified are now evidenced.
+  The job nonetheless went red on a **test-assertion bug, not an image defect**: the assertion
+  accepted only `nonroot` and `65532:65532`, while the base sets `Config.User` to the bare uid, so a
+  correct image false-negatived. Fixed by widening the exact-string allowlist to a third arm; the
+  Dockerfile was not changed.
+
+  **Still unverified**: container start / `/health`, and SIGTERM termination under 10s. The job
+  exits at the first failing step and neither remaining step carries `if: always()`, so both were
+  skipped. This risk stays Active until a green run exercises them. See
+  [P055](../problems/known-error/055-migrate-docker-image-alpine-to-distroless.md).
 
 ## Change Log
 
 - 2026-07-26: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+- 2026-07-26: Evidence log updated with the first `build-and-smoke` run — build and non-root
+  verified, boot and SIGTERM still outstanding. No scoring change (fields remain uncurated); the
+  risk is narrower than at scaffold time but not yet dischargeable.

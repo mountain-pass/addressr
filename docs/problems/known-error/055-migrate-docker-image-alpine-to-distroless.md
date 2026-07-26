@@ -83,6 +83,38 @@ base-image digest-pin trigger assessed and declined).
 - **ADR-039 oversight.** Authored `human-oversight: unconfirmed` for the same reason. The substance was decided by the user on 2026-07-18; `/wr-architect:review-decisions` should promote it.
 - **ADR-013 composes-with gap — CLOSED, not deferred.** ADR-013 recorded "no Docker-build CI workflow exists" as an open gap, which is why nothing ever caught a Dockerfile regression. `.github/workflows/docker-image.yml` closes it. Publishing stays manual (`npm run docker:push`) as of that commit; **the "separate decision" it deferred is [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md)**, which promotes CI to the publisher. The wiring is a later stage.
 
+## First CI Run (2026-07-26) — the image built; the assertion was wrong, not the image
+
+`build-and-smoke` ran for the first time on master (run `30195417720`) and **failed on a
+test-assertion bug, not an image defect**.
+
+What the run actually proves:
+
+- **`docker build` succeeds.** `npm run build:docker` completed against the multi-stage Distroless
+  Dockerfile on a clean runner. This is the first mechanical evidence the rework builds at all —
+  the largest unknown this ticket carried since `d284853`.
+- **The runtime user is non-root.** The step printed `runtime user: 65532`, which is the Distroless
+  nonroot uid. The image is correct. The assertion was not: it accepted only `nonroot` and
+  `65532:65532`, but `gcr.io/distroless/nodejs22-debian12:nonroot` reports `Config.User` as the
+  **bare uid**, so a correct image false-negatived and reddened master.
+
+What the run does **not** prove — the job exits at the first failing step, and neither of the
+remaining steps carries `if: always()`, so both were skipped:
+
+- **Container start and `/health`** — not exercised.
+- **SIGTERM termination under 10s** — not exercised. This is the assertion that empirically
+  confirms dropping `dumb-init` was safe, and it remains unconfirmed.
+
+Fix: the assertion now accepts the bare `65532` alongside the two existing alternatives. It is still
+a fail-closed exact-string allowlist — every root form (`""`, `0`, `0:0`, `root`) fails all three
+arms — so the non-root property the step exists to prove is unchanged in strength.
+
+The Dockerfile was **not** touched. ADR-039 stays `proposed` and this ticket stays Known Error until
+a green `build-and-smoke` run exercises the boot and SIGTERM steps end to end.
+
+Carry-forward for ADR-040 stage 2: when these steps move into the reusable `workflow_call`
+definition, transplant the **fixed** three-arm assertion, or the same red build returns.
+
 ## Dependencies
 
 - **Blocks**: (none)
