@@ -65,7 +65,7 @@ jobs:
         run: |
           user=$(docker inspect --format '{{.Config.User}}' mountainpass/addressr:latest)
           echo "runtime user: ${user}"
-          test "${user}" = 'nonroot' || test "${user}" = '65532:65532'
+          test "${user}" = 'nonroot' || test "${user}" = '65532:65532' || test "${user}" = '65532'
 
       - name: Container starts and serves /health
         run: |
