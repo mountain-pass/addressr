@@ -148,6 +148,31 @@ Run Addressr on your own infrastructure for full control over your data.
 8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
 9. Wire your address form up to the address-server api.
 
+## Self Hosted with Docker
+
+The `mountainpass/addressr` image runs the same v2 API server. It is built on
+[Distroless](https://github.com/GoogleContainerTools/distroless), so the image contains the Node
+runtime and addressr and nothing else — no shell, no package manager, no npm. The entrypoint is
+`node`, so a command you pass is a script path rather than a program name.
+
+Start the API server (the `ELASTIC_*` env vars are the same as above):
+
+```sh
+docker run -p 8080:8080 -e ELASTIC_HOST=host.docker.internal mountainpass/addressr
+```
+
+Run the data loader. It needs a writable `target` directory for the G-NAF download and the dataset
+cache, so mount one; unlike the server, it cannot run with `--read-only`:
+
+```sh
+docker run -v "$PWD/target:/home/nonroot/target" -e ELASTIC_HOST=host.docker.internal \
+  mountainpass/addressr \
+  /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
+```
+
+There is no shell in the image, so `docker exec ... sh` will not work. Diagnose with `docker logs`,
+`docker inspect`, `docker cp`, and the `/health` endpoint.
+
 # API Endpoints
 
 Addressr exposes a HATEOAS REST API. Start at the root (`/`) and follow links to discover endpoints. A supplementary OpenAPI 3.x spec is available at `/api-docs`.

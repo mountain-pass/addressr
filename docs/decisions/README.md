@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 38 (34 in-force, 4 historical)
+**Total ADRs:** 39 (35 in-force, 4 historical)
 
 ---
 
 ## In-force decisions
 
-_34 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_35 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -182,6 +182,13 @@ _34 ADRs. These are the current rules. The architect agent reads this section fi
 
 **Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** [019-session-learning-briefing-system]
 
+### ADR-039 — Distroless Runtime for the Published Docker Image
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-013
+**Decides:** Rebuild the published `mountainpass/addressr` image as a multi-stage build — `node:22-bookworm-slim` installs, `gcr.io/distroless/nodejs22-debian12:nonroot` runs — dropping the shell, package manager, npm, and `dumb-init` so a publicly pullable artefact carries only the Node runtime and the app's own dependencies as CVE surface. Non-root execution and zero-config env defaults are preserved; the in-container shell and the `docker run ... addressr-loader` command form are deliberately given up.
+**Confirmation:** `.github/workflows/docker-image.yml` job `build-and-smoke`, none of it run yet: `npm run build:docker` completes; `docker inspect` reports a non-root user; the container answers `/health` over HTTP (catches an unresolvable `CMD` path); `docker stop` terminates in under 10s without `dumb-init`; manually verify the loader writes `/home/nonroot/target/keyv-file.msgpack` without EACCES.
+**Related:** ADR-013, ADR-015
+
 ---
 
 ## Historical decisions
@@ -195,7 +202,7 @@ _4 ADRs. These were tried and superseded, rejected, or deprecated. Read them as 
 ### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
 
 **Status:** superseded | **Oversight:** rejected-pending-supersede (resolved by ADR-039)
-**Decides:** Ship the self-hosted container on `node:22-alpine` with dumb-init as PID 1, running as the non-root `node` user with addressr installed globally via npm and published to Docker Hub as `mountainpass/addressr` — chosen for small image size, correct signal/zombie handling, and easy distribution. Superseded 2026-07-26 by ADR-039, which moves the runtime to a multi-stage distroless build; the "no Docker-build CI" gap carries forward to ADR-039 rather than being closed here.
+**Decides:** Ship the self-hosted container on `node:22-alpine` with dumb-init as PID 1, running as the non-root `node` user with addressr installed globally via npm and published to Docker Hub as `mountainpass/addressr` — chosen for small image size, correct signal/zombie handling, and easy distribution. Superseded 2026-07-26 by ADR-039, which moves the runtime to a multi-stage distroless build; the "no Docker-build CI" gap it recorded as Open is closed by the Docker Image workflow ADR-039 adds.
 **Confirmation:** `Dockerfile` at project root with `ARG BASE_IMAGE=node:22-alpine` and `CMD "addressr-server-2"`; Docker Hub image `mountainpass/addressr`; `package.json` has `build:docker` and `start:server:docker` scripts
 **Related:** ADR-039
 
