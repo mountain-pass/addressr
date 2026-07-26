@@ -15,8 +15,9 @@ rebuild.
 
 ## Unpublished
 
-Not pushed to Docker Hub, and **not yet built or booted anywhere** — the `Docker Image` CI workflow
-that builds and smoke-tests it has never run. See
+Not pushed to Docker Hub. The `Docker Image` CI workflow has since run: the image **builds**, starts,
+and answers `/health`, and the runtime user is the Distroless nonroot uid. What is not yet confirmed
+is the stop-signal fix described below. See
 [P055](problems/known-error/055-migrate-docker-image-alpine-to-distroless.md). The tag is recorded
 here once the image is published.
 
@@ -42,5 +43,18 @@ userland from the image's CVE surface. It still runs as a non-root user and stil
 
   in place of `docker run mountainpass/addressr addressr-loader`. The loader needs a writable
   `target` mount and cannot run under `--read-only`. The server still can.
+
+**How the container handles stop signals.** A `tini` init runs as PID 1 and executes node as its
+child, so `docker stop` (and any orchestrator sending `SIGTERM`) terminates the container promptly
+instead of waiting out the grace period and being SIGKILLed. This replaces the `dumb-init` the Alpine
+image carried; it is not a new requirement on you, and it changes nothing about how you run the
+image. The command form above is unaffected — `tini` passes your arguments straight through to node,
+so overriding the command to run the loader works exactly as shown.
+
+One limit worth knowing before you rely on it: the container stops **promptly**, not **gracefully**.
+Requests in flight when the stop signal arrives are dropped rather than allowed to finish. If you
+run behind a load balancer, drain it before stopping the container. Adding a graceful-shutdown
+handler is tracked as
+[P067](problems/open/067-no-sigterm-graceful-shutdown-handler.md).
 
 The npm package is unchanged by this image release.
