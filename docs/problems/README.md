@@ -1,7 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-26 **P064 captured** — the external-comms commit-message gate in `@windyroad/risk-scorer` leak-scans only the FIRST `-m` value of a `git commit`, but git concatenates every `-m` into the final message, so on a multi-`-m` commit every body paragraph after the subject line reaches public history unscanned. Security-relevant: the body is exactly where the long-form prose most likely to carry a business metric lives, and the subject is the one part least likely to. Sibling of P058 (same gate, different root cause — that one is surface-regex coverage, this one is message-value extraction); both need fixing. Workaround: write commit messages as a single `-m` with embedded newlines. Upstream-blocked, reported to `windyroad/agent-plugins`. (lightweight aside via manual capture-problem steps)
-> _(prior fragment for P015 rotated to `README-history.md` under 2026-07-26)_
+> Last reviewed: 2026-07-26 **P065 captured** — RFC-007 (CI perf-regression probe) carries `stories: []` with no story map, no story, and no recorded reason, so the ADR-089 trace chain terminates early and there is no way to tell a deliberate no-story RFC from an unfinished one. Two acceptable outcomes: back-fill a story map plus at least one story, or record on RFC-007 why its atomic shape needs none. Resolvable locally despite the upstream P059 contract skew that makes `stories: []` a permitted state with no disambiguation. WSJF 4.0 (Impact 2 × Likelihood 2, Effort S) — low because RFC-007's work has already shipped, so the missing trace costs an audit reconstruction rather than misdirecting live work. (lightweight aside via manual capture-problem steps)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -16,6 +15,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                  | 8 (Medium)   | Known Error | L      | 2026-05-03 | internal |
+| 4.0  | P065 | RFC-007 carries `stories: []` — back-fill a story map or justify it   | 4 (Low)      | Open        | S      | 2026-07-26 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s fg Bash cap    | 8 (Medium)   | Open        | M      | 2026-07-21 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
 | 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
