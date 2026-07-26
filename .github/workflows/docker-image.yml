@@ -1,7 +1,12 @@
-# Docker image build + smoke (P055 / ADR-039)
+# Docker image build, smoke, and publish (P055 / ADR-039 / ADR-040 stage 2)
 #
-# @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI) serving
-#   JTBD-200 (self-hosted operator gets a container that actually starts).
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI). The
+#   operator-facing half of the tag contract — which tag to pin, what :latest
+#   promises, how an operator learns the image changed — belongs to JTBD-202,
+#   which does not exist yet; see P055. Prose reference only: an @jtbd
+#   annotation for it would be a dangling ID. Deliberately NOT cited as
+#   JTBD-200, which is the gateway auth boundary and cannot adjudicate a
+#   container tag contract.
 #
 # Closes the gap ADR-013 carried as Open and ADR-039 inherits: the published
 # mountainpass/addressr image was only ever built by a human running
@@ -17,9 +22,17 @@
 # dispositions from the kernel, so it does not. A tini init now runs as PID 1 and
 # forwards SIGTERM to node. Do not weaken this step.
 #
-# It does NOT push. Publishing stays manual (`npm run docker:push`) so this job
-# cannot leak a registry credential; promoting it to a publisher is a separate
-# decision.
+# It PUBLISHES, as of ADR-040 stage 2 — that decision is taken. The publish step
+# is guarded twice, independently. It runs only on master and never on a pull
+# request: on a same-repo pull request the secrets ARE available, so secret
+# presence alone would not be a guard. And the secrets themselves must be
+# non-empty; absent, the step prints a notice and succeeds, which is what let
+# this wiring land before the user had added them. `npm run docker:push` is
+# retained as the documented break-glass.
+#
+# The bare :<semver> tag is written only when the `publish_semver` input is true,
+# i.e. only by a package release calling this workflow. A docker-only rebuild
+# must never re-point a tag a self-hoster has already pinned.
 #
 # HEALTH_ES_PROBE=off is what lets the smoke run without an OpenSearch service
 # container: /health then reports liveness only, which is exactly the property
@@ -37,13 +50,28 @@ on:
       - 'package-lock.json'
       - '.github/workflows/docker-image.yml'
   pull_request:
+    # package.json / package-lock.json are here as well as on the push filter:
+    # without them a dependency bump was publishable on merge without the image
+    # ever having been built in the pull request.
     paths:
       - 'Dockerfile'
       - '.dockerignore.tmpl'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/docker-image.yml'
   workflow_dispatch:
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+  # ADR-040: release.yml calls this at stage 3 with publish_semver: true.
+  workflow_call:
+    inputs:
+      publish_semver:
+        description: 'Also push the bare :<semver> tag. True only on a package release.'
+        type: boolean
+        default: false
+    secrets:
+      DOCKER_ID_USER:
+        required: false
+      DOCKER_ID_PASS:
+        required: false
 
 permissions:
   contents: read
@@ -51,6 +79,19 @@ permissions:
 jobs:
   build-and-smoke:
     runs-on: ubuntu-latest
+    # Job scope, not workflow scope: in a called workflow `github.workflow`
+    # resolves to the CALLER's name, so the old workflow-level
+    # `${{ github.workflow }}-${{ github.ref }}` group would be byte-identical
+    # to release.yml's own group at stage 3 and deadlock — the caller waiting
+    # on the callee, the callee queued behind the caller.
+    concurrency:
+      group: docker-image-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      # Job scope because build:docker and docker:push BOTH derive their tags
+      # from scripts/docker-tags.sh, which reads this. At step scope the build
+      # would tag two images and the push would try to push three.
+      DOCKER_PUBLISH_SEMVER: ${{ inputs.publish_semver && '1' || '0' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -99,6 +140,22 @@ jobs:
           elapsed=$(( $(date +%s) - start ))
           echo "stopped in ${elapsed}s"
           test "${elapsed}" -lt 10
+
+      # No status function in the `if:`, so GitHub applies the implicit
+      # success(): a failed build, /health, or SIGTERM step skips the publish.
+      # That is ADR-039's compensating control for the floating :nonroot base —
+      # the exact image that gets pushed is the one that was smoke-tested.
+      - name: Publish image to Docker Hub
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        env:
+          DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}
+          DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}
+        run: |
+          if [ -z "${DOCKER_ID_USER}" ] || [ -z "${DOCKER_ID_PASS}" ]; then
+            echo '::notice::docker publish skipped: DOCKER_ID_USER not set'
+            exit 0
+          fi
+          npm run docker:push
 
       - name: Show container logs on failure
         if: failure()
