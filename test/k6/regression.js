@@ -46,10 +46,13 @@ export const options = {
     },
   },
   thresholds: {
-    // Only the measured (phase:main) window is REPORTED on — nothing here gates.
-    // k6 still exits 99 on a breach, but the CI step carries
-    // `continue-on-error: true`, so a breach yields a number and a ::warning::
-    // and never reddens master (P032 — this probe is advisory, not a gate).
+    // Only the measured (phase:main) window is REPORTED on — nothing here gates
+    // a release. k6 exits 99 on a breach; the CI step routes 99 to a ::warning::
+    // plus a job-summary entry and keeps the job green, while any other nonzero
+    // exit fails that job loudly (P032 — advisory on perf AND on validity
+    // failures that surface as a check-rate breach; loud only when k6 itself
+    // fails to run. Content-based routing of the wrong-measurement class is a
+    // named residual on P032).
     //
     // `abortOnFail` is deliberately absent everywhere. The first real nightly
     // (run 30103898200) aborted 1 s into the measured window on a 0% check rate

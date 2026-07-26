@@ -7,11 +7,14 @@
 # cadence (nightly + on-demand), NOT per-push and NOT in the build-and-test
 # matrix. Folding OpenSearch spin-up + fixture load + build + a 60 s k6 run into
 # every push would slow the trunk-based release loop; the release gate stays on
-# correctness (cucumber) only. A regression here is ADVISORY — the k6 step is
-# `continue-on-error: true`, so a threshold breach surfaces as a ::warning::
-# plus a job-summary entry on a green run, never as a red master or a blocked
-# release. Run the same probe locally with `npm run test:perf:regression`
-# before a risky merge.
+# correctness (cucumber) only. The probe DISCRIMINATES on k6's exit code: a
+# threshold breach (99) is ADVISORY — a ::warning:: plus a job-summary entry on
+# an otherwise green run, never a red master or a blocked release — while any
+# other nonzero exit means k6 itself failed to run and FAILS the job loudly.
+# Note the asymmetry: a probe that RUNS but measures the wrong thing still
+# breaches checks{phase:main} and lands in the ADVISORY branch — see the P032
+# residual. Run the probe locally with `npm run test:perf:regression` before a
+# risky merge.
 name: Perf Regression
 
 on:
@@ -116,38 +119,83 @@ jobs:
         uses: grafana/setup-k6-action@v1
       - name: Run perf regression probe
         id: k6
-        # NON-GATING BY DESIGN. k6 still exits non-zero on a threshold breach
-        # (99), but `continue-on-error` absorbs it — a breach, or ANY other
-        # nonzero k6 exit, records a result and never fails this workflow. The
-        # nightly probe reports numbers; it must never redden master or block
-        # the trunk/release pipeline. The "Report" step below carries the
-        # signal instead. See P032.
-        continue-on-error: true
-        # `shell: bash` is load-bearing: the default `run:` shell is `bash -e`
-        # WITHOUT pipefail, so `| tee` would mask k6's exit status and
-        # steps.k6.outcome would always be 'success' — silently disarming the
-        # warning below.
+        # EXIT-CODE DISCRIMINATION (supersedes the blanket step-level failure
+        # tolerance that shipped 2026-07-25). k6's exit code is the router:
+        #   0  -> every threshold passed. Step succeeds.
+        #   99 -> a threshold was crossed = a real perf breach. ADVISORY: a
+        #         ::warning:: plus a job-summary entry, step still exits 0. A
+        #         perf breach must never redden master or stall the trunk loop.
+        #   *  -> k6 itself failed to run — binary missing, script would not
+        #         parse, panic/OOM, log write failed. That is a BROKEN PROBE,
+        #         not a measurement. Fail loudly; the blanket tolerance this
+        #         replaces hid exactly this class.
+        #
+        # KNOWN RESIDUAL (P032): a probe that RUNS but measures the WRONG thing
+        # still exits 99, via the checks{phase:main} rate threshold — so the
+        # 2026-07-25 breakage would land in the advisory branch. Separating
+        # validity from latency needs summary-content inspection, not $?.
+        #
+        # `shell: bash` is load-bearing for PIPESTATUS (arrays do not exist in
+        # dash), and `set +e` is MANDATORY: GitHub runs this as
+        # `bash --noprofile --norc -eo pipefail`, so without it the pipeline
+        # returns 99 and -e aborts the script before `rc` is ever read. Do not
+        # tidy the `set +e` away.
         shell: bash
-        run: npm run test:perf:regression 2>&1 | tee target/perf-regression.log
+        run: |
+          mkdir -p target
+          set +e
+          npm run test:perf:regression 2>&1 | tee target/perf-regression.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "k6_exit=$rc" >> "$GITHUB_OUTPUT"
+          case "$rc" in
+            0)
+              echo "perf regression probe passed every threshold"
+              ;;
+            99)
+              echo "::warning::Perf regression probe crossed a k6 threshold (advisory only — this does not fail the build). See the job summary for threshold detail."
+              ;;
+            *)
+              echo "::error::Perf regression probe FAILED TO RUN (k6 exit $rc). This is a broken probe, not a perf regression — the nightly perf signal is invalid until it is fixed."
+              exit 1
+              ;;
+          esac
+          exit 0
       - name: Report perf regression result
         if: always()
         shell: bash
-        # `outcome` is the pre-continue-on-error result; `conclusion` is coerced
-        # to success and would never warn.
+        # Keyed on the exit code the probe step published, NOT on the step
+        # result: under discrimination a breach exits 0, so the step result is
+        # `success` for both a clean run and an advisory breach.
+        env:
+          K6_EXIT: ${{ steps.k6.outputs.k6_exit }}
         run: |
+          rc="${K6_EXIT:-}"
+          # `|| true` is load-bearing: an assignment from a command
+          # substitution propagates its exit status, so a missing log (sed
+          # exits 2) would kill this step under errexit — on exactly the
+          # cancelled/early-failure runs where `if: always()` put us here.
+          summary=$(sed -n '/THRESHOLDS/,$p' target/perf-regression.log 2>/dev/null || true)
           {
-            echo "## Perf regression probe (advisory — never gates)"
+            echo "## Perf regression probe (breach = advisory, broken probe = failure)"
             echo ""
-            echo "Probe outcome: \`${{ steps.k6.outcome }}\`"
+            echo "k6 exit code: \`${rc:-unknown}\`"
+            echo ""
+            case "$rc" in
+              0) echo "All thresholds passed." ;;
+              99) echo "**Threshold breach (advisory).** A k6 threshold was crossed. This does not fail the build — see P032 for why a perf breach stays advisory." ;;
+              '') echo "**No exit code published** — the probe step never ran, or the job was cancelled." ;;
+              *) echo "**Broken probe (job failed).** k6 exited \`$rc\`, which is not a threshold breach — this run measured nothing usable." ;;
+            esac
             echo ""
             echo '```'
-            sed -n '/THRESHOLDS/,$p' target/perf-regression.log 2>/dev/null \
-              || echo "(no k6 summary captured — see the probe step log)"
+            if [ -n "$summary" ]; then
+              printf '%s\n' "$summary"
+            else
+              echo "(no k6 threshold summary in the log — the probe likely never reached the summary phase; see the probe step log)"
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.k6.outcome }}" != "success" ]; then
-            echo "::warning::Perf regression probe did not pass (advisory only — this does not fail the build). See the job summary for the k6 thresholds."
-          fi
       - name: Stop Addressr API server
         if: always()
         run: '[ -n "$SERVER_PID" ] && kill "$SERVER_PID" || true'
