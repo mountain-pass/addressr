@@ -105,7 +105,7 @@ So the EB instance installs the running artifact **from the public npm registry*
 - [x] Create reproduction test / acceptance criteria for "deploy-only" path — `test/js/__tests__/release-workflow-deploy-only.test.mjs` pins the predicates (2026-07-26). Acceptance criteria below stand; they need a real dispatch to exercise.
 - [ ] **Verification dispatch** — run `npm run release:watch -- --deploy-only` against the acceptance criteria below, then transition Known Error → Verifying → Closed. Not doable from CI-on-push: a push-triggered run never sets `deploy_only`.
 - [ ] Follow-on: parameterise the `/debug/shadow-config` smoke assertion so an env-driven shadow flip does not fail its own deploy (secondary finding above). Serves JTBD-201. **Blocks the shadow-flip use case; P039 does not close without it.**
-- [ ] Separate ticket: ADR 004's Decision Outcome and Consequences still say `AllAtOnce`, but `deploy/main.tf:253-254` is `DeploymentPolicy = "Rolling"` with health-based batching. Doc-vs-infra drift found during this work; deliberately not fixed here (amending a confirmed ADR is its own governance act).
+- [x] Separate ticket: ADR 004's Decision Outcome and Consequences still say `AllAtOnce`, but `deploy/main.tf:253-254` is `DeploymentPolicy = "Rolling"`. Doc-vs-infra drift found during this work; deliberately not fixed here (amending a confirmed ADR is its own governance act). — **Discharged 2026-07-26** by the ADR 004 Amendment 2026-07-26 (doc-only; no infra change). The amendment also found that the drift ran deeper than "AllAtOnce vs Rolling": the deploy is `Rolling` at `BatchSize = 100 Percentage`, so it batches the whole fleet at once and the "health-based batching" phrasing used here and in ADR 001 conflated the `aws:elasticbeanstalk:command` deploy path with the `aws:autoscaling:updatepolicy:rollingupdate` ASG-replacement path. ADR 001's amendment note was corrected in the same commit. Two follow-ups are recorded in ADR 004's Reassessment Criteria, not here: lowering `BatchSize`, and verifying which batching path an EB env-var-only update travels (ADR 029's zero-outage claims at lines 85 / 104 / 152 depend on it).
 
 ## Fix Strategy
 
@@ -135,7 +135,7 @@ The `--deploy-only` branch skips PR discovery, the gated-run approval, the CI ch
 
 **4. Governance.** ADR 001 amended (new publish-free trigger, the single-definition anti-divergence constraint, the prefix-match gating mechanism, the corrected gate location, the accepted raw-`gh workflow run` residual, ADR 004's Rolling/health-batched disruption inheritance, the ADR 007 one-run release-PR deferral, and the scope limitation below); two new Confirmation criteria and one new Reassessment criterion; compendium regenerated. R015 links this as a **partial** treatment. JTBD-400 gains the infra-only-deploy job story, matching desired outcome, and the two wrapper scripts in `screens:`.
 
-**Architect conditions carried:** ADR 004's own text still claims `AllAtOnce` while `deploy/main.tf:253-254` is `Rolling` — that drift is queued as a separate ticket, deliberately not fixed here.
+**Architect conditions carried:** ADR 004's own text still claims `AllAtOnce` while `deploy/main.tf:253-254` is `Rolling` — that drift is queued as a separate ticket, deliberately not fixed here. — **Discharged 2026-07-26** by the ADR 004 Amendment 2026-07-26; see the corresponding Investigation Task above.
 
 ### Deferred, NOT delivered — smoke-test parameterisation
 

@@ -22,15 +22,20 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
 **Status:** proposed | **Oversight:** confirmed
-**Confirmation:** npm run release:watch runs scripts/release-watch.sh; -- --deploy-only dispatches deploy_only=true; BOTH forms are blocked by the wr-risk-scorer git-push-gate hook without a passing release risk score; npm run deploy:watch does not deploy — it exits non-zero without reaching prod; Direct gh pr merge of a release PR (title "chore: release") is redirected to release:watch; The script identifies the changesets release PR, merges it, and watches the workflow
+**Decides:** Gate releases behind a local `npm run release:watch` script (`scripts/release-watch.sh`) that merges the changesets PR and watches the workflow, because it reuses the existing risk-scoring hook infrastructure with no new branches, CI workflows, or GitHub config. A 2026-07-26 amendment adds a publish-free `--deploy-only` entry point that dispatches `deploy_only=true`, sharing one set of deploy steps and inheriting the same release-tier risk score via the gate's command-prefix match.
+**Confirmation:** `npm run release:watch` runs `scripts/release-watch.sh`, and `-- --deploy-only` dispatches `deploy_only=true`; both forms are blocked by the plugin-owned wr-risk-scorer git-push-gate without a passing release risk score; `npm run deploy:watch` exits non-zero without reaching prod; direct `gh pr merge` of a "chore: release" PR is redirected to `release:watch`; the script identifies, merges, and watches the changesets release PR
+**Related:** ADR-004, ADR-007, ADR-029, ADR-035
 
 ### ADR-002 — ADR 002: OpenSearch as the Search Engine
 
 **Status:** accepted | **Oversight:** confirmed
 
-### ADR-004 — ADR 004: AWS Elastic Beanstalk for Production Deployment
+### ADR-004 — AWS Elastic Beanstalk for Production Deployment
 
 **Status:** accepted | **Oversight:** confirmed
+**Decides:** Host the Node.js API on AWS Elastic Beanstalk in ap-southeast-2, provisioned by Terraform (state in Terraform Cloud), rather than ECS/Fargate, Lambda, or self-managed EC2 — chosen for low operational overhead and cost efficiency on t2/t3.nano 100% Spot instances behind a Classic ELB, auto-scaling 2-4 instances across `Any 2` of 3 AZs. Amended 2026-07-26 to correct the recorded deployment policy from `AllAtOnce` to the live `Rolling` (in place since 2026-04-01, commit `65a0f05`) and to separate the two batching paths: application deploys run at `BatchSize = 100%` (so `Rolling` does not yet deliver zero-downtime), while ASG instance replacement is genuinely health-gated one at a time.
+**Confirmation:** `deploy/main.tf` defines the Elastic Beanstalk resources; `deploy/provider.tf` targets ap-southeast-2; `deploy/vars.tf` specifies Node.js 22 on Amazon Linux 2023; deploy batching `DeploymentPolicy = "Rolling"` with `BatchSize = "100"` Percentage and `IgnoreHealthCheck = "false"`; ASG batching `RollingUpdateType = "Health"` with `MaxBatchSize = "1"`, `MinInstancesInService = "2"`, `Timeout = "PT30M"`
+**Related:** ADR-001, ADR-016, ADR-024, ADR-029
 
 ### ADR-005 — ADR 005: Babel Transpilation for ES Module Support
 
