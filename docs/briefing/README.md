@@ -4,7 +4,14 @@ Migrated from legacy `docs/BRIEFING.md` via `/wr-retrospective:migrate-briefing`
 
 ## Critical Points (Session-Start Surface)
 
-_To be populated by the next `/wr-retrospective:run-retro` Step 1.5 signal-vs-noise pass (per ADR-040)._
+Seeded manually 2026-07-26 (the `run-retro` skill has no bin shim in adopter repos — P049, upstream-blocked — and the Skill tool errors in AFK subprocesses). The next `/wr-retrospective:run-retro` signal-vs-noise pass should re-derive this list properly per ADR-040.
+
+- **Production runs the v2 API (`addressr-server-2`) on OpenSearch, not the v1 API on Elasticsearch.** `client/elasticsearch.js` and every `ELASTIC_*` env var are historical names from before the fork. Read `what-you-need-to-know.md` before touching search or deploy paths.
+- **External-comms gates are marker-hash-exact, and the commit gate hashes the LITERAL `-m` text from your bash command.** Write commit messages apostrophe-free and pass them as a single `-m`; never `-m "$(cat file)"`. Any edit after a reviewer PASS invalidates the marker, and the risk and voice-tone gates invalidate independently. Draft external prose em-dash-free — the voice-tone gate FAILs on em-dashes every time. Full detail in `what-will-surprise-you.md`; this family has cost round-trips on at least six occasions.
+- **`gh issue create --body-file` can never clear the external-comms gate** (it extracts an empty draft). Use the quoted-heredoc `--body "$(cat <<'EOF' ... EOF)"` form. Always inline the draft in the reviewer prompt — a `/tmp` path fails closed because the reviewer cannot read outside the working dir.
+- **Boolean `workflow_dispatch` inputs must be compared UNQUOTED in `if:`.** `inputs.x == 'true'` silently never matches and the run goes GREEN with the gated step skipped.
+- **Migrating OpenSearch? Read `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md` FIRST.** Two full blue/green runs are complete; sizing is empirical, re-measure rather than assume.
+- **Never commit an absolute request or read count.** The external-comms gate treats traffic volumes as confidential disclosure, in commit messages and code comments alike. Describe soaks qualitatively. Dataset sizes and latency figures are fine.
 
 ## Topic Index
 
