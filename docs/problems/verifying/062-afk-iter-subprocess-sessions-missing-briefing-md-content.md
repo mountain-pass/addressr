@@ -1,6 +1,6 @@
 # Problem 062: AFK iter subprocess sessions missing docs/BRIEFING.md content
 
-**Status**: Parked
+**Status**: Verification Pending
 **Reported**: 2026-07-20
 **Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3) — derived at capture from the description per Step 4a (institutional-knowledge invisibility causes rework only when a briefed trap recurs in an AFK iter; the structural absence is every iter, the harm is occasional — two demonstrated recurrences, #368 and #370 filings)
 **Origin**: internal
@@ -42,27 +42,46 @@ Reproduction (mechanical, no test file needed): `[ -f docs/briefing/README.md ] 
 
 - [x] Investigate root cause — installed hook is single-source (`docs/briefing/README.md` only); tree absent; legacy file unread (evidence above)
 - [x] Create reproduction test — mechanical repro documented above; live in-session corroboration under Symptoms
-- [ ] Run /wr-retrospective:migrate-briefing and verify a subsequent AFK iter receives briefing content — **blocked** (see Fix Strategy + Parked)
+- [x] Reconcile ADR-019 — superseded by ADR-038 (`c3429b4`), unblocking the fix
+- [x] Run the migration — `wr-retrospective-migrate-briefing` (`d7b7e1c`)
+- [ ] Verify a subsequent session/AFK iter actually receives `docs/briefing/` content
 
 ## Fix Strategy
 
 Run `/wr-retrospective:migrate-briefing` (idempotent, foreground-synchronous; the wr-retrospective shim `wr-retrospective-migrate-briefing`). It splits legacy `docs/BRIEFING.md` by H2 into `docs/briefing/<slug>.md`, writes `docs/briefing/README.md` with a `## Critical Points (Session-Start Surface)` placeholder (populated later by `/wr-retrospective:run-retro`), retires the legacy file to `docs/BRIEFING.md.migrated-<date>`, and self-commits per ADR-014. Dry-run 2026-07-24 confirmed the plan: two topic files (`what-you-need-to-know.md`, `what-will-surprise-you.md`) + index + rename. Once `docs/briefing/README.md` exists with a non-empty Critical Points section, the SessionStart hook surfaces it. The I13 fix-time RFC-trace gate (`wr-itil-check-fix-rfc-trace`) returns `no-rfc-trace: P062` — a fix-time RFC must be auto-created via `/wr-itil:capture-rfc --fix-time` before the migration lands.
 
-**Blocked (architect ISSUES FOUND, 2026-07-24):** the migration diverges from **ADR-019** (Session Learning and Briefing System, `human-oversight: confirmed` 2026-07-18), whose Decision Outcome records the single-file `docs/BRIEFING.md` + `UserPromptSubmit` design. Landing the migration while ADR-019 still describes the retired design is decision-record drift. Reconciling ADR-019 to the shipped SessionStart / per-topic-tree mechanism (in-place evolution vs supersession) + re-ratifying the changed confirmed decision + regenerating the ADR compendium (ADR-077) is a user governance call, routed via `/wr-architect:review-decisions`. Deferred out of this AFK iter (no autonomous mutation of confirmed governance). JTBD/style-guide/voice-tone gates PASS.
+**Un-blocked and fixed 2026-07-26** (user present, directed the supersession-then-fix sequence):
+
+The prior block was decision-record drift — the migration diverged from **ADR-019** (`human-oversight: confirmed` 2026-07-18), whose Decision Outcome recorded the single-file `docs/BRIEFING.md` + `UserPromptSubmit` design. Reconciling it was a user governance call. Resolved by supersession rather than in-place amendment, because the mechanism changed wholesale (different hook event, different path, different extraction) and an in-place edit would have erased the record of what was previously decided.
+
+## Fix Committed
+
+- **`c3429b4`** — `docs(decisions)`: ADR-019 superseded by **ADR-038** (Per-Topic Briefing Tree Surfaced at Session Start), which records the shipped contract: injection is plugin-owned (`wr-retrospective` 0.27.0 `SessionStart` hook), the `docs/briefing/` tree and its `## Critical Points (Session-Start Surface)` roll-up are this repo's. Compendium regenerated. Architect gate PASS (4 passes; caught two dead ADR-001 links), JTBD gate PASS (JTBD-400).
+- **`d7b7e1c`** — `fix(briefing)`: ran `wr-retrospective-migrate-briefing` (idempotent). Split the legacy file by H2 into `docs/briefing/what-you-need-to-know.md` + `what-will-surprise-you.md`, wrote `docs/briefing/README.md` carrying the exact heading the hook matches, retired the legacy file to `docs/BRIEFING.md.migrated-2026-07-26`.
+
+In-session check: running the installed hook with `CLAUDE_PROJECT_DIR` set to the repo now emits the `CROSS-SESSION BRIEFING — critical points` block instead of silently exiting.
+
+## Verification
+
+**Criterion**: a subsequent session or AFK iter receives `docs/briefing/` content in its injected context (the `CROSS-SESSION BRIEFING` block), where today it receives none.
+
+**Caveat that gates closure**: the Critical Points roll-up is still the migration placeholder, so what gets injected is currently one placeholder line, not the institutional knowledge itself. The bullets that cost the #368/#370 round-trips live in `what-will-surprise-you.md`, reachable on demand but below the H2 the hook stops at. `/wr-retrospective:run-retro` populates the roll-up from its signal-vs-noise pass. Do not close on the banner appearing alone — close when a session receives roll-up content with substance in it.
+
+_Future consideration (not actioned, no ticket): the institutional-context theme has no precise JTBD home. A future `addressr-maintainer` job along the lines of "each working session starts with the institutional context it needs" would fit better than JTBD-400. Raise at a future `/wr-jtbd` review._
 
 _JTBD advisory (non-blocking):_ JTBD-400 trace is thematically sound but imprecise — the demonstrated harm is per-session institutional-context loss, not a release-pipeline defect; a future JTBD refinement could add an addressr-maintainer job "each working session has the institutional context it needs."
 
 ## Dependencies
 
 - **Blocks**: (none)
-- **Blocked by**: ADR-019 reconciliation (record-sync of the confirmed briefing-system ADR to the shipped SessionStart / per-topic-tree mechanism + re-ratification). Not a problem ticket, so it does not propagate transitive effort per P076; it is a user-governance gate, tracked in the Parked section below.
+- **Blocked by**: ~~ADR-019 reconciliation~~ — cleared 2026-07-26 by the ADR-038 supersession (`c3429b4`).
 - **Composes with**: (none)
 
-## Parked
+## Un-parked
 
-- **Reason**: Blocked pending a user governance decision. The fix (`/wr-retrospective:migrate-briefing`) cannot land without first reconciling confirmed ADR-019 to the shipped SessionStart / per-topic-`docs/briefing/`-tree design (architect ISSUES FOUND, 2026-07-24). The reconciliation approach (in-place evolution vs supersession) and re-ratification of the changed confirmed decision are the user's call — not autonomously actionable in an AFK iter. Root cause is confirmed and the workaround is documented, so investigation is complete; only the fix is suspended.
-- **Un-park trigger**: User ratifies the ADR-019 reconciliation (e.g. via `/wr-architect:review-decisions`), after which the fix path is: `/wr-itil:capture-rfc --fix-time P062` → `/wr-retrospective:migrate-briefing` → transition P062 to Verification Pending. On un-park, `git mv` back to `docs/problems/known-error/` (root cause + workaround are documented, so it re-enters at Known Error, not Open).
-- **Date parked**: 2026-07-24
+Parked 2026-07-24 pending a user governance decision on reconciling confirmed ADR-019; un-parked 2026-07-26 when the user directed the supersession. Went straight to Verification Pending rather than back to Known Error, because the fix landed in the same session as the un-park.
+
+Two items from the parked-era fix path were deliberately not done: no fix-time RFC was captured (the I13 `wr-itil-check-fix-rfc-trace` note recorded at park time), and no new JTBD was authored. Both were out of scope for this tightly-scoped iteration by user direction. Neither gate blocked the commits.
 
 ## Related
 
