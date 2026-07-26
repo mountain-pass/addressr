@@ -1,8 +1,22 @@
 # Problem 006: RapidAPI CI sync deferred — no working API
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-04-15
+**Closed**: 2026-07-26 — blocked on vendor; all programmatic routes confirmed unavailable
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
+
+## Resolution
+
+**Closed 2026-07-26 as blocked-on-vendor (user decision).** Every programmatic RapidAPI sync route is confirmed closed for non-Enterprise accounts, so there is no fix this repo can implement:
+
+- **OpenAPI Provisioning REST API** — the 2026-07-24 stage-1 probe (`rapidapi-listing-sync.yml` dispatch, run 30073575597) returned **HTTP 403 "You are not subscribed to this API"**. The key is valid (403, not 401); the account simply lacks a subscription, and the listing page is delisted so there is no self-serve subscribe path.
+- **GraphQL Platform API and REST Platform API** — both are documented as Enterprise-Hub-only. The official `create_or_update_rapidapi_listing` action calls the same GraphQL API, so the SHA-pin option falls with it.
+
+**Standing workaround**: RapidAPI Studio's "Import from URL" against `https://backend.addressr.io/api-docs`, run manually when v2 endpoints change. This produces a correct listing; it just needs a human per release.
+
+**Left in place**: `rapidapi-listing-sync.yml` stays in the repo. It is correct as written and starts working the moment a subscription exists — no rewrite needed at that point, only a dispatch.
+
+**Reopen if**: RapidAPI enables a Provisioning API subscription for this account (or names a supported non-Enterprise path for programmatic spec updates). Reopen with `/wr-itil:manage-problem` and resume RFC-003 from its staged plan.
 
 ## Description
 
@@ -43,7 +57,7 @@ When v2 endpoints change, manually use RapidAPI Studio's "Import from URL" featu
 - [x] Confirm which RapidAPI key scope is needed — **overtaken by re-scope (2026-07-24)**: the GraphQL Platform API subscription is impossible for non-Enterprise accounts, so the question moved to the Provisioning REST path. `RAPIDAPI_KEY` (the account's app key) provisioned as a GH secret 2026-07-24; whether it clears the provisioning endpoint's auth is answered by the `rapidapi-listing-sync.yml` `check` dispatch (RFC-003 Stage 1).
 - [x] Action inputs catalogued (from `action.yml` at SHA `4590a10`): `owner_id`, `x_rapidapi_key`, `x_rapidapi_identity_key` (optional), `x_rapidapi_graphql_host`, `spec_path`, `graphql_url`. Outputs: `api_id`, `api_version_name`, `api_version_id`.
 - [x] Stage 1 auth probe run (2026-07-24, `rapidapi-listing-sync.yml` dispatch, run 30073575597): `GET /v1/apis/{apiId}` with `RAPIDAPI_KEY` returned **HTTP 403 "You are not subscribed to this API"**. Key is valid (not 401); the account lacks a subscription to the Provisioning API, and its delisted hub page leaves no self-serve subscribe path. All programmatic routes are now confirmed closed for non-Enterprise accounts without RapidAPI intervention.
-- [ ] RapidAPI support request (user decision 2026-07-24): ask support to enable/subscribe the account to the OpenAPI Provisioning API (or name the supported non-Enterprise path for programmatic spec updates). **Blocked on upstream response.** The sync workflow stays in place — it works the moment the subscription is enabled.
+- [x] RapidAPI support request (user decision 2026-07-24): ask support to enable/subscribe the account to the OpenAPI Provisioning API (or name the supported non-Enterprise path for programmatic spec updates). **Closed 2026-07-26 as blocked-on-vendor** — no non-Enterprise route exists to pursue further from this repo. The sync workflow stays in place; it works the moment the subscription is enabled. Reopen this ticket if RapidAPI enables the subscription.
 
 ## Fix Strategy (proposed)
 
