@@ -1,7 +1,7 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-26 **P015 verification pending (Known Error → Verification Pending)** — both dimensions of the range-number defect are now shipped, so the ticket moves to the queue. ADR-026 range expansion (multi-valued `sla_range_expanded` alias matched in the `phrase_prefix` clause) released in **v2.3.0** — changeset `.changeset/adr-026-range-number-expansion.md`, version-packages commit `0ebbfb1`, PR #454, merge `907aee9`, released 2026-04-20 (citation derived via `wr-itil-derive-release-vehicle` per P267). Post-deploy smoke was green on all three issue #367 reporter cases, and the ranking driver P026 closed 2026-07-19 with its 8-query battery clean on the prod 3.5 stack. **Verify criterion**: re-run the three #367 reporter-case queries and confirm the target ranks at or near position 1 — this needs a subscribed RapidAPI key or a direct backend probe (the 2026-07-19 MCP attempt hit 403 key-not-subscribed at the gateway, same blocker as P014) — then respond to issue #367. (user decision, via manual transition-problem steps)
-> _(prior fragment for P006 rotated to `README-history.md` under 2026-07-26, along with the superseded P035 / P032 / P023 / P039 / P050 entries)_
+> Last reviewed: 2026-07-26 **P064 captured** — the external-comms commit-message gate in `@windyroad/risk-scorer` leak-scans only the FIRST `-m` value of a `git commit`, but git concatenates every `-m` into the final message, so on a multi-`-m` commit every body paragraph after the subject line reaches public history unscanned. Security-relevant: the body is exactly where the long-form prose most likely to carry a business metric lives, and the subject is the one part least likely to. Sibling of P058 (same gate, different root cause — that one is surface-regex coverage, this one is message-value extraction); both need fixing. Workaround: write commit messages as a single `-m` with embedded newlines. Upstream-blocked, reported to `windyroad/agent-plugins`. (lightweight aside via manual capture-problem steps)
+> _(prior fragment for P015 rotated to `README-history.md` under 2026-07-26)_
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -11,6 +11,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Known Error | M      | 2026-04-27 | internal |
+| 9.0  | P064 | external-comms commit gate leak-scans only the first `-m` value       | 9 (Medium)   | Open        | S      | 2026-07-26 | internal |
 | 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
