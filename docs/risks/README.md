@@ -55,6 +55,8 @@ Template: `TEMPLATE.md`
 
 | [R016](R016-read-shadow-soak-traffic-figures-in-committed-docs.active.md) | Read Shadow Soak Traffic Figures In Committed Docs | pending | — | — | pending | pending | 2026-07-25 |
 
+| [R017](R017-distroless-docker-image-unverified-no-docker-build-ci.active.md) | Distroless Docker Image Unverified No Docker Build Ci | pending | — | — | pending | pending | 2026-07-26 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
