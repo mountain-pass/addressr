@@ -59,6 +59,8 @@ Template: `TEMPLATE.md`
 
 | [R018](R018-adr-links-problem-ticket-committed-before-ticket-exists.active.md) | Adr Links Problem Ticket Committed Before Ticket Exists | pending | — | — | pending | pending | 2026-07-26 |
 
+| [R019](R019-release-ships-fresh-server-lifecycle-code-to-prod-via-coupled-publish.active.md) | Release Ships Fresh Server Lifecycle Code To Prod Via Coupled Publish | pending | — | — | pending | pending | 2026-07-26 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
