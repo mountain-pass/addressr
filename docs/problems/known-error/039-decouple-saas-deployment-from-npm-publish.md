@@ -141,6 +141,27 @@ The `--deploy-only` branch skips PR discovery, the gated-run approval, the CI ch
 
 The smoke block hard-asserts `hostSet != false` (`release.yml:263-267`) and runs _after_ the deploy (`189`) and the wait (`228-230`). A deploy-only dispatch that flips the shadow config therefore **applies the Terraform first** and only then fails the assertion — prod is left flipped behind a red run with no automatic rollback (`RollbackLaunchOnFailure` at `deploy/main.tf:513-514` covers EB launch failure, not a red smoke test). The Description's motivating use case (toggling `SHADOW` soaking via an EB env var) is therefore still not deliverable through this path. Parameterising the assertion is an independent decision — where does the expected value live: a dispatch input, a repo variable, or a Terraform output? — and is scoped beyond this change. It is the open investigation task below and serves JTBD-201.
 
+### Variant 4b lifted 2026-07-26 — PREREQUISITE before it is wired
+
+The user lifted the deferral on variant 4b (also run the deploy path on push-to-`master` when
+`deploy/**` changed and no publish happened) on 2026-07-26, recorded in
+[ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md). The "worth
+revisiting once 4 has been used a few times" precondition below was **not** met — `--deploy-only` has
+been dispatched zero times. ADR-040 records that plainly rather than working around it.
+
+**Do not wire the `deploy/**` trigger until [ADR-001](../../decisions/001-risk-gated-release-process.proposed.md)
+is amended.** The two existing deploy entry points carry a release-tier risk score, because the
+wr-risk-scorer gate matches on the `npm run release:watch` command prefix. A `deploy/**` path push
+carries only push-tier: the git-push gate sees `git push`, not `release:watch`. So the new axis would
+reach a full production Terraform apply at a lower governance tier than either existing entry point,
+with no human intent and no opt-in — a different class from the deliberate raw dispatch ADR-001's
+accepted residual covers.
+
+ADR-001 is not amended yet because an amendment has to describe the trigger as actually implemented,
+and no trigger exists. The amendment lands with the wiring, in the same commit as the widened gate
+and the `release-workflow-deploy-only.test.mjs` update. This note is here so the prerequisite is
+reachable from the P039 side without editing ADR-001 ahead of the fact.
+
 ### Verification status
 
 The `deploy_only` branch **cannot be fully verified without a real `workflow_dispatch`**. CI on push validates only that the YAML parses and that the normal published-gate path is unaffected — a push-triggered run never sets `deploy_only`, so the widened branch is not exercised. Hence Known Error, not Verifying. Verification is a deliberate deploy-only dispatch (ideally with no pending infra change, so `terraform plan -detailed-exitcode` returns 0 and the run is a clean no-op) against the draft acceptance criteria below. Not triggered as part of this commit.

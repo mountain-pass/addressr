@@ -173,6 +173,23 @@ docker run -v "$PWD/target:/home/nonroot/target" -e ELASTIC_HOST=host.docker.int
 There is no shell in the image, so `docker exec ... sh` will not work. Diagnose with `docker logs`,
 `docker inspect`, `docker cp`, and the `/health` endpoint.
 
+### Image tags
+
+Today the image is published by hand, and `mountainpass/addressr:latest` is the tag to pull. A
+version tag such as `mountainpass/addressr:3.0.2` names whatever image was published alongside that
+npm release, so an older version tag may still be the previous Alpine-based image rather than the
+Distroless one described above.
+
+Two things are changing, per
+[ADR 040](docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md). Publishing
+moves into CI, and every build will carry an immutable `:<version>-<gitsha>` tag alongside `:latest`
+— that sha tag is the one to pin if you want a build that can never be re-pointed under you. Neither
+is live yet, so do not pin a `-<gitsha>` tag until this section says it resolves.
+
+Note that `:latest` moves. If you track it, watch
+[the Docker image changelog](docs/DOCKER-IMAGE-CHANGELOG.md) — a change to the image no longer
+implies a new npm version, so it will not always show up in `CHANGELOG.md`.
+
 # API Endpoints
 
 Addressr exposes a HATEOAS REST API. Start at the root (`/`) and follow links to discover endpoints. A supplementary OpenAPI 3.x spec is available at `/api-docs`.

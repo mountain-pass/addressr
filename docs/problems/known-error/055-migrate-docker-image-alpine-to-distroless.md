@@ -47,9 +47,39 @@ Two commits on master, unpushed at time of writing:
 
 One check the CI job does not cover, verify by hand before relying on the loader: running the loader from the image writes `/home/nonroot/target/keyv-file.msgpack` without EACCES. The `WORKDIR` choice rests on `/home/nonroot` being writable by uid 65532.
 
+## Reconciled with ADR-040 (2026-07-26) — publishes on the Docker axis, not via an npm bump
+
+The patch changeset this fix originally carried (`.changeset/distroless-docker-runtime.md`) has been
+**removed**. The reasoning that justified it no longer holds.
+
+That changeset was added for one stated reason: the image tag derived from `${npm_package_version}`,
+so without a version bump the next `docker:push` would retag an already-published version with a
+materially different image. A tagging deficiency was forcing a version bump, and the bump was in
+turn dragging an npm publish and a full production deploy behind it, for a change that alters
+nothing in the npm package.
+
+[ADR 040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) fixes the
+tagging deficiency directly. Every build now writes an immutable `:<version>-<gitsha>` plus
+`:latest`, and the bare `:<semver>` only on a package release, so an image-only rebuild can no
+longer collide with a tag a self-hoster has pinned. The Distroless image therefore publishes on the
+**docker axis** and needs no npm version bump. Implemented in `52930b1` (`scripts/docker-tags.sh`
+plus the `package.json` scripts); the CI publisher itself is a later stage.
+
+The consumer-facing news the changeset carried — no shell, the loader invoked by script path, the
+loader needing a writable `target` mount — moved to
+[`docs/DOCKER-IMAGE-CHANGELOG.md`](../../DOCKER-IMAGE-CHANGELOG.md), which is keyed by image tag
+rather than npm version. It is deliberately not deferred: without it, removing the changeset would
+leave a breaking image change with no versioned notice anywhere for an operator tracking `:latest`.
+
+ADR-039 is amended accordingly in `3807e99` (tag scheme, the build-only scope note closed, and the
+base-image digest-pin trigger assessed and declined).
+
 ### Follow-ups Not Done This Iteration
 
 - **JTBD gap.** The JTBD reviewer returned FAIL on a real gap: no documented job covers running, inspecting, or troubleshooting the self-hosted container, so the accepted shell-loss trade-off has no job to be weighed against. It asked for a new `JTBD-202: Operate and troubleshoot a self-hosted Addressr container` and for `Dockerfile` to be added to a job's `screens:` list. Both are frontmatter edits on `human-oversight: confirmed` artefacts and must go through `/wr-jtbd:confirm-jobs-and-personas`, which this AFK run had no interactive access to. It also noted P055's own `JTBD: JTBD-200` is a poor fit — JTBD-200 is a non-regression constraint here, not the served job — and should re-point at JTBD-202 once it exists.
+
+  **Expanded 2026-07-26 under ADR-040.** The JTBD review of the tag scheme re-derived this same gap independently and added to it. JTBD-202 should also own the **tag contract**: which tag to pin, what `:latest` promises, when a pinned tag can and cannot change, and how an operator learns an image changed. Until it lands, `docs/DOCKER-IMAGE-CHANGELOG.md` is a consumer-facing surface no documented job owns. Separately, JTBD-400's `screens:` omits `package.json`, `Dockerfile`, `.github/workflows/docker-image.yml`, `.dockerignore.tmpl`, and `docs/DOCKER-IMAGE-CHANGELOG.md`, and its Desired Outcomes still assert the `deploy/**` auto-deploy deferral (P039 variant 4b) that the user lifted on 2026-07-26. All of it batches into one interactive `/wr-jtbd:confirm-jobs-and-personas` run.
+
 - **ADR-039 oversight.** Authored `human-oversight: unconfirmed` for the same reason. The substance was decided by the user on 2026-07-18; `/wr-architect:review-decisions` should promote it.
 - **ADR-013 composes-with gap — CLOSED, not deferred.** ADR-013 recorded "no Docker-build CI workflow exists" as an open gap, which is why nothing ever caught a Dockerfile regression. `.github/workflows/docker-image.yml` closes it. Publishing stays manual (`npm run docker:push`); promoting CI to a publisher is a separate decision.
 
