@@ -35,17 +35,27 @@ Write commit messages as a **single** `-m` argument with embedded newlines rathe
 
 ## Root Cause Analysis
 
-### Preliminary Hypothesis
+### Confirmed Root Cause (2026-07-26, read from source)
 
-`external-comms-gate.sh` parses the tool-call arguments for a `git commit` and extracts the message by matching the first `-m` (or `--message`) occurrence, then stops. Git's own semantics are cumulative: every `-m` becomes a paragraph of one message. The hook's single-value extraction and git's multi-value concatenation disagree, and the hook's reading is the narrower one.
+Confirmed against `~/.claude/plugins/cache/windyroad/wr-risk-scorer/0.18.6/hooks/external-comms-gate.sh`. The extraction runs in a `python3` heredoc embedded in the shell script, so these are file line numbers:
+
+- **Line 243** — the pattern list is annotated `# (pattern, flags, unescape) — first match wins.`
+- **Lines 260-261** — the single-line commit-message patterns: `(?:-m|--message)[= ]'([^']*)'` and `(?:-m|--message)[= ]"([^"]*)"`.
+- **Lines 263-270** — the extraction loop: `for pat, flags, unescape in patterns:` / `m = re.search(pat, cmd, flags)` / `if m: ... print(body); break`.
+
+`re.search` returns the **first** match only, and the `break` exits after the first matching pattern. Neither the loop nor the patterns account for a command carrying more than one `-m`. Git's semantics are cumulative — every `-m` becomes a paragraph of one message — so the hook's single-value extraction and git's multi-value concatenation disagree, and the hook's reading is the narrower one.
+
+The single-`-m` HEREDOC form is **unaffected**: the HEREDOC pattern sits first in the list and captures the whole body. Only the multi-`-m` form loses coverage. This is also why the workaround works.
+
+Candidate fix: `re.findall` over the two commit-message patterns, joined with the blank-line separator git itself inserts. The `break`-on-first-_pattern-family_ behaviour is correct for choosing between the HEREDOC, `--body`, and `-m` families — the change is to keep first-family-wins while making the `-m` family collect all its occurrences.
 
 Sibling defect, same gate, different root cause: **P058** — the gate's surface regex keys on the `git commit` literal, so `wr-risk-scorer-restage-commit`-wrapped commits skip commit-message review entirely (upstream `windyroad/agent-plugins#368`). P058 is about _which invocations_ reach the gate; this ticket is about _how much of the message_ the gate reads once it is reached. Fixing either one leaves the other open.
 
 ### Investigation Tasks
 
-- [ ] Confirm the single-`-m` extraction against the installed `external-comms-gate.sh` source and record the file:line
+- [x] Confirm the single-`-m` extraction against the installed `external-comms-gate.sh` source and record the file:line — **done 2026-07-26**, v0.18.6 lines 243 / 260-261 / 263-270; see Confirmed Root Cause above
 - [ ] Create a reproduction: a two-`-m` commit whose second `-m` carries a planted sentinel the gate should reject, and confirm it passes
-- [ ] Report upstream against `windyroad/agent-plugins` (`@windyroad/risk-scorer`), cross-referencing #368 so a fix for one does not regress the other
+- [x] Report upstream against `windyroad/agent-plugins` (`@windyroad/risk-scorer`), cross-referencing #368 so a fix for one does not regress the other — **done 2026-07-26**, filed as [windyroad/agent-plugins#395](https://github.com/windyroad/agent-plugins/issues/395); see `## Reported Upstream`
 - [ ] Re-verify against the next `@windyroad/risk-scorer` release carrying a fix, then transition
 
 ## Dependencies
@@ -53,6 +63,17 @@ Sibling defect, same gate, different root cause: **P058** — the gate's surface
 - **Blocks**: (none)
 - **Blocked by**: upstream — the gate script lives in `@windyroad/risk-scorer`; there is no local `packages/` tree to fix it in
 - **Composes with**: P058 (same gate, complementary coverage gap)
+
+## Reported Upstream
+
+- **URL**: https://github.com/windyroad/agent-plugins/issues/395
+- **Reported**: 2026-07-26
+- **Template used**: problem-report.yml (problem-first shape, body composed per ADR-033 structured mapping)
+- **Disclosure path**: public issue. The vendor's own tracker is the right channel and no local policy class covers pre-disclosure of a third-party defect; the leak reviewer noted that a private security-advisory path, if `windyroad/agent-plugins` publishes one, would be the lower-exposure surface for the same text.
+- **Dedup verdict**: `different-problem` against #368 (same gate, false-negative on **surface detection** — helper-wrapped commits never reach the gate at all; this one is how much of the message is read once an invocation _is_ seen), and against #361 / #217 (both false-**positive** marker-hash re-review friction, not scan coverage; #217 mentions `-m` vs HEREDOC only as a source of hash churn). All three cross-referenced in the filed body, with a co-triage suggestion for #368 since both are false-negative coverage gaps in the same gate.
+- **Gates**: `wr-risk-scorer:external-comms` PASS; `wr-voice-tone:external-comms` PASS. Both took one re-run: the first pass failed closed on draft-access (path passed instead of an inlined `<draft>` block), and after the re-review the drafts' markers were invalidated by a late edit adding the exact source line numbers — the P048 / #217 hash-exactness friction, observed live. `gh issue create --body-file` was also rejected by the gate (the extractor cannot see a file's contents); the HEREDOC `--body "$(cat <<'EOF' ... EOF)"` form is what the gate parses.
+- **Cross-reference confirmed**: yes — the issue body's Cross-reference section names P064 and links this ticket's path in this repo's `docs/problems/` directory.
+- **Local status unchanged**: remains Open and upstream-blocked. Reporting does not fix it locally, and there is no local `packages/` tree to fix it in. Held at Open rather than folded to Known Error, matching the P058 upstream-blocked precedent.
 
 ## Related
 
