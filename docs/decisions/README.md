@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 38 (35 in-force, 3 historical)
+**Total ADRs:** 38 (34 in-force, 4 historical)
 
 ---
 
 ## In-force decisions
 
-_35 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_34 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -68,10 +68,6 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-012 — ADR 012: HATEOAS API Design with WayCharter/WayChaser
 
 **Status:** accepted | **Oversight:** confirmed
-
-### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
-
-**Status:** accepted | **Oversight:** rejected-pending-supersede (P055)
 
 ### ADR-014 — ADR 014: ESLint 9 Flat Configuration with Security and Quality Plugins
 
@@ -190,11 +186,18 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 
 ## Historical decisions
 
-_3 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_4 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
 
 ### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
 **Status:** superseded
+
+### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
+
+**Status:** superseded | **Oversight:** rejected-pending-supersede (resolved by ADR-039)
+**Decides:** Ship the self-hosted container on `node:22-alpine` with dumb-init as PID 1, running as the non-root `node` user with addressr installed globally via npm and published to Docker Hub as `mountainpass/addressr` — chosen for small image size, correct signal/zombie handling, and easy distribution. Superseded 2026-07-26 by ADR-039, which moves the runtime to a multi-stage distroless build; the "no Docker-build CI" gap carries forward to ADR-039 rather than being closed here.
+**Confirmation:** `Dockerfile` at project root with `ARG BASE_IMAGE=node:22-alpine` and `CMD "addressr-server-2"`; Docker Hub image `mountainpass/addressr`; `package.json` has `build:docker` and `start:server:docker` scripts
+**Related:** ADR-039
 
 ### ADR-019 — ADR 019: Session Learning and Briefing System
 

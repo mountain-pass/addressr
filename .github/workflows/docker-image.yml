@@ -1,0 +1,98 @@
+# Docker image build + smoke (P055 / ADR-039)
+#
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI) serving
+#   JTBD-200 (self-hosted operator gets a container that actually starts).
+#
+# Closes the gap ADR-013 carried as Open and ADR-039 inherits: the published
+# mountainpass/addressr image was only ever built by a human running
+# `npm run build:docker`, so a Dockerfile regression was invisible until a
+# self-hoster hit it. This job builds it and proves the three properties the
+# Distroless migration put at risk — the resolved CMD path actually boots under
+# an ENTRYPOINT of node with no shell to fall back on, the runtime user is still
+# non-root, and the container still terminates on SIGTERM now that dumb-init is
+# gone.
+#
+# It does NOT push. Publishing stays manual (`npm run docker:push`) so this job
+# cannot leak a registry credential; promoting it to a publisher is a separate
+# decision.
+#
+# HEALTH_ES_PROBE=off is what lets the smoke run without an OpenSearch service
+# container: /health then reports liveness only, which is exactly the property
+# under test here. Search behaviour is covered by the cucumber suite in
+# release.yml.
+name: Docker Image
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore.tmpl'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/docker-image.yml'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore.tmpl'
+      - '.github/workflows/docker-image.yml'
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # prebuild:docker packs the tarball the Dockerfile COPYs in.
+      - name: Build image
+        run: npm run build:docker
+
+      - name: Runtime user is non-root
+        run: |
+          user=$(docker inspect --format '{{.Config.User}}' mountainpass/addressr:latest)
+          echo "runtime user: ${user}"
+          test "${user}" = 'nonroot' || test "${user}" = '65532:65532'
+
+      - name: Container starts and serves /health
+        run: |
+          docker run -d --name addressr-smoke \
+            -e PORT=8080 -e HEALTH_ES_PROBE=off \
+            -p 8080:8080 mountainpass/addressr:latest
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health > /dev/null; then
+              echo 'smoke request OK'
+              exit 0
+            fi
+            sleep 2
+          done
+          echo '/health never answered — container logs follow:'
+          docker logs addressr-smoke
+          exit 1
+
+      # Distroless runs node as PID 1, so SIGTERM must be handled without
+      # dumb-init. A container that ignores it is SIGKILLed at the 10s deadline.
+      - name: Container stops on SIGTERM
+        run: |
+          start=$(date +%s)
+          docker stop addressr-smoke > /dev/null
+          elapsed=$(( $(date +%s) - start ))
+          echo "stopped in ${elapsed}s"
+          test "${elapsed}" -lt 10
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs addressr-smoke || true

@@ -37,5 +37,5 @@ Alpine image continues to work; this is a security-posture improvement, not a fi
 
 ## Related
 
-- Supersedes the base-image pick in [ADR-013](../../decisions/013-docker-image.accepted.md) (Alpine + dumb-init). ADR-013 marked `rejected-pending-supersede` against this ticket during the 2026-07-18 review-decisions drain.
+- Supersedes the base-image pick in [ADR-013](../../decisions/013-docker-image.superseded.md) (Alpine + dumb-init). ADR-013 marked `rejected-pending-supersede` against this ticket during the 2026-07-18 review-decisions drain.
 - Composes with the noted ADR-013 open gap: no Docker-build CI (image currency depends on manual builds).

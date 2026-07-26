@@ -1,6 +1,7 @@
 # C4 Architecture Model
 
 This repo uses a hybrid C4 approach:
+
 - C1/C2 are curated for intent and business context.
 - C3/C4 are hand-curated (the C4 generator supports TypeScript only; addressr is JavaScript).
 
@@ -57,7 +58,7 @@ flowchart TB
 
   subgraph selfhost["Self-hosted Consumer"]
     npm["npm package<br/>@mountainpass/addressr"]
-    docker["Docker image<br/>mountainpass/addressr<br/>(stale: Node 16, v1)"]
+    docker["Docker image<br/>mountainpass/addressr<br/>(Distroless Node 22, v2)"]
     selfos["Own OpenSearch"]
     loader_self["addressr-loader<br/>(G-NAF pipeline)"]
   end

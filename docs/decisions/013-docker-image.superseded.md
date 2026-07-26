@@ -1,14 +1,18 @@
 ---
-status: accepted
+status: 'superseded'
 date: 2020-01-01
-human-oversight: rejected-pending-supersede
-supersede-ticket: P055
+superseded-date: 2026-07-26
+superseded-by: [039-distroless-docker-runtime]
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
 ---
 
 # ADR 013: Docker Image with Alpine and dumb-init
+
+> **SUPERSEDED 2026-07-26 by [ADR 039](039-distroless-docker-runtime.proposed.md).** The base-image pick recorded here (Alpine plus dumb-init, global npm install under the `node` user at `/home/node/.npm`) is replaced by a multi-stage build whose runtime stage is `gcr.io/distroless/nodejs22-debian12:nonroot`. The user took that decision on 2026-07-18 during the `/wr-architect:review-decisions` oversight drain and it is tracked by [P055](../problems/open/055-migrate-docker-image-alpine-to-distroless.md); this ADR was carrying `human-oversight: rejected-pending-supersede` until ADR 039 landed. ADR 039 is `proposed`, not `accepted`: the Distroless image has not been built or booted anywhere yet. The `Docker Image` workflow added alongside it (`.github/workflows/docker-image.yml`) closes the no-Docker-build-CI gap this ADR recorded as Open, but has not yet run.
+>
+> The body below describes the SUPERSEDED ADR 013 decision as originally authored. Do not implement from this document.
 
 ## Context and Problem Statement
 
