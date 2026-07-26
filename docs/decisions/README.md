@@ -11,7 +11,7 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 37 (35 in-force, 2 historical)
+**Total ADRs:** 38 (35 in-force, 3 historical)
 
 ---
 
@@ -87,10 +87,6 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-018 — ADR 018: Cloudflare Worker as API Key Proxy
 
 **Status:** accepted | **Oversight:** confirmed
-
-### ADR-019 — ADR 019: Session Learning and Briefing System
-
-**Status:** proposed | **Oversight:** confirmed
 
 ### ADR-020 — ADR 020: MCP Smoke Tests via RapidAPI
 
@@ -181,15 +177,23 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 **Chosen:** Chosen option: **Option A** — emit `Access-Control-Max-Age` (env var `ADDRESSR_ACCESS_CONTROL_MAX_AGE`, default `86400`) and `Access-Control-Allow-Methods` (env var `ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS`, default `GET,OPTIONS`) from an e...
 **Confirmation:** CORS-enabled profile: with ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN set, OPTIONS / → 204 with Access-Control-Max...; CORS-disabled profile (R1 inert): with ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN unset, OPTIONS / emits no Access-C...; Proxy-auth-enabled profile (CORS on): OPTIONS / → 204 with the cache directives (not 401), AND a data GET wi...; Gating pinned in source (R1): app.options( is registered only inside the ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN ...; Exemption stays OPTIONS-scoped (R2): the only pre-proxyAuthMiddleware method short-circuit in buildRest2App is...
 
+### ADR-038 — ADR 038: Per-Topic Briefing Tree Surfaced at Session Start
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** [019-session-learning-briefing-system]
+
 ---
 
 ## Historical decisions
 
-_2 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_3 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
 
 ### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
 **Status:** superseded
+
+### ADR-019 — ADR 019: Session Learning and Briefing System
+
+**Status:** superseded | **Oversight:** confirmed
 
 ### ADR-026 — ADR 026: Range-Number Address Expansion via Multi-Valued Text Alias Field
 

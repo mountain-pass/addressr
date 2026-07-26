@@ -1,14 +1,20 @@
 ---
 human-oversight: confirmed
 oversight-date: 2026-07-18
-status: proposed
+status: 'superseded'
 date: 2026-03-31
+superseded-date: 2026-07-26
+superseded-by: [038-per-topic-briefing-tree-session-start-surface]
 decision-makers: [Tom Howard]
 consulted: [Claude Code]
 informed: []
 ---
 
 # ADR 019: Session Learning and Briefing System
+
+> **SUPERSEDED 2026-07-26 by [ADR 038](038-per-topic-briefing-tree-session-start-surface.proposed.md).** The mechanism recorded below — a single `docs/BRIEFING.md` injected by a `UserPromptSubmit` hook — has been retired upstream. The briefing surface is now owned by the `@windyroad/wr-retrospective` plugin, whose `SessionStart` hook reads a per-topic `docs/briefing/` tree instead. Supersession is pre-authorised by this ADR's own Reassessment Criteria: the legacy file reached 45 KB against a stated 2000-token ceiling. See ADR 038 for the shipped contract, and [P062](../problems/parked/062-afk-iter-subprocess-sessions-missing-briefing-md-content.md) for the defect the drift caused.
+>
+> The body below describes the SUPERSEDED ADR 019 decision as originally authored. Do not implement from this document.
 
 ## Context and Problem Statement
 
