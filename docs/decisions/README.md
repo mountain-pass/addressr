@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 39 (35 in-force, 4 historical)
+**Total ADRs:** 40 (36 in-force, 4 historical)
 
 ---
 
 ## In-force decisions
 
-_35 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_36 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -187,7 +187,14 @@ _35 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-013
 **Decides:** Rebuild the published `mountainpass/addressr` image as a multi-stage build — `node:22-bookworm-slim` installs, `gcr.io/distroless/nodejs22-debian12:nonroot` runs — dropping the shell, package manager, npm, and `dumb-init` so a publicly pullable artefact carries only the Node runtime and the app's own dependencies as CVE surface. Non-root execution and zero-config env defaults are preserved; the in-container shell and the `docker run ... addressr-loader` command form are deliberately given up.
 **Confirmation:** `.github/workflows/docker-image.yml` job `build-and-smoke`, none of it run yet: `npm run build:docker` completes; `docker inspect` reports a non-root user; the container answers `/health` over HTTP (catches an unresolvable `CMD` path); `docker stop` terminates in under 10s without `dumb-init`; manually verify the loader writes `/home/nonroot/target/keyv-file.msgpack` without EACCES.
-**Related:** ADR-013, ADR-015
+**Related:** ADR-013, ADR-015, ADR-040
+
+### ADR-040 — Release Pipeline Decoupled into a Change-Type to Action Matrix
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Splits the single npm-bump trigger into three independently-fired axes — npm publish on a consumed changeset, docker publish on image-relevant paths (guarded by `published != 'true'` against double-publishing), and deploy on a release, a `deploy_only` dispatch, or a `deploy/**` push — so a change fires only the actions it implies and no axis is reachable only by laundering an unrelated version bump. Adds immutable `:<version>-<gitsha>` tags so a rebuild can never re-point a consumer pin, moves Docker publishing into CI behind two independent guards, and keeps one definition per action via a reusable `workflow_call` workflow.
+**Confirmation:** Ratified in the same drain as ADR-039, stage 2 after; ADR-001 amendment lands before the `deploy/**` trigger is wired, asserted in test not by grep; `release-workflow-deploy-only.test.mjs` updated not deleted; `release` job exposes `published` via `needs.release.outputs`; path detection scoped to `github.event_name == 'push'` and pinned in test; `grep -c 'docker build'` across workflows returns 1; `docker-image.yml` header comment rewritten; `start:server:docker` resolves to a tag `build:docker` produces; a Dockerfile-only push publishes the image only; a release publishes npm plus one image plus deploy; a `deploy/**`-only push deploys only; the publish step skips green with secrets unset; a PR builds and smoke-tests without pushing; `:<version>-<gitsha>` resolves and the bare `:<version>` digest is unchanged.
+**Related:** ADR-001, ADR-004, ADR-007, ADR-010, ADR-013, ADR-015, ADR-035, ADR-039
 
 ---
 
