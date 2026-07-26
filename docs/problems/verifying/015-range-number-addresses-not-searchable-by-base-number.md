@@ -1,12 +1,27 @@
 # Problem 015: Range-number addresses not findable by base number
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-04-16
 **Priority**: 4 (Low) — Impact: Significant (4) x Likelihood: Rare (1) — re-rated 2026-07-19 (review): ADR 026 range expansion shipped in v2.3.0 with post-deploy smoke green on all three #367 reporter cases; the ranking dimension this ticket stayed open for (P026) closed 2026-07-19 with the 8-query battery clean on the prod 3.5 stack
 **Effort**: S (L → S — fix shipped; remaining work is the three #367 reporter-case verification queries, the issue #367 response, and close)
 **WSJF**: 8.0 — (4 × 2.0) / 1
 
-> **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](./026-numeric-fuzziness-inflates-ranking.open.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1.
+## Fix Released
+
+**Released in v2.3.0** — changeset `.changeset/adr-026-range-number-expansion.md`, consumed by version-packages commit `0ebbfb1`, PR [#454](https://github.com/mountain-pass/addressr/pull/454), merge commit `907aee9`, released 2026-04-20. Citation derived mechanically via `wr-itil-derive-release-vehicle 015` per P267 — not hand-read from `git log`.
+
+**Fix**: ADR-026 range expansion — each hyphenated street-number range is expanded into a multi-valued `sla_range_expanded` text alias field and matched in the `phrase_prefix` clause, so any number inside the range resolves, not just the exact hyphenated form.
+
+**Evidence to date**: post-deploy smoke was green on all three issue [#367](https://github.com/mountain-pass/addressr/issues/367) reporter cases — the target range addresses now appear in result lists. The ranking dimension this ticket stayed open for was split out as P026 (numeric fuzziness inflating adjacent-doc rank), which **closed 2026-07-19** with its 8-query battery clean on the prod OpenSearch 3.5 stack. Both the recall fix and the ranking driver are therefore shipped.
+
+**Awaiting user verification.** Two things remain, and neither is implementable here:
+
+1. Re-run the three #367 reporter-case queries against production and confirm the target ranks at or near position 1 (not merely present). This needs **a subscribed RapidAPI key or a direct backend probe** — the 2026-07-19 sweep attempt via the MCP addressr surface was blocked at the gateway with 403 key-not-subscribed, the same blocker P014's verification hit.
+2. Respond to issue #367 and close the loop with the reporter.
+
+Close this ticket once both are done.
+
+> **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](./026-numeric-fuzziness-inflates-ranking.open.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1. **Settled 2026-07-26**: P026 closed 2026-07-19, so both dimensions are shipped — see `## Fix Released` above; what is left is the production re-query and the #367 response.
 
 ## Description
 
@@ -63,6 +78,12 @@ The earlier issue-comment ("index `225 DRUMMOND ST...` as well as `225-245 DRUMM
 - [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`. For OT fixture, an equivalent is: `"104 GAZE RD CHRISTMAS ISLAND"` → should return `103-107 GAZE RD, CHRISTMAS ISLAND OT 6798` (record `GAOT_717321171`, range 103→107).
 - [ ] Create failing Cucumber scenario: `"225 DRUMMOND ST CARLTON VIC"` → first result is `225-245 DRUMMOND ST, CARLTON VIC 3053`.
 - [ ] Decide whether this fix extends ADR 025 (symmetric `ssla` indexing for P007) or warrants a new ADR — a new ADR is likely since the fix introduces a new index field and reindex pass.
+
+## Fix Strategy
+
+Shipped. ADR-026 expands each hyphenated range into a multi-valued `sla_range_expanded` text alias field, matched in the `phrase_prefix` clause alongside `sla` / `ssla`. Landed across three commits (`1169741` attach, `27248d2` mapping, `20d5461` query-builder match) plus `ecf836a` for the Cucumber scenarios.
+
+**Release vehicle**: .changeset/adr-026-range-number-expansion.md
 
 ## Related
 
