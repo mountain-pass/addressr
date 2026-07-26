@@ -57,6 +57,8 @@ Template: `TEMPLATE.md`
 
 | [R017](R017-distroless-docker-image-unverified-no-docker-build-ci.active.md) | Distroless Docker Image Unverified No Docker Build Ci | pending | — | — | pending | pending | 2026-07-26 |
 
+| [R018](R018-adr-links-problem-ticket-committed-before-ticket-exists.active.md) | Adr Links Problem Ticket Committed Before Ticket Exists | pending | — | — | pending | pending | 2026-07-26 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
