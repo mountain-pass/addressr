@@ -1,28 +1,29 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-26 **P065 captured** — RFC-007 (CI perf-regression probe) carries `stories: []` with no story map, no story, and no recorded reason, so the ADR-089 trace chain terminates early and there is no way to tell a deliberate no-story RFC from an unfinished one. Two acceptable outcomes: back-fill a story map plus at least one story, or record on RFC-007 why its atomic shape needs none. Resolvable locally despite the upstream P059 contract skew that makes `stories: []` a permitted state with no disambiguation. WSJF 4.0 (Impact 2 × Likelihood 2, Effort S) — low because RFC-007's work has already shipped, so the missing trace costs an audit reconstruction rather than misdirecting live work. (lightweight aside via manual capture-problem steps)
+> Last reviewed: 2026-07-26 **P066 captured** — the `wr-architect` PreToolUse edit gate blocks `Write` to untracked `scratchpad/` files, so iter drafts have to be held in conversation context instead of on disk. That is worse on two counts: context is the scarcer resource, and anything held only in context evaporates at session end (see memory `reference_scratchpad_not_persistent.md`, which records recovering lost scratchpads from prior sessions' JSONL transcripts). The gate blocks a directory nothing could ever commit from, so it pays the cost with none of the benefit — scratch space arguably belongs outside the gate's remit entirely, alongside its existing exclusions for lockfiles, CSS, images, and `docs/problems/`. Open question in the ticket: `scratchpad/` path exclusion vs a general untracked-path exemption, the latter being more principled but also exempting not-yet-added source files. (lightweight aside via manual capture-problem steps)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
 Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) and Parked (`.parked.md`, multiplier 0) tickets are excluded per ADR-022 — surfaced in their own sections below. Rows render **tier-first** (Tier 0 Critical-bypass [Severity Very High ≥17 OR security-classified OR incident-linked] → Tier 1 Inbound-reported → Tier 2 Internal), then within each tier by `(WSJF desc, Known-Error-first, Effort-divisor asc, Reported-date asc, ID asc)`. All tickets are Tier 2 (Origin internal; max Severity 9 < 17). <!-- REPORTED-FIRST-TIER-SOURCE: /wr-itil:work-problems SKILL.md Step 3 (ADR-076) -->
 
-| WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin   |
-| ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
-| 9.0  | P032 | No CI perf regression detection — k6 stress profile is on-demand only | 9 (Medium)   | Known Error | M      | 2026-04-27 | internal |
-| 9.0  | P064 | external-comms commit gate leak-scans only the first `-m` value       | 9 (Medium)   | Open        | S      | 2026-07-26 | internal |
-| 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
-| 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift         | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
-| 4.0  | P035 | Read-shadow soak validation has multiple blind spots                  | 8 (Medium)   | Known Error | L      | 2026-05-03 | internal |
-| 4.0  | P065 | RFC-007 carries `stories: []` — back-fill a story map or justify it   | 4 (Low)      | Open        | S      | 2026-07-26 | internal |
-| 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s fg Bash cap    | 8 (Medium)   | Open        | M      | 2026-07-21 | internal |
-| 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
-| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)   | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
-| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
-| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
-| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase          | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
-| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
+| WSJF | ID   | Title                                                                  | Severity     | Status      | Effort | Reported   | Origin   |
+| ---- | ---- | ---------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | -------- |
+| 9.0  | P032 | No CI perf regression detection — k6 stress profile is on-demand only  | 9 (Medium)   | Known Error | M      | 2026-04-27 | internal |
+| 9.0  | P064 | external-comms commit gate leak-scans only the first `-m` value        | 9 (Medium)   | Open        | S      | 2026-07-26 | internal |
+| 8.0  | P031 | `wr-architect:create-adr` skill does not auto-satisfy edit-gate hooks  | 4 (Low)      | Known Error | S      | 2026-04-21 | internal |
+| 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/` files | 6 (Medium)   | Open        | S      | 2026-07-26 | internal |
+| 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline          | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P041 | `/wr-itil:capture-problem` halts on pre-existing README drift          | 4 (Low)      | Known Error | M      | 2026-05-14 | internal |
+| 4.0  | P035 | Read-shadow soak validation has multiple blind spots                   | 8 (Medium)   | Known Error | L      | 2026-05-03 | internal |
+| 4.0  | P065 | RFC-007 carries `stories: []` — back-fill a story map or justify it    | 4 (Low)      | Open        | S      | 2026-07-26 | internal |
+| 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s fg Bash cap     | 8 (Medium)   | Open        | M      | 2026-07-21 | internal |
+| 3.0  | P050 | Stale-Open tickets after fix ships — no ADR-022 transition-fold check  | 6 (Medium)   | Open        | M      | 2026-07-16 | internal |
+| 2.0  | P055 | Migrate Docker image from Alpine to Distroless (supersedes ADR-013)    | 4 (Low)      | Open        | M      | 2026-07-18 | internal |
+| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets       | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat  | 4 (Low)      | Open        | M      | 2026-07-19 | internal |
+| 1.5  | P033 | Source-inspection tests are an anti-pattern in this codebase           | 6 (Medium)   | Open        | L      | 2026-04-28 | internal |
+| 1.0  | P046 | wr-architect oversight-marker blocks confirms in multi-agent sessions  | 2 (Very Low) | Open        | M      | 2026-07-08 | internal |
 
 ## Verification Queue
 
