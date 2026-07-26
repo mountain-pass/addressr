@@ -1,6 +1,6 @@
 # Problem 067: addressr server has no SIGTERM graceful-shutdown handler wiring `stopServer()`
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-07-26
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture. Impact 2: dropped in-flight requests at shutdown, bounded to self-hosted container operators; production is an Elastic Beanstalk source bundle and does not use the container path, and the Distroless image has never been published. Likelihood 2: only realises on a restart or redeploy that lands mid-request, and only for a self-hoster once the image ships.
 
@@ -88,9 +88,9 @@ The Distroless work also supplies the only real verification path: with ADR-040 
 - **ADR-039's closing amendment is not written.** Its tini amendment still says the handler is "deferred, not dropped". Deferred deliberately: amending an ADR body pulls in an ADR-077 compendium regen whose generator is recorded as destructive to hook-authored entries, so it belongs in a pass where the `docs/decisions/README.md` diff can be reviewed.
 - **JTBD-202 still does not exist**, and this change enlarges the gap it must fill by one item: the shutdown contract (drain budget, its relationship to the orchestrator grace window, what expiry does, repeat-signal behaviour), plus `screens:` entries for `src/graceful-shutdown.js` and `src/server2.js`. `ADDRESSR_SHUTDOWN_TIMEOUT_MS` is currently the only `ADDRESSR_*` variable with no owning job. No `@jtbd` annotation was written on the new file, since it would point at a job that does not exist.
 
-### Verification (why this stays Known Error)
+### Verification (what closes this)
 
-Closes when a released build is observed draining on a real `SIGTERM`: either `build-and-smoke` green end to end with a request in flight across the stop, or a production EB deploy observed completing without dropping requests. Neither has happened; the fix is authored, unit-tested, and unreleased.
+Closes when a released build is observed draining on a real `SIGTERM`: either `build-and-smoke` green end to end with a request in flight across the stop, or a production EB deploy observed completing without dropping requests. The fix is now released (see **Fix Released** below); neither observation has been made yet, which is what keeps this at Verification Pending rather than Closed.
 
 ## Dependencies
 
@@ -105,3 +105,13 @@ Closes when a released build is observed draining on a real `SIGTERM`: either `b
 - [P055](../known-error/055-migrate-docker-image-alpine-to-distroless.md) — the Distroless migration that surfaced this, and the ticket carrying the JTBD-202 gap this ticket's `JTBD:` field is pending on.
 - `src/waycharter-server.js:1011` — the existing `stopServer()` awaiting a caller.
 - Captured via `/wr-itil:work-problems` iter, 2026-07-26 (manual capture-problem steps; Skill tool erroring this session).
+
+## Fix Released
+
+Released 2026-07-26 in **v3.0.3** — published to npm as `@mountainpass/addressr@3.0.3` and deployed to production via Terraform; the release-pipeline prod smoke test PASSED. Fix commit: `581b533` `fix(server): drain in-flight requests on SIGTERM and SIGINT (P067)`, shipped via `.changeset/graceful-shutdown-handler.md` (patch, now consumed).
+
+What shipped: `src/graceful-shutdown.js` (new) registering `SIGTERM` and `SIGINT`, draining via the `stopServer()` that had sat uncalled since it was written for test teardown; `src/waycharter-server.js` `stopServer()` now resolves-never-rejects and calls `closeIdleConnections()`; `src/server2.js` installs the handlers above `startRest2Server()` so a bad `ADDRESSR_SHUTDOWN_TIMEOUT_MS` fails startup before the port is bound. Because the handlers install unconditionally in `src/server2.js`, and that is what production EB runs, this is live in production as of the v3.0.3 deploy.
+
+**Verification criterion**: observe a real production `SIGTERM` — an EB redeploy or instance replacement landing mid-request — draining in-flight requests to completion within `ADDRESSR_SHUTDOWN_TIMEOUT_MS` (default 8000ms) before any force-exit, rather than dropping them. The `tini` PID-1 fix from [P055](../known-error/055-migrate-docker-image-alpine-to-distroless.md) composes on the container axis: tini delivers the signal (prompt stop), this handler drains the requests (graceful stop), and neither is sufficient alone. A `build-and-smoke` run green end to end with a request in flight across the container stop would satisfy the same criterion on the docker axis.
+
+**Caveat — the composed real path is still unexercised.** The prod smoke test asserts a healthy deploy, not that the deploy drained. The 19 shipped assertions cover the handler branch matrix against an injected fake `process`; the `server2.js` and `stopServer` wiring assertions are source-inspection (P033). Nothing yet has put a genuine in-flight request across a real signal.
