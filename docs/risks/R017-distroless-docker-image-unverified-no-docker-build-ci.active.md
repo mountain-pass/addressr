@@ -74,9 +74,46 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
   skipped. This risk stays Active until a green run exercises them. See
   [P055](../problems/known-error/055-migrate-docker-image-alpine-to-distroless.md).
 
+- 2026-07-26: **Narrowed again, and this time the image really was defective.** A subsequent
+  `build-and-smoke` run got past the corrected non-root assertion and exercised both remaining
+  steps. Two corrections to the entry above, in opposite directions:
+
+  - **`/health` is now VERIFIED.** The steps run sequentially with no `if: always()`, so a run
+    reaching the SIGTERM step is proof the container started and answered a real HTTP request on
+    `/health`. That closes the check this risk called the catcher of an unresolvable `CMD` path.
+  - **SIGTERM moves from unverified to verified FAILING — a real image defect, not a test bug.**
+    The container took 11s and was SIGKILLed at Docker's 10s grace deadline. This is explicitly
+    unlike the prior run, where a correct image false-negatived on a too-narrow assertion. Here the
+    assertion was right and the image was wrong.
+
+  Root cause: the kernel applies no default signal dispositions to PID 1, and node installs no
+  explicit `SIGTERM` handler, so node running as PID 1 under the Distroless `ENTRYPOINT` discarded
+  the signal. The Distroless migration had dropped `dumb-init` on the stated belief that
+  node-as-PID-1 handles signals, and
+  [ADR-039](../decisions/039-distroless-docker-runtime.proposed.md) asserted that belief in as many
+  words. It was false.
+
+  **Treatment applied**: a Debian-packaged `tini` now runs as PID 1 and forwards `SIGTERM` to node
+  (`18f0d9b`) — `ENTRYPOINT ["/tini", "--", "/nodejs/bin/node"]`, with `CMD`, the nonroot uid 65532,
+  `WORKDIR` and every env default unchanged. ADR-039 is amended in place rather than superseded
+  (`d310c4b`); its reassessment criterion "signal handling regresses in practice — vendor a static
+  init" fired exactly as written and is discharged. Docker-axis only under ADR-040, so no changeset
+  and no release.
+
+  **Still unverified**: nothing has confirmed the fix. This risk stays Active until a
+  `build-and-smoke` run goes green end to end with `tini` in place. Note also that the fix restores
+  prompt termination and not graceful shutdown — in-flight requests are still dropped, tracked
+  separately as [P067](../problems/open/067-no-sigterm-graceful-shutdown-handler.md), so a green
+  `<10s` assertion should not be read as more than stop latency.
+
 ## Change Log
 
 - 2026-07-26: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 - 2026-07-26: Evidence log updated with the first `build-and-smoke` run — build and non-root
   verified, boot and SIGTERM still outstanding. No scoring change (fields remain uncurated); the
   risk is narrower than at scaffold time but not yet dischargeable.
+- 2026-07-26: Evidence log updated again — `/health` verified, SIGTERM verified failing on a real
+  image defect (node-as-PID-1 discarding the signal), `tini` init applied as treatment. Three of the
+  four CI criteria are now evidenced; the fourth is evidenced negative with an unverified fix
+  against it. No scoring change (fields remain uncurated). Still not dischargeable: this risk exists
+  because the image was unverified, and a fix nobody has built is not verification.

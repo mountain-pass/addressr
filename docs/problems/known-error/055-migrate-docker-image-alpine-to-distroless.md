@@ -26,7 +26,7 @@ Alpine image continues to work; this is a security-posture improvement, not a fi
 ### Investigation Tasks
 
 - [x] Multi-stage Dockerfile: build layer (npm global install) → `distroless/nodejs22` runtime layer copying the installed package — `d284853`
-- [x] Confirm dumb-init is unnecessary (distroless/nodejs uses a proper init / node as PID 1) or vendor a static init if signal handling regresses — dropped, reasoning in ADR-039; the CI SIGTERM assertion is what will confirm it empirically
+- [x] Confirm dumb-init is unnecessary (distroless/nodejs uses a proper init / node as PID 1) or vendor a static init if signal handling regresses — **the first branch was tried and was wrong; the second branch is what shipped.** `dumb-init` was dropped on the belief that node-as-PID-1 handles signals, the CI SIGTERM assertion disproved it empirically as intended, and a Debian-packaged `tini` was vendored as PID 1 in `18f0d9b`. See "Second CI Run" below
 - [ ] Verify `docker build`, container start, and a smoke request against the running container — **NOT DONE, see Verification below**
 - [x] Author the superseding ADR recording the Distroless decision — [ADR-039](../../decisions/039-distroless-docker-runtime.proposed.md), `d86c6cb`
 
@@ -80,6 +80,12 @@ base-image digest-pin trigger assessed and declined).
 
   **Expanded 2026-07-26 under ADR-040.** The JTBD review of the tag scheme re-derived this same gap independently and added to it. JTBD-202 should also own the **tag contract**: which tag to pin, what `:latest` promises, when a pinned tag can and cannot change, and how an operator learns an image changed. Until it lands, `docs/DOCKER-IMAGE-CHANGELOG.md` is a consumer-facing surface no documented job owns. Separately, JTBD-400's `screens:` omits `package.json`, `Dockerfile`, `.github/workflows/docker-image.yml`, `.dockerignore.tmpl`, and `docs/DOCKER-IMAGE-CHANGELOG.md`, and its Desired Outcomes still assert the `deploy/**` auto-deploy deferral (P039 variant 4b) that the user lifted on 2026-07-26. All of it batches into one interactive `/wr-jtbd:confirm-jobs-and-personas` run.
 
+  **Expanded again 2026-07-26 under the `tini` fix — the signal and lifecycle contract.** The JTBD reviewer found this change _enlarges_ the gap rather than merely sitting inside it, and named a third distinct operator-facing contract JTBD-202 must own, alongside shell-loss and the tag contract: **what is PID 1**, that `docker stop` / `SIGTERM` terminates the container within the orchestrator's grace window rather than being SIGKILLed, and the explicit caveat that prompt termination is **not** in-flight request draining. That last distinction is exactly the trade-off JTBD-202 exists to adjudicate, and there is currently no job statement or desired outcome anywhere in `docs/jtbd/` against which "stops fast but drops connections" can be judged acceptable or not.
+
+  So JTBD-202 should carry three desired outcomes, not one, when it is authored: (a) diagnosis without an in-container shell, (b) the tag-pinning contract, (c) the container terminates within the orchestrator grace window on `SIGTERM`, with the in-flight-drain guarantee stated explicitly as either in scope or a named exclusion. Screen mapping to land in the same run: `Dockerfile` and `.github/workflows/docker-image.yml` onto JTBD-202's `screens:`, and `docker-image.yml` additionally onto JTBD-400's, folded into the omissions listed above.
+
+  This is also why [P067](../open/067-no-sigterm-graceful-shutdown-handler.md) is personed `self-hosted-operator` / `JTBD-202 (pending)` rather than the `addressr-maintainer` / `JTBD-400` its capture supplied: request draining is a runtime property, and JTBD-400 is release determinism.
+
 - **ADR-039 oversight.** Authored `human-oversight: unconfirmed` for the same reason. The substance was decided by the user on 2026-07-18; `/wr-architect:review-decisions` should promote it.
 - **ADR-013 composes-with gap — CLOSED, not deferred.** ADR-013 recorded "no Docker-build CI workflow exists" as an open gap, which is why nothing ever caught a Dockerfile regression. `.github/workflows/docker-image.yml` closes it. Publishing stays manual (`npm run docker:push`) as of that commit; **the "separate decision" it deferred is [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md)**, which promotes CI to the publisher. The wiring is a later stage.
 
@@ -114,6 +120,56 @@ a green `build-and-smoke` run exercises the boot and SIGTERM steps end to end.
 
 Carry-forward for ADR-040 stage 2: when these steps move into the reusable `workflow_call`
 definition, transplant the **fixed** three-arm assertion, or the same red build returns.
+
+## Second CI Run (2026-07-26) — the boot passed, and the SIGTERM assertion caught a real image defect
+
+With the non-root assertion corrected, `build-and-smoke` got past it and exercised both remaining
+steps. The result inverts the previous run: this time the assertion was right and the **image** was
+wrong.
+
+- **Container start and `/health` — VERIFIED.** The steps run sequentially with no `if: always()`,
+  so a run reaching the SIGTERM step is proof the container booted and answered a real HTTP request.
+  That closes the check that exists to catch an unresolvable `CMD` path, which was the single
+  largest unknown left after the loss of the shell.
+- **SIGTERM termination — FAILED, on a genuine defect.** The container took 11s and was SIGKILLed at
+  Docker's 10s grace deadline.
+
+**Root cause.** The kernel applies no default signal dispositions to PID 1, and node installs no
+explicit `SIGTERM` handler of its own, so node running as PID 1 under the Distroless `ENTRYPOINT`
+discarded the signal outright. The investigation task above was closed on the first branch —
+"dumb-init is unnecessary because node is PID 1" — and ADR-039 wrote that reasoning down as fact. It
+was false. The task's own second branch, "or vendor a static init if signal handling regresses", is
+what was actually needed, and ADR-039's matching reassessment criterion fired exactly as written.
+
+**Fix (`18f0d9b`).** A Debian-packaged `tini` runs as PID 1 and forwards `SIGTERM` to node, which as
+a child does carry the default disposition and exits.
+
+- Build stage: `apt-get install -y --no-install-recommends tini`.
+- Runtime stage: `COPY --from=build /usr/bin/tini /tini` — one deterministic source path, no
+  fallback, so the build hard-fails if Debian stops shipping it.
+- `ENTRYPOINT ["/tini", "--", "/nodejs/bin/node"]`. `CMD`, the nonroot uid 65532, `WORKDIR` and all
+  eight env defaults are unchanged. `tini` needs no privilege, and it appends CMD args and execs
+  node, so the loader-by-script-path invocation is unaffected.
+- Debian's `tini` is glibc-linked rather than static. Safe here for this image's own stated reason
+  for the bookworm build stage — build and runtime share a Debian 12 libc — but that parity is now
+  load-bearing in the present tense rather than anticipatory, and the Dockerfile says so.
+
+**No changeset, no release.** No `src/` file changed, so this publishes on the docker axis under
+ADR-040. ADR-039 is amended in place rather than superseded (`d310c4b`): five falsified passages
+rewritten, three declined alternatives recorded, two reassessment triggers discharged.
+
+**This fixes prompt termination, not graceful shutdown.** node as tini's child dies at once, so
+in-flight requests are still dropped, and the `<10s` assertion will now pass while saying nothing
+about draining. Captured as
+[P067](../open/067-no-sigterm-graceful-shutdown-handler.md) — wire the existing `stopServer()` to
+`process.on('SIGTERM')`, which is a `src/` change and therefore an npm release.
+
+**Not verified.** Nothing has built or booted the `tini` image; this iteration was again barred from
+running docker. The stop-timing threshold was deliberately left at Docker's 10s contract rather than
+tightened, so that a green run still isolates which change produced it. This ticket stays Known
+Error and ADR-039 stays `proposed` until `build-and-smoke` goes green end to end. Advisory for a
+later pass, not done here: once the fix is confirmed, consider whether `-lt 10` should tighten,
+since under `tini` the stop should be sub-second and 9s would currently pass.
 
 ## Dependencies
 
