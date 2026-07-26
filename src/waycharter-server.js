@@ -1008,8 +1008,25 @@ export function startRest2Server() {
   });
 }
 
+// Resolves when every connection has ended, and never rejects: an
+// ERR_SERVER_NOT_RUNNING callback is a no-op, not a shutdown failure, and the
+// caller at test/js/world.js discards the return value. Exit codes are the
+// shutdown handler's business (P067).
 export function stopServer() {
+  if (server === undefined) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    server.close(() => resolve());
+    // Idle keep-alive sockets hold close() open indefinitely — a reverse proxy
+    // upstream pool would otherwise consume the whole drain budget doing nothing.
+    server.closeIdleConnections();
+  });
+}
+
+// The deadline path: whatever is still connected when the drain budget expires.
+export function forceCloseConnections() {
   if (server !== undefined) {
-    server.close();
+    server.closeAllConnections();
   }
 }

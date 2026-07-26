@@ -57,9 +57,12 @@ WORKDIR /home/nonroot
 # exits, and tini reaps orphans as a proper init should. It needs no privilege, so the
 # base image's nonroot uid 65532 is unchanged.
 #
-# tini makes the container STOP promptly; it does not make it stop GRACEFULLY. node takes
-# the default disposition and dies at once, so in-flight requests are dropped. Draining
-# them needs an app-level process.on('SIGTERM') wired to stopServer(), tracked as P067.
+# tini makes the container STOP promptly; it does not by itself make it stop GRACEFULLY.
+# The two compose: tini delivers SIGTERM, and the app-level handler in
+# src/graceful-shutdown.js drains in-flight requests before exiting (P067). Without the
+# handler node would take the default disposition and die mid-request; without tini the
+# signal would never reach node at all. The drain is bounded by
+# ADDRESSR_SHUTDOWN_TIMEOUT_MS (default 8000ms) so it stays inside the 10s grace deadline.
 #
 # CMD is the resolved script path rather than the addressr-server-2 bin shim: there is no
 # shell and no /usr/bin/env to resolve it. tini appends the CMD args and execs node, so
