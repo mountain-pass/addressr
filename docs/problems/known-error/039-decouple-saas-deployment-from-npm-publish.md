@@ -162,6 +162,36 @@ and no trigger exists. The amendment lands with the wiring, in the same commit a
 and the `release-workflow-deploy-only.test.mjs` update. This note is here so the prerequisite is
 reachable from the P039 side without editing ADR-001 ahead of the fact.
 
+#### PREREQUISITE DISCHARGED 2026-07-27 — and one obligation it does NOT discharge
+
+ADR-001 now carries an `Amendment 2026-07-27` block naming the `deploy/**` entry point and its
+push-tier score, and the `deploy/**` axis is wired. The prerequisite above is met, and it is enforced
+mechanically rather than by grep: `release-workflow-deploy-only.test.mjs` cross-reads ADR-001 and
+asserts the co-occurrence of `deploy/**` and `push-tier` (keyed on those, deliberately not on the
+amendment heading, because ADR-001 already carried an unrelated 2026-07-26 amendment block that would
+have made a heading-keyed assertion pass vacuously). ADR-001's `human-oversight: confirmed` marker is
+**preserved, not flipped**, per the ADR-004 precedent, with re-ratification queued to
+`/wr-architect:review-decisions`.
+
+**One narrowing to note:** `deploy/.terraform.lock.hcl` is excluded from the detection pathspec. A
+provider-lock bump carries no infra intent of its own and is the likeliest file to be swept
+incidentally into an unrelated push; a deliberate provider upgrade goes through the `deploy_only`
+dispatch, which is gated at release tier. The exclusion announces itself with a `::notice::` so it is
+never a silent no-deploy. See ADR-040's 2026-07-27 stage-3 amendment, point 6.
+
+**What this does NOT discharge — JTBD-400 is now CONTRADICTED, not stale.** This ticket authored
+JTBD-400's infra-only-deploy job story, and it is this ticket's own variant 4b that stage 3 wires. So
+the contradiction is mirrored here rather than left only on P055 and the ADR. Through stage 2,
+JTBD-400's Desired Outcome — "the dispatch remains operator-initiated by design; the compensating
+control is that it is the one gated path, and auto-dispatch on infra change (P039 variant 4b) is
+deliberately deferred until the manual path has been exercised" — was merely **incomplete**, because
+no auto-deploy trigger existed. Stage 3 is the commit that makes it **false**, on every clause: the
+dispatch is no longer the only path; "it is the one gated path" is no longer a compensating control
+that exists; and the deferral was lifted with the manual path dispatched zero times. The ADR-001
+amendment discharges ADR-040's own prerequisite; it does **not** discharge this. JTBD-400 is
+`human-oversight: confirmed` and the wiring run was AFK, so amending it batches into
+`/wr-jtbd:confirm-jobs-and-personas` alongside the `screens:` omissions already tracked on P055.
+
 ### Verification status
 
 The `deploy_only` branch **cannot be fully verified without a real `workflow_dispatch`**. CI on push validates only that the YAML parses and that the normal published-gate path is unaffected — a push-triggered run never sets `deploy_only`, so the widened branch is not exercised. Hence Known Error, not Verifying. Verification is a deliberate deploy-only dispatch (ideally with no pending infra change, so `terraform plan -detailed-exitcode` returns 0 and the run is a clean no-op) against the draft acceptance criteria below. Not triggered as part of this commit.
