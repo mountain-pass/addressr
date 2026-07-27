@@ -61,6 +61,12 @@ Template: `TEMPLATE.md`
 
 | [R019](R019-release-ships-fresh-server-lifecycle-code-to-prod-via-coupled-publish.active.md) | Release Ships Fresh Server Lifecycle Code To Prod Via Coupled Publish | pending | — | — | pending | pending | 2026-07-26 |
 
+| [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) | Deploy Path Push Tier Prod Deploy Precondition Unmet | pending | — | — | pending | pending | 2026-07-27 |
+| [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.active.md) | Push Tier Deploy Axis Arms Prod Terraform Apply | pending | — | — | pending | pending | 2026-07-27 |
+| [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.active.md) | Unstaged Terraform Lockfile Drift Arms Deploy Axis | pending | — | — | pending | pending | 2026-07-27 |
+| [R023](R023-release-watch-reports-success-when-docker-publish-job-fails.active.md) | Release Watch Reports Success When Docker Publish Job Fails | pending | — | — | pending | pending | 2026-07-27 |
+| [R024](R024-ratification-ordering-deviated-adrs-unratified-while-wired.active.md) | Ratification Ordering Deviated Adrs Unratified While Wired | pending | — | — | pending | pending | 2026-07-27 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
