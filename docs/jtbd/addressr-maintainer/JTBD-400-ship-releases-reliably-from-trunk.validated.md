@@ -8,10 +8,14 @@ date-created: 2026-04-15
 screens:
   - .changeset/
   - .github/workflows/release.yml
+  - .github/workflows/docker-image.yml
   - .github/workflows/rapidapi-listing-sync.yml
   - .github/workflows/update-*.yml
+  - 'deploy/** (Terraform infra axis per ADR 040; excludes deploy/.terraform.lock.hcl. Worker auth behaviour under deploy/cloudflare-worker/ is JTBD-200 — this job owns the deploy mechanism only)'
+  - 'package.json (release surface only — version, changesets config, build:docker / docker:push scripts; the dependency block serves the runtime jobs)'
   - scripts/release-watch.sh
   - scripts/push-and-watch.sh
+  - scripts/docker-tags.sh
   - pre-commit hook chain
 ---
 
@@ -53,3 +57,5 @@ Help contributors trust that every commit which declares a changeset will actual
 - P011 (closed) — original incident: P009 changeset missing from commit `ef66d39`, next release shipped no version bump.
 - P010, P017 — exemption-tag and rename-only-commit footguns.
 - ADR 014 (governance commits), ADR 029 (zero-outage cutover) — infrastructure-side instances of the same job.
+- ADR 040 (release pipeline decoupled into npm / docker / deploy axes) — its `deploy/**` push trigger **contradicts** the final Desired Outcome above (operator-initiated, one gated path, P039 variant-4b deferral). Amendment pending an interactive `/wr-jtbd:confirm-jobs-and-personas` run.
+- Deliberately NOT added as screens here: `Dockerfile`, `.dockerignore.tmpl`, `docs/DOCKER-IMAGE-CHANGELOG.md` — routed to the not-yet-existing JTBD-202 per P055, not dropped.

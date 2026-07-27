@@ -11,11 +11,11 @@ reassessment-date: 2026-10-24
 
 # ADR 037: CORS preflight caching policy — emit `Access-Control-Max-Age` at the origin, exempt OPTIONS from proxy-auth
 
-> Captured while completing the user-approved fix for [P023](../problems/known-error/023-cross-origin-root-not-browser-cached.md). The chosen option (env-var-driven `Access-Control-Max-Age` on an explicit `OPTIONS` handler, ordered before `proxyAuthMiddleware`) was user-approved this session (binding "Option A"); the surrounding MADR substance was derived by the authoring agent from the P023 root-cause analysis + the `wr-architect:agent` review. `human-oversight: unconfirmed` until ratified at the `/wr-architect:review-decisions` drain — drain it when the P023 through-gateway efficacy probe (investigation task 4) clears.
+> Captured while completing the user-approved fix for [P023](../problems/verifying/023-cross-origin-root-not-browser-cached.md). The chosen option (env-var-driven `Access-Control-Max-Age` on an explicit `OPTIONS` handler, ordered before `proxyAuthMiddleware`) was user-approved this session (binding "Option A"); the surrounding MADR substance was derived by the authoring agent from the P023 root-cause analysis + the `wr-architect:agent` review. Ratified 2026-07-27 at the `/wr-architect:review-decisions` drain (`human-oversight: confirmed`). The P023 through-gateway efficacy probe (investigation task 4) remains open and gates any end-to-end efficacy claim, but it does not gate ratification of the origin behaviour this ADR records.
 
 ## Context and Problem Statement
 
-Cross-origin browsers re-run a full CORS preflight (`OPTIONS`) before every GET to the Addressr root `/`, because the origin sends no `Access-Control-Max-Age` on preflight responses (confirmed by live probe and by source inspection of the env-var CORS middleware at `src/waycharter-server.js:560-581`, which appends three headers, sets no Max-Age, and registers no explicit `OPTIONS` handler). This is the origin-side, in-our-control half of [P023](../problems/known-error/023-cross-origin-root-not-browser-cached.md): every consumer page load doing cross-origin `fetch()` to the API root pays a preflight round-trip on top of the GET.
+Cross-origin browsers re-run a full CORS preflight (`OPTIONS`) before every GET to the Addressr root `/`, because the origin sends no `Access-Control-Max-Age` on preflight responses (confirmed by live probe and by source inspection of the env-var CORS middleware at `src/waycharter-server.js:560-581`, which appends three headers, sets no Max-Age, and registers no explicit `OPTIONS` handler). This is the origin-side, in-our-control half of [P023](../problems/verifying/023-cross-origin-root-not-browser-cached.md): every consumer page load doing cross-origin `fetch()` to the API root pays a preflight round-trip on top of the GET.
 
 Fixing it interacts with [ADR 024](024-origin-gateway-auth-header-enforcement.accepted.md): the CORS middleware runs _before_ `proxyAuthMiddleware()`, whose closed allowlist is `/health` + `/api-docs` (a **path** allowlist). A raw preflight carries no gateway secret, so on a proxy-auth-enabled origin an `OPTIONS` would be 401-ed and any appended `Max-Age` would never reach the browser. Emitting a preflight-cache directive therefore requires the preflight to be answered _before_ proxy-auth enforcement — a **method-level** exemption ADR 024 does not currently acknowledge.
 
@@ -66,13 +66,13 @@ Chosen option: **Option A** — emit `Access-Control-Max-Age` (env var `ADDRESSR
 
 ## Reassessment Criteria
 
-- The P023 through-gateway efficacy probe (subscribed-key test of whether the origin `Max-Age` reaches the prod browser) returns — confirm or revise the origin approach, and drain this ADR to `human-oversight: confirmed`.
+- The P023 through-gateway efficacy probe (subscribed-key test of whether the origin `Max-Age` reaches the prod browser) returns — confirm or revise the origin approach. (Oversight ratification is no longer pending; drained 2026-07-27.)
 - A performance-budget ADR is introduced for the origin runtime path (none exists today) — re-file the preflight-handler cost against it.
 - The `cors` package is reconsidered (Option B) if preflight policy grows beyond two headers.
 
 ## More Information
 
-- [P023](../problems/known-error/023-cross-origin-root-not-browser-cached.md) — root-cause analysis + Fix Strategy.
+- [P023](../problems/verifying/023-cross-origin-root-not-browser-cached.md) — root-cause analysis + Fix Strategy.
 - [RFC-008](../rfcs/RFC-008-cors-preflight-max-age-at-origin.proposed.md) — the fix vehicle tracing P023.
 - [ADR 024](024-origin-gateway-auth-header-enforcement.accepted.md) — proxy-auth enforcement narrowed by this decision (OPTIONS method-level exemption).
 - [ADR 017](017-rapidapi-distribution.accepted.md) — RapidAPI distribution; the gateway layer that owns the GET disk-cache-miss half of P023.
