@@ -43,16 +43,24 @@ name: Docker Image
 on:
   push:
     branches: [master]
+    # ADR-040 stage 3, option C. package.json / package-lock.json are
+    # DELIBERATELY ABSENT here while present on the pull_request filter below.
+    # That asymmetry IS the double-publish guard — do not "re-sync the two
+    # lists" as a tidy-up. A changesets release commit touches package.json;
+    # with it here, that one commit would fire both this push trigger and
+    # release.yml's workflow_call, publishing the image twice and RE-POINTING
+    # the supposedly immutable :<version>-<gitsha>. What remains on master is a
+    # true docker-only change. Pinned in
+    # test/js/__tests__/docker-image-workflow.test.mjs.
     paths:
       - 'Dockerfile'
       - '.dockerignore.tmpl'
-      - 'package.json'
-      - 'package-lock.json'
       - '.github/workflows/docker-image.yml'
   pull_request:
-    # package.json / package-lock.json are here as well as on the push filter:
-    # without them a dependency bump was publishable on merge without the image
-    # ever having been built in the pull request.
+    # package.json / package-lock.json are here but NOT on the push filter
+    # above: without them a dependency bump was publishable on merge without the
+    # image ever having been built in the pull request. A pull request never
+    # publishes, so keeping them here costs a build and buys verification.
     paths:
       - 'Dockerfile'
       - '.dockerignore.tmpl'

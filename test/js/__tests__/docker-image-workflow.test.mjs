@@ -14,17 +14,27 @@
 // either publish something that should not have been published, or quietly
 // publish nothing while reporting success.
 //
-// STAGE 3 PRECONDITION — do not delete this note. Stage 3 wires release.yml to
+// STAGE 3 RECONCILIATION — do not delete this note. Stage 3 wires release.yml to
 // invoke this workflow with publish_semver: true. A changesets release commit
-// touches package.json, which is in this workflow's own push path filter, so at
-// stage 3 the same commit would publish the image twice and re-point the
-// supposedly immutable :<version>-<gitsha>. Stage 3 MUST NOT land until that
-// reconciliation is pinned; the options are enumerated in the ADR-040 amendment.
+// touches package.json, so while package.json sat in this workflow's own push
+// path filter the same commit would have published the image TWICE and
+// re-pointed the supposedly immutable :<version>-<gitsha>. Of the four options
+// the ADR-040 stage-2 amendment enumerated, the user pinned **option C**: drop
+// package.json / package-lock.json from the PUSH filter while keeping them on
+// the PULL_REQUEST filter. That dissolves the collision for every commit
+// changesets/action authors — a release commit no longer matches the push
+// filter at all, so release.yml is the sole publisher on that commit — while
+// leaving PR-time build verification of a dependency bump intact.
 //
-// Known limitation (accepted): these assertions pin the gate strings and the
-// step ordering, not GitHub's evaluation of them. A publish path added in a
-// second job, or a `docker push` reached through a script this file does not
-// name, would not be caught.
+// The asymmetry between the two filters IS the guard, which makes it a prime
+// candidate for a well-meaning "these two lists have drifted, let's re-sync
+// them" tidy-up. `pins option C` below is what makes that tidy-up red instead
+// of a silent double publish.
+//
+// Known limitation (accepted): these assertions pin the gate strings, the step
+// ordering, and the two path filters, not GitHub's evaluation of them. A publish
+// path added in a second job, or a `docker push` reached through a script this
+// file does not name, would not be caught.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -47,12 +57,69 @@ const lineOf = (needle) => {
   return index;
 };
 
+// Extract one top-level trigger's `paths:` list from the `on:` block.
+// Deliberately NOT a YAML parse — see the sibling
+// release-workflow-deploy-only.test.mjs header for why a second interpreter is
+// a downgrade here, and js-yaml is only transitively present via
+// @changesets/cli. But a hand-rolled slicer is a WEAKER interpreter than a
+// parser, so this one asserts its own preconditions: exactly one opener at the
+// expected indent, and a non-empty result. Otherwise a reorder or a reformat
+// yields an empty list and every `does not contain` assertion below passes
+// vacuously — the silent-green class this whole file exists to catch.
+//
+// Comment lines are stripped, not just ignored: both filters carry prose that
+// NAMES the files the other one filters on, so a raw line scan would find
+// 'package.json' in the push block's own explanation of why it is absent.
+const pathsOf = (name) => {
+  const lines = raw.split('\n');
+  const openers = lines.filter((l) => l === `  ${name}:`);
+  assert.equal(openers.length, 1, `expected exactly one '  ${name}:' opener`);
+  const start = lines.indexOf(`  ${name}:`);
+  let end = start + 1;
+  while (end < lines.length && !/^ {2}\S/.test(lines[end])) end += 1;
+  const paths = lines
+    .slice(start + 1, end)
+    .filter((l) => /^ {6}- '.+'$/.test(l))
+    .map((l) => l.trim().replace(/^- '|'$/g, ''));
+  assert.ok(paths.length > 0, `'${name}:' paths list sliced empty`);
+  return paths;
+};
+
 describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
   it('is callable as a reusable workflow with a boolean publish_semver input', () => {
     assert.ok(raw.includes('  workflow_call:'));
     assert.ok(raw.includes('      publish_semver:'));
     assert.ok(raw.includes('        type: boolean'));
     assert.ok(raw.includes('        default: false'));
+  });
+
+  it('pins option C: package manifests are on the pull_request filter and NOT the push filter', () => {
+    // ADR-040 stage 3. The two filters are near-identical by design, so a bare
+    // raw.includes('package.json') proves nothing — each half is sliced and
+    // asserted separately.
+    const push = pathsOf('push');
+    const pullRequest = pathsOf('pull_request');
+
+    // Positive preconditions first: if the slicer found the wrong region, these
+    // fail loudly rather than letting the absence assertions pass on an empty
+    // or mis-sliced list.
+    for (const paths of [push, pullRequest]) {
+      assert.ok(paths.includes('Dockerfile'));
+      assert.ok(paths.includes('.dockerignore.tmpl'));
+      assert.ok(paths.includes('.github/workflows/docker-image.yml'));
+    }
+
+    // The guard itself. A changesets release commit touches package.json; with
+    // it on the PUSH filter that one commit fires both this workflow's push
+    // trigger and release.yml's workflow_call, publishing twice and re-pointing
+    // the immutable :<version>-<gitsha>.
+    assert.ok(!push.includes('package.json'));
+    assert.ok(!push.includes('package-lock.json'));
+
+    // Kept on the pull_request filter: a dependency bump must still have the
+    // image BUILT and smoke-tested before it can merge. PRs never publish.
+    assert.ok(pullRequest.includes('package.json'));
+    assert.ok(pullRequest.includes('package-lock.json'));
   });
 
   it('never compares publish_semver against the string "true"', () => {
