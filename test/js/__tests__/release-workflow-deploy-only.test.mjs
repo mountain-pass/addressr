@@ -34,6 +34,20 @@ const raw = readFileSync(
   'utf8',
 );
 
+// ADR-040 makes the ADR-001 amendment a MECHANICAL prerequisite on the
+// deploy/** axis, in as many words: "Asserted in
+// test/js/__tests__/release-workflow-deploy-only.test.mjs, not left to a human
+// grep." That is why this file reads a decision record as well as a workflow.
+const adr001 = readFileSync(
+  fileURLToPath(
+    new URL(
+      '../../../docs/decisions/001-risk-gated-release-process.proposed.md',
+      import.meta.url,
+    ),
+  ),
+  'utf8',
+);
+
 const DEPLOY_GATE =
   "        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)";
 
@@ -71,5 +85,31 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
 
   it('never compares deploy_only against the string "true"', () => {
     assert.doesNotMatch(raw, /deploy_only\s*[!=]=\s*'true'/);
+  });
+
+  it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {
+    // ADR-040's Confirmation: release.yml must contain no deploy/**
+    // path-detection step unless ADR-001 carries an amendment naming that entry
+    // point AND its push-tier score. Asserted here rather than left to a human
+    // grep, which is what ADR-040 asks for by name.
+    //
+    // Keyed on the co-occurrence of 'deploy/**' and 'push-tier', NOT on a
+    // generic 'Amendment' heading: ADR-001 already carried an unrelated
+    // 2026-07-26 amendment block, so a heading-keyed assertion would have
+    // passed BEFORE the required block was ever written — a vacuous pass that
+    // would defeat the whole criterion. Verified failing against ADR-001 as it
+    // stood before the block landed.
+    //
+    // Deliberately UNCONDITIONAL, which is strictly stronger than ADR-040's
+    // "only if the step is present" phrasing: the governance record must stand
+    // whether or not someone later removes the step.
+    assert.ok(
+      adr001.includes('deploy/**'),
+      'ADR-001 must name the deploy/** entry point',
+    );
+    assert.ok(
+      adr001.includes('push-tier'),
+      'ADR-001 must record the deploy/** axis as push-tier governance',
+    );
   });
 });
