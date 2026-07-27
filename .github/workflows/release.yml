@@ -138,9 +138,73 @@ jobs:
         with:
           node-version: '22.x'
       - uses: actions/checkout@v5
+        with:
+          # The deploy/** detection step below diffs github.event.before against
+          # the pushed head. A push can carry SEVERAL commits, so fetch-depth: 2
+          # would silently miss a deploy/** change in any but the last one. Full
+          # history is correct by construction, costs little on an 8 MB repo, and
+          # changesets/action wants history anyway for changelog attribution.
+          fetch-depth: 0
       - name: Install dependencies
         run: |
           npm ci
+
+      # ADR-040 stage 3, deploy axis (P039 variant 4b). A commit under deploy/
+      # on master must reach prod without laundering itself through a changeset.
+      # Env config is Terraform-managed (deploy/main.tf), so this axis is
+      # git-visible and enforces IaC rather than tolerating console drift.
+      # ADR-001's 2026-07-27 amendment records that it runs at PUSH-TIER
+      # governance, which is lower than the other two entry points.
+      #
+      # Plain git, NOT a marketplace filter action: this job holds the AWS,
+      # Cloudflare and Terraform Cloud credentials, so a third-party action here
+      # would be deploy-credential supply-chain surface.
+      #
+      # Scoped to `push` on purpose. On a deploy_only dispatch a skipped step's
+      # output is the EMPTY STRING; leaving the third disjunct to rest on "path
+      # detection happens to find nothing off a push" would be incidental rather
+      # than explicit. Same class as the boolean-coercion trap documented above.
+      #
+      # Placed BEFORE the changesets step so it can never observe a worktree
+      # that `changeset version` has already mutated.
+      #
+      # Fails CLOSED: an all-zeros github.event.before (branch creation) or a
+      # force-pushed-away parent both fail `git cat-file -e`, yielding false.
+      #
+      # `deploy/.terraform.lock.hcl` is EXCLUDED from the pathspec on purpose.
+      # A provider-lock bump carries no infra intent of its own and is the
+      # likeliest file to be swept incidentally into an unrelated push, so
+      # leaving it in would let routine lockfile churn arm a push-tier prod
+      # apply. A deliberate provider upgrade is exactly the change that deserves
+      # the RELEASE-tier gate instead: dispatch it with `deploy_only`, which the
+      # wr-risk-scorer gate intercepts via the `release:watch` command prefix.
+      # The exclusion is announced in the log below so it can never be a silent
+      # no-deploy.
+      #
+      # Carrying an `if:` drops GitHub's implicit success() default, so this step
+      # runs even after an earlier failure. Harmless — it only writes an output,
+      # and all three deploy steps carry their own `success() &&`.
+      - name: Detect a deploy/** change in this push
+        id: deploy-paths
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        shell: bash
+        run: |
+          changed=false
+          if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            touched=$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}" -- deploy/)
+            considered=$(printf '%s\n' "${touched}" | grep -v '^deploy/\.terraform\.lock\.hcl$' || true)
+            if [ -n "${considered}" ]; then
+              changed=true
+            fi
+            if [ -n "${touched}" ] && [ -z "${considered}" ]; then
+              echo "::notice::deploy/ change is provider-lock only; NOT auto-deploying. Dispatch release.yml with deploy_only=true to apply it at release-tier gating."
+            fi
+          fi
+          echo "deploy/** changed in this push: ${changed}"
+          echo "changed=${changed}" >> "$GITHUB_OUTPUT"
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         # P039: a deploy-only dispatch must never reach the registry. On every
@@ -214,13 +278,15 @@ jobs:
           fi
           echo "No pending publish: package.json $local_version, npm $npm_version (P044 assertion passed)"
 
-      # P039 / ADR 001 amendment 2026-07-26: SINGLE DEFINITION. The deploy path
-      # has exactly one set of steps, shared by both entry points — the publish
-      # path (`published == 'true'`) and the publish-free dispatch
-      # (`deploy_only`). Never fork this into a second job or duplicate these
-      # steps: divergence between the two prod-deploy paths is the failure this
+      # P039 / ADR 001 amendments 2026-07-26 and 2026-07-27: SINGLE DEFINITION.
+      # The deploy path has exactly one set of steps, shared by all THREE entry
+      # points — the publish path (`published == 'true'`), the publish-free
+      # dispatch (`deploy_only`), and the ADR-040 stage-3 infra axis
+      # (`deploy-paths.changed`). Never fork this into a second job or duplicate
+      # these steps: divergence between the prod-deploy paths is the failure this
       # widening exists to prevent, and the master-HEAD-only job guard above is
-      # what keeps both entry points on the same source.
+      # what keeps every entry point on the same source. Each new axis is an
+      # `if:`-WIDENING of this one gate, never a new copy of it.
       #
       # `success() && (...)` is explicit on purpose. `deploy_only` is a constant
       # on the dispatch path, carrying no upstream dependency, so without it the
@@ -228,7 +294,7 @@ jobs:
       # are load-bearing: `&&` binds tighter than `||`, so `success() && A || B`
       # would deploy after an upstream failure.
       - name: Deploy new version
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
         uses: devcontainers/ci@v0.3
         env:
           # ADR 029/033/034: v1 basic-auth creds (TF_VAR_elastic_host/username/
@@ -267,11 +333,11 @@ jobs:
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
         run: sleep 120
 
       - name: Smoke test production
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
         run: |
           set -e
           echo "Testing health endpoint..."

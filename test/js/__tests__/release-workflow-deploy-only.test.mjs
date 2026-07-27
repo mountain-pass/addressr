@@ -18,9 +18,25 @@
 // dispatch: the run goes GREEN with the Deploy step skipped and the decoupling
 // ships inert. These assertions fail if anyone "fixes" the quoting.
 //
-// Known limitation (accepted): the occurrence count below pins the three
-// deploy-bearing steps that exist today. A fourth deploy-path step added
-// without the gate would not be caught. Cheap to harden if that day comes.
+// Known limitation, REVISITED at ADR-040 stage 3 (the ADR asks for exactly this
+// re-read rather than letting the note go stale). Two changes since it was
+// written:
+//
+// 1. The deploy-bearing surface is now FOUR things, not three — the three gated
+//    steps PLUS the ungated `deploy-paths` detection step they all depend on.
+//    Deleting or renaming that step makes the third disjunct resolve to the
+//    empty string forever, so the deploy/** axis silently never fires and the
+//    run stays green. It is pinned below by id, by its `push` scoping, and by
+//    its fail-closed guard.
+// 2. The original limitation stands unchanged: the occurrence count pins the
+//    three gated steps that exist today, so a FIFTH deploy-path step added
+//    without the gate would still not be caught.
+//
+// Note the detection step deliberately carries no `success()` — any `if:` drops
+// GitHub's implicit success default, so it runs after an upstream failure. That
+// is harmless (it only writes an output, and all three deploy steps carry their
+// own `success() &&`) and is NOT to be "fixed" by adding a conjunct, which would
+// change the surface count this note describes.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -49,7 +65,7 @@ const adr001 = readFileSync(
 );
 
 const DEPLOY_GATE =
-  "        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)";
+  "        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')";
 
 describe('release.yml — P039 publish-free deploy trigger', () => {
   it('declares deploy_only as a boolean workflow_dispatch input defaulting to false', () => {
@@ -85,6 +101,42 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
 
   it('never compares deploy_only against the string "true"', () => {
     assert.doesNotMatch(raw, /deploy_only\s*[!=]=\s*'true'/);
+  });
+
+  it('detects a deploy/** change from a step whose id the gate actually names', () => {
+    // The gate reads steps.deploy-paths.outputs.changed. Rename the step id and
+    // that expression resolves to the empty string FOREVER: the deploy/** axis
+    // never fires, and every run stays green while doing nothing. Same
+    // silent-green class as the boolean-quoting trap this file already guards.
+    assert.ok(raw.includes('        id: deploy-paths'));
+    assert.ok(raw.includes('      - name: Detect a deploy/** change in this push'));
+    assert.ok(raw.includes("echo \"changed=${changed}\" >> \"$GITHUB_OUTPUT\""));
+  });
+
+  it('scopes path detection to push events (ADR-040 empty-string trap)', () => {
+    // ADR-040 Confirmation: on a deploy_only dispatch a skipped step's output is
+    // the EMPTY STRING. The scoping must be explicit, not incidental on "a
+    // dispatch happens to touch no paths".
+    assert.ok(raw.includes("        if: github.event_name == 'push'"));
+  });
+
+  it('fails closed on a missing parent commit, and needs full history to do it', () => {
+    // All-zeros github.event.before (branch creation) and a force-pushed-away
+    // parent both fail this guard, yielding changed=false and NO deploy.
+    assert.ok(raw.includes('if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then'));
+    // fetch-depth: 0 is load-bearing, not incidental. A push can carry several
+    // commits; at depth 2 a deploy/** change in any but the last is invisible.
+    assert.ok(raw.includes('          fetch-depth: 0'));
+  });
+
+  it('keeps the provider lockfile from arming a push-tier prod apply', () => {
+    // deploy/.terraform.lock.hcl carries no infra intent and is the likeliest
+    // file to be swept incidentally into an unrelated push. Excluded here; a
+    // deliberate provider upgrade goes through the release-tier deploy_only
+    // dispatch instead. The exclusion announces itself so it is never a silent
+    // no-deploy.
+    assert.ok(raw.includes("grep -v '^deploy/\\.terraform\\.lock\\.hcl$'"));
+    assert.match(raw, /::notice::deploy\/ change is provider-lock only/);
   });
 
   it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {
