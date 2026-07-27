@@ -67,6 +67,9 @@ Template: `TEMPLATE.md`
 | [R023](R023-release-watch-reports-success-when-docker-publish-job-fails.active.md) | Release Watch Reports Success When Docker Publish Job Fails | pending | — | — | pending | pending | 2026-07-27 |
 | [R024](R024-ratification-ordering-deviated-adrs-unratified-while-wired.active.md) | Ratification Ordering Deviated Adrs Unratified While Wired | pending | — | — | pending | pending | 2026-07-27 |
 
+| [R025](R025-deploy-axis-armed-jtbd400-manual-deploy-path-unexercised.active.md) | Deploy Axis Armed Jtbd400 Manual Deploy Path Unexercised | pending | — | — | pending | pending | 2026-07-27 |
+| [R026](R026-adr-039-040-unratified-while-deploy-docker-axes-wired-live.active.md) | Adr 039 040 Unratified While Deploy Docker Axes Wired Live | pending | — | — | pending | pending | 2026-07-27 |
+
 ## Retired
 
 | ID  | Title | Retired date | Reason |
