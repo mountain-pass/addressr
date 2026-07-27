@@ -193,19 +193,33 @@ echo ""
 # ── 5. Watch the workflow ────────────────────────────────────────────────────
 gh run watch "$RUN_ID" || true
 
-# Check the release job specifically (check-deps is advisory per ADR 015)
-RELEASE_CONCLUSION=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null)
-if [ "$RELEASE_CONCLUSION" = "failure" ]; then
+# Fail on ANY failed job, not just `release`. As of ADR-040 stage 3 release.yml
+# is MULTI-JOB — `docker-publish` calls the docker-image reusable workflow — and
+# `gh run watch` above has its exit code swallowed by `|| true`. Checking only
+# the `release` job would therefore report "completed successfully" while the
+# image publish was red, after npm publish and the prod deploy had already gone
+# through. That is the P004 false-negative class on a new surface, so the check
+# is written against the whole job set rather than a named job that has to be
+# kept in sync with the workflow.
+#
+# check-deps stays excluded by name: it is advisory per ADR 015 and carries
+# continue-on-error, so a red one must not fail the release.
+FAILED_JOBS=$(gh run view "$RUN_ID" --json jobs \
+  --jq '[.jobs[] | select(.conclusion == "failure") | select(.name != "check-deps") | .name] | join(", ")' 2>/dev/null)
+if [ -n "$FAILED_JOBS" ]; then
   echo ""
   echo "Release failed — $RUN_URL"
+  echo "  Failed jobs: $FAILED_JOBS"
   show_failure_guidance "$RUN_ID" "$RUN_URL"
   exit 1
 fi
 
 # ── 6. Report results ───────────────────────────────────────────────────────
-# Release is a single job; the Deploy and Smoke steps inside it are gated on
-# steps.changesets.outputs.published == 'true'. Query step-level conclusions
-# to distinguish "skipped (no publish)" from "success (actually shipped)".
+# The Deploy and Smoke steps live INSIDE the `release` job and are gated on
+# steps.changesets.outputs.published == 'true', so step-level conclusions are
+# what distinguish "skipped (no publish)" from "success (actually shipped)".
+# The workflow itself is no longer single-job — see the whole-job-set failure
+# check above, which is what catches a red `docker-publish`.
 RELEASE_JOB=$(gh run view "$RUN_ID" --json jobs \
   --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null || echo "unknown")
 

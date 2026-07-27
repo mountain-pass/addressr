@@ -64,6 +64,23 @@ const adr001 = readFileSync(
   'utf8',
 );
 
+// The stage-3 no-double-publish property spans BOTH workflow files: this one
+// calls the image build, and that one must not also self-trigger on the same
+// release commit. Asserting only the near half would let the far half regress.
+const dockerImage = readFileSync(
+  fileURLToPath(
+    new URL('../../../.github/workflows/docker-image.yml', import.meta.url),
+  ),
+  'utf8',
+);
+
+// The operator-facing half of the same property: release.yml going multi-job is
+// only safe if the watcher can SEE the new job. See the P004 note below.
+const releaseWatch = readFileSync(
+  fileURLToPath(new URL('../../../scripts/release-watch.sh', import.meta.url)),
+  'utf8',
+);
+
 const DEPLOY_GATE =
   "        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')";
 
@@ -137,6 +154,73 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // no-deploy.
     assert.ok(raw.includes("grep -v '^deploy/\\.terraform\\.lock\\.hcl$'"));
     assert.match(raw, /::notice::deploy\/ change is provider-lock only/);
+  });
+
+  it('publishes the image on a package release, via workflow_call, exactly once', () => {
+    // ADR-040 Confirmation criterion: the release job declares a job-level
+    // output for steps.changesets.outputs.published, and the docker publish job
+    // reads it via needs.release.outputs. `published` is a STEP output, so
+    // without the declaration the reader silently sees the empty string and the
+    // image is never published on a release — on a green run.
+    assert.ok(raw.includes('    outputs:'));
+    assert.ok(
+      raw.includes('      published: ${{ steps.changesets.outputs.published }}'),
+    );
+
+    assert.ok(raw.includes('  docker-publish:'));
+    assert.ok(raw.includes('    needs: release'));
+    assert.ok(raw.includes("    if: needs.release.outputs.published == 'true'"));
+    assert.ok(raw.includes('    uses: ./.github/workflows/docker-image.yml'));
+    // The bare :<semver> tag is written ONLY on a package release. Passed as a
+    // real YAML boolean: the callee declares `type: boolean`, and a quoted
+    // 'true' would be coerced to NaN on comparison.
+    assert.ok(raw.includes('      publish_semver: true'));
+    assert.doesNotMatch(raw, /publish_semver:\s*'true'/);
+
+    // Explicit least-privilege secrets, NOT `secrets: inherit` — the release job
+    // holds AWS, Cloudflare and Terraform Cloud credentials that the image build
+    // has no business seeing.
+    assert.ok(raw.includes('      DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}'));
+    assert.ok(raw.includes('      DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}'));
+    assert.doesNotMatch(raw, /secrets:\s*inherit/);
+  });
+
+  it('calls a docker workflow whose own master push filter cannot double-fire', () => {
+    // The stage-3 double-publish reconciliation is a property of BOTH files, so
+    // assert the far half here too rather than trusting it by reference. If
+    // package.json returns to docker-image.yml's push filter, a changesets
+    // release commit fires that trigger AND this workflow_call at one sha, and
+    // the second build re-points the immutable :<version>-<gitsha>.
+    const onBlock = dockerImage.slice(
+      dockerImage.indexOf('\non:'),
+      dockerImage.indexOf('\n  pull_request:'),
+    );
+    assert.ok(onBlock.includes("      - 'Dockerfile'"));
+    assert.ok(!onBlock.includes("      - 'package.json'"));
+  });
+
+  it('watches every job, so a red docker-publish cannot report as a clean release', () => {
+    // P004 false-negative class, new surface. release.yml became MULTI-JOB at
+    // ADR-040 stage 3, and release-watch.sh swallows `gh run watch`'s exit code
+    // with `|| true`. A job-name-specific conclusion check would therefore print
+    // "completed successfully" while the image publish was red — after npm
+    // publish and the prod deploy had already gone through.
+    //
+    // Pinned as a NEGATIVE too: the old single-job filter must not come back,
+    // because re-introducing it is silent (the script still exits 0 and still
+    // looks correct) and every future job added to release.yml would be
+    // invisible to the watcher again.
+    assert.ok(
+      releaseWatch.includes('select(.conclusion == "failure")'),
+      'release-watch.sh must fail on any failed job, not a named one',
+    );
+    assert.doesNotMatch(
+      releaseWatch,
+      /select\(\.name == "release"\) \| \.conclusion'\s*2>\/dev\/null\)\nif \[ "\$RELEASE_CONCLUSION"/,
+    );
+    // check-deps is advisory per ADR 015 and carries continue-on-error, so it
+    // must stay excluded or every mature-dependency notice reds the release.
+    assert.ok(releaseWatch.includes('select(.name != "check-deps")'));
   });
 
   it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {

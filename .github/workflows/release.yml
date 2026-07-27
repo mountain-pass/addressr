@@ -132,6 +132,13 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: build-and-test
     runs-on: ubuntu-latest
+    # ADR-040 stage 3. `published` is a STEP output inside this job, so a
+    # declared job-level output is the only way the docker-publish job below can
+    # read it. Do not remove it: without it that job's `if:` silently resolves
+    # to the empty string, never equals 'true', and the image is never published
+    # on a release — on a GREEN run.
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -472,3 +479,39 @@ jobs:
       # has no tagged versions. /api-docs is live; for now, use the
       # "Import from URL" option in RapidAPI Studio pointing at
       # https://backend.addressr.io/api-docs when new endpoints are added.
+
+  # ADR-040 stage 3, docker axis on the package-release path.
+  #
+  # @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI). The
+  #   operator-facing half — what the bare :<semver> tag promises a self-hoster
+  #   who pins it — belongs to JTBD-202, which does not exist yet; see P055.
+  #   Prose reference only: an @jtbd annotation for it would be a dangling ID.
+  #
+  # This is the ONLY writer of the bare :<semver> tag. `publish_semver: true`
+  # is what distinguishes a package release from every other caller of that
+  # workflow, so a docker-only rebuild can never re-point a tag a self-hoster
+  # has already pinned.
+  #
+  # There is no `&& published != 'true'` double-publish guard here, and none is
+  # needed: docker-image.yml's own master push filter no longer lists
+  # package.json, so a changesets release commit does not match it and this job
+  # is the sole publisher on that commit. That is ADR-040 amendment option C.
+  #
+  # `needs: release` plus GitHub's implicit success requirement puts this behind
+  # the npm publish AND the deploy and prod smoke. Recorded in ADR-040 as an
+  # accepted Bad consequence: a red prod smoke after a successful npm publish
+  # leaves npm and Docker Hub divergent, recoverable via the documented
+  # `DOCKER_PUBLISH_SEMVER=1 npm run docker:push` break-glass.
+  #
+  # The gate is the POSITIVE `== 'true'` form. On a deploy_only dispatch the
+  # changesets step is skipped and this output resolves to the empty string;
+  # `'' == 'true'` is false, so the job correctly does not run.
+  docker-publish:
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      publish_semver: true
+    secrets:
+      DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}
+      DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}
