@@ -2,13 +2,13 @@
 
 _Per ISO 31000 — Risk Management_
 
-**Last reviewed:** 2026-07-20
+**Last reviewed:** 2026-07-28
 
 > Reviewed quarterly — next review due 2026-10-06 (user-directed cadence, 2026-07-06)
 
 ## Business Context
 
-Addressr is an Australian Address Validation, Search and Autocomplete service published by Mountain Pass as the npm package `@mountainpass/addressr` and Docker image `mountainpass/addressr`. It validates addresses against the Geocoded National Address File (G-NAF), Australia's authoritative address file.
+Addressr is an Australian Address Validation, Search and Autocomplete service published by Mountain Pass as the npm package `@mountainpass/addressr` and Docker image `ghcr.io/mountain-pass/addressr`. It validates addresses against the Geocoded National Address File (G-NAF), Australia's authoritative address file.
 
 **Distribution channels:**
 
