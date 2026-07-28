@@ -17,10 +17,20 @@ Seeded manually 2026-07-26 (the `run-retro` skill has no bin shim in adopter rep
 
 ## Topic Index
 
-| File                                                     | Source heading         |
-| -------------------------------------------------------- | ---------------------- |
-| [what-you-need-to-know.md](./what-you-need-to-know.md)   | What You Need to Know  |
-| [what-will-surprise-you.md](./what-will-surprise-you.md) | What Will Surprise You |
+Decomposed by subject on 2026-07-28 (Tier-3 budget — the two original files exceeded 2× the per-file ceiling).
+
+| File                                                                   | Subject                                                                       |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [what-you-need-to-know.md](./what-you-need-to-know.md)                 | General project facts (API version, trunk-based dev, credentials, ADR index)  |
+| [what-will-surprise-you.md](./what-will-surprise-you.md)               | Domain-data + API-shape surprises (G-NAF, OpenSearch naming, WayCharter)      |
+| [opensearch-and-deploy-state.md](./opensearch-and-deploy-state.md)     | Current search topology, SigV4/health/cutover mechanics, migration playbook   |
+| [markers-and-edit-gates.md](./markers-and-edit-gates.md)               | Architect / JTBD / oversight marker mechanics + recovery incantations         |
+| [commit-time-gates.md](./commit-time-gates.md)                         | Compendium-pairing, README-refresh, RISK-POLICY gates + git-staging traps     |
+| [external-comms-and-compendium.md](./external-comms-and-compendium.md) | External-comms / voice-tone commit gates + the decisions-compendium generator |
+| [releases-and-ci.md](./releases-and-ci.md)                             | Changesets, workflow traps, the push guard, the risk-appetite commit gate     |
+| [deploy-infra-and-caching.md](./deploy-infra-and-caching.md)           | EB deploys, Cloudflare/RapidAPI edge, HTTP caching, GHCR publishing           |
+| [agent-and-workflow-patterns.md](./agent-and-workflow-patterns.md)     | Recurring assistant failure modes + ITIL workflow traps                       |
+| [testing-tdd-and-code.md](./testing-tdd-and-code.md)                   | The TDD hook, test anti-patterns, ESM/babel quirks                            |
 
 ## Preamble
 
