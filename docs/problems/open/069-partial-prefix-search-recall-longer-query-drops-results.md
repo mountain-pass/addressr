@@ -19,6 +19,18 @@ Confirmed still reproducing on 2026-07-29 (maintainer). A prior review comment i
 
 Adding more characters to a valid prefix query removes correct results that the shorter prefix returned. Affects the live `/addresses?q=` autocomplete/search endpoint.
 
+## Reproduction (confirmed against prod 2026-07-29)
+
+Live queries via the RapidAPI gateway:
+
+| query               | result count | includes `55 PYRMONT BRIDGE RD`? |
+| ------------------- | -----------: | -------------------------------- |
+| `55 Pyrmont`        |            8 | yes (score 12.51, 2nd result)    |
+| `55 Pyrmont Bri`    |        **0** | no — empty result set            |
+| `55 Pyrmont Bridge` |            4 | yes                              |
+
+The trailing **partial** token `Bri` zeroes the whole result set, while the shorter query (8 results) and the full-word query `Bridge` (4 results) both return the target. So the defect is specific to an incomplete final token.
+
 ## Workaround
 
 None for consumers. A shorter query returns the target; typing the full street name prefix drops it.
@@ -31,9 +43,9 @@ None for consumers. A shorter query returns the target; typing the full street n
 
 ## Root Cause Analysis
 
-### Preliminary Hypothesis
+### Hypothesis (sharpened by the 2026-07-29 reproduction)
 
-The `bool_prefix` / multi-token query construction likely tightens as more tokens are added: the extra prefix token (`Bri`) probably becomes a required clause that the target document does not satisfy under the current analyzer/fuzziness settings, so a document that matched on the shorter token set is excluded rather than ranked lower. Needs confirmation against a live query and the index mapping.
+The reproduction narrows it: `55 Pyrmont Bridge` (full word) returns 4 results but `55 Pyrmont Bri` (partial) returns 0. So the **final, incomplete token is not being prefix-matched** — it is matched as a complete term, finds no `Bri` token in the index, and because it is a required (AND) clause the whole query zeroes out. A correct `match_bool_prefix` treats the last token as a prefix, so `Bri` should match `Bridge`. Likely causes to check: the query is built with `match` / `multi_match` (not `match_bool_prefix` / `bool_prefix` on the last term), or `minimum_should_match` forces the partial term as required. Confirm against the actual OpenSearch query the `/addresses?q=` handler builds and the field analyzer/mapping.
 
 ### Investigation Tasks
 
