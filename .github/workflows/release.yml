@@ -482,10 +482,10 @@ jobs:
 
   # ADR-040 stage 3, docker axis on the package-release path.
   #
-  # @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI). The
-  #   operator-facing half — what the bare :<semver> tag promises a self-hoster
-  #   who pins it — belongs to JTBD-202, which does not exist yet; see P055.
-  #   Prose reference only: an @jtbd annotation for it would be a dangling ID.
+  # @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI).
+  # @jtbd JTBD-202 (Obtain and run the published Docker image — self-hosted
+  #   operator). The operator-facing half — what the bare :<semver> tag promises
+  #   a self-hoster who pins it — belongs to JTBD-202.
   #
   # This is the ONLY writer of the bare :<semver> tag. `publish_semver: true`
   # is what distinguishes a package release from every other caller of that
@@ -500,8 +500,9 @@ jobs:
   # `needs: release` plus GitHub's implicit success requirement puts this behind
   # the npm publish AND the deploy and prod smoke. Recorded in ADR-040 as an
   # accepted Bad consequence: a red prod smoke after a successful npm publish
-  # leaves npm and Docker Hub divergent, recoverable via the documented
-  # `DOCKER_PUBLISH_SEMVER=1 npm run docker:push` break-glass.
+  # leaves npm and the GHCR image divergent, recoverable via the documented
+  # `DOCKER_PUBLISH_SEMVER=1 npm run docker:push` break-glass (a local PAT with
+  # write:packages against ghcr.io).
   #
   # The gate is the POSITIVE `== 'true'` form. On a deploy_only dispatch the
   # changesets step is skipped and this output resolves to the empty string;
@@ -509,9 +510,9 @@ jobs:
   docker-publish:
     needs: release
     if: needs.release.outputs.published == 'true'
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/docker-image.yml
     with:
       publish_semver: true
-    secrets:
-      DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}
-      DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}

@@ -150,15 +150,18 @@ Run Addressr on your own infrastructure for full control over your data.
 
 ## Self Hosted with Docker
 
-The `mountainpass/addressr` image runs the same v2 API server. It is built on
+The `ghcr.io/mountain-pass/addressr` image runs the same v2 API server. It is built on
 [Distroless](https://github.com/GoogleContainerTools/distroless), so the image contains the Node
 runtime and addressr and nothing else — no shell, no package manager, no npm. The entrypoint is
 `node`, so a command you pass is a script path rather than a program name.
 
+The image is published to the [GitHub Container Registry](https://ghcr.io) as a public package, so
+it pulls anonymously with no `docker login`.
+
 Start the API server (the `ELASTIC_*` env vars are the same as above):
 
 ```sh
-docker run -p 8080:8080 -e ELASTIC_HOST=host.docker.internal mountainpass/addressr
+docker run -p 8080:8080 -e ELASTIC_HOST=host.docker.internal ghcr.io/mountain-pass/addressr
 ```
 
 Run the data loader. It needs a writable `target` directory for the G-NAF download and the dataset
@@ -166,7 +169,7 @@ cache, so mount one; unlike the server, it cannot run with `--read-only`:
 
 ```sh
 docker run -v "$PWD/target:/home/nonroot/target" -e ELASTIC_HOST=host.docker.internal \
-  mountainpass/addressr \
+  ghcr.io/mountain-pass/addressr \
   /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
 ```
 
@@ -175,17 +178,20 @@ There is no shell in the image, so `docker exec ... sh` will not work. Diagnose 
 
 ### Image tags
 
-Today the image is published by hand, and `mountainpass/addressr:latest` is the tag to pull. A
-version tag such as `mountainpass/addressr:3.0.2` names whatever image was published alongside that
-npm release, so an older version tag may still be the previous Alpine-based image rather than the
-Distroless one described above.
+`ghcr.io/mountain-pass/addressr:latest` is the tag to pull for the newest build. Every build also
+gets an immutable `:<version>-<gitsha>` tag, and a package release additionally gets a bare
+`:<version>` tag such as `ghcr.io/mountain-pass/addressr:3.0.2`. Pin the `-<gitsha>` tag if you want
+a build that can never be re-pointed under you; the bare `:<version>` and `:latest` tags can move to
+a rebuilt image.
 
-Two things are changing, per
-[ADR 040](docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md). A local build
-already writes an immutable `:<version>-<gitsha>` tag alongside `:latest`, and that sha tag is the
-one to pin if you want a build that can never be re-pointed under you. What is not live yet is
-publishing: nothing pushes those tags to Docker Hub automatically, so no `-<gitsha>` tag resolves
-there today. Do not pin one until this section says it does.
+Publishing is automatic, per
+[ADR 040](docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md): a package
+release publishes all three tags, and a Docker-only change publishes `:latest` plus a new
+`:<version>-<gitsha>` without an npm release.
+
+The image was previously published by hand to Docker Hub as `mountainpass/addressr`. That image is
+frozen and receives no further updates — switch any `docker pull mountainpass/addressr` to
+`ghcr.io/mountain-pass/addressr`.
 
 Note that `:latest` moves. If you track it, watch
 [the Docker image changelog](docs/DOCKER-IMAGE-CHANGELOG.md) — a change to the image no longer

@@ -128,10 +128,11 @@ describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
     assert.doesNotMatch(raw, /publish_semver\s*[!=]=\s*'true'/);
   });
 
-  it('declares the Docker Hub secrets as optional workflow_call secrets', () => {
-    assert.ok(raw.includes('      DOCKER_ID_USER:'));
-    assert.ok(raw.includes('      DOCKER_ID_PASS:'));
-    assert.ok(raw.includes('        required: false'));
+  it('grants packages: write so the GHCR push authenticates via GITHUB_TOKEN', () => {
+    // GHCR push needs packages: write on the token; contents: read is retained
+    // for the checkout. No Docker Hub credentials exist any more.
+    assert.match(raw, /permissions:\n\s+contents: read\n\s+packages: write/);
+    assert.doesNotMatch(raw, /DOCKER_ID_USER|DOCKER_ID_PASS/);
   });
 
   it('gates the publish step on master and never on a pull request', () => {
@@ -143,21 +144,12 @@ describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
     assert.ok(raw.split('\n').includes(PUBLISH_GATE));
   });
 
-  it('skips cleanly, not red, when either Docker Hub secret is absent', () => {
-    // This is what lets the wiring land before the user adds the secrets. The
-    // PASS half matters too: predocker:push logs in whenever DOCKER_ID_USER is
-    // set, so a set user with an empty pass would fail docker login and red
-    // master.
-    assert.match(
-      raw,
-      /if \[ -z "\$\{DOCKER_ID_USER\}" \] \|\| \[ -z "\$\{DOCKER_ID_PASS\}" \]; then/,
-    );
-    assert.ok(
-      raw.includes(
-        "echo '::notice::docker publish skipped: DOCKER_ID_USER not set'",
-      ),
-    );
-    assert.match(raw, /\n\s+exit 0\n/);
+  it('passes the built-in GITHUB_TOKEN + actor to the publish step', () => {
+    // GHCR auth is the always-present GITHUB_TOKEN, so there is no
+    // skip-when-secret-absent branch any more — the master/not-PR gate carries
+    // the whole guard. The login-or-skip lives in package.json predocker:push.
+    assert.ok(raw.includes('GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}'));
+    assert.ok(raw.includes('GITHUB_ACTOR: ${{ github.actor }}'));
   });
 
   it('publishes through the stage-1 SHA tag scheme, never an inline docker push', () => {
@@ -177,7 +169,7 @@ describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
     assert.ok(lineOf('Container starts and serves /health') < lineOf('Container stops on SIGTERM'));
     // The step name, not `npm run docker:push` — the header comment names the
     // script too, and that mention sits above every step.
-    assert.ok(lineOf('Container stops on SIGTERM') < lineOf('- name: Publish image to Docker Hub'));
+    assert.ok(lineOf('Container stops on SIGTERM') < lineOf('- name: Publish image to GitHub Container Registry'));
   });
 
   it('resolves DOCKER_PUBLISH_SEMVER once, at job scope', () => {

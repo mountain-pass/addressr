@@ -1,7 +1,7 @@
 # Docker Image Changelog
 
-Changes to the published `mountainpass/addressr` image, keyed by **image tag** rather than npm
-version.
+Changes to the published `ghcr.io/mountain-pass/addressr` image, keyed by **image tag** rather than
+npm version.
 
 This file exists because the image and the npm package are released independently
 ([ADR 040](decisions/040-release-pipeline-change-type-action-matrix.proposed.md)). A change to the
@@ -15,11 +15,26 @@ rebuild.
 
 ## Unpublished
 
-Not pushed to Docker Hub. The `Docker Image` CI workflow has since run: the image **builds**, starts,
-and answers `/health`, and the runtime user is the Distroless nonroot uid. What is not yet confirmed
-is the stop-signal fix described below. See
-[P055](problems/known-error/055-migrate-docker-image-alpine-to-distroless.md). The tag is recorded
+The next publish carries the **registry move to GHCR** (below) plus the **Distroless runtime** entry
+that follows it. The `Docker Image` CI workflow builds the image, smoke-tests it (starts, answers
+`/health`, runs as the Distroless nonroot uid, stops on `SIGTERM`), and publishes to
+`ghcr.io/mountain-pass/addressr` on merge to master. See
+[P055](problems/known-error/055-migrate-docker-image-alpine-to-distroless.md). The tags are recorded
 here once the image is published.
+
+### Registry moved to GitHub Container Registry (breaking)
+
+The image is now published to `ghcr.io/mountain-pass/addressr`
+([ADR 040](decisions/040-release-pipeline-change-type-action-matrix.proposed.md)) — a public GHCR
+package that pulls anonymously with no `docker login`, authenticated in CI by the built-in
+`GITHUB_TOKEN`. **Breaking:** the former Docker Hub image `mountainpass/addressr` was published by
+hand and is now frozen — it receives no further updates. Switch any pull to the new registry:
+
+```sh
+docker pull ghcr.io/mountain-pass/addressr
+```
+
+Existing Docker Hub tags still resolve to their old digests; they simply stop advancing.
 
 ### Distroless runtime
 
@@ -37,7 +52,7 @@ userland from the image's CVE surface. It still runs as a non-root user and stil
 - **The loader is invoked by script path**, because the image entrypoint is now `node`. Use
 
   ```sh
-  docker run -v "$PWD/target:/home/nonroot/target" mountainpass/addressr \
+  docker run -v "$PWD/target:/home/nonroot/target" ghcr.io/mountain-pass/addressr \
     /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
   ```
 

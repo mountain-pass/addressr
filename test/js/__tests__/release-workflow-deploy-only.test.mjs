@@ -177,11 +177,13 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     assert.ok(raw.includes('      publish_semver: true'));
     assert.doesNotMatch(raw, /publish_semver:\s*'true'/);
 
-    // Explicit least-privilege secrets, NOT `secrets: inherit` — the release job
-    // holds AWS, Cloudflare and Terraform Cloud credentials that the image build
-    // has no business seeing.
-    assert.ok(raw.includes('      DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}'));
-    assert.ok(raw.includes('      DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}'));
+    // Least-privilege token, NOT `secrets: inherit` — the release job holds AWS,
+    // Cloudflare and Terraform Cloud credentials the image build has no business
+    // seeing. GHCR auth is the built-in GITHUB_TOKEN, so the docker-publish job
+    // grants packages: write (a reusable callee cannot exceed the caller's grant)
+    // and passes no Docker Hub secrets.
+    assert.match(raw, /docker-publish:[\s\S]*?permissions:\n\s+contents: read\n\s+packages: write/);
+    assert.doesNotMatch(raw, /DOCKER_ID_USER|DOCKER_ID_PASS/);
     assert.doesNotMatch(raw, /secrets:\s*inherit/);
   });
 

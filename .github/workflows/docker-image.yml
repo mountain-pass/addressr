@@ -1,15 +1,14 @@
 # Docker image build, smoke, and publish (P055 / ADR-039 / ADR-040 stage 2)
 #
-# @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI). The
-#   operator-facing half of the tag contract — which tag to pin, what :latest
-#   promises, how an operator learns the image changed — belongs to JTBD-202,
-#   which does not exist yet; see P055. Prose reference only: an @jtbd
-#   annotation for it would be a dangling ID. Deliberately NOT cited as
-#   JTBD-200, which is the gateway auth boundary and cannot adjudicate a
-#   container tag contract.
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk — maintainer CI).
+# @jtbd JTBD-202 (Obtain and run the published Docker image — self-hosted
+#   operator). The operator-facing half of the tag contract — which tag to pin,
+#   what :latest promises, how an operator learns the image changed — belongs to
+#   JTBD-202. Deliberately NOT cited as JTBD-200, which is the gateway auth
+#   boundary and cannot adjudicate a container tag contract.
 #
 # Closes the gap ADR-013 carried as Open and ADR-039 inherits: the published
-# mountainpass/addressr image was only ever built by a human running
+# ghcr.io/mountain-pass/addressr image was only ever built by a human running
 # `npm run build:docker`, so a Dockerfile regression was invisible until a
 # self-hoster hit it. This job builds it and proves the three properties the
 # Distroless migration put at risk — the resolved CMD path actually boots with no
@@ -22,13 +21,15 @@
 # dispositions from the kernel, so it does not. A tini init now runs as PID 1 and
 # forwards SIGTERM to node. Do not weaken this step.
 #
-# It PUBLISHES, as of ADR-040 stage 2 — that decision is taken. The publish step
-# is guarded twice, independently. It runs only on master and never on a pull
-# request: on a same-repo pull request the secrets ARE available, so secret
-# presence alone would not be a guard. And the secrets themselves must be
-# non-empty; absent, the step prints a notice and succeeds, which is what let
-# this wiring land before the user had added them. `npm run docker:push` is
-# retained as the documented break-glass.
+# It PUBLISHES to GitHub Container Registry (ghcr.io/mountain-pass/addressr), as
+# of ADR-040 — that decision is taken. Auth is the built-in GITHUB_TOKEN with
+# packages: write; there are no Docker Hub credentials. The publish step is
+# guarded by the branch/event check alone: it runs only on master and never on a
+# pull request. GITHUB_TOKEN is always present in Actions, so the old
+# secret-presence guard is moot; on a fork pull request the token is read-only
+# (no packages: write), which only reinforces the master-only guard. A local
+# `npm run docker:push` break-glass now needs a PAT with write:packages against
+# ghcr.io.
 #
 # The bare :<semver> tag is written only when the `publish_semver` input is true,
 # i.e. only by a package release calling this workflow. A docker-only rebuild
@@ -75,14 +76,10 @@ on:
         description: 'Also push the bare :<semver> tag. True only on a package release.'
         type: boolean
         default: false
-    secrets:
-      DOCKER_ID_USER:
-        required: false
-      DOCKER_ID_PASS:
-        required: false
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build-and-smoke:
@@ -117,7 +114,7 @@ jobs:
 
       - name: Runtime user is non-root
         run: |
-          user=$(docker inspect --format '{{.Config.User}}' mountainpass/addressr:latest)
+          user=$(docker inspect --format '{{.Config.User}}' ghcr.io/mountain-pass/addressr:latest)
           echo "runtime user: ${user}"
           test "${user}" = 'nonroot' || test "${user}" = '65532:65532' || test "${user}" = '65532'
 
@@ -125,7 +122,7 @@ jobs:
         run: |
           docker run -d --name addressr-smoke \
             -e PORT=8080 -e HEALTH_ES_PROBE=off \
-            -p 8080:8080 mountainpass/addressr:latest
+            -p 8080:8080 ghcr.io/mountain-pass/addressr:latest
           for _ in $(seq 1 30); do
             if curl -fsS http://localhost:8080/health > /dev/null; then
               echo 'smoke request OK'
@@ -153,17 +150,12 @@ jobs:
       # success(): a failed build, /health, or SIGTERM step skips the publish.
       # That is ADR-039's compensating control for the floating :nonroot base —
       # the exact image that gets pushed is the one that was smoke-tested.
-      - name: Publish image to Docker Hub
+      - name: Publish image to GitHub Container Registry
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         env:
-          DOCKER_ID_USER: ${{ secrets.DOCKER_ID_USER }}
-          DOCKER_ID_PASS: ${{ secrets.DOCKER_ID_PASS }}
-        run: |
-          if [ -z "${DOCKER_ID_USER}" ] || [ -z "${DOCKER_ID_PASS}" ]; then
-            echo '::notice::docker publish skipped: DOCKER_ID_USER not set'
-            exit 0
-          fi
-          npm run docker:push
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: npm run docker:push
 
       - name: Show container logs on failure
         if: failure()

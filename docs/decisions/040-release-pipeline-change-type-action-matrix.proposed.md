@@ -78,6 +78,27 @@ Stage 3 wired the three axes together. **The stage-2 blocker recorded at point 3
 
 **Ratification ordering was not honoured, for the SECOND time.** Stage 2 landed ahead of the `/wr-architect:review-decisions` drain by user direction, and stage 3 now does the same. This is the stage-2 precedent being **reused**, not a one-off, and it is recorded as its own deviation rather than inherited silently. The drain must ratify ADR 039, ADR 040, **and both the stage-2 and stage-3 amendments** in one pass. A third reuse should not happen without the drain running.
 
+## Amendment 2026-07-28 (registry moved to GHCR)
+
+Mountain Pass no longer uses Docker Hub. The published image moves from Docker Hub `mountainpass/addressr` to **GitHub Container Registry `ghcr.io/mountain-pass/addressr`**, authenticated by the built-in `GITHUB_TOKEN`. This **discharges the Reassessment Criterion below** — _"Docker Hub is replaced by another registry… the tag scheme is registry-agnostic but the credential handling is not."_ The trigger fired; this is its resolution. The decision _outcome_ is unchanged: three axes, the SHA-based immutable tag scheme, CI as the publisher. Only the registry host, namespace, and credential handling change. The user pinned GHCR on 2026-07-28 after a Docker registry auth-token scope probe confirmed the CI account has push on GHCR but only pull on the Docker Hub org.
+
+**1. Credential handling — the part the tag scheme is not agnostic about.** `DOCKER_ID_USER` / `DOCKER_ID_PASS` are gone. Auth is the workflow's built-in `GITHUB_TOKEN` with a `packages: write` permission grant. `docker-image.yml` gains `permissions: {contents: read, packages: write}`; `release.yml`'s `docker-publish` job grants the same, because a reusable-workflow callee's token scope cannot exceed the caller's. `predocker:push` logs in to `ghcr.io` with `GITHUB_TOKEN` (username `github.actor`) instead of the Docker Hub pair.
+
+**2. Guard 2 is retired, and guard 1 now carries the whole boundary.** The stage-2 amendment's guard 2 ("both secrets must be non-empty; absent, the step no-ops, which is what let the wiring land before the secrets existed") is **moot**: `GITHUB_TOKEN` is _always_ present in Actions, so there is nothing to be absent and nothing to land ahead of. The publish is now guarded by guard 1 alone — the inline `if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'`. This is not a weakening: on a **fork** pull request `GITHUB_TOKEN` is read-only (no `packages: write`), so even were guard 1 removed the push would fail closed. Guard 1 remains the load-bearing gate; the fork-token restriction reinforces it.
+
+**3. Break-glass changes shape.** A local `npm run docker:push` no longer uses Docker Hub credentials; it now needs a classic **PAT with `write:packages`** exported as `GITHUB_TOKEN` (or `docker login ghcr.io` beforehand). `predocker:push` skips the login with a message when `GITHUB_TOKEN` is unset, so a plain local `docker:push` prints the skip and then fails the push against `ghcr.io` rather than silently succeeding — recorded so it is not a surprise.
+
+**4. Namespace asymmetry is intentional — do not "reconcile" it.** The npm scope stays `@mountainpass` (no hyphen); the GHCR namespace is `mountain-pass` (hyphenated, the GitHub org login). They are different identifiers for different registries and are correct as written. A future tidy-up that makes them match will break one of them.
+
+**5. GHCR packages are private by default.** A freshly-pushed GHCR package is private until its visibility is set to **public**, and JTBD-202's anonymous-pull outcome depends on public. This is not enforced by any code, so it is captured as a Confirmation criterion below. A green publish with a private package still 401/404s the operator pull — the highest-value check in this migration.
+
+### Confirmation (this amendment)
+
+- [ ] After the first GHCR publish, `docker pull ghcr.io/mountain-pass/addressr:latest` succeeds **with no `docker login`** (package visibility is public).
+- [ ] `docker-image.yml` and `release.yml`'s `docker-publish` job both declare `packages: write`, and no `DOCKER_ID_*` reference remains in either workflow, `package.json`, or the pinning tests.
+- [ ] `scripts/docker-tags.sh` emits `ghcr.io/mountain-pass/addressr:*` tags; pinned in `test/js/__tests__/docker-tags.test.mjs`.
+- [ ] `docs/DOCKER-IMAGE-CHANGELOG.md` records the registry move as a breaking change with the new pull command.
+
 ## Context and Problem Statement
 
 The pipeline has one trigger and three effects welded to it. A merged changesets release PR publishes to npm, and the same job then deploys to production. The Docker image is outside CI entirely — a human runs `npm run build:docker` and `npm run docker:push` from a laptop.

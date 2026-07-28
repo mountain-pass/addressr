@@ -44,31 +44,31 @@ describe('docker-tags.sh — ADR-040 tag scheme', () => {
   it('writes :<version>-<gitsha> and :latest, but NOT the bare :<version>', () => {
     const out = tags();
     assert.ok(
-      out.some((t) => /^mountainpass\/addressr:9\.9\.9-[0-9a-f]{7,}$/.test(t)),
+      out.some((t) => /^ghcr\.io\/mountain-pass\/addressr:9\.9\.9-[0-9a-f]{7,}$/.test(t)),
       `expected an immutable sha tag, got ${JSON.stringify(out)}`,
     );
-    assert.ok(out.includes('mountainpass/addressr:latest'));
+    assert.ok(out.includes('ghcr.io/mountain-pass/addressr:latest'));
     assert.ok(
-      !out.includes('mountainpass/addressr:9.9.9'),
+      !out.includes('ghcr.io/mountain-pass/addressr:9.9.9'),
       'the bare semver tag must not be written without DOCKER_PUBLISH_SEMVER=1',
     );
   });
 
   it('adds the bare :<version> only under DOCKER_PUBLISH_SEMVER=1', () => {
     const out = tags({ env: { DOCKER_PUBLISH_SEMVER: '1' } });
-    assert.ok(out.includes('mountainpass/addressr:9.9.9'));
-    assert.ok(out.includes('mountainpass/addressr:latest'));
+    assert.ok(out.includes('ghcr.io/mountain-pass/addressr:9.9.9'));
+    assert.ok(out.includes('ghcr.io/mountain-pass/addressr:latest'));
   });
 
   it('degrades to :latest outside a git checkout (npm tarball build)', () => {
     const out = tags({ cwd: nonGitDir() });
-    assert.deepEqual(out, ['mountainpass/addressr:latest']);
+    assert.deepEqual(out, ['ghcr.io/mountain-pass/addressr:latest']);
   });
 
   it('prefixes each tag with -t under the -t flag, for docker build', () => {
     const out = tags({ args: ['-t'] });
     for (const line of out) {
-      assert.match(line, /^-t mountainpass\/addressr:/);
+      assert.match(line, /^-t ghcr\.io\/mountain-pass\/addressr:/);
     }
   });
 

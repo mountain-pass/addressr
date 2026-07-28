@@ -16,7 +16,7 @@
 # ponytail: emits tags only, never builds or pushes. Callers compose.
 set -eu
 
-image=mountainpass/addressr
+image=ghcr.io/mountain-pass/addressr
 version="${npm_package_version:?run this via npm so npm_package_version is set}"
 
 prefix=''

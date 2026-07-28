@@ -2,7 +2,7 @@
 
 # Invoked only by scripts/run-in-docker.sh and scripts/run-in-docker-from-npm.sh, which
 # mount this script into a stock node image. It is NOT used by the published
-# mountainpass/addressr image, which since ADR-039 is Distroless and has no shell.
+# ghcr.io/mountain-pass/addressr image, which since ADR-039 is Distroless and has no shell.
 
 mkdir /home/node/.npm
 npm config set prefix /home/node/.npm
