@@ -1,6 +1,6 @@
 # Problem 025: GitHub Actions using Node.js 20 runtime are deprecated
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-19
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 
@@ -77,3 +77,9 @@ Landed on master 2026-07-19 in the `fix(ci)` commit that ships this transition (
 | RFC     | Status   | Title                                          |
 | ------- | -------- | ---------------------------------------------- |
 | RFC-005 | proposed | Bump Node 20-era action pins to Node 24 builds |
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 025 known-error` to reopen

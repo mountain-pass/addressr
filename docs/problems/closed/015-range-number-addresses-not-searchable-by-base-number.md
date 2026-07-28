@@ -1,6 +1,6 @@
 # Problem 015: Range-number addresses not findable by base number
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-16
 **Priority**: 4 (Low) — Impact: Significant (4) x Likelihood: Rare (1) — re-rated 2026-07-19 (review): ADR 026 range expansion shipped in v2.3.0 with post-deploy smoke green on all three #367 reporter cases; the ranking dimension this ticket stayed open for (P026) closed 2026-07-19 with the 8-query battery clean on the prod 3.5 stack
 **Effort**: S (L → S — fix shipped; remaining work is the three #367 reporter-case verification queries, the issue #367 response, and close)
@@ -93,3 +93,9 @@ Shipped. ADR-026 expands each hyphenated range into a multi-valued `sla_range_ex
 - [P007](./007-search-scoring-exact-address-ranked-below-subunits.known-error.md) — search scoring (different but related query-builder issue)
 - [`client/elasticsearch.js:58-76`](../../client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
 - [`service/address-service.js:950-1003`](../../service/address-service.js) — `searchForAddress` query builder
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 015 known-error` to reopen

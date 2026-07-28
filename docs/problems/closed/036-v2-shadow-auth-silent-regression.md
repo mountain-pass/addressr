@@ -1,6 +1,6 @@
 # Problem 036: v2 shadow auth silently regressed mid-soak
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-05-11
 **Un-parked**: 2026-07-06
 **Transitioned to Known Error**: 2026-07-15 (review — confirmed root cause + documented workaround)
@@ -161,3 +161,9 @@ The FGAC master-user-clobber mechanism is structurally removed by ADR 033 (IAM/S
 - **ADR 029** — two-phase blue/green; P036 blocks step 7 cutover
 - **ADR 031** — read-shadow; P036 is a concrete failure of ADR 031's soak gate
 - **ADR 030** — OpenSearch domain Terraform module; potential locus of root cause (TFC drift hypothesis)
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 036 known-error` to reopen

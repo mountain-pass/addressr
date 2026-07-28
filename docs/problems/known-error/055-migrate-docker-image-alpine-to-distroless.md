@@ -5,7 +5,7 @@
 **Priority**: 4 (Low) — Impact: 2 (Minor — attack-surface hardening on the public npm/Docker image; no current user-facing defect) × Likelihood: 2 (Unlikely — no active exploit; a standing-risk reduction) — derived at capture
 **Origin**: internal
 **Effort**: M — derived at capture (multi-stage Dockerfile rework: build layer runs `npm install -g`, runtime layer is `distroless/nodejs22`; verify `docker build` + container start + a smoke request)
-**WSJF**: 2.0
+**WSJF**: 4.0 — (4 × 2.0) / 2 — corrected 2026-07-29 (review): was 2.0 (stale Open-status multiplier); Known Error multiplier 2.0 now applied
 **JTBD**: JTBD-200
 **Persona**: self-hosted-operator
 

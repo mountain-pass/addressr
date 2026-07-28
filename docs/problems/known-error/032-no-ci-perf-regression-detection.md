@@ -3,6 +3,9 @@
 **Status**: Known Error
 **Reported**: 2026-04-27
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
+**Origin**: internal
+**Effort**: M — CI workflow + validation test wiring (k6 exit-code discrimination shipped; awaiting a clean validation run)
+**WSJF**: 9.0 — (9 × 2.0) / 2 — backfilled 2026-07-29 (review)
 
 ## Description
 
@@ -47,7 +50,7 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 - [x] **Target decided** — local addressr + OpenSearch 3.5.0 in CI with the OT G-NAF fixture (the lower-cost starting point). Single production-engine target, not the 2.19/3.5 matrix (that matrix is for cross-version compat, not perf).
 - [x] **Workflow placement decided** — SEPARATE workflow file (`.github/workflows/perf-regression.yml`), not the `release.yml` matrix. Decouples cadence, doesn't double matrix runtime. Architect confirmed this mirrors the existing `update-*.yml` cron pattern and does not conflict with ADR-001 (release gate).
 - [x] **Authored** — `test/k6/regression.js` + `test:perf:regression` npm script. Existing 38-min `test/k6/script.js` stress profile retained for on-demand use.
-- [ ] **Runner-noise variance — first cut committed, characterisation pending.** Thresholds are a deliberate first cut; tighten after a few real nightly baselines establish the runner's spread (do NOT tighten from quieter local-dev numbers). **Verification gate restated 2026-07-26** (supersedes the 2026-07-25 restatement, which said job colour could never be evidence — that was true only under the blanket `continue-on-error`): job colour is now evidence for the *harness* class only. A **red** run means k6 failed to run at all and is an outright failed verification. A **green** run is necessary but not sufficient, because a perf breach and a wrong-measurement breach both exit 99 and stay green. The gate is therefore still the *content* of the job summary: a nightly/dispatch run whose summary shows k6 exit code `0`, all three thresholds `✓`, and a non-zero `http_reqs` with `checks_succeeded` at 100% → then Verifying → Closed. A green run whose summary carries the `::warning::` is a FAILED verification.
+- [ ] **Runner-noise variance — first cut committed, characterisation pending.** Thresholds are a deliberate first cut; tighten after a few real nightly baselines establish the runner's spread (do NOT tighten from quieter local-dev numbers). **Verification gate restated 2026-07-26** (supersedes the 2026-07-25 restatement, which said job colour could never be evidence — that was true only under the blanket `continue-on-error`): job colour is now evidence for the _harness_ class only. A **red** run means k6 failed to run at all and is an outright failed verification. A **green** run is necessary but not sufficient, because a perf breach and a wrong-measurement breach both exit 99 and stay green. The gate is therefore still the _content_ of the job summary: a nightly/dispatch run whose summary shows k6 exit code `0`, all three thresholds `✓`, and a non-zero `http_reqs` with `checks_succeeded` at 100% → then Verifying → Closed. A green run whose summary carries the `::warning::` is a FAILED verification.
 - [ ] **ADR 029 Phase 1 step 6 one-shot** — running the stress profile once against the candidate AWS-managed domain pre-cutover to validate ADR 029's "Performance" driver. Independent of this CI probe; a one-shot manual run, left open.
 
 ## Fix Strategy
@@ -78,7 +81,7 @@ That gave `checks_succeeded: 0.00%` / `http_req_failed: 100%`, which breached `c
 **Fix applied** (CI + test infra only, no `src/` runtime change, so no changeset per the workflow-only discipline):
 
 1. `test/k6/regression.js` — `encodeURIComponent(query)` with a plain template literal (the explicit `name: 'search'` tag already does the URL grouping `http.url` existed for). **This is the real defect fix.**
-2. `test/k6/regression.js` — added a `'search returns results'` check (`status === 200 && JSON.parse(body).length > 0`). Status alone could not prove the probe measured anything: an empty result set is a valid 200 *and is faster than a real search*, so a fixture or index-name regression would have made p95 look **better** while staying green.
+2. `test/k6/regression.js` — added a `'search returns results'` check (`status === 200 && JSON.parse(body).length > 0`). Status alone could not prove the probe measured anything: an empty result set is a valid 200 _and is faster than a real search_, so a fixture or index-name regression would have made p95 look **better** while staying green.
 3. `test/k6/regression.js` — removed `abortOnFail: true`. No threshold aborts now, so the full 75 s window always completes and yields the p95 series this ticket's open runner-variance task needs.
 4. `.github/workflows/perf-regression.yml` — the k6 step was given a blanket `continue-on-error: true`, so a threshold breach, or any other nonzero k6 exit, could no longer fail this workflow. **Superseded 2026-07-26** — see "Posture change" below.
 5. `.github/workflows/perf-regression.yml` — new `if: always()` reporting step writes the k6 THRESHOLDS / TOTAL RESULTS block to `$GITHUB_STEP_SUMMARY` and emits `::warning::` when the probe did not pass, so the result stays visible. Retained, but re-keyed in the 2026-07-26 change.
@@ -91,11 +94,11 @@ The 2026-07-25 repair left the k6 step with a **blanket** `continue-on-error: tr
 
 **Shipped shape.** `continue-on-error` is gone. The k6 run is wrapped in bash and routed on its exit code:
 
-| k6 exit | Meaning | Job outcome |
-| --- | --- | --- |
-| `0` | every threshold passed | succeeds |
-| `99` | a k6 threshold was crossed | **advisory** — `::warning::` + job-summary entry, job stays **green** |
-| any other nonzero | k6 itself failed to run | **fails loudly** — `::error::` + `exit 1` |
+| k6 exit           | Meaning                    | Job outcome                                                           |
+| ----------------- | -------------------------- | --------------------------------------------------------------------- |
+| `0`               | every threshold passed     | succeeds                                                              |
+| `99`              | a k6 threshold was crossed | **advisory** — `::warning::` + job-summary entry, job stays **green** |
+| any other nonzero | k6 itself failed to run    | **fails loudly** — `::error::` + `exit 1`                             |
 
 The advisory arm preserves the original P032 intent: a perf breach must never redden master or stall the trunk release loop. The loud arm closes the hole the blanket form opened.
 
@@ -112,8 +115,8 @@ All three branches were exercised locally against a stub under GitHub's exact sh
 ### Residuals after the posture change
 
 - **The wrong-measurement class is still NOT closed** — this is the sharp one. A probe that runs fine but measures the wrong thing (the 2026-07-25 unencoded-URL bug; an empty result set from a fixture or index-name regression; the server dying mid-run) surfaces as a breach of `checks{phase:main}: rate>0.95`, and k6 emits **the same exit 99** for that as for a genuine p95 regression. So a rerun of the incident that motivated all of this would land in the **advisory** branch and report green. Only the harness class (k6 binary missing, script would not parse, panic/OOM, log write failed) actually moved from silent-green to loud. Remedy, in ascending cost: (a) grep the already-tee'd `target/perf-regression.log` in the existing reporting step for `http_reqs` zero / `http_req_failed` at 100% / `checks_succeeded` at 0% and route those to `::error::` + `exit 1`; (b) add `handleSummary` to `test/k6/regression.js` to emit `target/perf-summary.json` and route on its content, which is the better long-term shape. Neither was built here: the user's direction was exit-code discrimination specifically, and widening it autonomously was declined.
-- **Accounting correction.** "Server down" should not be credited to the closed set: server-never-came-up already fails today at the health-wait step (`perf-regression.yml`, no `continue-on-error`). Only server-dies-*mid-run* is new, and it routes advisory.
-- **Notification split.** GitHub notifies on *failed* scheduled runs, not on `::warning::` or step summaries. Under the new shape a broken probe fails and therefore notifies; a perf breach stays pull-only. That ordering is defensible while the thresholds are uncalibrated — a broken probe invalidates all subsequent signal and compounds nightly, whereas one threshold crossing is a single point in a series read in aggregate. **Graduation condition**: once enough nightly baselines characterise the runner spread and the thresholds are tightened toward JTBD-001's 200 ms outcome, a breach becomes actionable-on-arrival and needs its own channel (open/update an issue when `steps.k6.outputs.k6_exit == 99`).
+- **Accounting correction.** "Server down" should not be credited to the closed set: server-never-came-up already fails today at the health-wait step (`perf-regression.yml`, no `continue-on-error`). Only server-dies-_mid-run_ is new, and it routes advisory.
+- **Notification split.** GitHub notifies on _failed_ scheduled runs, not on `::warning::` or step summaries. Under the new shape a broken probe fails and therefore notifies; a perf breach stays pull-only. That ordering is defensible while the thresholds are uncalibrated — a broken probe invalidates all subsequent signal and compounds nightly, whereas one threshold crossing is a single point in a series read in aggregate. **Graduation condition**: once enough nightly baselines characterise the runner spread and the thresholds are tightened toward JTBD-001's 200 ms outcome, a breach becomes actionable-on-arrival and needs its own channel (open/update an issue when `steps.k6.outputs.k6_exit == 99`).
 - **`screens:` backfill** — `.github/workflows/perf-regression.yml`, `test/k6/regression.js`, and `test/js/__tests__/perf-regression-workflow.test.mjs` are absent from JTBD-400's `screens:` list, as is the pre-existing `test/js/__tests__/release-workflow-deploy-only.test.mjs`. Forward `@jtbd` annotations are correct; only the reverse index is missing. Deliberately **not** JTBD-001: a CI probe is an instrument defending the job, not a screen where the job is performed. Must route through `/wr-jtbd:confirm-jobs-and-personas` rather than an autonomous edit — `screens:` is frontmatter on an artefact carrying `human-oversight: confirmed`.
 
 **Follow-on (architect, non-blocking)**: record a proposed ADR capturing the standing perf-regression methodology (seeded probe / separate nightly cadence / conservative-threshold philosophy), and fold in the exit-code discrimination rule **and** the wrong-measurement residual as part of that methodology. Direction pinned same-turn per ADR-064, so no user question needed; deferred from the AFK iters because `capture-*` skills are out of iter scope.

@@ -5,6 +5,7 @@
 **Priority**: 8 (Medium) — Impact: 2 × Likelihood: 4 — derived at capture from the description per Step 4a (cost/AFK-throughput harm only, no prod impact; structural — fires on every long pre-flight in this harness)
 **Origin**: internal
 **Effort**: M — derived at capture per Step 4a (upstream SKILL.md dispatch rework: backgrounded dispatch or internal time budget)
+**WSJF**: 4.0 — (8 × 1.0) / 2 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

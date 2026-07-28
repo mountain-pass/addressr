@@ -1,6 +1,6 @@
 # Problem 042: Version-control the Cloudflare Worker via Terraform
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-05-14
 **Priority**: 3 (Medium) — Impact: 3 x Likelihood: 1 (deferred — re-rate at next /wr-itil:review-problems)
 **Effort**: M (deferred — re-rate at next /wr-itil:review-problems)
@@ -81,3 +81,9 @@ Until this lands, P040's Referer-header workaround (configure UR monitors to sen
 - `feedback_zero_outage_search_upgrades` memory — operator preference for blue/green and zero-outage flips; the worker migration to Terraform should not interrupt the live route binding.
 
 (captured via /wr-itil:capture-problem; expand at next investigation)
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 042 known-error` to reopen

@@ -1,6 +1,6 @@
 # Problem 034: addressr-loader's COVERED_STATES filter is case-sensitive (silent zero-doc indexing)
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-28
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (2)
 
@@ -79,3 +79,9 @@ Fix committed 2026-07-16 (`fix(loader): make COVERED_STATES filter case-insensit
 | RFC     | Status   | Title                                                                          |
 | ------- | -------- | ------------------------------------------------------------------------------ |
 | RFC-001 | proposed | Make loader COVERED_STATES filter case-insensitive and fail loud on zero match |
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 034 known-error` to reopen

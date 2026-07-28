@@ -1,6 +1,6 @@
 # Problem 001: Stale Dockerfile
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-04
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Unlikely (2)
 
@@ -69,3 +69,9 @@ Intentionally out of scope for this ticket:
 - ADR 004: AWS Elastic Beanstalk Deployment (primary channel)
 - ADR 013: Docker Image with Alpine and dumb-init (refreshed 2026-04-19)
 - Architect review 2026-04-19 — OK TO PROCEED, confirmed `addressr-server-2` exists and ELASTIC\_\* rename is separate scope
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 001 known-error` to reopen

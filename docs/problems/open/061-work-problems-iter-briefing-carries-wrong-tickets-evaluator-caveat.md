@@ -5,6 +5,7 @@
 **Priority**: 4 (Low) — Impact: 2 (Minor — worst case is a blind close of an unfixed ticket, reversible via `/wr-itil:transition-problem <NNN> known-error` + git history; no service impact) × Likelihood: 2 (observed once; structurally possible on any iter dispatched for a ticket while caveats exist for other tickets) — derived at capture
 **Origin**: internal
 **Effort**: M — derived at capture (upstream orchestrator briefing-assembly investigation + upstream report; local mitigation already documented)
+**WSJF**: 2.0 — (4 × 1.0) / 2 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400 (re-anchored from the wr-itil plugin's own JTBD-006 — a plugin job ID leaked into this ticket at capture; user decision 2026-07-24)
 **Persona**: addressr-maintainer
 

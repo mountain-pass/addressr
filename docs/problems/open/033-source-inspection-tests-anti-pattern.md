@@ -3,6 +3,9 @@
 **Status**: Open
 **Reported**: 2026-04-28
 **Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (2)
+**Origin**: internal
+**Effort**: M — audit of test/js/**tests** assertions + progressive behavioural-test replacement cadence
+**WSJF**: 3.0 — (6 × 1.0) / 2 — backfilled 2026-07-29 (review)
 
 ## Description
 

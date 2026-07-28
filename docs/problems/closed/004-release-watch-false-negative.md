@@ -1,6 +1,6 @@
 # Problem 004: release:watch Script Reports False Negative
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-04
 **Transitioned to Verification Pending**: 2026-07-15
 **Priority**: 4 (Low) — Impact: Minor (2) x Likelihood: Unlikely (2)
@@ -83,3 +83,9 @@ Renamed the local variable `DEPLOY_JOB` → `DEPLOY_STATUS` to reflect reality (
 - `scripts/release-watch.sh`
 - `.github/workflows/release.yml` — changesets action + Deploy new version step
 - Architect review 2026-04-19 — PASS, no ADR conflicts
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 004 known-error` to reopen

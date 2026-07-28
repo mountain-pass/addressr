@@ -5,6 +5,7 @@
 **Priority**: 4 (Low) — Impact: Low (2) × Likelihood: Unlikely (2) — derived at capture per Step 4a; queue-hygiene cost only, fires around platform migrations — cf. P050
 **Origin**: internal
 **Effort**: M — derived at capture per Step 4a; upstream evaluator shape addition + behavioural tests — cf. P050
+**WSJF**: 2.0 — (4 × 1.0) / 2 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

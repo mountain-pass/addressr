@@ -1,0 +1,4 @@
+{
+  "channels": [{ "type": "github-issues", "repo": "mountain-pass/addressr" }],
+  "ttl_seconds": 86400
+}

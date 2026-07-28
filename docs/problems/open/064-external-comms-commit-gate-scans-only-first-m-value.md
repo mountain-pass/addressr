@@ -5,6 +5,7 @@
 **Priority**: 9 (Medium) — Impact: Moderate (3) × Likelihood: Possible (3) — derived at capture from the description per Step 4a. Impact 3 per RISK-POLICY § Confidential Information: a business metric reaching a public repo's commit history is an information-disclosure incident requiring a history rewrite. Likelihood 3: multi-`-m` is a normal and frequent way to write a commit body, so the unscanned surface is exercised routinely rather than exceptionally.
 **Origin**: internal
 **Effort**: S — derived at capture: the fix is argument-vector iteration inside one hook script, no contract change — cf. P058 (S), the sibling defect in the same gate
+**WSJF**: 9.0 — (9 × 1.0) / 1 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

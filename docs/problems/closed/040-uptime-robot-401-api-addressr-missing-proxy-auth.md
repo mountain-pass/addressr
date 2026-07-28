@@ -1,6 +1,6 @@
 # Problem 040: Uptime Robot 401 alerts — Cloudflare Worker allowlist CIDR-match bug + UR IP drift
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-05-14
 **Priority**: 10 (High) — Impact: Minor (2) x Likelihood: Almost certain (5)
 **Effort**: S
@@ -107,3 +107,9 @@ Exercise evidence (2026-07-18, this session):
 - **JTBD-400** (Ship releases reliably from trunk) — alert fatigue is the realised cost of operator-memory infrastructure; P042 closes this for the worker.
 - **BRIEFING.md** line 65 — was misattributing P040 to ADR 024; rewrite landed alongside this ticket transition.
 - Uptime Robot IP publications: `https://uptimerobot.com/inc/files/ips/IPv4.txt`, `https://uptimerobot.com/inc/files/ips/IPv6.txt`, `https://uptimerobot.com/inc/files/ips/IPv4andIPv6.txt`.
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 040 known-error` to reopen

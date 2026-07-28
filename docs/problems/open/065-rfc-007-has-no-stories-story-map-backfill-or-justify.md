@@ -5,6 +5,7 @@
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture from the description per Step 4a. Impact 2: the harm is a broken governance trace, not a defect in anything running. Likelihood 2: RFC-007's work has already shipped, so the missing trace costs an audit reconstruction rather than misdirecting live work.
 **Origin**: internal
 **Effort**: S — derived at capture: either a story-map plus one story, or a short recorded justification; single artefact either way — cf. P059 (S), the same authoring-contract surface
+**WSJF**: 4.0 — (4 × 1.0) / 1 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

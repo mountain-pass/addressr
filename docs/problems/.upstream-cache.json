@@ -1,0 +1,83 @@
+{
+  "last_checked": "2026-07-28T21:35:13Z",
+  "channels": {
+    "github-issues:mountain-pass/addressr": {
+      "fetched_at": "2026-07-28T20:28:32Z",
+      "reports": [
+        {
+          "number": 458,
+          "title": "CloudFront 403 Errors When Downloading Data from data.gov.au (Worked Previously)",
+          "author": "Arunmozhi05G",
+          "created_at": "2026-04-27T17:06:35Z",
+          "classification": "safe-and-valid",
+          "matched_local_ticket": "P068"
+        },
+        {
+          "number": 456,
+          "title": "Link relation URIs (addressr.io/rels/*) are not dereferenceable to documentation",
+          "author": "tompahoward",
+          "created_at": "2026-04-26T01:11:31Z",
+          "classification": "self-filed (maintainer-authored; not a third-party report)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 405,
+          "title": "FR: Add ABS Boundaries and Local Government Areas",
+          "author": "mitchellkellett",
+          "created_at": "2026-01-15T04:34:52Z",
+          "classification": "feature-request (out of problem-management scope)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 376,
+          "title": "Update to TLS 1.3",
+          "author": "tompahoward",
+          "created_at": "2022-09-30T20:46:40Z",
+          "classification": "self-filed (maintainer-authored)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 365,
+          "title": "Partial search returning incorrect results",
+          "author": "tompahoward",
+          "created_at": "2022-06-01T12:18:21Z",
+          "classification": "safe-and-valid",
+          "matched_local_ticket": "P069"
+        },
+        {
+          "number": 362,
+          "title": "Support for old or custom data files",
+          "author": "tompahoward",
+          "created_at": "2022-01-17T20:00:36Z",
+          "classification": "self-filed (maintainer-authored; feature)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 91,
+          "title": "Indexing Backoff is not backing off",
+          "author": "tompahoward",
+          "created_at": "2020-10-08T22:40:21Z",
+          "classification": "self-filed (maintainer-authored)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 81,
+          "title": "Validation error when Elastic Search returns an error",
+          "author": "tompahoward",
+          "created_at": "2020-09-23T13:54:43Z",
+          "classification": "self-filed (maintainer-authored)",
+          "matched_local_ticket": null
+        },
+        {
+          "number": 26,
+          "title": "Add support for NZ addresses",
+          "author": "tompahoward",
+          "created_at": "2020-08-23T23:19:02Z",
+          "classification": "self-filed (maintainer-authored; feature)",
+          "matched_local_ticket": null
+        }
+      ]
+    }
+  },
+  "cache_audit_note": "bootstrap-poll 2026-07-29: 9 open issues assessed. #458 (external CloudFront 403) captured as P068 + acknowledged upstream. #365 (partial-prefix search) captured as P069 \u2014 confirmed still reproducing; an earlier over-claim that v2.3.0 fixed it was corrected in place. Remaining 7 are maintainer-self-filed issues / feature requests (no third-party reporter) \u2014 triaged, no verdict-comment. Both outbound comments cleared the external-comms risk + voice-tone gates."
+}

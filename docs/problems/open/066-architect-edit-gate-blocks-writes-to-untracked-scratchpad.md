@@ -5,6 +5,7 @@
 **Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3) — derived at capture from the description per Step 4a. Impact 2: no user or service effect; the cost is held drafts and re-derivation. Likelihood 3: recurs on any iter that wants scratch space, which is a routine want during multi-step work.
 **Origin**: internal
 **Effort**: S — derived at capture: a path-scope exclusion in the gate's matcher, one file — cf. P031 (S), the same gate family
+**WSJF**: 6.0 — (6 × 1.0) / 1 — backfilled 2026-07-29 (review)
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 

@@ -1,6 +1,6 @@
 # Problem 014: Invalid address ID returns 500 instead of 404
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-04-16
 **Transitioned to Verification Pending**: 2026-07-15
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
@@ -87,3 +87,9 @@ Awaiting user verification on next deploy via the existing cucumber scenarios in
 - GitHub issue [#81](https://github.com/mountain-pass/addressr/issues/81) — ES errors causing 500
 - [`service/address-service.js:1827`](../../service/address-service.js) — catch block with error detection
 - [`src/waycharter-server.js:587`](../../src/waycharter-server.js) — itemLoader that consumes statusCode
+
+## Closed — verified
+
+- **Verified on**: 2026-07-29 (user confirmed during /wr-itil:review-problems Step 4)
+- **Evidence**: fix released weeks-to-months prior; production ran without a reported regression across the interval (P186 `yes — observed: user confirmed 2026-07-29`)
+- **Reversibility**: `/wr-itil:transition-problem 014 known-error` to reopen
