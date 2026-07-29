@@ -1,6 +1,6 @@
 # Problem 069: Partial-prefix search drops results a shorter query returns
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-07-29
 **Origin**: inbound-reported (#365)
 **Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4) — derived at capture. Impact 4 per RISK-POLICY § Impact: live RapidAPI search/autocomplete returns missing results for a valid, more-specific query, so paid and free-tier consumers get degraded results. Likelihood 4: reproduced by an external reporter and confirmed still present by the maintainer on 2026-07-29 (ADR-076 inbound-report evidence — honest field risk).
@@ -60,7 +60,56 @@ The earlier hypothesis was that the query is not built with `match_bool_prefix`,
 
 **The defect is much broader than "street-name-prefix recall".** `55 Harris S` returning zero shows the failing class is the general shape `<number> <word> <partial-token>` — which is precisely what a user types into an autocomplete box mid-keystroke. Every partial third token following a number returns an empty result set. `Pyrmont Bri` (no leading number) works, so the leading numeric token is implicated in the interaction, not the prefix machinery on its own.
 
-### Where the remaining investigation should go
+### CONFIRMED ROOT CAUSE (reproduced locally 2026-07-29, OpenSearch 3.5.0)
+
+`my_synonym_filter` rewrites full street-type words to their **abbreviations**, and it runs at **both index and search time** (`client/elasticsearch.js:96-115` sets `analyzer` with no `search_analyzer`). `buildSynonyms` emits `CODE => NAME` pairs, and in the G-NAF authority tables the CODE is the full word and the NAME is the abbreviation:
+
+```
+BRIDGE|BDGE|BDGE
+STREET|ST|ST
+ROAD|RD|RD
+S|SOUTH|SOUTH        (STREET_SUFFIX — the one pair that runs the other way)
+```
+
+So `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` **indexes as** `[55, PYRMONT, BDGE, RD, PYRMONT, NSW, 2009]`. The token `BRIDGE` is not in the index at all.
+
+`match_bool_prefix` makes the final query token a prefix query. A _partial_ token is not a complete synonym code, so it is never rewritten — but the indexed token was. The two can then never meet:
+
+- **Mechanism 1 — partial prefix of an abbreviated word.** Query `55 Pyrmont Bri` analyses to `[55, PYRMONT, BRI]`. `BRI*` cannot match the indexed `BDGE`. This is the reporter's exact case. It affects **every street type that has an abbreviation** — 194 street types, plus 40 flat, 16 level and 18 street-suffix codes.
+- **Mechanism 2 — partial that is itself a code.** Query `55 Harris S` analyses to `[55, HARRIS, SOUTH]`, because `S => SOUTH` is a real street suffix. `SOUTH*` cannot match the indexed `ST`.
+
+This also explains the otherwise-odd `Pyrmont Bri` result: it returned `BRIDGEVIEW` docs (a building name, not a street type, so never abbreviated) but never `PYRMONT BRIDGE RD`. Consistent with the mechanism, and it was the clue that the prefix machinery itself was fine.
+
+### Reproduction (local, no prod access needed)
+
+Confirmed against `opensearchproject/opensearch:3.5.0` — the same engine version as prod — using the exact index settings from `client/elasticsearch.js`, the real synonym list built from the May 2026 G-NAF authority tables (268 pairs), and three documents. Every prod observation reproduces:
+
+| query               | local |                        prod |
+| ------------------- | ----: | --------------------------: |
+| `55 Pyrmont`        |  hits |                           8 |
+| `Pyrmont Bri`       |     0 | 8, none of them `BRIDGE RD` |
+| `55 Pyrmont Bri`    |     0 |                           0 |
+| `55 Pyrmont Bridge` |  hits |                           4 |
+| `55 Harris S`       |     0 |                           0 |
+
+The decisive evidence is `_analyze`: the doc yields `BDGE` where the query yields `BRI`.
+
+### Validated fix direction (tested, not yet implemented)
+
+Index **both** forms at the same position and stop rewriting the query:
+
+1. Emit synonyms as **equivalents** (`BRIDGE, BDGE`) rather than directional replacements (`BRIDGE => BDGE`), so the index holds both tokens at the same position.
+2. Add a `search_analyzer` identical to `my_analyzer` **minus** `my_synonym_filter`, so a partial token is never rewritten.
+
+With both applied, every keystroke resolves — verified locally:
+
+`55 Pyrmont` → `55 Pyrmont B` → `55 Pyrmont Bri` → `55 Pyrmont Bridge` → `55 Pyrmont Bridge Rd` → `55 Pyrmont Bridge Road` all return the target, and `55 Harris S` / `St` / `Street` all return `55 HARRIS ST`.
+
+**This requires a full reindex.** Analyzer and mapping changes cannot be applied to an existing index in place, so shipping it means rebuilding ~15M documents. Per ADR-029 that should go blue/green with a rollback path rather than in place — see [[feedback_zero_outage_search_upgrades]]. That, not the code change, is the bulk of the remaining effort; the config change itself is small.
+
+Worth checking during implementation: whether indexing both forms shifts relevance scores (two tokens at one position changes term statistics), and whether the `sla_range_expanded` field needs the same treatment.
+
+### Superseded investigation notes
 
 The target doc is a plain address (`55 PYRMONT BRIDGE RD, PYRMONT NSW 2009`), not a range-numbered one, so the ADR-026 `sla_range_expanded` path is **not** involved — that field is absent on non-range docs and only appears in the `phrase_prefix` clause.
 
@@ -80,10 +129,15 @@ Next concrete step needs backend access this session did not have (prod is SigV4
 
 - [x] Reproduce against live/prod search — done 2026-07-29 via the MCP client against v3.0.4; table above. Confirmed the reporter's case and found the wider class.
 - [x] Rule out the query-construction hypothesis — the query already uses `bool_prefix`; prefix expansion works (`Pyrmont Bri`).
-- [ ] Run `_analyze` on the failing query and the target doc and compare token streams and positions.
-- [ ] Run `_validate/query?explain` / `_search?explain` on the exact failing body to see the rewritten Lucene query.
-- [ ] Confirm or rule out the synonym-filter position interaction with `match_bool_prefix`.
-- [ ] Check whether the lowercase-synonyms-after-uppercase-filter ordering is a real latent defect (separate ticket if so).
+- [x] Run `_analyze` on the failing query and the target doc and compare token streams — decisive: doc yields `BDGE`, query yields `BRI`.
+- [x] Confirm the synonym-filter interaction with `match_bool_prefix` — confirmed; search-time abbreviation rewriting is the root cause.
+- [x] Reproduce locally against OpenSearch 3.5.0 with the real 268-pair synonym list — every prod observation reproduces.
+- [x] Validate a fix direction — equivalent synonyms plus a synonym-free `search_analyzer`; every keystroke resolves.
+- [ ] Implement the analyzer/mapping change in `client/elasticsearch.js` and `buildSynonyms`.
+- [ ] Add a behavioural regression test for the "longer prefix ⊇ shorter prefix" property, covering both mechanisms (`Bri`/`BDGE` and `S`/`SOUTH`).
+- [ ] Plan and execute the reindex blue/green per ADR-029, with a rollback path.
+- [ ] Re-check relevance scoring after the change — two tokens at one position alters term statistics.
+- [ ] Decide whether `sla_range_expanded` needs the same `search_analyzer` treatment.
 - [ ] Fix the query construction so a longer valid prefix never drops a result the shorter prefix returned.
 - [ ] Add a behavioural regression test covering the #365 case and the general "longer prefix ⊇ shorter prefix" property.
 
