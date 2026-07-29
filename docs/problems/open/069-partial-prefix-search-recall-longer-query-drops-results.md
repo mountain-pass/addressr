@@ -19,6 +19,8 @@ Confirmed still reproducing on 2026-07-29 (maintainer). A prior review comment i
 
 Adding more characters to a valid prefix query removes correct results that the shorter prefix returned. Affects the live `/addresses?q=` autocomplete/search endpoint.
 
+Widened 2026-07-29: the failing class is any query shaped `<number> <word> <partial-token>`, not just the reporter's street. `55 Harris S` also returns zero despite `55 HARRIS ST, PYRMONT NSW 2009` being indexed. This is the shape a user produces mid-keystroke in an autocomplete field, so the practical effect is that autocomplete goes blank part-way through typing a numbered street address and recovers only on the last character of the street name.
+
 ## Reproduction (confirmed against prod 2026-07-29)
 
 Live queries via the RapidAPI gateway:
@@ -43,14 +45,45 @@ None for consumers. A shorter query returns the target; typing the full street n
 
 ## Root Cause Analysis
 
-### Hypothesis (sharpened by the 2026-07-29 reproduction)
+### Prior hypothesis — DISPROVED 2026-07-29
 
-The reproduction narrows it: `55 Pyrmont Bridge` (full word) returns 4 results but `55 Pyrmont Bri` (partial) returns 0. So the **final, incomplete token is not being prefix-matched** — it is matched as a complete term, finds no `Bri` token in the index, and because it is a required (AND) clause the whole query zeroes out. A correct `match_bool_prefix` treats the last token as a prefix, so `Bri` should match `Bridge`. Likely causes to check: the query is built with `match` / `multi_match` (not `match_bool_prefix` / `bool_prefix` on the last term), or `minimum_should_match` forces the partial term as required. Confirm against the actual OpenSearch query the `/addresses?q=` handler builds and the field analyzer/mapping.
+The earlier hypothesis was that the query is not built with `match_bool_prefix`, so the final incomplete token is matched as a complete term. **That is wrong.** `service/address-service.js:960` already uses `type: 'bool_prefix'` (with a second `phrase_prefix` clause at `:970`), and prefix matching demonstrably works: `Pyrmont Bri` returns 8 results, all `BRIDGEVIEW` matches, so `Bri` is being prefix-expanded correctly. Do not spend time re-checking the query type.
+
+### Confirmed behaviour (live prod probes via the MCP client, 2026-07-29, v3.0.4)
+
+| query            | results | note                                                              |
+| ---------------- | ------: | ----------------------------------------------------------------- |
+| `55 Pyrmont`     |       8 | `55 PYRMONT BRIDGE RD` 2nd, score 12.507814                       |
+| `Pyrmont Bri`    |       8 | prefix matching works — `Bri` → `BRIDGEVIEW`                      |
+| `55 Pyrmont Bri` |   **0** | the reporter's case                                               |
+| `55 Harris S`    |   **0** | different street, same shape — `55 HARRIS ST` demonstrably exists |
+
+**The defect is much broader than "street-name-prefix recall".** `55 Harris S` returning zero shows the failing class is the general shape `<number> <word> <partial-token>` — which is precisely what a user types into an autocomplete box mid-keystroke. Every partial third token following a number returns an empty result set. `Pyrmont Bri` (no leading number) works, so the leading numeric token is implicated in the interaction, not the prefix machinery on its own.
+
+### Where the remaining investigation should go
+
+The target doc is a plain address (`55 PYRMONT BRIDGE RD, PYRMONT NSW 2009`), not a range-numbered one, so the ADR-026 `sla_range_expanded` path is **not** involved — that field is absent on non-range docs and only appears in the `phrase_prefix` clause.
+
+Both `should` clauses fail simultaneously, which is the surprising part: on a naive reading each should match. `55 HARRIS ST` analyses to `[55, HARRIS, ST]`, so `term(55) AND term(HARRIS) AND prefix(S)` ought to hit, and the `phrase_prefix` clause ought to hit too. Something in analysis is making both miss.
+
+The prime suspect is the custom analyzer at `client/elasticsearch.js:68-77`: `my_analyzer` = `whitecomma` tokenizer + `uppercase`, `asciifolding`, `my_synonym_filter`, `comma_stripper`, `trim`, applied at **both index and search time** (no separate `search_analyzer`). Two specific things to test with `_analyze`:
+
+- The `synonym` filter (not `synonym_graph`) runs at search time on a query whose final token is a partial word. Synonym filters emit tokens at the same position, and `match_bool_prefix` selects the last token _by position_ for its prefix clause — a plausible mechanism for the prefix clause being built against the wrong token.
+- `uppercase` runs BEFORE `my_synonym_filter` in the chain. If the supplied synonym list is lowercase, no synonym ever matches, which is a separate latent defect worth confirming while in there.
+
+Next concrete step needs backend access this session did not have (prod is SigV4/OIDC, ADR-034/035):
+
+- `POST /<index>/_analyze` with `my_analyzer` on `"55 Harris S"` and on `"55 HARRIS ST, PYRMONT NSW 2009"`, and compare token streams and positions.
+- `GET /<index>/_validate/query?explain=true` and `_search?explain=true` with the exact body `searchForAddress` builds, to see the rewritten Lucene query for the failing case.
 
 ### Investigation Tasks
 
-- [ ] Reproduce against live/prod search: `q=55 Pyrmont` vs `q=55 Pyrmont Bri`, capture both result sets and the underlying OpenSearch query. (Requires a working query path — RapidAPI subscription or the gateway auth header; see [[reference_addressr_secrets]].)
-- [ ] Determine why the extra prefix token excludes rather than ranks the target — analyzer, `minimum_should_match`, or bool_prefix field mapping.
+- [x] Reproduce against live/prod search — done 2026-07-29 via the MCP client against v3.0.4; table above. Confirmed the reporter's case and found the wider class.
+- [x] Rule out the query-construction hypothesis — the query already uses `bool_prefix`; prefix expansion works (`Pyrmont Bri`).
+- [ ] Run `_analyze` on the failing query and the target doc and compare token streams and positions.
+- [ ] Run `_validate/query?explain` / `_search?explain` on the exact failing body to see the rewritten Lucene query.
+- [ ] Confirm or rule out the synonym-filter position interaction with `match_bool_prefix`.
+- [ ] Check whether the lowercase-synonyms-after-uppercase-filter ordering is a real latent defect (separate ticket if so).
 - [ ] Fix the query construction so a longer valid prefix never drops a result the shorter prefix returned.
 - [ ] Add a behavioural regression test covering the #365 case and the general "longer prefix ⊇ shorter prefix" property.
 
