@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-29 — closed 10 aged verifyings on user confirmation (P001/P004/P014/P015/P019/P025/P034/P036/P040/P042); bootstrapped inbound-discovery (github-issues: mountain-pass/addressr) and assessed 9 open issues, capturing **P068** (data.gov.au CloudFront 403 loader failure, #458) and **P069** (partial-prefix search recall, #365) as inbound-reported Tier-1 tickets and acknowledging both upstream; corrected an over-claim on #365 that had asked the reporter to re-test a still-broken search; P055 WSJF corrected 2.0→4.0 (stale Open multiplier); backfilled WSJF/Effort/Origin on P032/P033/P057/P061/P063/P064/P065/P066. No auto-transitions. The relevance-close evaluator surfaced only false positives (BRIEFING.md migration rename + grounding-ADR over-match) so nothing was auto-closed.
+> Last reviewed: 2026-07-29 **P068 closed as already-fixed (Open → Closed in one session)** — the data.gov.au CloudFront 403 was fixed on 2026-04-28 by `741fd21`, three months before the ticket was captured. `LOADER_USER_AGENT` (`service/gnaf-package-fetch.js:35`) sends a Mozilla-prefixed compatible-mode User-Agent on the CKAN `package_show` request, defeating the WAF rule that had been returning a 403 HTML error page for bare-UA requests and breaking the loader's `JSON.parse`. Released v2.4.3 (changeset `.changeset/fix-loader-user-agent.md`, PR #462, merge `3d52cdd`), present in current `@mountainpass/addressr@3.0.3`, covered by three behavioural tests. The miss was a capture-pass gap, not an investigation gap: issue #458 was filed 2026-04-27 and we hit the identical failure internally one day later via the ADR-029 Phase 1 populate (run 25032179791), but the 2026-07-29 inbound-assessment pass never cross-checked the code, so a fixed defect entered the backlog ranked WSJF 8.0. Live probe from AU on close confirms all paths healthy and the reporter symptom not reproducing; the WAF no longer rejects bare-UA from this vantage point, so the shipped header is currently belt-and-braces and stays for exactly that reason. Effort re-rated M → S per P047. Two residuals carried out rather than fixed under this ticket: `utils/stream-down.js` still sends no User-Agent on the ZIP download hop, and the download-URL smoke check (investigation task 4) was never built, so silent re-breakage would again surface only as a failing load. Ladder traversed Open → Known Error → Verification Pending → Closed as one commit per ADR-014 batch grain, the intermediate states having never existed independently.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,7 +9,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                 | Severity     | Status      | Effort | Reported   | Origin                  |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ----------- | ------ | ---------- | ----------------------- |
-| 8.0  | P068 | G-NAF loader fails with CloudFront 403 from data.gov.au               | High (16)    | Open        | M      | 2026-07-29 | inbound-reported (#458) |
 | 4.0  | P069 | Partial-prefix search drops results a shorter query returns           | High (16)    | Open        | L      | 2026-07-29 | inbound-reported (#365) |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error | M      | 2026-04-27 | internal                |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open        | S      | 2026-07-26 | internal                |
@@ -52,7 +51,7 @@ Inbound reports discovered by Step 4.5 (ADR-062), rendered off `docs/problems/.u
 | #376 | github-issues:mountain-pass | Update to TLS 1.3                                            | tompahoward     | 2022-09-30 | self-filed                                    | —            |
 | #405 | github-issues:mountain-pass | FR: Add ABS Boundaries and Local Government Areas            | mitchellkellett | 2026-01-15 | feature-request (out of problem scope)        | —            |
 | #456 | github-issues:mountain-pass | Link relation URIs not dereferenceable to documentation      | tompahoward     | 2026-04-26 | self-filed                                    | —            |
-| #458 | github-issues:mountain-pass | CloudFront 403 Errors When Downloading Data from data.gov.au | Arunmozhi05G    | 2026-04-27 | safe-and-valid (acknowledged upstream)        | P068         |
+| #458 | github-issues:mountain-pass | CloudFront 403 Errors When Downloading Data from data.gov.au | Arunmozhi05G    | 2026-04-27 | safe-and-valid (fixed in v2.4.3; P068 closed) | P068 closed  |
 
 ## Parked
 
