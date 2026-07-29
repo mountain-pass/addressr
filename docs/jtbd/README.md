@@ -38,15 +38,17 @@ Runs addressr on their own infrastructure for sovereignty, privacy, or cost reas
 
 ### Validated
 
-| ID       | Job                                 | File                                                                            |
-| -------- | ----------------------------------- | ------------------------------------------------------------------------------- |
-| JTBD-200 | Protect the chosen gateway boundary | [JTBD-200](self-hosted-operator/JTBD-200-protect-gateway-boundary.validated.md) |
+| ID       | Job                                       | File                                                                                  |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| JTBD-200 | Protect the chosen gateway boundary       | [JTBD-200](self-hosted-operator/JTBD-200-protect-gateway-boundary.validated.md)       |
+| JTBD-202 | Obtain and run the published Docker image | [JTBD-202](self-hosted-operator/JTBD-202-obtain-and-run-published-image.validated.md) |
 
 ### Proposed
 
 | ID       | Job                                                                            | File                                                                                         |
 | -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
 | JTBD-201 | Validate a new search backend with realistic production traffic before cutover | [JTBD-201](self-hosted-operator/JTBD-201-validate-search-backend-before-cutover.proposed.md) |
+| JTBD-203 | Acquire and refresh the G-NAF dataset on a self-hosted install                 | [JTBD-203](self-hosted-operator/JTBD-203-acquire-and-refresh-gnaf-dataset.proposed.md)       |
 
 ## AI Assistant User
 
