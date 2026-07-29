@@ -1,6 +1,6 @@
 # Problem 070: utils/stream-down.js promotes failed and partial downloads into the persistent G-NAF cache
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-07-29
 **Priority**: 8 (Medium) — Impact: Significant (4) × Likelihood: Unlikely (2) — derived at capture per Step 4a. Impact 4 per RISK-POLICY § Impact: blocks fresh install and quarterly refresh for self-hosted operators, and the poisoned state is not self-recoverable by re-running. Likelihood 2 (honest field risk per ADR-076, not a rank lever): nothing is provoking it today — the ZIP hop returns 200 to a bare `https.get` as verified 2026-07-29 — but the CKAN hop on the same host acquired a WAF rule unannounced in April, which is exactly the trigger, so this is a latent defect with a demonstrated precedent rather than a theoretical one.
 **Origin**: internal — carried out of P068 as a residual at close.
@@ -47,13 +47,31 @@ Manually delete `target/gnaf/` to clear the poisoned artefact and force a re-dow
 - [x] Confirm no status-code check exists — grep for `statusCode` in `utils/stream-down.js` returns zero hits.
 - [x] Confirm the ZIP hop's current behaviour — bare `https.get` with no headers returns `200 application/zip`, no redirect (verified 2026-07-29).
 - [x] Verify the truncation check's trusted input against the live hop, so the new reject paths are not resting entirely on mocks. A plain GET (no `Range`, exactly as `streamDown` issues it) against the selected GDA94 resource on 2026-07-29 returned `200` with `content-length: 1703076498`, matching the CKAN-declared `size` of `1703076498` exactly. So `content-length` is present on the real response, the primary branch of the check is the one that runs, the CKAN-`size` fallback is not load-bearing today, and the two sources agree — a healthy download cannot false-reject on a byte-count mismatch.
-- [ ] Write a failing behavioural test asserting a non-200 response rejects rather than resolving.
-- [ ] Reject on non-success status, naming status code and URL.
-- [ ] Resolve on the write stream's `finish`, not the response's `end`.
-- [ ] Attach an `error` handler to the write stream.
-- [ ] Verify received bytes against `content-length` / `size`.
-- [ ] Decide redirects explicitly — reject on 3xx with the `location` value in the error message.
-- [ ] Send a User-Agent consistent with `LOADER_USER_AGENT`.
+- [x] Write a failing behavioural test asserting a non-200 response rejects rather than resolving. — `test/js/__tests__/stream-down.test.mjs`, 10 tests. Red first: the module could not even be imported by raw Node ESM, which is the P033 point.
+- [x] Reject on non-success status, naming status code and URL.
+- [x] Resolve on the write stream's `finish`, not the response's `end`.
+- [x] Attach an `error` handler to the write stream.
+- [x] Verify received bytes against `content-length` / `size`.
+- [x] Decide redirects explicitly — rejected on 3xx with the `location` value in the error message. Following them was declined as a larger behaviour surface than this path needs.
+- [x] Send a User-Agent consistent with `LOADER_USER_AGENT` — imported from `service/gnaf-package-fetch.js` rather than restated, so the two hops cannot drift.
+- [x] Fix the CKAN hop, which carried the same defect. `fetchPackageData` now throws on a non-ok response before caching, so the WAF error page is no longer cached and served fresh for a day and stale for thirty. Surfaced by the JTBD review, not in the original scope.
+- [x] Remove the array-order dependence in resource selection (`selectGnafResource` / `GNAF_DATUM`). Surfaced by a user question mid-fix; the deliberate GDA2020 switch is carried to P071.
+
+## Fix Strategy
+
+Reject on every path that could promote an unverified artefact, rather than treating "bytes arrived" as success. Convert the module to clean ESM with injectable `http` first, per the P033 precedent, since the babel-only hybrid could not be exercised by a behavioural test at all.
+
+**Release vehicle**: .changeset/gnaf-download-integrity.md
+
+## Fix Released
+
+**Released in `@mountainpass/addressr@3.0.4`** — changeset `.changeset/gnaf-download-integrity.md`, version-packages commit `0c3bcad`, PR [#509](https://github.com/mountain-pass/addressr/pull/509), merge commit `0073c17`, released 2026-07-29. Fix commit `d1cda7c`.
+
+The loader now aborts naming the failing URL and status on a refused request, a redirect, a truncated body, a request error or a write error, and unlinks the partial so nothing is left for a later run to mistake for a good archive. The CKAN hop no longer caches an error page. Resource selection is datum-pinned rather than order-dependent.
+
+Release pipeline green end to end: npm publish, Terraform apply, EB deploy, deployment stabilise, and the production smoke test all passed, plus the Docker axis build-and-smoke.
+
+**Verify criterion**: the failure modes are all upstream-triggered, so the honest confirmation is the next real loader run — either a quarterly `update-*.yml` firing or a fresh self-hosted install — completing a full G-NAF download and index against v3.0.4 without a false reject. The byte-count check is the only new path that could plausibly false-reject a healthy download, and the live-hop evidence above (content-length present and matching the CKAN size exactly) is the strongest pre-release assurance available short of a real multi-GB transfer. The daily `gnaf-source-smoke.yml` cron provides standing evidence that the source itself stays reachable.
 
 ## Dependencies
 
