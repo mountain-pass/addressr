@@ -132,4 +132,155 @@ describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.go
       'stale-cache fallback must annotate response.headers.warning when serving stale data after a fetch failure',
     );
   });
+
+  // P070 — the CKAN half of the same defect fixed in utils/stream-down.js.
+  // `fetch` does not throw on 4xx/5xx, so a WAF error page flowed through as a
+  // successful response, got written to the Keyv cache, and only surfaced as a
+  // JSON.parse error in address-service that named the wrong subsystem.
+  it('rejects a non-ok response instead of returning the error body', async () => {
+    const { fetchPackageData } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+
+    const mockCache = { get: async () => undefined, set: async () => {} };
+    const mockFetch = async () =>
+      new Response('<!DOCTYPE html><html>403 Forbidden</html>', {
+        status: 403,
+        headers: { 'content-type': 'text/html' },
+      });
+
+    await assert.rejects(
+      () => fetchPackageData({ fetch: mockFetch, cache: mockCache }),
+      /403/,
+      'a WAF error page must reject naming the status, not be parsed as CKAN JSON',
+    );
+  });
+
+  it('does not cache a non-ok response', async () => {
+    const { fetchPackageData } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+
+    const sets = [];
+    const mockCache = {
+      get: async () => undefined,
+      set: async (key, value) => {
+        sets.push({ key, value });
+      },
+    };
+    const mockFetch = async () =>
+      new Response('<!DOCTYPE html><html>403 Forbidden</html>', {
+        status: 403,
+        headers: { 'content-type': 'text/html' },
+      });
+
+    await assert.rejects(() =>
+      fetchPackageData({ fetch: mockFetch, cache: mockCache }),
+    );
+
+    assert.deepEqual(
+      sets,
+      [],
+      'caching the error body would serve it fresh for a day and stale for thirty',
+    );
+  });
+});
+
+// P070 / P071 — data.gov.au publishes TWO active application/zip resources per
+// release (GDA94 and GDA2020). The loader used to take whichever CKAN listed
+// first, so the geodetic datum of every coordinate we serve was decided by
+// array order. A reorder upstream would have shifted every coordinate ~1.8m
+// with no error and no log line.
+describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P070)', () => {
+  const bothDatums = {
+    result: {
+      resources: [
+        {
+          state: 'active',
+          mimetype: 'application/zip',
+          name: 'MAY 2026 - Geoscape G-NAF - GDA94',
+          url: 'https://data.gov.au/x/g-naf_may26_allstates_gda94_psv_1023.zip',
+          size: 1703076498,
+        },
+        {
+          state: 'active',
+          mimetype: 'application/zip',
+          name: 'MAY 2026 - Geoscape G-NAF - GDA2020',
+          url: 'https://data.gov.au/x/g-naf_may26_allstates_gda2020_psv_1023.zip',
+          size: 1706838674,
+        },
+      ],
+    },
+  };
+
+  it('defaults to GDA94, preserving the datum the index was built with', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    assert.match(selectGnafResource(bothDatums).url, /_gda94_/);
+  });
+
+  it('selects the requested datum when asked for GDA2020', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    assert.match(selectGnafResource(bothDatums, 'gda2020').url, /_gda2020_/);
+  });
+
+  it('is not order-dependent — a CKAN reorder must not silently flip the datum', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    const reordered = {
+      result: { resources: [...bothDatums.result.resources].reverse() },
+    };
+    assert.match(
+      selectGnafResource(reordered).url,
+      /_gda94_/,
+      'selection must be by datum, never by array position',
+    );
+  });
+
+  it('throws naming the available datums when the requested one is absent', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    assert.throws(
+      () => selectGnafResource(bothDatums, 'gda2099'),
+      /gda2099[\s\S]*gda94/i,
+      'the error must name what was asked for and what is actually on offer',
+    );
+  });
+
+  it('throws when no active zip resource exists at all', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    assert.throws(
+      () => selectGnafResource({ result: { resources: [] } }),
+      /no active/i,
+      'better than the TypeError on path.basename(undefined) this replaces',
+    );
+  });
+
+  it('ignores inactive resources', async () => {
+    const { selectGnafResource } = await import(
+      '../../../service/gnaf-package-fetch.js'
+    );
+    const withdrawn = {
+      result: {
+        resources: [
+          {
+            state: 'deleted',
+            mimetype: 'application/zip',
+            name: 'old',
+            url: 'https://x/g-naf_old_gda94_psv.zip',
+            size: 1,
+          },
+          ...bothDatums.result.resources,
+        ],
+      },
+    };
+    assert.equal(selectGnafResource(withdrawn).size, 1703076498);
+  });
 });

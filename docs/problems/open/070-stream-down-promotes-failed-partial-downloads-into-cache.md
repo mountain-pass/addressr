@@ -46,6 +46,7 @@ Manually delete `target/gnaf/` to clear the poisoned artefact and force a re-dow
 
 - [x] Confirm no status-code check exists — grep for `statusCode` in `utils/stream-down.js` returns zero hits.
 - [x] Confirm the ZIP hop's current behaviour — bare `https.get` with no headers returns `200 application/zip`, no redirect (verified 2026-07-29).
+- [x] Verify the truncation check's trusted input against the live hop, so the new reject paths are not resting entirely on mocks. A plain GET (no `Range`, exactly as `streamDown` issues it) against the selected GDA94 resource on 2026-07-29 returned `200` with `content-length: 1703076498`, matching the CKAN-declared `size` of `1703076498` exactly. So `content-length` is present on the real response, the primary branch of the check is the one that runs, the CKAN-`size` fallback is not load-bearing today, and the two sources agree — a healthy download cannot false-reject on a byte-count mismatch.
 - [ ] Write a failing behavioural test asserting a non-200 response rejects rather than resolving.
 - [ ] Reject on non-success status, naming status code and URL.
 - [ ] Resolve on the write stream's `finish`, not the response's `end`.

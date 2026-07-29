@@ -1,0 +1,70 @@
+# G-NAF source smoke check (P070; P068 investigation task 4)
+#
+# @jtbd JTBD-203 (Acquire and Refresh the G-NAF Dataset on a Self-Hosted
+#   Install — desired outcome 5, the standing guard against silent upstream
+#   re-breakage).
+#
+# A SEPARATE workflow on purpose, for three reasons:
+#
+# 1. The quarterly loader crons (update-*.yml) fire 8 times a year, so upstream
+#    breakage is invisible for up to ~3 months. That sampling rate is exactly
+#    what this check exists to beat, so folding it into those workflows would
+#    make it useless. P068 was found by an external reporter, not by us.
+# 2. A third-party availability probe must never be able to redden master or
+#    stall the trunk loop. In its own workflow it cannot.
+# 3. It matches the perf-regression.yml precedent: decoupled cadence, not
+#    per-push, not in the build-and-test matrix.
+#
+# Deliberately NOT named update-*.yml — that glob is claimed by the quarterly
+# loader runs, and the mapping needs to stay unambiguous.
+name: G-NAF Source Smoke
+
+on:
+  # No inputs on purpose. A boolean workflow_dispatch input compared as
+  # `inputs.x == 'true'` silently never matches (GitHub coerces the mismatched
+  # operands to number, so it evaluates 1 == NaN), and the run goes GREEN with
+  # the gated step skipped. If an input is ever genuinely needed, use
+  # `type: choice` whose values are strings.
+  workflow_dispatch:
+  schedule:
+    # 02:15 UTC daily — offset from perf-regression.yml's 14:30 UTC. Daily
+    # rather than weekly: the cost delta is negligible against a quarterly
+    # multi-GB download, and it cuts worst-case detection latency from ~3
+    # months to ~24 hours.
+    - cron: '15 02 * * *'
+
+# Trap worth knowing: in a CALLED workflow `github.workflow` resolves to the
+# CALLER's name, so this group would collide and deadlock if this workflow ever
+# gains `workflow_call`. Harmless standalone; move the group to a literal first
+# if that ever changes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Read-only probe with no partial state, so cancelling a superseded run is
+  # safe. This is the OPPOSITE of reusable-update.yml, which must never cancel
+  # in progress because killing a partial ingest is destructive.
+  cancel-in-progress: true
+
+jobs:
+  gnaf-source-smoke:
+    runs-on: ubuntu-latest
+    # Explicitly read-only. This workflow runs on master, so declaring
+    # `id-token: write` would make it a SECOND principal able to assume the
+    # gha-v3-loader role against the production index, silently widening a
+    # Level-5 asset's access surface with no ADR amendment. It needs no AWS
+    # credentials at all — do not "tidy up" by copying the loader workflows'
+    # permissions block.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check the G-NAF source is still fetchable
+        run: node scripts/check-gnaf-source.mjs

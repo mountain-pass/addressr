@@ -19,7 +19,7 @@ import {
 import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { expandRangeAliases } from './range-expansion';
-import { fetchPackageData } from './gnaf-package-fetch';
+import { fetchPackageData, selectGnafResource } from './gnaf-package-fetch';
 import {
   getCoveredStates,
   detailFileState,
@@ -98,10 +98,10 @@ const GNAF_DIR = process.env.GNAF_DIR || `target/gnaf`;
 export async function fetchGnafFile() {
   const response = await fetchPackageData();
   const pack = JSON.parse(response.body);
-  // id as of 16/07 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
-  const dataResource = pack.result.resources.find(
-    (r) => r.state === 'active' && r.mimetype === 'application/zip',
-  );
+  // P070: selection is by DATUM, not by array position. data.gov.au publishes
+  // both GDA94 and GDA2020 as active zips, so the previous `.find()` let
+  // upstream ordering decide the datum of every coordinate we serve.
+  const dataResource = selectGnafResource(pack);
 
   // id as of 16/07/2019 for zip is 4b084096-65e4-4c8e-abbe-5e54ff85f42f
   logger('dataResource', JSON.stringify(dataResource, undefined, 2));

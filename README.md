@@ -145,8 +145,47 @@ Run Addressr on your own infrastructure for full control over your data.
    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
    ```
 
-8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated
+8. An updated G-NAF is released every 3 months. Put `addressr-loader` in a cron job or similar to keep addressr regularly updated. Read [What the loader caches](#what-the-loader-caches) first — on a persistent `target` directory the refresh depends on how the release is named upstream, and can need a manual step.
 9. Wire your address form up to the address-server api.
+
+### What the loader caches
+
+The loader keeps three things under `target` (override the location with `GNAF_DIR`, which defaults
+to `target/gnaf`). Each is skipped independently when it already exists, so a partial cleanup can
+leave you re-indexing stale data:
+
+| Path                        | Holds                           | Reused when                                                  |
+| --------------------------- | ------------------------------- | ------------------------------------------------------------ |
+| `target/keyv-file.msgpack`  | the data.gov.au dataset listing | it is under a day old (up to 30 days if data.gov.au is down) |
+| `target/gnaf/<release>.zip` | the downloaded archive          | a file of that exact name is readable                        |
+| `target/gnaf/<release>/`    | the extracted archive           | a directory of that exact name exists                        |
+
+Both skips are keyed on the **release filename**, which carries the release month — for example
+`g-naf_may26_allstates_gda94_psv_1023.zip`. So when a quarterly release lands under a new name, the
+loader downloads and extracts it automatically and no manual step is needed.
+
+You only need to intervene when the filename has _not_ changed — a re-issued release, or an archive
+that was corrupted on disk. In that case delete **both** the zip and the extracted directory, or the
+loader will skip the download and re-index the old data:
+
+```sh
+rm -rf target/gnaf/<release>.zip target/gnaf/<release>/
+```
+
+If you have just seen a new release announced but the loader still reports the previous one, the
+dataset listing is being served from the day-old cache. Delete `target/keyv-file.msgpack` to force a
+fresh look.
+
+`GNAF_DATUM` selects which distribution to load, `gda94` (the default) or `gda2020`. data.gov.au
+publishes both for every release. Changing it is not just a config flip: the caches above are keyed
+on the release filename, which embeds the datum, so a new datum downloads and extracts cleanly and
+looks like it worked, while the index still holds the old coordinates until you re-index every
+state. The two datums differ by roughly 1.8 metres.
+
+A failed download leaves nothing behind: the archive is staged in `target/gnaf/incomplete/` and only
+moved into place once the response has been verified as complete, so a refused or truncated fetch
+aborts with the failing URL and status rather than leaving a corrupt archive for the next run to
+trip over.
 
 ## Self Hosted with Docker
 

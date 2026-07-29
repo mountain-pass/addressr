@@ -1,5 +1,6 @@
 ---
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-07-29
 status: proposed
 job-id: acquire-and-refresh-gnaf-dataset
 persona: self-hosted-operator
@@ -9,6 +10,8 @@ screens:
   - service/gnaf-package-fetch.js
   - service/address-service.js (fetchGnafFile / unzipFile / loadGnafData)
   - README.md (loader section)
+  - scripts/check-gnaf-source.mjs
+  - .github/workflows/gnaf-source-smoke.yml
 ---
 
 # JTBD-203: Acquire and refresh the G-NAF dataset on a self-hosted install
@@ -48,6 +51,8 @@ When a fetch fails, I want nothing partial promoted into my persistent cache, so
 - ADR 034 (Re-automate the quarterly G-NAF refresh on GHA via an OIDC-scoped IAM role) — puts this same download hop on an unattended quarterly CI run.
 - ADR 005 (Babel transpilation for ES module support) — governs the module format of the files this job screens.
 - P068 (G-NAF loader fails with CloudFront 403 from data.gov.au) — closed; the inbound report that surfaced this job's absence. Its two residual gaps map onto the first and fifth desired outcomes.
+- P070 (stream-down promotes failed and partial downloads into the persistent G-NAF cache) — the ticket this job's first delivery discharges, covering both hops.
+- P071 (loader is pinned to the legacy GDA94 datum) — the deliberate datum switch. The selection is now explicit and order-independent; changing it is consumer-visible and tracked separately.
 - P033 (Source-inspection tests are an anti-pattern) — governs how this job's screens are tested.
 
 ## Notes
@@ -55,3 +60,5 @@ When a fetch fails, I want nothing partial promoted into my persistent cache, so
 This job was authored because a JTBD review of the `utils/stream-down.js` status-code fix found the loader's entire G-NAF acquisition path mapped to no job. P068 had been anchored to JTBD-202, which is scoped to registry and image identity and does not reach the loader.
 
 Two corpus corrections identified during the same review are deliberately left for a separate pass rather than folded in here: `service/gnaf-package-fetch.js:1` is annotated `@jtbd JTBD-400` (release determinism) when its subject is loader runtime, and P069's JTBD-202 anchor is likewise questionable for a query-side concern.
+
+The smoke check behind desired outcome 5 is maintainer-side CI: `scripts/check-gnaf-source.mjs` is not in the package `files:` array, so a self-hosted operator cannot run it as a pre-flight diagnostic. That is a deliberate call, not an omission — upstream breakage is global, so detecting it once for everyone and shipping a fix serves this persona better than shipping them a probe. Revisit if operators ask for a local diagnostic.

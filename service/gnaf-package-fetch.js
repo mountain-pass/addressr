@@ -35,6 +35,51 @@ export const GNAF_PACKAGE_URL =
 export const LOADER_USER_AGENT =
   'Mozilla/5.0 (compatible; addressr-loader; +https://github.com/mountain-pass/addressr)';
 
+// Geodetic datum of the G-NAF distribution to load. data.gov.au publishes TWO
+// active application/zip resources per release — GDA94 and GDA2020 — and the
+// loader used to take whichever CKAN happened to list first, so the datum of
+// every coordinate served was decided by array order. The two differ by ~1.8m
+// (Australia drifts ~7cm/year), so an upstream reorder would have shifted every
+// coordinate with no error and no log line.
+//
+// Defaults to gda94 to preserve the datum existing indexes were built with.
+// Switching to gda2020 is a deliberate, consumer-visible change requiring a
+// full reindex — tracked separately, see TODO.md and P071.
+export const GNAF_DATUM = process.env.GNAF_DATUM || 'gda94';
+
+/**
+ * Pick the G-NAF archive resource for the requested datum.
+ *
+ * Replaces an array-order-dependent `.find()` that also threw a bare
+ * TypeError on `path.basename(undefined)` when no zip resource matched.
+ *
+ * @param {object} pack parsed CKAN package_show response
+ * @param {string} [datum] datum key, e.g. 'gda94' or 'gda2020'
+ * @returns {{url: string, size: number, name: string}} the selected resource
+ */
+export function selectGnafResource(pack, datum = GNAF_DATUM) {
+  const zips = (pack?.result?.resources ?? []).filter(
+    (r) => r.state === 'active' && r.mimetype === 'application/zip',
+  );
+  if (zips.length === 0) {
+    throw new Error(
+      'G-NAF package contains no active application/zip resource — upstream distribution format may have changed (see ADR 006 reassessment criteria)',
+    );
+  }
+  const wanted = String(datum).toLowerCase();
+  const matches = (r) =>
+    (r.url || '').toLowerCase().includes(`_${wanted}_`) ||
+    (r.name || '').toLowerCase().replaceAll(/\s+/g, '').includes(wanted);
+  const selected = zips.find(matches);
+  if (!selected) {
+    const available = zips.map((r) => r.name || r.url).join(', ');
+    throw new Error(
+      `G-NAF package has no ${wanted} resource; available: ${available}`,
+    );
+  }
+  return selected;
+}
+
 // Default cache instance — same Keyv-file backend service/address-service.js
 // originally created. Path is cwd-relative by design (resolves against
 // process.cwd() at runtime, matching the addressr-loader CLI's working dir).
@@ -83,6 +128,16 @@ export async function fetchPackageData({
         'User-Agent': LOADER_USER_AGENT,
       },
     });
+    // P070: `fetch` does not throw on 4xx/5xx. Without this check a WAF error
+    // page was cached and then JSON.parsed by address-service, surfacing as a
+    // parse error that named the wrong subsystem. Throwing here also routes
+    // into the stale-cache fallback below, so a transient upstream failure
+    // still serves the last good package rather than breaking the load.
+    if (!fetchResponse.ok) {
+      throw new Error(
+        `G-NAF package fetch failed: ${packageUrl} responded ${fetchResponse.status}`,
+      );
+    }
     const body = await fetchResponse.text();
     const headers = Object.fromEntries(fetchResponse.headers.entries());
     logger('fresh gnaf package data', { body, headers });
