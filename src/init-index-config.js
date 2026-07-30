@@ -16,6 +16,251 @@ import debug from 'debug';
 
 const logError = debug('error');
 
+// ---------------------------------------------------------------------------
+// ADR-041 / P069: index analysis config + synonym building.
+//
+// This lives here, in clean ESM, so a behavioural test can build the EXACT
+// settings production uses instead of duplicating them. client/elasticsearch.js
+// and service/address-service.js are both babel-only (they mix require() with
+// import) and cannot be loaded by a raw Node ESM test — the same P033
+// constraint that forced the service/gnaf-package-fetch.js and
+// utils/stream-down.js extractions.
+//
+// The emitted JSON is OpenSearch-shaped on purpose. It is NOT a backend-neutral
+// analyzer DSL: ADR-021 records that no backend abstraction layer exists yet,
+// and inventing one here would be its first brick.
+// ---------------------------------------------------------------------------
+
+/**
+ * Build synonym rules from a G-NAF authority-code table.
+ *
+ * ADR-041: EQUIVALENT (comma) form, not the directional `CODE => NAME` form.
+ * The directional form REPLACED one side with the other, and the four G-NAF
+ * tables disagree about which column holds the abbreviation — `STREET_TYPE` is
+ * `BRIDGE|BDGE` (full => abbrev) while `STREET_SUFFIX`, `FLAT_TYPE` and
+ * `LEVEL_TYPE` are `S|SOUTH`, `APT|APARTMENT`, `LG|LOWER GROUND FLOOR`
+ * (abbrev => full). Whichever side got replaced went missing from the index, so
+ * a partial token from match_bool_prefix could never reach it.
+ *
+ * Equivalents are direction-agnostic: both tokens are indexed regardless of
+ * which column holds which, so the decision does not depend on getting the
+ * direction right.
+ *
+ * Multi-word members (`RIGHT OF WAY, ROFW`) are emitted the same way — no
+ * special case. They stack the multi-token side at one position, but the
+ * directional form does this too, so the hazard is pre-existing rather than
+ * introduced. See ADR-041 § Multi-Word Members.
+ *
+ * @param {Array<{CODE: string, NAME: string}>} table authority-code rows
+ * @returns {string[]} entries shaped `CODE, NAME`
+ */
+export function mapAuthCodeTableToSynonymList(table) {
+  return (table || [])
+    .filter((type) => type.CODE !== type.NAME)
+    .map((type) => `${type.CODE}, ${type.NAME}`);
+}
+
+const SYNONYM_TABLES = [
+  'Authority_Code_STREET_TYPE_AUT_psv',
+  'Authority_Code_FLAT_TYPE_AUT_psv',
+  'Authority_Code_LEVEL_TYPE_AUT_psv',
+  'Authority_Code_STREET_SUFFIX_AUT_psv',
+];
+
+/**
+ * Build the full synonym list from a loaded G-NAF authority-code context.
+ *
+ * @param {Record<string, Array<{CODE: string, NAME: string}>>} context
+ * @returns {string[]}
+ */
+export function buildSynonyms(context) {
+  return SYNONYM_TABLES.flatMap((table) =>
+    mapAuthCodeTableToSynonymList(context?.[table]),
+  );
+}
+
+export const INDEX_ANALYZER = 'my_analyzer';
+export const SEARCH_ANALYZER = 'my_search_analyzer';
+
+// Names the synonym rule form so a directional-era index is distinguishable
+// from a current one. Part of the structure stamp; see analysisStructureStamp.
+const SYNONYM_FORM = 'equivalent';
+
+const BASE_FILTERS = ['uppercase', 'asciifolding'];
+
+/**
+ * Build the `settings.index.analysis` block shared by the address and locality
+ * indexes.
+ *
+ * The search analyzer is the index analyzer MINUS the synonym filter. A partial
+ * query token is not a complete synonym code, so rewriting the query can only
+ * move it away from what is stored.
+ *
+ * @param {string[]} synonyms equivalent-form rules from buildSynonyms
+ */
+export function buildAnalysis(synonyms) {
+  return {
+    filter: {
+      my_synonym_filter: {
+        type: 'synonym',
+        lenient: true,
+        synonyms: synonyms || [],
+      },
+      comma_stripper: {
+        type: 'pattern_replace',
+        pattern: ',',
+        replacement: '',
+      },
+    },
+    analyzer: {
+      [INDEX_ANALYZER]: {
+        tokenizer: 'whitecomma',
+        filter: [
+          ...BASE_FILTERS,
+          'my_synonym_filter',
+          'comma_stripper',
+          'trim',
+        ],
+      },
+      [SEARCH_ANALYZER]: {
+        tokenizer: 'whitecomma',
+        filter: [...BASE_FILTERS, 'comma_stripper', 'trim'],
+      },
+    },
+    tokenizer: {
+      whitecomma: {
+        type: 'pattern',
+        pattern: String.raw`[\W,]+`,
+        lowercase: false,
+      },
+    },
+  };
+}
+
+/**
+ * Stable fingerprint of the analysis STRUCTURE — filter types, both analyzer
+ * filter chains, and the synonym form.
+ *
+ * **Excludes synonym entries themselves, and this is not the implementer's to
+ * reinterpret.** `buildSynonyms` rebuilds that list from the G-NAF authority
+ * tables on every load, so a contents-based hash would change whenever G-NAF
+ * adds a street type and would hard-abort the ADR-034 quarterly job. It is
+ * equally not a hand-incremented literal: deriving it from the shape means a
+ * future analysis change cannot forget to bump it.
+ *
+ * Stamped into the mapping `_meta` so initIndex can tell a pre-ADR-041 index
+ * from a current one. An index whose stamp differs needs a reindex; it cannot
+ * be repaired by putSettings/putMapping, which succeed while leaving every
+ * existing document analysed the old way (measured — see ADR-041).
+ */
+export function analysisStructureStamp(analysis) {
+  const a = analysis || buildAnalysis([]);
+  return JSON.stringify({
+    synonymForm: SYNONYM_FORM,
+    filters: Object.fromEntries(
+      Object.entries(a.filter).map(([name, f]) => [name, f.type]),
+    ),
+    analyzers: Object.fromEntries(
+      Object.entries(a.analyzer).map(([name, an]) => [
+        name,
+        `${an.tokenizer}:${an.filter.join('+')}`,
+      ]),
+    ),
+  });
+}
+
+/**
+ * A searchable text field carrying BOTH analyzers.
+ *
+ * `search_analyzer` is per-field, so every field the query clauses target needs
+ * it — including `sla_range_expanded`, or the ADR-028 phrase_prefix clause
+ * keeps synonym-rewriting at search time and fails asymmetrically against the
+ * bool_prefix clause.
+ */
+export function analyzedTextField({ raw = false } = {}) {
+  return {
+    type: 'text',
+    analyzer: INDEX_ANALYZER,
+    search_analyzer: SEARCH_ANALYZER,
+    ...(raw && { fields: { raw: { type: 'keyword' } } }),
+  };
+}
+
+/** Address index body (settings + mappings). */
+export function buildAddressIndexBody(synonyms) {
+  const analysis = buildAnalysis(synonyms);
+  return {
+    settings: { index: { analysis } },
+    aliases: {},
+    mappings: {
+      _meta: { analysisStamp: analysisStructureStamp(analysis) },
+      properties: {
+        structured: { type: 'object', enabled: false },
+        sla: analyzedTextField({ raw: true }),
+        ssla: analyzedTextField({ raw: true }),
+        // ADR-028 (inherited from superseded ADR-026): range-number expansion.
+        // Multi-valued, absent on non-range docs, no .raw — never sorted on.
+        sla_range_expanded: analyzedTextField(),
+        confidence: { type: 'integer' },
+        locality_pid: { type: 'keyword' },
+      },
+    },
+  };
+}
+
+/** Locality index body. Same analysis chain per ADR-021. */
+export function buildLocalityIndexBody(synonyms) {
+  const analysis = buildAnalysis(synonyms);
+  return {
+    settings: { index: { analysis } },
+    aliases: {},
+    mappings: {
+      _meta: { analysisStamp: analysisStructureStamp(analysis) },
+      properties: {
+        locality_name: analyzedTextField({ raw: true }),
+      },
+    },
+  };
+}
+
+/**
+ * True when a stored index predates the current analysis structure.
+ *
+ * Compares the `_meta.analysisStamp` ONLY — not `indexConfigMatches`, which is
+ * deliberately conservative and returns false for benign drift. Conflating
+ * "differs" with "requires reindex" would turn every innocuous diff into a hard
+ * abort, so the two predicates stay separate: this one gates the fail-loud, and
+ * `indexConfigMatches` keeps gating the P037 fast-path.
+ */
+export function isStaleAnalysisConfig(storedMappingBody, indexName, desired) {
+  const stored =
+    storedMappingBody?.[indexName]?.mappings?._meta?.analysisStamp ??
+    storedMappingBody?.mappings?._meta?.analysisStamp;
+  if (stored === undefined) return true;
+  return stored !== desired;
+}
+
+/** Remediation message naming both supported migration routes. */
+export function staleIndexMessage(indexName) {
+  return [
+    `Index "${indexName}" was built with an analysis config predating ADR-041 (P069).`,
+    '',
+    'Its documents carry postings from the old analyzer, so partial-prefix search is',
+    'broken on street types and suffixes. This CANNOT be repaired by updating settings',
+    'or mappings: those calls succeed while leaving every existing document analysed',
+    'the old way, which looks fixed and is not. The documents must be re-analysed.',
+    '',
+    'Two supported migrations:',
+    '  1. Blue/green — build a second index or domain, verify, then cut over.',
+    '                  See docs/OPENSEARCH-MIGRATION-PLAYBOOK.md. Production path.',
+    `  2. In-place   — POST _reindex from "${indexName}" into a new index created by`,
+    '                  this loader, then point ES_INDEX_NAME at it. _source is stored,',
+    '                  so re-analysis is server-side: no G-NAF download, no re-parse.',
+    '',
+    'Set ES_INDEX_NAME to a new index name to build alongside the existing one.',
+  ].join('\n');
+}
+
 // OpenSearch getSettings returns scalars as strings ("true", "1"); the
 // desired body uses native JSON types. Normalise every scalar to a string
 // before comparing so `lenient: true` matches `lenient: "true"`.

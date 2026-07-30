@@ -5,6 +5,10 @@ import { buildClientNode } from '../src/client-node-url.js';
 import {
   indexConfigMatches,
   retryOnSnapshotInProgress,
+  buildAddressIndexBody,
+  buildLocalityIndexBody,
+  isStaleAnalysisConfig,
+  staleIndexMessage,
 } from '../src/init-index-config.js';
 import { resolveAuthMode, buildEsClientOptions } from '../src/es-auth.js';
 
@@ -44,87 +48,9 @@ export async function initIndex(esClient, clear, synonyms) {
 
   const exists = await esClient.indices.exists({ index: ES_INDEX_NAME });
   logger('index exists:', exists.body);
-  const indexBody = {
-    settings: {
-      index: {
-        analysis: {
-          filter: {
-            my_synonym_filter: {
-              type: 'synonym',
-              lenient: true,
-              synonyms,
-            },
-            comma_stripper: {
-              type: 'pattern_replace',
-              pattern: ',',
-              replacement: '',
-            },
-          },
-          analyzer: {
-            // default: {
-            //   tokenizer: 'my_tokenizer',
-            //   filter: ['lowercase', 'asciifolding', 'synonym'],
-            // },
-            my_analyzer: {
-              tokenizer: 'whitecomma',
-              filter: [
-                'uppercase',
-                'asciifolding',
-                'my_synonym_filter',
-                'comma_stripper',
-                'trim',
-              ],
-            },
-          },
-          tokenizer: {
-            whitecomma: {
-              type: 'pattern',
-              pattern: String.raw`[\W,]+`,
-              lowercase: false,
-            },
-          },
-        },
-      },
-    },
-    aliases: {},
-    mappings: {
-      properties: {
-        structured: {
-          type: 'object',
-          enabled: false,
-        },
-        sla: {
-          type: 'text',
-          analyzer: 'my_analyzer',
-          fields: {
-            raw: {
-              type: 'keyword',
-            },
-          },
-          // fielddata: true
-        },
-        ssla: {
-          type: 'text',
-          analyzer: 'my_analyzer',
-          fields: {
-            raw: {
-              type: 'keyword',
-            },
-          },
-        },
-        // ADR 026: range-number address expansion. Multi-valued text field
-        // populated with one expanded address per in-range number for range-
-        // numbered G-NAF docs (span cap 20). Absent on non-range docs
-        // (asymmetric population). No .raw sub-field — never sorted on.
-        sla_range_expanded: {
-          type: 'text',
-          analyzer: 'my_analyzer',
-        },
-        confidence: { type: 'integer' },
-        locality_pid: { type: 'keyword' },
-      },
-    },
-  };
+  // ADR-041 / P069: settings + mappings come from the clean-ESM builder so a
+  // behavioural test can assert the exact config production uses.
+  const indexBody = buildAddressIndexBody(synonyms);
 
   if (exists.body) {
     // P037 fast-path: settings/mappings don't change between state loads,
@@ -134,6 +60,25 @@ export async function initIndex(esClient, clear, synonyms) {
       esClient.indices.getSettings({ index: ES_INDEX_NAME }),
       esClient.indices.getMapping({ index: ES_INDEX_NAME }),
     ]);
+    // ADR-041 / P069: fail loud on an index whose analysis config predates the
+    // equivalent-synonym change. The close/putSettings/putMapping path below
+    // SUCCEEDS on such an index — every call returns acknowledged — while every
+    // existing document keeps postings from the old analyzer, so the defect
+    // stays live and indexConfigMatches then returns true forever, masking it.
+    // Measured on OpenSearch 3.5.0; see ADR-041 § Stale-Index Handling.
+    //
+    // Keyed on the _meta structure stamp, NOT indexConfigMatches: that
+    // predicate is deliberately conservative and returns false for benign
+    // drift, which must keep taking the update path below rather than aborting.
+    if (
+      isStaleAnalysisConfig(
+        currentMapping.body,
+        ES_INDEX_NAME,
+        indexBody.mappings._meta.analysisStamp,
+      )
+    ) {
+      throw new Error(staleIndexMessage(ES_INDEX_NAME));
+    }
     if (
       indexConfigMatches(
         indexBody,
@@ -207,66 +152,15 @@ export async function initLocalityIndex(esClient, clear, synonyms) {
   const exists = await esClient.indices.exists({
     index: ES_LOCALITY_INDEX_NAME,
   });
-  const indexBody = {
-    settings: {
-      index: {
-        analysis: {
-          filter: {
-            my_synonym_filter: {
-              type: 'synonym',
-              lenient: true,
-              synonyms: synonyms || [],
-            },
-            comma_stripper: {
-              type: 'pattern_replace',
-              pattern: ',',
-              replacement: '',
-            },
-          },
-          analyzer: {
-            my_analyzer: {
-              tokenizer: 'whitecomma',
-              filter: [
-                'uppercase',
-                'asciifolding',
-                'my_synonym_filter',
-                'comma_stripper',
-                'trim',
-              ],
-            },
-          },
-          tokenizer: {
-            whitecomma: {
-              type: 'pattern',
-              pattern: String.raw`[\W,]+`,
-              lowercase: false,
-            },
-          },
-        },
-      },
-    },
-    aliases: {},
-    mappings: {
-      properties: {
-        locality_name: {
-          type: 'text',
-          analyzer: 'my_analyzer',
-          fields: {
-            raw: {
-              type: 'keyword',
-            },
-          },
-        },
-        locality_class_code: { type: 'keyword' },
-        locality_class_name: { type: 'keyword' },
-        primary_postcode: { type: 'keyword' },
-        state_abbreviation: { type: 'keyword' },
-        state_name: { type: 'keyword' },
-        postcodes: { type: 'keyword' },
-        locality_pid: { type: 'keyword' },
-      },
-    },
-  };
+  // ADR-041: one builder for both indexes so the analysis pipeline cannot
+  // drift between them (ADR-021 same-pipeline criterion).
+  //
+  // Deliberately NO stale-analysis fail-loud here, unlike initIndex. This path
+  // half-migrates identically, but the loader rewrites EVERY locality document
+  // immediately afterwards, so its postings self-heal on the next load. The
+  // exemption depends entirely on that full rewrite: if the locality load ever
+  // becomes incremental, add the guard or P069 silently re-opens on this index.
+  const indexBody = buildLocalityIndexBody(synonyms);
 
   if (exists.body) {
     const indexCloseResult = await esClient.indices.close({

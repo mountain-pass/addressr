@@ -20,6 +20,7 @@ import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
 import { expandRangeAliases } from './range-expansion';
 import { fetchPackageData, selectGnafResource } from './gnaf-package-fetch';
+import { buildSynonyms } from '../src/init-index-config.js';
 import {
   getCoveredStates,
   detailFileState,
@@ -1254,41 +1255,10 @@ async function getStateName(abbr, file) {
   });
 }
 
-function mapAuthCodeTableToSynonymList(table) {
-  return table
-    .filter((type) => {
-      return type.CODE !== type.NAME;
-    })
-    .map((type) => {
-      return `${type.CODE} => ${type.NAME}`;
-    });
-}
-
-function buildSynonyms(context) {
-  //example synonym format [
-  //       'SUPER, super, superannuation',
-  //       'SMSF, smsf, self-managed superannuation funds, self managed superannuation funds'
-  //     ]
-  const streetTypes = mapAuthCodeTableToSynonymList(
-    context['Authority_Code_STREET_TYPE_AUT_psv'],
-  );
-  const flatTypes = mapAuthCodeTableToSynonymList(
-    context['Authority_Code_FLAT_TYPE_AUT_psv'],
-  );
-  const levelTypes = mapAuthCodeTableToSynonymList(
-    context['Authority_Code_LEVEL_TYPE_AUT_psv'],
-  );
-  const streetSuffixTypes = mapAuthCodeTableToSynonymList(
-    context['Authority_Code_STREET_SUFFIX_AUT_psv'],
-  );
-  const synonyms = [
-    ...streetTypes,
-    ...flatTypes,
-    ...levelTypes,
-    ...streetSuffixTypes,
-  ];
-  return synonyms;
-}
+// ADR-041 / P069: mapAuthCodeTableToSynonymList and buildSynonyms moved to
+// src/init-index-config.js (clean ESM) so the equivalent-form rules are emitted
+// directly from {CODE, NAME} records and are testable in raw Node ESM. This
+// file is babel-only, so anything defined here is unreachable from a test.
 
 const { readdir } = require('node:fs').promises;
 

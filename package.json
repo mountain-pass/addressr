@@ -92,6 +92,7 @@
     "test:mcp:smoke": "node --test test/mcp/smoke.test.mjs",
     "test:precommit": "node --test test/precommit/*.test.mjs",
     "test:js": "node --test test/js/__tests__/*.test.mjs",
+    "test:integration:search": "node --test test/integration/*.test.mjs",
     "test:nodejs:QLD:nogeo": "PORT=$npm_package_config_localport ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
     "test:nodejs:QLD:geo": "PORT=$npm_package_config_localport ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=QLD DEBUG=error,api,express:*,test,es TEST_PROFILE=default NODE_OPTIONS=--max_old_space_size=8196 cucumber-js -p default -- --harmony_async_iteration",
     "prebuildX": "npm run genversion && cat ./templates/LICENSE.md | envsubst '${PRODUCT},${VERSION},${COMPANY},${YEAR}' > ./LICENSE.md",

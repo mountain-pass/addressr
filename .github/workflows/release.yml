@@ -114,6 +114,16 @@ jobs:
           unzip -o -j "$GNAF_ZIP" '*/Standard/OT_*' -d "$FIXTURE_DIR/Standard/" 2>/dev/null || true
           echo "Fixture contents:"
           find "$FIXTURE_DIR" -type f | head -20
+      # ADR-041 / P069: the partial-prefix superset property, asserted against a
+      # real engine on BOTH matrix legs. It builds its index from the exported
+      # builders, so the asserted config cannot drift from production's.
+      # CI is set here, so the test FAILS rather than skips if OpenSearch is
+      # unreachable — a silently-skipped test discharges neither half of the
+      # ADR-041 confirmation criterion.
+      - name: Search analysis integration (ADR-041)
+        env:
+          ELASTIC_TEST_HOST: http://localhost:9200
+        run: npm run test:integration:search
       - name: Run tests (no geo)
         env:
           GNAF_TEST_FIXTURE_DIR: target/gnaf-fixture
