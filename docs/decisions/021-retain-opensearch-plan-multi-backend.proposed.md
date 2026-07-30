@@ -6,7 +6,7 @@ date: 2026-04-13
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
-reassessment-date: 2026-07-13
+reassessment-date: 2026-10-29
 ---
 
 # ADR 021: Retain OpenSearch with Future Multi-Backend Support

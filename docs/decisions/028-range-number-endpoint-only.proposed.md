@@ -7,7 +7,7 @@ decision-makers: [Tom Howard]
 consulted: []
 informed: []
 supersedes: [026-range-number-address-expansion]
-reassessment-date: 2026-07-19
+reassessment-date: 2026-10-29
 ---
 
 # ADR 028: Range-Number Address Expansion — Endpoint-Only

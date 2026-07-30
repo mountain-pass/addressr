@@ -6,7 +6,7 @@ date: 2026-04-19
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
-reassessment-date: 2026-07-19
+reassessment-date: 2026-10-29
 ---
 
 # ADR 027: Disable fuzziness on short tokens via `AUTO:5,8`
@@ -160,9 +160,30 @@ Re-visit this decision if any of the following occur:
 - `AUTO:5,8` proves insufficient and a new ranking inversion emerges on query shapes not covered by the baseline. At that point, reconsider Option D (query token-type split) with the architect-recommended shape (filter for numeric exactness, or `sla_range_expanded` symmetric population per ADR 026 Option C).
 - ADR 021's multi-backend ships with a backend whose fuzziness semantics don't map cleanly to Lucene `AUTO:<low>,<high>`. Re-evaluate per-backend.
 - The 4-char regression test (`@known-regression-adr-027`) is deleted without an ADR update — the accepted trade-off becomes unattributed.
+- The analysis chain beneath this tuning changes in a way that shifts token lengths or term statistics — for example a synonym-form change altering which tokens cross the 5-character threshold, or co-positioned tokens altering IDF and field-length norms. `AUTO:5,8`'s thresholds are calibrated against a token distribution; a change to that distribution reopens the calibration regardless of whether a user-visible regression has been reported yet. (Added 2026-07-29 by the ADR 041 amendment — the five criteria above are all user-report or query-shape triggers and none fired on exactly this kind of substrate change.)
+
+## Amendments
+
+### 2026-07-29 — amended by ADR 041 (equivalent synonyms with a synonym-free search analyzer)
+
+[ADR 041](041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md) changes the analysis chain this decision's tuning sits on top of, so the `AUTO:5,8` interaction changes shape and must be re-verified rather than assumed.
+
+Under ADR 041 the synonym filter emits **equivalents** instead of directional replacements and no longer runs at search time. Street types therefore occupy the index in both forms: `RD` and `ROAD` at the same position, where previously only the abbreviation was stored. `AUTO:5,8` now sees a 4-character `ROAD` alongside the 2-character `RD`, which crosses the 5-character threshold this ADR chose — the token that previously took 0 edits now has a co-positioned sibling that also takes 0 edits, but the term statistics behind both have changed.
+
+**No enumerated reassessment criterion fired.** Criterion 3 is conjunctive — `AUTO:5,8` proving insufficient **and** a new ranking inversion — and neither conjunct holds: P069 is a recall failure, not a rank-order inversion, and `AUTO:5,8` is neither its cause nor its cure. Criterion 3's Option D directive is therefore **not** incurred and remains undischarged by design.
+
+The trigger for this amendment is **substrate-driven**: ADR 041 changes the analysis chain this tuning sits on top of, and the `reassessment-date` had independently lapsed on 2026-07-19 (pushed to 2026-10-29 by this amendment). The five existing criteria are all user-report or query-shape triggers and none fires on a substrate change, so a sixth is added below to close that gap.
+
+Actions carried on ADR 041 rather than here:
+
+- The 14-query SSLA baseline and the `@known-regression-adr-027` 4-character case must be re-run against the ADR 041 index before the production cutover, not after.
+- If the co-positioned tokens move a ranking case this ADR pinned, the fix belongs in a follow-up decision — do not silently retune `AUTO:5,8` under cover of the P069 work.
+
+This is an amendment, not a supersession: the decision to disable fuzziness on short tokens stands, and no part of its Decision Outcome is withdrawn.
 
 ## Related
 
+- [ADR 041 — Equivalent synonyms with a synonym-free search analyzer](041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md) — amends this decision; see Amendments above.
 - [Problem P026 — Numeric fuzziness in bool_prefix inflates ranking](../problems/026-numeric-fuzziness-inflates-ranking.open.md)
 - [Baseline capture for P026 (v2.3.0)](../problems/026-baseline-v2.3.0.md) — 14-query pre-change snapshot used for post-deploy diff.
 - [ADR 025 — Symmetric `ssla` indexing for search ranking](025-search-ranking-symmetric-ssla.accepted.md) — explicit non-triggering.

@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 40 (36 in-force, 4 historical)
+**Total ADRs:** 41 (37 in-force, 4 historical)
 
 ---
 
 ## In-force decisions
 
-_36 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_37 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -119,7 +119,9 @@ _36 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-027 — ADR 027: Disable fuzziness on short tokens via `AUTO:5,8`
 
 **Status:** proposed | **Oversight:** confirmed
-**Confirmation:** Unit test in test/js/**tests**/address-service.test.mjs: source-pattern assertion that the bool_prefix multi_m...; Cucumber non-regression: addressv2.feature:95,109 (ADR 025 P007) continues to pass. ADR 028 first-endpoint, la...; New Cucumber scenario — P026 case 3 first result in addressv2.feature: query "138 Whitehorse Rd" against OT ...; New Cucumber scenario — 5-char typo preservation in addressv2.feature: query "19 Muray Rd Christmas Island" ...; New Cucumber scenario — 4-char typo intentional loss (documentation test) in addressv2.feature: query "16 Ga...
+**Decides:** Tune the `bool_prefix` `fuzziness` parameter from the default `AUTO` (`AUTO:3,6`) to `AUTO:5,8` so 3-4 character tokens take zero edits, killing the numeric fuzz that let adjacent street numbers and postcodes inflate ranking (P026), while preserving 5+ character typo tolerance. Chosen as the smallest diff that fully fixes the problem class — no mapping, reindex, or query-shape change, and neither ADR 025 nor ADR 028 reassessment triggered — with the loss of 4-character name typo tolerance accepted as the trade-off. Amended 2026-07-29 by ADR 041, whose equivalent-synonym chain co-positions `ROAD` alongside `RD` and shifts the token statistics this tuning was calibrated against; a sixth, substrate-driven reassessment criterion was added and the baseline plus the 4-character regression case must be re-verified before the ADR 041 cutover.
+**Confirmation:** Unit test asserting `fuzziness: 'AUTO:5,8'` in `searchForAddress`; Cucumber non-regression on ADR 025 P007 and ADR 028 endpoint scenarios; new Cucumber scenario for the P026 first-result case; new scenario proving 5-char typo tolerance survives; `@known-regression-adr-027` documentation scenario for the accepted 4-char typo loss; post-deploy rerun of the 14-query v2.3.0 baseline diff
+**Related:** ADR-021, ADR-025, ADR-026, ADR-028, ADR-041
 
 ### ADR-028 — ADR 028: Range-Number Address Expansion — Endpoint-Only
 
@@ -203,10 +205,10 @@ _36 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-041 — Equivalent synonyms with a synonym-free search analyzer
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Emit G-NAF street-type synonyms as equivalents (`BRIDGE, BDGE`) instead of directional replacements (`BRIDGE => BDGE`) so both forms sit at the same index position, and add a `search_analyzer` that is `my_analyzer` minus `my_synonym_filter` so partial query tokens are never rewritten — the only way a `match_bool_prefix` prefix query can reach the token a user actually types (P069 / issue #365) while keeping `ST`/`STREET` equivalence. Applies to `sla`, `ssla`, `sla_range_expanded` and `initLocalityIndex`; forces a full ~15M-doc reindex via ADR-029 blue/green.
-**Confirmation:** Property-based regression test that a longer valid prefix returns a superset of the shorter prefix's results across several street types plus a directional suffix; ADR-029 pre-cutover gate green (SSLA-14 ranking baseline, Cucumber `test:nogeo` + `test:geo`, k6 pair); `55 Pyrmont Bri` and `55 Harris S` resolve in production; `_analyze` shows `BRIDGE`/`BDGE` co-positioned and `BRI` unrewritten
-**Related:** ADR-021, ADR-025, ADR-026, ADR-027, ADR-028, ADR-029, ADR-035
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Emit G-NAF street-type synonyms as position-sharing equivalents (`BRIDGE, BDGE`) instead of directional replacements (`BRIDGE => BDGE`), and add a `search_analyzer` equal to `my_analyzer` minus `my_synonym_filter`, so the token a user types is physically in the index and partial query tokens are never rewritten. Chosen as the only direction-agnostic option across the four G-NAF authority tables that disagree on which column holds the abbreviation; fixes P069 / issue #365 autocomplete breakage while keeping `ST`/`STREET` equivalence, at the cost of a full ~15M-doc reindex (ADR-029 blue/green or `_reindex`), fail-loud stale-index detection via a structure-only `_meta` stamp, an accepted pre-existing multi-word position hazard, and an amendment to ADR-027.
+**Confirmation:** Property test that a longer prefix returns a superset of the shorter prefix's results; ADR-029 pre-cutover gate green (SSLA-14 baseline, Cucumber `test:nogeo` + `test:geo`, k6 pair); `55 Pyrmont Bri` and `55 Harris S` resolve in production; `_analyze` shows `BRIDGE`/`BDGE` co-positioned and `BRI` unrewritten; `NORTH EAST` position collision pinned as a known limitation with a directional control; ADR-028 mid-range false-positive scenario still holds; integration test runs on both CI engine legs (2.19.5 and 3.5.0) outside `test:js`; `initIndex` aborts naming both migration routes without attempting close/putSettings/putMapping; unit assertions confirm `sla`, `ssla` and `sla_range_expanded` carry both `analyzer` and `search_analyzer`; `initLocalityIndex`'s duplicated settings block carries the equivalent form and both analyzers on `locality_name`; k6 threshold re-derived from a fresh blue-side baseline rather than the inherited 1443 ms; green index size and hot-set gated against the ADR-029 page-cache budget before cutover
+**Related:** ADR-021, ADR-025, ADR-026, ADR-027, ADR-028, ADR-029, ADR-034, ADR-035
 
 ---
 
