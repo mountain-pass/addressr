@@ -107,3 +107,30 @@ variable "cloudflare_rapidapi_key" {
   nullable    = false
   description = "RapidAPI key consumed by the worker (replaces the prior hardcoded value in the dashboard worker source, ADR 018 line 48 Bad consequence). Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_rapidapi_key. The current production value is reused at cutover (no rotation during the P042 migration, per P042 ticket §16)."
 }
+
+variable "elastic_v4_name" {
+  type        = string
+  nullable    = false
+  default     = "addressr6"
+  description = "ADR 041 / P069: domain name for the generation-4 domain, provisioned in parallel to carry the equivalent-synonym analyzer change. Generation N maps to domain addressr(N+2), so generation 4 is addressr6. Endpoint reads search-addressr6-…."
+}
+
+variable "elastic_v4_engine_version" {
+  type        = string
+  nullable    = false
+  default     = "OpenSearch_3.5"
+  description = "ADR 041: engine version for the generation-4 domain. DELIBERATELY IDENTICAL to elastic_v3_engine_version — generation is not engine major (ADR 035 naming note). This migration changes the index analyzer, not the engine, so a reader diffing these two vars and finding them equal is seeing intent, not a stale value."
+}
+
+variable "v4_searchable_documents_floor" {
+  type        = number
+  default     = 1000000
+  description = "ADR 041 / P035 trip-wire: absolute floor for the generation-4 SearchableDocuments alarm. Held at 1M during provision and bulk load so a fresh empty domain clears once the load crosses ~1M, mirroring what v3's floor did pre-cutover; raised to 15M at cutover. NOTE the playbook asks for a floor near the expected count rather than a low 1M — an absolute floor cannot do both jobs during a load that legitimately starts at zero, so partial-drop detection is carried by the separate metric-math rate alarm instead. See the alarm comments in main.tf."
+}
+
+variable "ops_alert_email" {
+  type        = string
+  nullable    = false
+  default     = "tompahoward@gmail.com"
+  description = "ADR 041: subscriber for the search-ops SNS topic that carries the SearchableDocuments trip-wire alarms. Before this, the alarms changed state in the console and reached nobody, which meant 'armed' did not mean what ADR 035 and the playbook assumed it meant."
+}

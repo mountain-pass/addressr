@@ -709,19 +709,26 @@ resource "aws_cloudwatch_metric_alarm" "v3_searchable_documents_drop" {
   comparison_operator = "LessThanThreshold"
   threshold           = var.v3_searchable_documents_floor
   treat_missing_data  = "breaching"
-  alarm_description   = "ADR 035: v3 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
+  # ADR 041: wired to SNS. Until then this alarm reached nobody.
+  alarm_actions     = [aws_sns_topic.search_ops.arn]
+  ok_actions        = [aws_sns_topic.search_ops.arn]
+  alarm_description = "ADR 035: v3 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
 }
 
 # ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
 # before any v2 spend to prove the parity signal at real traffic volume; used
 # v2-vs-v3 during the 2.19→3.5 overlap to prove parity before cutover. Since the
-# v2 (addressr4) decommission 2026-07-14 (ADR 035 Phase 2 step 6) it is v3-only
-# ongoing monitoring of the addressr5 domain (SearchLatency / SearchRate / CPUUtilization).
+# v2 (addressr4) decommission 2026-07-14 (ADR 035 Phase 2 step 6) it was v3-only.
+# ADR 041 puts it back into parity duty for the analyzer-migration overlap:
+# v3 (addressr5) vs v4 (addressr6), same metrics, same purpose — prove parity
+# before cutover. Drops back to single-domain when v3 is decommissioned.
 data "aws_caller_identity" "current" {}
 
 locals {
-  # ADR 035 Phase 2: v3-only since v2 (addressr4) was decommissioned post-cutover.
-  search_parity_domains = [var.elastic_v3_name]
+  # ADR 041: v3 AND v4 during the analyzer-migration overlap — this is what the
+  # parity dashboard was built for and what it did during the 2.19 to 3.5 overlap.
+  # Drops back to v4-only when v3 is decommissioned post-cutover.
+  search_parity_domains = [var.elastic_v3_name, var.elastic_v4_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
   # the statistic/period choice is validated on v1 during Stage 0d.
@@ -733,7 +740,7 @@ locals {
       width  = 24
       height = 8
       properties = {
-        title  = "${metric} — v3"
+        title  = "${metric} — ${join(" vs ", local.search_parity_domains)}"
         region = "ap-southeast-2"
         stat   = metric == "SearchLatency" ? "p95" : "Average"
         period = 3600
@@ -756,4 +763,160 @@ locals {
 resource "aws_cloudwatch_dashboard" "search_parity" {
   dashboard_name = "addressr-search-parity"
   dashboard_body = jsonencode({ widgets = local.search_parity_widgets })
+}
+
+# ---------------------------------------------------------------------------
+# ADR 041 / P069: generation-4 search domain.
+#
+# GENERATION 4 RUNS THE SAME ENGINE (OpenSearch 3.5) AS GENERATION 3. This
+# generation exists to carry the ADR-041 analyzer change — equivalent synonyms
+# plus a synonym-free search analyzer — which cannot be applied to an existing
+# index and forces a full ~15M-doc reindex. It is NOT an engine upgrade.
+#
+# Provisioned QUIET per the migration playbook step 1: no shadow traffic, and the
+# EB primary ELASTIC_HOST stays on module.opensearch_v3.endpoint until cutover.
+#
+# Sized identically to v3 ON PURPOSE. ADR-041's Confirmation makes the green
+# index's on-disk size and resident hot-set a pre-cutover GATE rather than a note,
+# so the class is measured and then resized, not guessed up front. Provisioning
+# larger now would also confound the parity gate: change the analyzer and the
+# instance class together and a latency delta is unattributable to either.
+# Escalation if the measured hot-set exceeds RAM is m6g.xlarge.search (16 GB),
+# decided on the number. Resize is safe (FGAC-off removed the P036 clobber).
+#
+# The overlap TERMINATES. ADR-035's cost driver is breached in substance if this
+# becomes open-ended: decommission v3 after cutover + soak, removing
+# module.opensearch_v3, eb_opensearch_v3, gha_v3_loader + policy, the v3 alarm,
+# and the elastic_v3_* / v3_searchable_documents_floor vars.
+module "opensearch_v4" {
+  source = "./modules/opensearch"
+
+  name            = var.elastic_v4_name
+  engine_version  = var.elastic_v4_engine_version
+  instance_type   = "m6g.large.search"
+  instance_count  = 2
+  ebs_volume_size = 20
+
+  # Same scoped principals as v3, but with the generation-4 GHA role rather than
+  # gha_v3_loader — see the reasoning in oidc.tf.
+  allowed_principal_arns = [
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
+    var.loader_principal_arn,
+    aws_iam_role.gha_v4_loader.arn,
+  ]
+
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "041"
+  }
+}
+
+# ADR 033/041: let the EB app SigV4-call the v4 domain. Granted pre-cutover —
+# permission only; EB does not query v4 until ELASTIC_HOST flips. Both halves are
+# required: the domain access policy above grants the resource side, this grants
+# the identity side. Without it, read-shadow mirroring to v4 returns 403, and
+# ADR-031's error classifier SWALLOWS that as UnknownError, so the soak would look
+# healthy while mirroring nothing.
+resource "aws_iam_role_policy" "eb_opensearch_v4" {
+  name = "addressr-opensearch-v4-eshttp"
+  role = "aws-elasticbeanstalk-ec2-role"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "es:ESHttp*"
+        Resource = "${module.opensearch_v4.arn}/*"
+      }
+    ]
+  })
+}
+
+# ADR 041: somewhere for the trip-wire alarms to shout.
+#
+# Until now the SearchableDocuments alarms declared no alarm_actions and there was
+# no SNS topic in the tree at all, so they changed state in the console and reached
+# nobody. ADR-035's "v3 drop-alarm armed" and the playbook's "trip-wire for a
+# silent index wipe" both assume notification; neither was getting it. That matters
+# most during exactly this migration: a ~15M-doc bulk load is long and unattended.
+resource "aws_sns_topic" "search_ops" {
+  name = "addressr-search-ops"
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "041"
+  }
+}
+
+resource "aws_sns_topic_subscription" "search_ops_email" {
+  topic_arn = aws_sns_topic.search_ops.arn
+  protocol  = "email"
+  endpoint  = var.ops_alert_email
+}
+
+# ADR 041 / P035 trip-wire: absolute floor for generation 4.
+#
+# Held at 1M through provision and load. The playbook asks for a floor NEAR the
+# expected count rather than a low 1M, and that is the right instinct, but an
+# absolute floor cannot serve both jobs during a load that legitimately starts at
+# zero. What 1M does catch is a full wipe, which goes to 0 — the P035 deletion was
+# caught within minutes at floor 1M. What it cannot catch is a PARTIAL drop
+# mid-load, and neither can a static high floor. Partial-drop detection is carried
+# by the rate alarm below instead.
+#
+# Expected state: this alarm sits in ALARM from terraform apply until the load
+# crosses 1M, because treat_missing_data is breaching. That is correct, matches
+# v3's pre-cutover behaviour, and is not something to "fix".
+resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_drop" {
+  alarm_name  = "addressr-v4-searchable-documents-drop"
+  namespace   = "AWS/ES"
+  metric_name = "SearchableDocuments"
+  dimensions = {
+    DomainName = var.elastic_v4_name
+    ClientId   = data.aws_caller_identity.current.account_id
+  }
+  statistic           = "Minimum"
+  period              = 300
+  evaluation_periods  = 2
+  comparison_operator = "LessThanThreshold"
+  threshold           = var.v4_searchable_documents_floor
+  treat_missing_data  = "breaching"
+  alarm_actions       = [aws_sns_topic.search_ops.arn]
+  ok_actions          = [aws_sns_topic.search_ops.arn]
+  alarm_description   = "ADR 041: v4 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Raise the floor to 15M at cutover."
+}
+
+# ADR 041: partial-drop detection, which no absolute floor delivers during a load.
+# Metric math on the period-over-period change: fires when the document count
+# FALLS at any absolute level, so it works from the first document through to
+# steady state. This is what the playbook's learning actually wants.
+resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_rate_drop" {
+  alarm_name          = "addressr-v4-searchable-documents-falling"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  threshold           = -1000
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.search_ops.arn]
+  alarm_description   = "ADR 041: v4 searchable-document count FELL between periods. Catches a partial index drop at any absolute level, which the absolute floor cannot do during a load that starts at zero."
+
+  metric_query {
+    id          = "delta"
+    expression  = "DIFF(docs)"
+    label       = "SearchableDocuments period-over-period change"
+    return_data = true
+  }
+  metric_query {
+    id = "docs"
+    metric {
+      namespace   = "AWS/ES"
+      metric_name = "SearchableDocuments"
+      period      = 300
+      stat        = "Minimum"
+      dimensions = {
+        DomainName = var.elastic_v4_name
+        ClientId   = data.aws_caller_identity.current.account_id
+      }
+    }
+  }
 }

@@ -82,3 +82,68 @@ output "gha_v3_loader_role_arn" {
   value       = aws_iam_role.gha_v3_loader.arn
   description = "ADR 035: IAM role GitHub Actions assumes via OIDC to populate + refresh the v3 (OpenSearch 3.5) domain over SigV4."
 }
+
+# ADR 041 / P069: generation-4 loader role. SAME engine (OpenSearch 3.5) as
+# generation 3 — this generation exists to carry the ADR-041 analyzer change,
+# which forces a full ~15M-doc reindex. It is NOT an engine upgrade.
+#
+# A separate role rather than widening gha-v3-loader: ADR 034 records the role as
+# least-privilege "scoped to the v3 ARN only", and a role named v3 authorising
+# generation 4 is both a scoping erosion and a naming trap. Mirrors the v2 to v3
+# precedent, and makes the v3 teardown a clean resource deletion rather than a
+# policy edit under time pressure.
+#
+# Not load-critical for the initial bulk load, which runs locally as
+# var.loader_principal_arn per ADR 033. Required before the 9 update-{state}.yml
+# crons retarget to v4.
+resource "aws_iam_role" "gha_v4_loader" {
+  name = "gha-v4-loader"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Federated = aws_iam_openid_connect_provider.github_actions.arn }
+        Action    = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = "repo:mountain-pass/addressr:ref:refs/heads/master"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    ManagedBy = "terraform"
+    Component = "search"
+    Adr       = "041"
+  }
+}
+
+resource "aws_iam_role_policy" "gha_v4_loader_eshttp" {
+  name = "addressr-gha-v4-loader-eshttp"
+  role = aws_iam_role.gha_v4_loader.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "es:ESHttpGet",
+          "es:ESHttpPut",
+          "es:ESHttpPost",
+          "es:ESHttpHead",
+        ]
+        Resource = "${module.opensearch_v4.arn}/*"
+      }
+    ]
+  })
+}
+
+output "gha_v4_loader_role_arn" {
+  value       = aws_iam_role.gha_v4_loader.arn
+  description = "ADR 041: IAM role GitHub Actions assumes via OIDC to refresh the v4 (ADR-041 analyzer) domain over SigV4."
+}
