@@ -201,6 +201,13 @@ _36 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** Ratified with ADR-039 in one drain, covering all amendments; ADR-001 amendment lands before the `deploy/**` trigger, asserted in test not by grep; `release-workflow-deploy-only.test.mjs` updated not deleted; `release` job exposes `published` via `needs.release.outputs`; path-detection scoping pinned in `release-workflow-deploy-only.test.mjs` (discharged); exactly one workflow line matching `run: npm run build:docker`; `docker-image.yml` header comment rewritten; `start:server:docker` resolves to a tag `build:docker` produces; a Dockerfile-only push publishes the image only; a release publishes npm plus one image plus deploy; a `deploy/**`-only push deploys only; a PR builds and smoke-tests without pushing; `:<version>-<gitsha>` resolves and the bare `:<version>` digest is unchanged; `docker pull ghcr.io/mountain-pass/addressr:latest` succeeds with no login (package visibility public); both workflows declare `packages: write` with no `DOCKER_ID_*` reference left in workflows, `package.json`, or the pinning tests; `docker-tags.sh` emits `ghcr.io/mountain-pass/addressr:*` tags, pinned in `docker-tags.test.mjs`; `DOCKER-IMAGE-CHANGELOG.md` records the registry move as breaking with the new pull command.
 **Related:** ADR-001, ADR-004, ADR-007, ADR-010, ADR-013, ADR-015, ADR-035, ADR-039
 
+### ADR-041 — Equivalent synonyms with a synonym-free search analyzer
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Emit G-NAF street-type synonyms as equivalents (`BRIDGE, BDGE`) instead of directional replacements (`BRIDGE => BDGE`) so both forms sit at the same index position, and add a `search_analyzer` that is `my_analyzer` minus `my_synonym_filter` so partial query tokens are never rewritten — the only way a `match_bool_prefix` prefix query can reach the token a user actually types (P069 / issue #365) while keeping `ST`/`STREET` equivalence. Applies to `sla`, `ssla`, `sla_range_expanded` and `initLocalityIndex`; forces a full ~15M-doc reindex via ADR-029 blue/green.
+**Confirmation:** Property-based regression test that a longer valid prefix returns a superset of the shorter prefix's results across several street types plus a directional suffix; ADR-029 pre-cutover gate green (SSLA-14 ranking baseline, Cucumber `test:nogeo` + `test:geo`, k6 pair); `55 Pyrmont Bri` and `55 Harris S` resolve in production; `_analyze` shows `BRIDGE`/`BDGE` co-positioned and `BRI` unrewritten
+**Related:** ADR-021, ADR-025, ADR-026, ADR-027, ADR-028, ADR-029, ADR-035
+
 ---
 
 ## Historical decisions
