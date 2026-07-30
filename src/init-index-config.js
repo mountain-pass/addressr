@@ -218,6 +218,17 @@ export function buildLocalityIndexBody(synonyms) {
       _meta: { analysisStamp: analysisStructureStamp(analysis) },
       properties: {
         locality_name: analyzedTextField({ raw: true }),
+        // Keyword fields — exact-match lookups, never analysed. The postcode
+        // and state endpoints filter and aggregate on these, so dropping any
+        // of them silently breaks /postcodes and /states while address search
+        // keeps working.
+        locality_class_code: { type: 'keyword' },
+        locality_class_name: { type: 'keyword' },
+        primary_postcode: { type: 'keyword' },
+        state_abbreviation: { type: 'keyword' },
+        state_name: { type: 'keyword' },
+        postcodes: { type: 'keyword' },
+        locality_pid: { type: 'keyword' },
       },
     },
   };
