@@ -75,7 +75,7 @@ So `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` **indexes as** `[55, PYRMONT, BDGE, 
 
 `match_bool_prefix` makes the final query token a prefix query. A _partial_ token is not a complete synonym code, so it is never rewritten — but the indexed token was. The two can then never meet:
 
-- **Mechanism 1 — partial prefix of an abbreviated word.** Query `55 Pyrmont Bri` analyses to `[55, PYRMONT, BRI]`. `BRI*` cannot match the indexed `BDGE`. This is the reporter's exact case. It affects **every street type that has an abbreviation** — 194 street types, plus 40 flat, 16 level and 18 street-suffix codes.
+- **Mechanism 1 — partial prefix of an abbreviated word.** Query `55 Pyrmont Bri` analyses to `[55, PYRMONT, BRI]`. `BRI*` cannot match the indexed `BDGE`. This is the reporter's exact case. It requires the index to hold the abbreviation, so it is confined to the **194 `STREET_TYPE` pairs**. Corrected 2026-07-29: an earlier draft claimed all four authority tables ran full-to-abbreviation and put the count at 268. Only `STREET_TYPE` does; `STREET_SUFFIX`, `FLAT_TYPE` and `LEVEL_TYPE` run the other way and index the full word, so a partial of the full word reaches them normally. See ADR-041 Context for the per-table directions.
 - **Mechanism 2 — partial that is itself a code.** Query `55 Harris S` analyses to `[55, HARRIS, SOUTH]`, because `S => SOUTH` is a real street suffix. `SOUTH*` cannot match the indexed `ST`.
 
 This also explains the otherwise-odd `Pyrmont Bri` result: it returned `BRIDGEVIEW` docs (a building name, not a street type, so never abbreviated) but never `PYRMONT BRIDGE RD`. Consistent with the mechanism, and it was the clue that the prefix machinery itself was fine.
@@ -94,7 +94,7 @@ Confirmed against `opensearchproject/opensearch:3.5.0` — the same engine versi
 
 The decisive evidence is `_analyze`: the doc yields `BDGE` where the query yields `BRI`.
 
-### Validated fix direction (tested, not yet implemented)
+### Fix direction — validated locally, now implemented (see Fix Strategy)
 
 Index **both** forms at the same position and stop rewriting the query:
 
@@ -133,13 +133,26 @@ Next concrete step needs backend access this session did not have (prod is SigV4
 - [x] Confirm the synonym-filter interaction with `match_bool_prefix` — confirmed; search-time abbreviation rewriting is the root cause.
 - [x] Reproduce locally against OpenSearch 3.5.0 with the real 268-pair synonym list — every prod observation reproduces.
 - [x] Validate a fix direction — equivalent synonyms plus a synonym-free `search_analyzer`; every keystroke resolves.
-- [ ] Implement the analyzer/mapping change in `client/elasticsearch.js` and `buildSynonyms`.
-- [ ] Add a behavioural regression test for the "longer prefix ⊇ shorter prefix" property, covering both mechanisms (`Bri`/`BDGE` and `S`/`SOUTH`).
+- [x] Implement the analyzer/mapping change — landed in `1084ce7`, with the extraction into `src/init-index-config.js` so the config is testable in raw Node ESM.
+- [x] Add a behavioural regression test for the "longer prefix ⊇ shorter prefix" property — `test/integration/search-analysis.test.mjs`, 6 tests against a real engine on both CI legs, including a control asserting the OLD config still fails so the suite provably discriminates.
 - [ ] Plan and execute the reindex blue/green per ADR-029, with a rollback path.
 - [ ] Re-check relevance scoring after the change — two tokens at one position alters term statistics.
-- [ ] Decide whether `sla_range_expanded` needs the same `search_analyzer` treatment.
-- [ ] Fix the query construction so a longer valid prefix never drops a result the shorter prefix returned.
-- [ ] Add a behavioural regression test covering the #365 case and the general "longer prefix ⊇ shorter prefix" property.
+- [x] Decide whether `sla_range_expanded` needs the same `search_analyzer` treatment — yes, necessarily. `search_analyzer` is per-field, so missing it would leave the ADR-028 phrase_prefix clause rewriting the query while the bool_prefix clause does not. Applied, and asserted in `test/js/__tests__/elasticsearch.test.mjs`.
+
+## Fix Strategy
+
+Recorded and human-ratified as **[ADR-041](../../decisions/041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md)**: emit synonyms as equivalents rather than directional replacements so both forms share an index position, and add a `search_analyzer` without the synonym filter so a partial query token is never rewritten.
+
+**Implemented and merged to master, deliberately unreleased:**
+
+| Commit    | What                                                                                                                                                                                                                                                                                          |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1084ce7` | The fix. Analysis config and synonym building extracted to `src/init-index-config.js` (clean ESM, P033); equivalents + `search_analyzer`; `initIndex` fail-loud stale-index guard; source-inspection regex replaced with 13 builder assertions; new integration suite on both CI engine legs. |
+| `775a9ee` | Regression fix — the extraction had dropped seven keyword fields from the locality mapping, breaking `/postcodes`. Caught by Cucumber in CI.                                                                                                                                                  |
+
+**No changeset, on purpose.** The analyzer change only takes effect on re-analysed documents, and the fail-loud guard means any deployment still on a pre-ADR-041 index gets a hard loader abort on its next run. Publishing must therefore _follow_ the reindex, not lead it. The quarterly `update-*.yml` crons run the loader from a master checkout, so they will abort on their next firing until the reindex lands — loud and non-destructive, and remediated by the migration itself.
+
+**Remaining work is a production operation, not code.** Per ADR-029 and the user's ratified choice of domain-level blue/green: provision the blue domain, load with `replicas=0` and the doc-count alarm armed first, validate doc count and geo, measure parity, run the relevance gate (SSLA-14, full Cucumber `test:nogeo` + `test:geo`, k6 pair against a freshly re-derived baseline — not the inherited 1443 ms), gate the green index's hot-set against the page-cache budget, cut over, exercise rollback in both directions, then publish and notify the reporter on #365.
 
 ## Dependencies
 
