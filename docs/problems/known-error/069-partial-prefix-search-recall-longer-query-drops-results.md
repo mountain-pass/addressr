@@ -154,10 +154,49 @@ Recorded and human-ratified as **[ADR-041](../../decisions/041-equivalent-synony
 
 **Remaining work is a production operation, not code.** Per ADR-029 and the user's ratified choice of domain-level blue/green: provision the blue domain, load with `replicas=0` and the doc-count alarm armed first, validate doc count and geo, measure parity, run the relevance gate (SSLA-14, full Cucumber `test:nogeo` + `test:geo`, k6 pair against a freshly re-derived baseline — not the inherited 1443 ms), gate the green index's hot-set against the page-cache budget, cut over, exercise rollback in both directions, then publish and notify the reporter on #365.
 
+## Migration state (2026-07-31) — HALTED AT THE RELEVANCE GATE
+
+Playbook steps 1-3 complete and verified. Step 5 (parity/relevance gate) **failed**, so there has been no cutover and production is unaffected.
+
+| Step                                 | State                                                                                                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Provision blue domain quiet       | Done — `addressr6`, OpenSearch 3.5, `m6g.large.search` x2, 20 GB gp3. EB `ELASTIC_HOST` never touched, still `addressr5`.                                             |
+| 2. Full load, `replicas: 0`          | Done — ~9.5h, locally over SigV4. Only logged error was the benign `Counts.csv` ENOENT that `fileExists` handles by design.                                           |
+| 3. Validate                          | Done — **exact doc parity 16,905,824** on both domains; localities 17,578; replicas raised to 1; cluster **green**, zero unassigned.                                  |
+| 4. Read-shadow                       | Not started.                                                                                                                                                          |
+| 5. Relevance gate                    | **FAILED — see P073.** 13 of 14 SSLA-14 queries hold; `16 Gaze Rd Christmas Island` puts sub-units above the street-level match, violating ADR-025 Decision Driver 1. |
+| 6-9. Cutover, rollback, decommission | Blocked.                                                                                                                                                              |
+
+**P069 itself is confirmed fixed on the green domain**, measured against the old domain as control on identical data:
+
+| query                  | addressr5 (old)   | addressr6 (ADR-041)  |
+| ---------------------- | ----------------- | -------------------- |
+| `55 Pyrmont Bri`       | **0 hits**        | 4 hits, target at #1 |
+| `55 Harris S`          | **0 hits**        | 8 hits, target at #7 |
+| `55 Pyrmont` (control) | 8 hits, target #2 | 8 hits, target #2    |
+
+Both reported cases go from zero results to finding the target, and the shorter control query is unchanged, so recall was not bought by breaking something else.
+
+Analyzer behaviour verified directly on the domain before the load was committed to:
+
+```
+INDEX  "55 PYRMONT BRIDGE RD": 55@0 PYRMONT@1 BRIDGE@2 BDGE@2 RD@3 ROAD@3
+SEARCH "55 Pyrmont Bri"      : 55@0 PYRMONT@1 BRI@2
+SEARCH "55 Harris S"         : 55@0 HARRIS@1 S@2
+```
+
+**Operational notes for whoever resumes this:**
+
+- The first load attempt was killed by the session harness at 254k docs. Restarting was safe because documents carry explicit `_id`s, so a re-run overwrites rather than duplicates — the exact doc-count parity confirms that held. Run the loader detached (`nohup`, reparented to PID 1) or it will not survive.
+- Watch `_stats` `indexing.index_total`, not the `_cat/indices` doc count. Refresh is throttled under heavy indexing, so the doc count lags by ~15 minutes and looks stalled when it is not. This cost an unnecessary investigation.
+- The SNS subscription for `addressr-search-ops` was still `PendingConfirmation` throughout the load, so the doc-count trip-wire alarms reached nobody during a ~9.5h unattended window. Confirm the subscription before the next long-running step.
+- The loader runs `x64` node under Rosetta on Apple Silicon (see `reference_env_arch_and_skill_tool`), which is why throughput was ~20-100k/min rather than better.
+- `addressr6` is loaded, green, and costing money. It is the correct green domain to cut over **once P073 is resolved** — do not tear it down and do not reload it unless the fix is index-time.
+
 ## Dependencies
 
 - **Blocks**: (none)
-- **Blocked by**: (none)
+- **Blocked by**: P073 — the ADR-041 analyzer regresses the ADR-025 street-level-first invariant. The green domain is loaded and P069 is verified fixed on it, but it cannot take traffic until that is resolved.
 - **Composes with**: P007 (search-scoring / ranking), P026 (numeric ranking, closed) — same search-relevance subsystem.
 
 ## Related
