@@ -61,22 +61,40 @@ None needed yet — **this was caught pre-cutover**. Production still serves `ad
 
 ## Root Cause Analysis
 
-### Hypothesis
+### Confirmed mechanism (2026-07-31, via `_explain` on both domains)
 
-ADR-025's mechanism is a score-margin argument: with `ssla` populated symmetrically, a street-level doc scores `clean(sla) + clean(ssla)` and a sub-unit doc scores `noisy(sla) + clean(ssla)`, where `clean > noisy` because BM25 penalises the sub-unit's extra tokens and longer field length. The invariant holds only while that margin stays positive.
+**The earlier field-length-norm hypothesis was wrong and is retracted.** ADR-025's mechanism is _intact_. Decomposing the two `should` clauses for `16 Gaze Rd Christmas Island`:
 
-ADR-041 adds a co-positioned token (`RD` **and** `ROAD`) to every doc containing a street type. Field-length normalisation is roughly `1/sqrt(len)`, so adding one token to a **short** street-level doc costs proportionally more than adding one to a **longer** sub-unit doc. The margin narrows. Where it was already narrow, it inverts.
+|                  | `bool_prefix` (the ADR-025 clause) | `phrase_prefix` (the ADR-028 clause) | total  |
+| ---------------- | ---------------------------------- | ------------------------------------ | ------ |
+| OLD street-level | 22.16                              | **289.91**                           | 314.07 |
+| OLD unit-1       | 20.60                              | 228.96                               | 251.56 |
+| NEW street-level | **23.62**                          | 30.03                                | 55.66  |
+| NEW unit-1       | 22.13                              | **34.90**                            | 59.02  |
 
-Consistent with the evidence: the invariant holds on `278 ROSS RIVER RD` and `19 MURRAY RD` (wide margins — note the old-domain gap of 314 vs 267 on GAZE RD was itself narrower in relative terms once rescaled) and breaks on `16 GAZE RD`.
+On the new index the street-level doc **still wins the `bool_prefix` sum** (23.62 vs 22.13), which is exactly what ADR-025 engineered via symmetric `ssla`. That mechanism did not regress.
 
-The absolute score collapse (314 → 56) is a separate and expected consequence of the search analyzer no longer expanding synonyms; it is not itself the defect. The defect is the **order inversion**.
+The inversion is entirely in the **`phrase_prefix` clause**, and it is not a `best_fields` selection artefact either — the unit outscores street on _both_ fields:
+
+| field  | OLD street | OLD unit | NEW street | NEW unit  |
+| ------ | ---------- | -------- | ---------- | --------- |
+| `sla`  | 289.91     | 222.82   | 30.03      | **33.93** |
+| `ssla` | 283.22     | 228.96   | 29.56      | **34.90** |
+
+Old: street wins both fields. New: street loses both fields.
+
+Note the `ssla` case is the sharpest, because both documents analyse to the **same token count** (8): street `16 GAZE RD, CHRISTMAS ISLAND OT 6798` and unit `1/16 GAZE RD, CHRISTMAS ISLAND OT 6798`, since the `[\W,]+` tokenizer splits `1/16` into `1` and `16`. Equal length, yet the unit now scores higher. That rules out a simple length-norm explanation.
+
+**Still open**: _why_ the `phrase_prefix` clause now favours the longer/equal-length sub-unit document. The co-positioned synonym token is the only input that changed, so it perturbs phrase scoring in a way not yet pinned down. The absolute collapse (290 to 30) is a separate expected consequence of the search analyzer no longer expanding synonyms, and is not itself the defect — the defect is the order inversion.
+
+**What this changes about the fix**: candidate 1 below (boost street-level docs) would paper over a `phrase_prefix` problem with a query-side bias. The narrower and more honest fix is likely in the `phrase_prefix` clause itself, since that is where the regression lives and the ADR-025 clause is behaving correctly.
 
 ### Investigation Tasks
 
 - [x] Reproduce against real production-scale data on both domains with identical content — done, exact doc parity 16,905,824.
 - [x] Confirm which ADR invariant is violated and quote it — ADR-025 Decision Driver 1.
 - [x] Establish the blast radius across the SSLA-14 baseline — 1 of 14 regressed, canonical P007 case unaffected.
-- [ ] Confirm the field-length-norm hypothesis with `_explain` on both docs for the failing query, rather than reasoning from BM25 first principles.
+- [x] Decompose the score with `_explain` on both domains — done, and it **falsified** the field-length-norm hypothesis. The ADR-025 `bool_prefix` clause is intact; the regression is in the ADR-028 `phrase_prefix` clause, on both fields.\n- [ ] Determine why `phrase_prefix` now favours the sub-unit doc at equal token count. This is the remaining root-cause gap.
 - [ ] Quantify how many addresses are affected — sample street addresses that have sub-units and compare street-level rank across the two domains at scale, rather than extrapolating from one case.
 - [ ] Decide the fix (see Candidate fixes) and re-run the full SSLA-14 gate against it.
 
