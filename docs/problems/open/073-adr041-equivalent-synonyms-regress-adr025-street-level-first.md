@@ -83,9 +83,16 @@ The inversion is entirely in the **`phrase_prefix` clause**, and it is not a `be
 
 Old: street wins both fields. New: street loses both fields.
 
-Note the `ssla` case is the sharpest, because both documents analyse to the **same token count** (8): street `16 GAZE RD, CHRISTMAS ISLAND OT 6798` and unit `1/16 GAZE RD, CHRISTMAS ISLAND OT 6798`, since the `[\W,]+` tokenizer splits `1/16` into `1` and `16`. Equal length, yet the unit now scores higher. That rules out a simple length-norm explanation.
+**CONFIRMED MECHANISM (2026-07-31).** An earlier draft of this section claimed both documents analyse to the same token count (8) and used that to retract the length-norm hypothesis. **That was a miscount**, caught in architecture review. Measured directly against both domains:
 
-**Still open**: _why_ the `phrase_prefix` clause now favours the longer/equal-length sub-unit document. The co-positioned synonym token is the only input that changed, so it perturbs phrase scoring in a way not yet pinned down. The absolute collapse (290 to 30) is a separate expected consequence of the search analyzer no longer expanding synonyms, and is not itself the defect — the defect is the order inversion.
+| config                         | street `ssla` | unit `ssla` | street's length advantage |
+| ------------------------------ | ------------: | ----------: | ------------------------: |
+| production (directional)       |             7 |           8 |                 **12.5%** |
+| ADR-041 (equivalents at index) |            10 |          11 |                  **9.1%** |
+
+ADR-041 adds a **constant +3 tokens to both documents** (`ROAD`, `ID`, `OUTER` on this address). A constant additive term compresses the _ratio_ BM25's length norm keys on, eroding the street doc's advantage by roughly a quarter — while leaving the `bool_prefix` clause largely intact, because ADR-025's symmetric-`ssla` mechanism is ratio-independent. That is a coherent arithmetic account of why the inversion landed in `phrase_prefix` and not in the ADR-025 clause, and it closes the root-cause gap this ticket previously carried as open.
+
+The absolute score collapse (290 to 30) is a separate and expected consequence of the search analyzer no longer expanding synonyms; it is not the defect. The defect is the order inversion.
 
 **What this changes about the fix**: candidate 1 below (boost street-level docs) would paper over a `phrase_prefix` problem with a query-side bias. The narrower and more honest fix is likely in the `phrase_prefix` clause itself, since that is where the regression lives and the ADR-025 clause is behaving correctly.
 
@@ -94,7 +101,7 @@ Note the `ssla` case is the sharpest, because both documents analyse to the **sa
 - [x] Reproduce against real production-scale data on both domains with identical content — done, exact doc parity 16,905,824.
 - [x] Confirm which ADR invariant is violated and quote it — ADR-025 Decision Driver 1.
 - [x] Establish the blast radius across the SSLA-14 baseline — 1 of 14 regressed, canonical P007 case unaffected.
-- [x] Decompose the score with `_explain` on both domains — done, and it **falsified** the field-length-norm hypothesis. The ADR-025 `bool_prefix` clause is intact; the regression is in the ADR-028 `phrase_prefix` clause, on both fields.\n- [ ] Determine why `phrase_prefix` now favours the sub-unit doc at equal token count. This is the remaining root-cause gap.
+- [x] Decompose the score with `_explain` on both domains — done, and it **falsified** the field-length-norm hypothesis. The ADR-025 `bool_prefix` clause is intact; the regression is in the ADR-028 `phrase_prefix` clause, on both fields.\n- [x] Determine why `phrase_prefix` favours the sub-unit doc — CLOSED. The premise was wrong: token counts are 7 vs 8, not equal. ADR-041's constant +3 compresses the length-norm ratio from 12.5% to 9.1%. Verified against both domains.
 - [ ] Quantify how many addresses are affected — sample street addresses that have sub-units and compare street-level rank across the two domains at scale, rather than extrapolating from one case.
 - [ ] Decide the fix (see Candidate fixes) and re-run the full SSLA-14 gate against it.
 
