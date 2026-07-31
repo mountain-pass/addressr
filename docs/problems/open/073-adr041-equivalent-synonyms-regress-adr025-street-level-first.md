@@ -1,8 +1,9 @@
 # Problem 073: ADR-041 equivalent synonyms regress the ADR-025 street-level-first invariant
 
-**Status**: Open
+**Status**: Open — DOWNGRADED, no longer a cutover blocker (see Blast radius)
 **Reported**: 2026-07-31
-**Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Likely (3). Impact 4 per RISK-POLICY § Impact: this is P007 re-emerging on the revenue-generating `/addresses?q=` endpoint — the exact street-level match ranked below its own sub-units, which is the defect a RapidAPI consumer reported as issue #375 and which ADR-025 was written to fix. Likelihood 3: it does not reproduce on every address, only where the co-positioned token shifts the field-length norm enough to close a narrow gap, but it is deterministic on the addresses where it does.
+**Priority**: 4 (Low) — re-rated 2026-07-31 after measuring the blast radius. Was 12 (High) on the assumption this was a regression ADR-041 introduced. It is not: production already violates the same invariant at a higher rate. Impact: Moderate (2) x Likelihood: Likely (2).
+**Superseded-priority**: 12 (High) — Impact: Significant (4) × Likelihood: Likely (3). Impact 4 per RISK-POLICY § Impact: this is P007 re-emerging on the revenue-generating `/addresses?q=` endpoint — the exact street-level match ranked below its own sub-units, which is the defect a RapidAPI consumer reported as issue #375 and which ADR-025 was written to fix. Likelihood 3: it does not reproduce on every address, only where the co-positioned token shifts the field-length norm enough to close a narrow gap, but it is deterministic on the addresses where it does.
 **Origin**: internal — caught by the ADR-041 pre-cutover relevance gate on 2026-07-31, before any cutover.
 **Effort**: M — the mechanism is understood; the fix is a scoring adjustment that must then survive a re-run of the full SSLA-14 gate, and any index-time fix costs another ~9.5-hour reload.
 **WSJF**: 6.0 — (12 × 1.0) / 2
@@ -30,6 +31,28 @@ Query `16 Gaze Rd Christmas Island` — contains **no** sub-unit token:
 The street-level match drops from #1 to #4, behind three of its own units. That is the P007 shape.
 
 **This was predicted.** ADR-041's own Consequences (Bad) says: _"Alters term statistics. Two tokens sharing a position changes IDF and field-length norms, so relevance must be re-verified rather than assumed. ADR-025's and ADR-028's confirmation scenarios are at risk."_ They were at risk, and one broke. The gate did its job.
+
+## Blast radius — MEASURED 2026-07-31, and it reverses this ticket's premise
+
+Sampled 145 street-level addresses that also have sub-units, drawn from the live corpus, querying each address exactly as written (no sub-unit token) and checking whether the street-level record ranks first per ADR-025 Decision Driver 1. Identical sample, identical query, both domains:
+
+| index                                     | street-level-first violations |
+| ----------------------------------------- | ----------------------------- |
+| **production `addressr5` (old analyzer)** | **73 / 145 = 50.3%**          |
+| `addressr6` (ADR-041 analyzer)            | 71 / 145 = **49.0%**          |
+
+**ADR-041 is marginally BETTER in aggregate, not worse.** This ticket was opened on the premise that ADR-041 regressed the ADR-025 invariant. That premise is wrong. The invariant is already broken for roughly half of these addresses in production today, and ADR-041 does not degrade it.
+
+Verified end to end through the live RapidAPI endpoint: `8 WATERS RD, NEUTRAL BAY NSW 2089` returns eight UNIT records and never the street-level address, every one scoring an identical `53.560207`. The bare street-level document exists in the index. The identical scores are the tell — the sub-units tie, the sort tie-break decides, and the street-level document is not competitive at all. That is a different and more severe failure than the narrow margin-inversion measured on `16 GAZE RD`.
+
+**Consequences:**
+
+- **This is not a cutover blocker.** Holding the ADR-041 migration on a single flipped case while production sits at 50.3% was the wrong call.
+- `16 GAZE RD` was one of the ~50% that still worked; ADR-041 flipped it while leaving the aggregate slightly better.
+- The real defect is that **P007 is substantially unfixed on the revenue endpoint** and has been invisible because the SSLA-14 baseline samples cases that happen to work. Captured separately as **P074**.
+- Small states do not exhibit it: OT (5,186 docs) and TAS (375,613 docs) both measured **0%** violations. The failure concentrates in dense metro addresses with many sub-units, which small states barely contain. This is why local reproduction failed and why the corpus-scale measurement was necessary.
+
+The `16 GAZE RD` mechanism recorded below (constant +3 tokens compressing the length-norm ratio) is still accurate for that address. It is simply not the general case.
 
 ## Symptoms
 
