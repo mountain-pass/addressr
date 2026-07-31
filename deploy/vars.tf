@@ -128,6 +128,12 @@ variable "v4_searchable_documents_floor" {
   description = "ADR 041 / P035 trip-wire: absolute floor for the generation-4 SearchableDocuments alarm. Held at 1M during provision and bulk load so a fresh empty domain clears once the load crosses ~1M, mirroring what v3's floor did pre-cutover; raised to 15M at cutover. NOTE the playbook asks for a floor near the expected count rather than a low 1M — an absolute floor cannot do both jobs during a load that legitimately starts at zero, so partial-drop detection is carried by the separate metric-math rate alarm instead. See the alarm comments in main.tf."
 }
 
+variable "v4_shadow_search_rate_floor" {
+  type        = number
+  default     = 0.5
+  description = "ADR 031 read-shadow soak: floor for the v4 SearchRate liveness alarm, in searches per node per minute. Deliberately low — this catches mirroring stopping dead, not a rate dip, and a too-tight threshold on a per-node average would page on ordinary variance. Sanity envelope for the eventual tune: ADR 031's documented 1-10 RPS traffic assumption is 60-600 searches/min domain-wide, which across 2 nodes is roughly 30-300 per node per minute, so this default sits 60-600x below the expected floor. Tune against that envelope once the soak has run an hour, rather than replacing one unanchored number with another. Retire or repoint at cutover, when v4's search rate becomes production's rather than the shadow's."
+}
+
 variable "ops_alert_email" {
   type        = string
   nullable    = false

@@ -378,25 +378,46 @@ jobs:
           echo "$shadow_body" | jq -e '.' > /dev/null || {
             echo "/debug/shadow-config did not return valid JSON"; exit 1;
           }
-          # ADR 035 Phase 2 CUTOVER (2026-07-14): the read-shadow was REMOVED at
-          # cutover — v3 (addressr5, OpenSearch 3.5) is now primary, so a v3→v3
-          # shadow would be redundant. Assert hostSet=false so an ACCIDENTAL
-          # re-enable (double reads against primary) is caught. This mirrors the
-          # steady state before the Phase 2 soak; the assertion flipped true during
-          # the soak (2026-07-13) and back to false now.
+          # ADR 041 blue/green soak (2026-07-31): the read-shadow is ENABLED again,
+          # now mirroring onto v4 (addressr6) to warm it before the cutover flips
+          # ELASTIC_HOST. Assert hostSet=true so a shadow that silently fails to
+          # configure — the P035 silent-no-op — fails the deploy instead of quietly
+          # warming nothing. Flip this back to false at cutover, when v4 becomes
+          # primary and a v4→v4 shadow would be redundant.
           host_set=$(echo "$shadow_body" | jq -r '.hostSet')
-          if [ "$host_set" != "false" ]; then
-            echo "/debug/shadow-config hostSet=$host_set, expected false (ADR 035 Phase 2 read-shadow removed at cutover)"
+          if [ "$host_set" != "true" ]; then
+            echo "/debug/shadow-config hostSet=$host_set, expected true (ADR 041 read-shadow soak onto v4)"
             echo "body: $shadow_body"; exit 1
           fi
+          # P035 BS-5 fix. This gate used to accept ANY member of the closed enum,
+          # AuthError included — which is how the 2026-05-11 regression ran at a
+          # 96.5% AuthError rate for eight days behind a green build. While the
+          # shadow is enabled the only acceptable state is a clean one: no failures
+          # and no last error at all. A 403 from a mis-wired IAM policy now fails
+          # the deploy rather than passing as a recognised error class.
           last_error_class=$(echo "$shadow_body" | jq -r '.lastError.class // "null"')
-          case "$last_error_class" in
-            null|AbortError|ConnectionError|AuthError|UnknownError) ;;
-            *)
-              echo "/debug/shadow-config lastError.class=$last_error_class, expected null or one of the closed enum values"
-              exit 1 ;;
-          esac
-          echo "P035 R3 ok: hostSet=false (ADR 035 Phase 2 read-shadow removed at cutover), lastError.class=$last_error_class"
+          if [ "$last_error_class" != "null" ]; then
+            echo "/debug/shadow-config lastError.class=$last_error_class, expected null while the shadow is enabled (P035 BS-5)"
+            echo "body: $shadow_body"; exit 1
+          fi
+          failures=$(echo "$shadow_body" | jq -r '.failures // 0')
+          if [ "$failures" != "0" ]; then
+            echo "/debug/shadow-config failures=$failures, expected 0 while the shadow is enabled (P035 BS-5)"
+            echo "body: $shadow_body"; exit 1
+          fi
+          # successes>0 is reported, NOT gated. It is the one assertion that answers
+          # "is it mirroring anything at all", but it depends on real traffic landing
+          # in the deploy-to-smoke window — the smoke's own calls never reach
+          # /addresses, since the ADR 024 bypass probe below returns 401 without
+          # searching. Gating on it would buy a flaky release for a question the
+          # addressr-v4-shadow-search-rate-floor CloudWatch alarm answers continuously
+          # and from outside the process. Counters are cumulative-since-boot, so a
+          # single reading here cannot prove liveness anyway (P035 BS-1).
+          successes=$(echo "$shadow_body" | jq -r '.successes // 0')
+          if [ "$successes" = "0" ]; then
+            echo "NOTE: shadow successes=0 at smoke time — expected if no traffic landed in the window; the SearchRate alarm is the liveness check."
+          fi
+          echo "P035 R3 ok: hostSet=true (ADR 041 v4 soak), failures=0, lastError=null, successes=$successes"
           echo ""
           # ADR 024 bypass probe: direct-without-header must be rejected.
           # Any status other than 401 fails the release — enforcement is the

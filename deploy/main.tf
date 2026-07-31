@@ -151,11 +151,67 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 035 Phase 2 read-shadow REMOVED at cutover 2026-07-14: v3 (addressr5) is
-  # now PRIMARY (ELASTIC_HOST above), so mirroring reads to v3 would be a redundant
-  # v3→v3 shadow. The soak served its purpose (~1 day, full read coverage, 0
-  # failures) and is retired. No ADDRESSR_SHADOW_* settings → src/read-shadow.js stays dormant
-  # (validateReadShadowConfig short-circuits on unset ADDRESSR_SHADOW_HOST).
+  # ADR 031 read-shadow RE-ENABLED 2026-07-31, now pointed at v4 (addressr6) for
+  # the ADR-041 blue/green. v3 stays PRIMARY (ELASTIC_HOST above) — this mirrors
+  # production reads onto green so its page cache is warm before the cutover flips
+  # ELASTIC_HOST. Green has never served a real query, ADR-004 deploys at
+  # BatchSize=100% with no traffic ramp, and /health is a ping() that cannot detect
+  # slow — so a cold cutover would put all production traffic onto a cold cache with
+  # no automatic protection. That is the recorded ADR-029 2026-07-09 failure, where
+  # the cold side's p90 climbed while the warm comparison held flat.
+  #
+  # ADR 033: v4 is FGAC-off/IAM, so the shadow client SigV4-signs as the EB instance
+  # role, which holds es:ESHttp* on the v4 domain ARN via aws_iam_role_policy
+  # .eb_opensearch_v4, and that role is in module.opensearch_v4.allowed_principal_arns.
+  # BOTH halves are required: with only the resource-policy half, v4 returns 403,
+  # classifyError maps 401/403 to 'AuthError' (src/read-shadow.js), and the release
+  # smoke gate USED TO ACCEPT AuthError as passing — so the soak would have looked
+  # healthy while mirroring nothing. That is P035 BS-5, and it is how the 2026-05-11
+  # regression ran at a 96.5% AuthError rate for eight days behind a green build.
+  # That hole is closed in this same commit; see release.yml.
+  #
+  # No USERNAME/PASSWORD — there is no internal credential on v4. This also defuses
+  # P035 BS-3: under SigV4 there is no shared password for clientFingerprint to miss
+  # rotating, because credentials come from defaultProvider().
+  #
+  # Soak-validity gate (ADR 031 / P028): the clock does not start until the v4
+  # populate is complete and indexing is quiescent — the first Phase 1 attempt ran
+  # shadow during populate and bulk-index contention drove shadow success from 95%
+  # to 52%, invalidating that soak (ADR 031 amendment 2026-07-06). Verified before
+  # enabling: v4 index_current=0, not throttled, doc count at exact parity with v3.
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_HOST"
+    value     = module.opensearch_v4.endpoint
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PORT"
+    value     = "443"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_PROTOCOL"
+    value     = "https"
+    resource  = ""
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_AUTH_MODE"
+    value     = "sigv4"
+    resource  = ""
+  }
+  # Redundant against read-shadow.js's DEFAULT_REGION, but set explicitly: if the
+  # region is ever absent, buildEsClientOptions throws rather than downgrading to
+  # basic auth. Explicit is the fail-safe posture.
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "ADDRESSR_SHADOW_REGION"
+    value     = "ap-southeast-2"
+    resource  = ""
+  }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
@@ -919,4 +975,45 @@ resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_rate_drop" {
       }
     }
   }
+}
+
+# ADR 031 / P035 deferred investigation task, now due: a shadow-liveness alarm on
+# the TARGET domain. Every blind spot in P035's inventory lives inside the app's
+# swallow path — BS-2's counter arithmetic, BS-3's stale client, BS-4's per-instance
+# sampling, BS-5's AuthError-accepted-as-passing. All of them are invisible to
+# /debug/shadow-config in one direction or another. This alarm asks a different
+# question from outside the process entirely: is anything actually querying v4? It
+# is immune to all four at once, which is why it is worth the deploy-config change
+# that kept it deferred until now. Its old blocker — no SNS topic to notify — was
+# removed by ADR 041.
+#
+# SearchRate is a per-node per-minute average, so the threshold is an observed
+# baseline, not a derived one, and it cannot tell shadow traffic from hand-probing.
+# Held deliberately low for the soak: the job here is to catch mirroring stopping
+# dead, not to police the rate. Retire or repoint at cutover, when v4 becomes
+# primary and its search rate is production's rather than the shadow's.
+#
+# EXPECTED STATE, same as the searchable-documents floor alarm above: treat_missing_data
+# is "breaching", so this alarm sits in ALARM from terraform apply until the shadow
+# deploy lands and traffic starts mirroring, and it will re-enter ALARM whenever the
+# shadow is disabled and at cutover. That is the alarm working, not something to fix.
+resource "aws_cloudwatch_metric_alarm" "v4_shadow_search_rate_floor" {
+  alarm_name  = "addressr-v4-shadow-search-rate-floor"
+  namespace   = "AWS/ES"
+  metric_name = "SearchRate"
+  dimensions = {
+    DomainName = var.elastic_v4_name
+    ClientId   = data.aws_caller_identity.current.account_id
+  }
+  statistic          = "Average"
+  period             = 900
+  evaluation_periods = 2
+  # No data means nothing is querying the domain, which IS the failure this alarm
+  # exists to catch. Missing must breach, not be excused.
+  treat_missing_data  = "breaching"
+  comparison_operator = "LessThanThreshold"
+  threshold           = var.v4_shadow_search_rate_floor
+  alarm_actions       = [aws_sns_topic.search_ops.arn]
+  ok_actions          = [aws_sns_topic.search_ops.arn]
+  alarm_description   = "ADR 031: v4 search rate fell to the floor during the read-shadow soak — mirroring has likely stopped. Unlike /debug/shadow-config this observes the target, so it survives the P035 blind spots that let a dead shadow report healthy."
 }

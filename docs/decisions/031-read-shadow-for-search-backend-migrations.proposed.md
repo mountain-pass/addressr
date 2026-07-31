@@ -103,18 +103,29 @@ close the perf gap.
 
 ### Configuration
 
-| Env var                      | Default | Purpose                                           |
-| ---------------------------- | ------- | ------------------------------------------------- |
-| `ADDRESSR_SHADOW_HOST`       | unset   | Hostname of the shadow OpenSearch cluster (gate)  |
-| `ADDRESSR_SHADOW_PORT`       | 443     | Port (default matches HTTPS)                      |
-| `ADDRESSR_SHADOW_PROTOCOL`   | https   | Protocol (`http` for local dev, `https` for prod) |
-| `ADDRESSR_SHADOW_USERNAME`   | unset   | Optional basic-auth username                      |
-| `ADDRESSR_SHADOW_PASSWORD`   | unset   | Optional basic-auth password                      |
-| `ADDRESSR_SHADOW_TIMEOUT_MS` | 3000    | AbortController timeout per shadow request        |
+| Env var                      | Default        | Purpose                                                                                                                                      |
+| ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADDRESSR_SHADOW_HOST`       | unset          | Hostname of the shadow OpenSearch cluster (gate)                                                                                             |
+| `ADDRESSR_SHADOW_PORT`       | 443            | Port (default matches HTTPS)                                                                                                                 |
+| `ADDRESSR_SHADOW_PROTOCOL`   | https          | Protocol (`http` for local dev, `https` for prod)                                                                                            |
+| `ADDRESSR_SHADOW_USERNAME`   | unset          | Optional basic-auth username                                                                                                                 |
+| `ADDRESSR_SHADOW_PASSWORD`   | unset          | Optional basic-auth password                                                                                                                 |
+| `ADDRESSR_SHADOW_TIMEOUT_MS` | 3000           | AbortController timeout per shadow request                                                                                                   |
+| `ADDRESSR_SHADOW_AUTH_MODE`  | basic          | `sigv4` signs mirror requests as the EB instance role; anything else falls back to basic                                                     |
+| `ADDRESSR_SHADOW_REGION`     | ap-southeast-2 | AWS region for SigV4 signing. Set it explicitly: `buildEsClientOptions` throws on a missing region rather than silently downgrading to basic |
 
 `ADDRESSR_SHADOW_HOST` unset = feature disabled (no-op). When set, the
 USERNAME/PASSWORD pair must both be set or both be unset (mirrors ADR 024's
 fail-loud-on-partial pattern).
+
+The last two rows were owed by ADR 033, which promised "shadow-client gains a
+SigV4 branch + `ADDRESSR_SHADOW_AUTH_MODE` flag; Configuration and 'Where the
+code lives' sections extend." The code shipped; the table extension did not,
+and was backfilled on 2026-07-31 when the v4 soak made deploy config ahead of
+the record it claimed to implement. Against a SigV4 target there is no shared
+credential, so USERNAME/PASSWORD stay unset — which also defuses P035 BS-3,
+since there is no password for `clientFingerprint`'s presence-bit reduction to
+miss rotating.
 
 ### Behaviour
 
@@ -163,9 +174,23 @@ production RPS is expected to be 1–10 RPS based on RapidAPI typical mid-tier
 API load (no data — worst-case assumption per ADR 023).
 
 **Aggregate-load assessment**: at 100 RPS worst case, ~10% of one EB CPU core
-is consumed by mirror overhead. EB instance class is `t3.small` (2 vCPU);
-worst-case is ~5% of the EB instance. Acceptable. At realistic 1–10 RPS,
-overhead is ≤ 1% — well within noise.
+is consumed by mirror overhead. At realistic 1–10 RPS, overhead is ≤ 1% — well
+within noise.
+
+**Corrected 2026-07-31.** This paragraph originally said "EB instance class is
+`t3.small` (2 vCPU); worst-case is ~5% of the EB instance." Production actually
+runs **`t2.nano` (1 vCPU)** — verified against the live environment, which lists
+`t2.nano` for `InstanceType` and `t2.nano, t3.nano` for `InstanceTypes`. So the
+worst case is ~10% of the instance rather than ~5%, and burstable CPU credits
+matter far more than the original figure implied.
+
+Measured before enabling the v4 soak, so the correction is grounded rather than
+merely arithmetic: CPU utilisation runs 0.36–0.45% average over six hours, and
+`CPUCreditBalance` sits pinned at 144 — the `t2.nano` maximum — with
+`CPUSurplusCreditBalance` at zero. Consumption is roughly a tenth of the 5%
+baseline allowance, and credits accrue to the cap rather than draining. The
+mirror overhead is comfortably absorbed. The wrong instance class was a real
+documentation defect, but the risk it implied does not materialise.
 
 ### Primary-path invariant
 
@@ -182,18 +207,63 @@ is gated off until the cause is investigated and remediated.
 
 ### Soak Gate
 
-Cutover (ADR 029 step 7) proceeds **only after both** of these are true:
+**Rewritten in place 2026-07-31.** This section previously read "read-shadow has
+been enabled in production for ≥ 48 hours." Both soaks actually run under it —
+v2 in May, v3 on 2026-07-10 to 2026-07-14 — ran roughly one day. The written
+gate was under-run twice without amendment, because the amendments recording
+what actually happened were appended to Confirmation while this section kept
+saying 48 hours in normative voice. A reader who opened this section acted on
+stale text.
 
-1. **Read-shadow has been enabled in production for ≥ 48 hours** of business
-   traffic against the v2 cluster.
-2. **A baseline-vs-target k6 run shows v2 p95 ≤ 1.5× v1 p95** (i.e., v2
-   search p95 ≤ ~1,100 ms given v1's 741 ms baseline). Configurable per
-   migration; the 1.5× multiplier reflects "comparable but with some headroom
-   for transient v2-side variance."
+Read honestly, that is not two people cutting corners. A clock was never the
+thing anyone cared about: 48 hours was a **proxy for warmth**, and both soaks
+stopped when the evidence said the target was warm. The correction below is
+therefore a **change of measurand, not a relaxation of the bar** — criteria 1
+through 3 are strictly harder to satisfy than waiting, because a clock can be
+satisfied by an idle window and these cannot.
 
-If the soak gate is not met after 48 hours, extend the soak window (up to
-1 week). If still not met after 1 week, escalate to Option 4 (force-merge)
-or Option 5 (bigger instances) before any cutover.
+Cutover (ADR 029 step 7) proceeds **only after all** of these are true:
+
+1. **Coverage, measured on the target.** The shadow target's
+   `_nodes/stats/indices/search.query_total` has grown over the window by at
+   least the primary's `query_total` delta over the same window — mirror
+   _parity_, not merely non-zero — and the target-side SearchRate liveness
+   alarm has recorded no ALARM transition across the window. Measuring on the
+   target is the whole point: every blind spot in P035's inventory lives inside
+   the application's swallow path, so any app-reported figure can be healthy
+   while nothing is mirrored.
+
+2. **Parity.** Zero shadow failures and `lastError == null` throughout, and
+   primary/target document-count parity held for the window's **duration**,
+   not merely checked at its start.
+
+3. **Warmth convergence — this is what "48 hours" was a proxy for.** The
+   target's `SearchLatency` p90 over the trailing 6 hours is within 10% of the
+   preceding 6 hours: the improvement curve has flattened. Warmth is an
+   asymptote, not a duration. Gate on the asymptote and the duration becomes a
+   consequence rather than a guess.
+
+4. **Time floor, with a diurnal requirement.** Not less than 24 hours **and
+   spanning at least one full business-hours peak**. A bare 24-hour floor is
+   satisfiable by a mostly-overnight window, which does not exercise the
+   production query distribution — and distribution realism is the entire
+   reason read-shadow was chosen over Option 2's replay.
+
+5. **k6 parity, baseline re-derived.** Target p95 ≤ 1.5× a **freshly measured**
+   primary-side baseline, captured immediately before the cutover. The
+   inherited 1,443 ms threshold is **retired**: it descends from the long-gone
+   v1 961.64 ms baseline and carries 4-6.6× slack against figures actually
+   measured since, so it could not fail and therefore gated nothing.
+
+**Interruption clause.** The window tolerates one bounded, instrumented
+interruption for the shadow-off leg of ADR 033's primary-path invariant
+measurement. Coverage under criterion 1 is evaluated over the enabled portion.
+Without this clause, "continuously enabled" and "measure the off/on delta"
+would contradict each other.
+
+If the gate is not met after 48 hours, extend the soak window (up to 1 week).
+If still not met after 1 week, escalate to Option 4 (force-merge) or Option 5
+(bigger instances) before any cutover.
 
 ### Where the code lives
 
@@ -294,6 +364,16 @@ or Option 5 (bigger instances) before any cutover.
 
 > **Amendment 2026-05-14** — capability is in **default-off posture**. ADR 029 Phase 1 was rolled back; `ADDRESSR_SHADOW_*` env vars removed from the EB resource in `deploy/main.tf`; `src/read-shadow.js`'s `mirrorRequest` no-ops when `ADDRESSR_SHADOW_HOST` is unset. The capability remains shipped and tested in code (no change to `src/`, no change to `test/`); a future search-backend migration re-enables it by reintroducing the env-var block. No status change to this ADR.
 >
+> **Amendment 2026-07-31 (re-enabled onto v4 for the ADR 041 blue/green)** — read-shadow is enabled for the **third** migration, now mirroring production reads onto v4 (`addressr6`) to warm it before the ADR 041 cutover flips `ELASTIC_HOST`. v3 (`addressr5`) remains primary throughout. The `ADDRESSR_SHADOW_*` block is reintroduced in `deploy/main.tf` with `AUTH_MODE=sigv4` and no USERNAME/PASSWORD, and the release smoke's `hostSet` assertion is flipped back to `true` in the same commit — landing the deploy without that flip would have failed its own smoke gate, since a `deploy/**` push on master satisfies the smoke step's trigger. Warming is not precautionary: green had never served a real query, ADR 004 deploys at `BatchSize=100%` with no traffic ramp, and `/health` is a `ping()` that cannot detect slow, so a cold cutover would move all production traffic onto a cold page cache with no automatic protection — the recorded ADR 029 2026-07-09 failure.
+>
+> **Soak clock started 2026-07-31.** Quiescence verified first, per the 2026-07-06 amendment written from the failure where bulk-index contention drove shadow success from 95% to 52% and invalidated that soak: v4 `index_current=0`, `is_throttled=false`, and document counts at exact parity — `addressr` 16,905,824 on both domains, `addressr-localities` 17,578 on both, at matching 5 shards / 1 replica.
+>
+> Two controls landed alongside, both discharging long-deferred P035 items. The release smoke's `lastError.class` assertion previously accepted **any** member of the closed enum, `AuthError` included — the mechanism by which the 2026-05-11 regression ran at a 96.5% AuthError rate for eight days behind a green build (P035 BS-5). It now requires `lastError == null` and `failures == 0` as hard gates. And a target-side `SearchRate` liveness alarm (`addressr-v4-shadow-search-rate-floor`) now watches v4 from outside the application, which is the only vantage point immune to all four P035 blind spots at once; its old blocker — no SNS topic with a real subscriber — was removed by ADR 041.
+>
+> `successes > 0` is deliberately **reported, not gated**. The smoke's own calls never reach `/addresses` (the ADR 024 bypass probe returns 401 without searching), so it depends on real traffic landing in the deploy-to-smoke window, and a cumulative-since-boot counter read once cannot distinguish "mirroring now" from "mirrored once at boot" (P035 BS-1) in any case. The honest consequence is that the tightened gate is **vacuously satisfiable** by a shadow invoked zero times — accepted only because the SearchRate alarm answers that question continuously from outside, leaving a bounded ~30-minute window in which a dead shadow could read healthy. Immaterial against a multi-day soak.
+>
+> No status change to this ADR. But note this is the third migration at which read-shadow has proved its worth, so the promote-to-`accepted` reassessment trigger below has now fired twice over.
+
 > **Amendment 2026-07-10 (shadow served its purpose, removed post-cutover)** — the ADR 029 v2 cutover succeeded (production now serves OpenSearch 2.19; SearchRate confirms traffic moved to addressr4). The read-shadow did exactly its ADR 031 job: it warmed v2 with real production query distribution across the re-attempt soak (0 auth failures throughout), which surfaced the t3.small capacity ceiling and let m6g.large's parity be measured — all before any consumer traffic moved. Post-cutover v2 is primary, so the shadow would only mirror v2→v2 (redundant). The `ADDRESSR_SHADOW_*` targeting is removed from `deploy/main.tf` and the release smoke's `hostSet` assertion flipped back to `false`. Same default-off ledger as the 2026-05-14 removal; capability stays shipped for the eventual Phase 2 (2.19 → 3.x) migration. No status change to this ADR.
 
 This ADR's outcome is satisfied when:
@@ -327,8 +407,19 @@ This ADR's outcome is satisfied when:
   pathological 100%-401 case where invocations occurred and primary responses
   were unaffected (all swallowed via `swallowError`) yet zero cache warming
   happened. Concrete check: `aws elasticbeanstalk describe-configuration-settings`
-  for `ADDRESSR_SHADOW_*`, then `curl -u USER:PASS https://${ADDRESSR_SHADOW_HOST}/addressr/_count`
-  must return 200. If 401, soak window is invalid; restart after fixing creds.
+  for `ADDRESSR_SHADOW_*`, then a direct `_count` against
+  `https://${ADDRESSR_SHADOW_HOST}/addressr/_count` must return 200. If 401 or
+  403, the soak window is invalid; restart after fixing auth.
+
+  **Restated for SigV4 2026-07-31.** This check originally prescribed
+  `curl -u USER:PASS`, which is wrong against a credential-less IAM target and
+  would fail for the wrong reason. Under `ADDRESSR_SHADOW_AUTH_MODE=sigv4` the
+  probe must be SigV4-signed as a principal the target's access policy admits —
+  `awscurl --service es`, or any signed client. Note the failure is now **403**
+  rather than 401 when the identity half is missing, and `classifyError` maps
+  both to `AuthError`, so the symptom is identical from inside the app. That is
+  exactly why this check probes the target directly instead of trusting
+  `/debug/shadow-config`.
 
 ## Reassessment Criteria
 
