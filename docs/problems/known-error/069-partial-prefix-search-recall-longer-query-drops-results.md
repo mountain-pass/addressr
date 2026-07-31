@@ -163,7 +163,7 @@ Playbook steps 1-4 complete. The step-5 relevance gate previously read FAILED on
 | 1. Provision blue domain quiet       | Done — `addressr6`, OpenSearch 3.5, `m6g.large.search` x2, 20 GB gp3. EB `ELASTIC_HOST` never touched, still `addressr5`.                                                                                                                                                                                                                                                                                                                                       |
 | 2. Full load, `replicas: 0`          | Done — ~9.5h, locally over SigV4. Only logged error was the benign `Counts.csv` ENOENT that `fileExists` handles by design.                                                                                                                                                                                                                                                                                                                                     |
 | 3. Validate                          | Done — **exact doc parity 16,905,824** on both domains; localities 17,578; replicas raised to 1; cluster **green**, zero unassigned.                                                                                                                                                                                                                                                                                                                            |
-| 4. Read-shadow                       | **Running since 2026-07-31 02:45Z.** Verified mirroring: `successes == attempts`, 0 failures, `lastError` null. Target-side parity measured over 3 min — v3 +35 queries, v4 +35.                                                                                                                                                                                                                                                                                |
+| 4. Read-shadow                       | **Running since 2026-07-31 02:45Z.** Verified mirroring: `successes == attempts`, 0 failures, `lastError` null. Target-side coverage verified as **mirror parity** — v4's `query_total` growth matched v3's exactly over the sample window (ratio 1.00). Expressed as a ratio deliberately: raw counts over a stated window are a production traffic volume, which RISK-POLICY classes as confidential in this public repo.                                     |
 | 5. Relevance gate                    | **Passed on the measurement that matters.** 13 of 14 SSLA-14 queries hold. The 14th (`16 Gaze Rd Christmas Island`) flips one street-level case, but a 145-address blast-radius sample shows production violating the same invariant on **73/145 (50.3%)** against ADR-041's **71/145 (49.0%)** — aggregate-neutral-to-better, so it is not a regression. The ~50% baseline violation is P074, a pre-existing defect this migration exposed rather than caused. |
 | 6-9. Cutover, rollback, decommission | Gated on the ADR-031 soak gate (rewritten in place 2026-07-31: coverage, parity, warmth convergence, a >=24h floor spanning a business-hours peak, and re-derived k6), plus Cucumber `test:nogeo`/`test:geo` against the green domain and the ADR-033 primary-path invariant pair.                                                                                                                                                                              |
 
@@ -200,6 +200,70 @@ SEARCH "55 Harris S"         : 55@0 HARRIS@1 S@2
 - The SNS subscription for `addressr-search-ops` was still `PendingConfirmation` throughout the load, so the doc-count trip-wire alarms reached nobody during a ~9.5h unattended window. Confirm the subscription before the next long-running step.
 - The loader runs `x64` node under Rosetta on Apple Silicon (see `reference_env_arch_and_skill_tool`), which is why throughput was ~20-100k/min rather than better.
 - `addressr6` is loaded, green, and costing money. It is the correct green domain to cut over **once P073 is resolved** — do not tear it down and do not reload it unless the fix is index-time.
+
+## Cutover runbook (written 2026-07-31 while the soak runs)
+
+Written now, while the evidence is fresh, so the next session executes rather
+than reconstructs this from three ADRs and a playbook. Every path, role name and
+variable below was verified against the tree on 2026-07-31.
+
+**Do not start until all five ADR-031 Soak Gate criteria pass.** As of ~2 h into
+the soak: criteria 1 and 2 hold, criterion 3 (p90 flattening) does **not** —
+green's p90 has fallen to roughly 1.10x blue's and is still descending rather
+than flat. Criterion 4 (≥24 h spanning a business-hours peak) elapses no earlier
+than ~02:45Z 2026-08-01.
+
+### Step 0 — gate
+
+- Re-read `/debug/shadow-config`: `failures` 0 and `lastError` null, sampled several times (counters are cumulative-since-boot, and each read hits one ASG instance at random — P035 BS-1 and BS-4).
+- Target-side coverage: v4 `_stats/search` `query_total` growth **within 1% of** v3's over the same window. Express and record this as a ratio, never as raw counts — counts over a stated window are a production traffic volume and RISK-POLICY classes those as confidential in this public repo (see R004, R011, R016).
+- Warmth: v4 `SearchLatency` p90 flat within 10% across the trailing 6 h **and** within 1.5x of v3's concurrent p90 on the parity dashboard.
+- `addressr-v4-shadow-search-rate-floor` recorded no ALARM transition across the window.
+
+### Step 1 — fresh blue-side k6 baseline
+
+ADR-041 requires the k6 pass condition be re-derived from a baseline **measured
+immediately before this cutover**. The inherited 1,443 ms threshold is retired
+and must not be reused — it descends from a long-gone v1 figure and carries so
+much slack it could not fail. Run blue, record p95, set the green gate at 1.5x.
+
+### Step 2 — the cutover commit
+
+One commit, all of it, because a partial landing leaves the writer and the
+reader pointed at different domains:
+
+1. `deploy/main.tf` — `ELASTIC_HOST` from `module.opensearch_v3.endpoint` to `module.opensearch_v4.endpoint`. A **module output, not a variable**, so no Terraform variable and no GitHub secret is involved on the read path.
+2. `deploy/vars.tf` — `v4_searchable_documents_floor` 1,000,000 → 15,000,000, now that v4 is populated and primary. Leave `v3_searchable_documents_floor` alone until v3 is decommissioned.
+3. `deploy/main.tf` — retire or repoint `addressr-v4-shadow-search-rate-floor`. Once v4 is primary its search rate is production's, not the shadow's, so the floor is meaningless and will sit in ALARM.
+4. `.github/workflows/release.yml` — flip the smoke `hostSet` assertion back to `false`, since a v4→v4 shadow is redundant.
+5. `deploy/main.tf` — remove the five `ADDRESSR_SHADOW_*` settings.
+
+### Step 3 — writer retarget, and the one real secret prerequisite
+
+`.github/workflows/reusable-update.yml` resolves its target in a hard-coded
+branch that **errors on anything but `v3`** (`::error::Unsupported target`). It
+needs a `v4` arm added, mirroring the v3 one: host from `TF_VAR_ELASTIC_V4_HOST`,
+role `gha-v4-loader` — which already exists (`aws_iam_role.gha_v4_loader`,
+`deploy/oidc.tf`) and already holds `es:ESHttp*` on the v4 domain.
+
+Then flip `target: v3` to `target: v4` in the **nine** `update-<state>.yml` crons
+and in `populate-search-domain.yml`.
+
+**`TF_VAR_ELASTIC_V4_HOST` must be set as a GitHub Actions secret before this
+step**, or the v4 arm fails its own non-empty guard. Note the asymmetry, because
+it is easy to get backwards: the **read** path needs no secret because Terraform
+resolves the endpoint from a module output; only the **writer** path needs one,
+because GitHub Actions has no Terraform state to read from.
+
+### Step 4 — verify, then exercise rollback
+
+- Goal condition 1 against the **live** endpoint: `55 Pyrmont Bri` returns `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009`, and `55 Harris S` returns `55 HARRIS ST, PYRMONT NSW 2009`. Both return zero results on blue today and resolve at rank 1 on green.
+- Then **exercise** rollback rather than trusting it: flip `ELASTIC_HOST` back to v3, observe, flip forward to v4, observe. Both directions, results recorded. v3 stays warm throughout because it serves until the moment of the flip, which is what makes the rollback zero-outage.
+- Only after that is v3 eligible for decommission — and not in the same commit.
+
+### Step 5 — close out
+
+Transition P069 to Verification Pending citing the release, and reply on #365.
 
 ## Dependencies
 
