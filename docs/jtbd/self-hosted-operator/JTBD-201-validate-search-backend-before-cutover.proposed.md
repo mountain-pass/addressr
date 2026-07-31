@@ -29,9 +29,9 @@ When the warming capability is enabled in production, I want the consumer-facing
 
 - Default off — self-hosters and dev environments are unaffected
 - One env var (`ADDRESSR_SHADOW_HOST`) gates the feature; partial credential configuration fails at startup
-- Primary-path p95 increases by ≤ 1 ms when shadow is enabled vs disabled (verified by back-to-back k6 baselines)
+- Primary-path p95 increases by ≤ 1 ms when shadow is enabled vs disabled (verified 2026-07-31 by a controlled shadow-off/shadow-on A/B plus a signing microbenchmark; the k6 pair was retired as unfit at ~50× insufficient resolution)
 - Shadow target failure (timeout, error, connection refused, 5xx) cannot impact the primary response or crash the addressr process
-- A documented soak gate (≥ 48 hours of business traffic + p95 within 1.5× of v1 baseline) before cutover ships
+- A documented soak gate (coverage, parity, warmth convergence, a ≥ 24 h floor spanning a business-hours peak, and p95 within 1.5× of a freshly re-derived baseline) before cutover ships
 - Capability persists in the codebase across migrations — no rebuild for Phase 2
 
 ## Persona Constraints

@@ -155,13 +155,118 @@ the fire-and-forget call):
 | `AbortController` construct + `setTimeout(3000)` schedule + `.catch` attach                                                              | ~0.02 ms              |
 | **Net synchronous primary-thread delta**                                                                                                 | **~0.5–1.0 ms / req** |
 
+**MEASURED 2026-07-31 — the estimate above is roughly 10× too pessimistic, and
+the primary-path invariant is discharged.** ADR 033 Confirmation item 5 owed a
+shadow-off vs shadow-on comparison with SigV4 enabled; this is it. It was
+deliberately **not** taken as the production k6 pair originally prescribed — see
+"Primary-path invariant" below for why that instrument cannot resolve a 1 ms
+signal, and what replaced it.
+
+The synchronous primary-path cost decomposes exhaustively into two steps, so
+each was measured where it can actually be resolved.
+
+_Mirror dispatch_ — a controlled A/B against a local server on the production
+engine version (OpenSearch 3.5.0), mirroring to a **separate** OpenSearch
+instance, 3,000 requests per replicate over a fixed query set reused
+byte-identically across both arms, three replicates each way. Arms were
+**blocked** (all three off, then all three on) rather than interleaved, with
+replicate _i_ of each arm compared position-for-position:
+
+| Arm        | p95 (replicates 2–3) | mean         |
+| ---------- | -------------------- | ------------ |
+| Shadow off | 5.45 ms              | 3.59 ms      |
+| Shadow on  | 5.54 ms              | 3.64 ms      |
+| **Delta**  | **+0.09 ms**         | **+0.05 ms** |
+
+Across all three replicates including the cold-JIT first run the p95 delta is
++0.002 ms.
+
+The separate-instance control is load-bearing and was found the hard way: a
+first harness that mirrored into the index the primary reads reported shadow-ON
+**1.5 ms faster**, reproducibly, because the shadow was pre-warming the
+primary's own cache. A reproducible "the change made it faster" result is the
+signature of a broken A/B, not a win.
+
+Mirroring was verified rather than assumed: the run ended at `attempts=9801,
+successes=9801, failures=0` — 9,000 measured requests plus 800 warm-up plus one
+readiness probe. `successes == attempts` also means every mirror returned 2xx,
+the P028 soak-validity property, here satisfied for the whole run.
+
+_SigV4 signing_ — 20,000 calls to the signer's `buildSignedRequestObject` over a
+representative address-search body (the real `bool_prefix`/`phrase_prefix`
+shape, ~400 bytes) after a 2,000-iteration warm-up, with a cached credential
+provider matching production's `defaultProvider()`: **0.010 ms per signature**,
+against ADR 033's estimated 0.1–0.5 ms.
+
+_Why the two compose._ Additivity here is structural, not assumed.
+`AwsSigv4SignerTransport.request` checks credential expiry synchronously and,
+whenever cached credentials are live — the steady state — calls `super.request`
+on the same stack, reaching `AwsSigv4SignerConnection.buildRequestObject` →
+`buildSignedRequestObject` synchronously
+(`@opensearch-project/opensearch/lib/aws/shared.js`). That function contains
+both the `sha256` body hash and `aws4.sign`, so the microbenchmark omits
+nothing. The SigV4 synchronous path is therefore exactly base-Connection
+dispatch — what the basic-auth arm measured, since the signer's Connection
+extends it — plus signing, plus a sub-microsecond expiry check. On the first
+request after boot and on each credential refresh the path goes async instead,
+carrying _less_ synchronous cost, so the sum is conservative.
+
+**Total measured delta ≤ ~0.1 ms p95, against the ≤ 1 ms invariant — passing
+with roughly 10× margin.** This retires the concern that stacking SigV4 onto the
+mirror dispatch pushed the combined band (0.6–1.5 ms) over the invariant at its
+top end. It never did; both source figures were explicitly flagged worst-case
+assumptions with no telemetry, and both were pessimistic by about an order of
+magnitude.
+
+Read that as an upper bound, not a point estimate. The mean-latency delta
+(+0.05 ms) is the tighter constraint — means are far less noisy than p95 at
+n=3,000 — and the sign pattern is decisive: shadow-ON was _faster_ in two of the
+three position-matched replicate pairs. A true shift near the 1 ms gate would
+raise all three on-arms by ~1 ms. The honest conclusion is that the added cost
+is **below this harness's noise floor**, which is sufficient for a ≤ 1 ms gate
+and would not be sufficient for a substantially tighter one.
+
+Three caveats worth carrying. The dispatch leg ran with basic auth against a
+local target, so it excludes real network RTT to an in-region AWS domain — but
+that cost is asynchronous, landing on the event loop after the detached promise
+rather than on the synchronous primary-request path the invariant governs; its
+aggregate cost is the RPS table below. The blocked arm ordering controls drift
+less well than interleaving would; it is adequate at a 10× margin and would not
+be at a tight one. And production ALB p95 cannot cross-check this: it swings
+50–200 ms in 15-minute buckets, so a 1 ms signal is ~50× below its resolution.
+
+If the caveats ever become load-bearing — say the invariant is tightened below
+~0.5 ms — the escalation is in-app `hrtime` instrumentation around the primary
+handler reported as a percentile, which would measure under real traffic, real
+SigV4 and real RTT. That was not done here because it means adding timing code
+to the hot path during a live soak, and it cannot change a verdict with 10×
+headroom.
+
+This discharges **only** the primary-path invariant. Soak-gate criterion 5
+(target p95 ≤ 1.5× a freshly re-derived primary baseline) is a different k6 and
+is still owed pre-cutover. The Interruption clause below reserved a bounded
+soak interruption for the shadow-off leg; because the measurement moved off
+production, **that interruption was never taken** — the soak window has no hole
+in it.
+
+Harness: `test/perf/read-shadow-invariant-ab.mjs`,
+`test/perf/sigv4-signing-bench.mjs`, `test/perf/README.md`.
+
 Steady-state memory at N RPS (timer + socket + promise overhead):
 
-| RPS | Outstanding timers | Outstanding sockets | Approx CPU on primary |
-| --- | ------------------ | ------------------- | --------------------- |
-| 1   | ~3                 | ~3                  | < 0.1% of one core    |
-| 10  | ~30                | ~30                 | ~1% of one core       |
-| 100 | ~300               | ~300                | ~10% of one core      |
+| RPS | Outstanding timers | Outstanding sockets | Approx CPU on primary (estimated) | **Measured 2026-07-31** |
+| --- | ------------------ | ------------------- | --------------------------------- | ----------------------- |
+| 1   | ~3                 | ~3                  | < 0.1% of one core                | ~0.009% of one core     |
+| 10  | ~30                | ~30                 | ~1% of one core                   | ~0.09% of one core      |
+| 100 | ~300               | ~300                | ~10% of one core                  | **~0.9% of one core**   |
+
+The measured column is the estimate column recomputed from the +0.09 ms
+measured dispatch delta rather than the struck 0.5–1.0 ms estimate. It is
+carried here rather than only in the MEASURED block above because **the
+aggregate is the sizing input a reader actually uses** — the same discipline
+applied to ADR 033's counterpart table, and correcting only the per-request
+figure would have left the misleading number standing where it does the most
+harm.
 
 Outbound bandwidth: ~1–2 KB query body per request × 2× (primary + shadow).
 At 100 RPS, ~200 KB/s outbound to v2 shadow target. Intra-region traffic
@@ -173,37 +278,56 @@ data; the figures above use a worst-case 100 RPS sustained. Actual addressr
 production RPS is expected to be 1–10 RPS based on RapidAPI typical mid-tier
 API load (no data — worst-case assumption per ADR 023).
 
-**Aggregate-load assessment**: at 100 RPS worst case, ~10% of one EB CPU core
-is consumed by mirror overhead. At realistic 1–10 RPS, overhead is ≤ 1% — well
-within noise.
+**Aggregate-load assessment**: ~~at 100 RPS worst case, ~10% of one EB CPU core
+is consumed by mirror overhead. At realistic 1–10 RPS, overhead is ≤ 1%~~ —
+**measured 2026-07-31 at ~0.9% of one core at the 100 RPS worst case, and
+~0.009–0.09% at the realistic 1–10 RPS.** Well within noise, by a wider margin
+than the estimate claimed.
 
 **Corrected 2026-07-31.** This paragraph originally said "EB instance class is
 `t3.small` (2 vCPU); worst-case is ~5% of the EB instance." Production actually
 runs **`t2.nano` (1 vCPU)** — verified against the live environment, which lists
-`t2.nano` for `InstanceType` and `t2.nano, t3.nano` for `InstanceTypes`. So the
-worst case is ~10% of the instance rather than ~5%, and burstable CPU credits
-matter far more than the original figure implied.
+`t2.nano` for `InstanceType` and `t2.nano, t3.nano` for `InstanceTypes`. On one
+vCPU the estimated worst case would have been ~10% of the instance rather than
+~5%, so burstable CPU credits mattered more than the original figure implied.
+Measurement then moved the number again, in the other direction: the true
+worst-case figure is **~0.9%**, because the per-request estimate this was
+derived from was itself ~10× pessimistic.
 
 Measured before enabling the v4 soak, so the correction is grounded rather than
 merely arithmetic: CPU utilisation runs 0.36–0.45% average over six hours, and
 `CPUCreditBalance` sits pinned at 144 — the `t2.nano` maximum — with
 `CPUSurplusCreditBalance` at zero. Consumption is roughly a tenth of the 5%
-baseline allowance, and credits accrue to the cap rather than draining. The
+baseline allowance, and credits accrue to the cap rather than draining. Note
+this observed figure is total application CPU, and it is already lower than the
+old estimate claimed the _mirror overhead alone_ would be — corroborating the
+recomputed ~0.9% rather than the struck ~10%. The
 mirror overhead is comfortably absorbed. The wrong instance class was a real
 documentation defect, but the risk it implied does not materialise.
 
 ### Primary-path invariant
 
 **With shadow enabled, /addresses and /addresses/{id} p95 must not increase
-by more than 1 ms vs shadow disabled.** Verified by:
+by more than 1 ms vs shadow disabled.**
 
-- A baseline k6 run with shadow OFF (already captured: search p95=741 ms,
-  retrieve p95=36 ms — see `target/stress-v1.csv` 2026-04-29).
-- A confirmation k6 run with shadow ON pointing at v2 (executed pre-cutover
-  to verify the invariant).
+**Discharged 2026-07-31 — by controlled harness, not the k6 pair this section
+originally prescribed.** The original method (a baseline k6 run with shadow OFF
+against `target/stress-v1.csv`, then a confirmation k6 run with shadow ON) is
+**retired as unfit**: production ALB p95 swings 50–200 ms in 15-minute buckets —
+verified against real pre-deploy data, not assumed — so a 1 ms signal sits ~50×
+below the instrument's resolution, and the shadow-off leg would have cost two EB
+deploys plus a mirroring hole in a running soak. A criterion naming an
+instrument with 50× insufficient resolution gates nothing, which is the same
+defect that retired the inherited 1,443 ms k6 threshold in the Soak Gate below.
 
-If the post-shadow-on k6 run shows primary p95 increase > 1 ms, read-shadow
-is gated off until the cause is investigated and remediated.
+The invariant is instead discharged by a decomposed controlled A/B (mirror
+dispatch) plus a signing microbenchmark — see the MEASURED block under
+Quantification. Result: **≤ ~0.1 ms p95, roughly 10× under the gate.** This is a
+change of instrument, recorded — not a criterion waived; the substituted method
+resolves the signal the prescribed one could not.
+
+If a future measurement shows primary p95 increase > 1 ms, read-shadow is gated
+off until the cause is investigated and remediated.
 
 ### Soak Gate
 
@@ -261,7 +385,7 @@ measurement. Coverage under criterion 1 is evaluated over the enabled portion.
 Without this clause, "continuously enabled" and "measure the off/on delta"
 would contradict each other.
 
-If the gate is not met after 48 hours, extend the soak window (up to 1 week).
+If the gate is not met once the criteria-1-5 window has elapsed, extend the soak window (up to 1 week).
 If still not met after 1 week, escalate to Option 4 (force-merge) or Option 5
 (bigger instances) before any cutover.
 
@@ -301,9 +425,11 @@ If still not met after 1 week, escalate to Option 4 (force-merge) or Option 5
 
 ### Bad
 
-- Adds ~0.5–1.0 ms to primary `/addresses` p95 when shadow is on. User
-  approved this overhead on 2026-04-29; tracked under JTBD-001's hot-path
-  invariant.
+- Adds ~~0.5–1.0 ms~~ **≤ ~0.1 ms measured 2026-07-31** to primary `/addresses`
+  p95 when shadow is on. User approved this overhead on 2026-04-29; tracked
+  under JTBD-001's hot-path invariant. The approval stands and is still the
+  governing record — only the magnitude was wrong, and it was pessimistic by
+  roughly 10×. See § Quantification.
 - Process gains one more failure mode: misconfigured USERNAME/PASSWORD pair
   fails startup. Same shape as ADR 024's mitigation — fail-loud is preferred
   to silent half-enable.
@@ -358,7 +484,7 @@ If still not met after 1 week, escalate to Option 4 (force-merge) or Option 5
 
 ## Confirmation
 
-> **Baseline note 2026-07-07** — the 741 ms v1 p95 figure quoted in the Soak Gate and Confirmation examples below is the 2026-04-29 measurement, since **replaced**: the refreshed baseline is search p95 961.64 ms (see ADR 029 re-attempt amendment item 5), making the current gate v2 p95 ≤ ~1,443 ms. The 1.5× formula is normative; the absolute figures are illustrative.
+> **Baseline note 2026-07-07** — the 741 ms v1 p95 figure quoted in the Soak Gate and Confirmation examples below is the 2026-04-29 measurement, since **replaced**: the refreshed baseline is search p95 961.64 ms (see ADR 029 re-attempt amendment item 5), ~~making the current gate v2 p95 ≤ ~1,443 ms~~ — **that 1,443 ms gate is retired** (Soak Gate criterion 5): it descends from a baseline that is itself long gone, and carries so much slack against figures measured since that it could not fail. The 1.5× formula is normative and survives; the absolute figures are illustrative and must be re-derived fresh immediately before each cutover.
 
 > **Amendment 2026-07-06** — ADR 029 Phase 1 re-attempt: shadow enable is **deferred until the v2 populate completes and validates** (quiet-populate-first sequencing per the ADR 029 re-attempt amendment 2026-07-06). The first attempt ran shadow during populate; bulk-index contention degraded shadow success 95% → 52% (I001) and invalidated the soak. Separating the windows means the soak clock only ever runs against a fully-populated, quiescent-indexing cluster. Soak gate, 2xx soak-validity check, and the 1.5× k6 threshold are unchanged.
 
@@ -395,10 +521,16 @@ This ADR's outcome is satisfied when:
 - A documented manual local two-OpenSearch probe demonstrates shadow requests
   hit the secondary backend (visible in `_nodes/stats/indices/search.query_total`
   on the shadow target).
-- Pre-cutover k6 baseline-vs-target run with shadow ON for ≥ 48 hours shows
-  v2 p95 ≤ 1.5× v1 p95.
-- Primary-path invariant (≤ 1 ms p95 delta with shadow on vs off) is verified
-  via a back-to-back k6 pair against v1 with shadow off vs on.
+- Pre-cutover k6 baseline-vs-target run with shadow ON, over a soak window
+  meeting the Soak Gate criteria above (≥ 24 h spanning a business-hours peak,
+  not the retired 48 h clock), shows target p95 ≤ 1.5× a **freshly re-derived**
+  primary baseline — not the retired v1 figure.
+- ~~Primary-path invariant (≤ 1 ms p95 delta with shadow on vs off) is verified
+  via a back-to-back k6 pair against v1 with shadow off vs on.~~ **DISCHARGED
+  2026-07-31 at ≤ ~0.1 ms p95 — roughly 10× under the gate.** The k6 pair is
+  retired as unfit for the measurement (~50× insufficient resolution); a
+  decomposed controlled A/B plus a signing microbenchmark replaced it. See
+  `### Primary-path invariant` and the MEASURED block under Quantification.
 - **Soak-validity check (added 2026-04-29 after P028)**: before declaring the
   soak window valid, verify that shadow requests are returning **2xx** on the
   shadow target — not just that mirror invocations are being attempted.

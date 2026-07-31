@@ -95,9 +95,9 @@ New prod dependency: `@aws-sdk/credential-provider-node` (the signer itself is a
 
 SigV4 adds per-request signing on the consumer-facing search path in prod:
 
-- **Per-request delta**: ~0.1–0.5 ms CPU (HMAC-SHA256 over the canonical request; credentials cached by `defaultProvider`, no per-request STS) + ~300–500 bytes of extra headers (`Authorization`, `x-amz-date`, `x-amz-content-sha256`). Memory negligible.
+- **Per-request delta**: ~~~0.1–0.5 ms CPU~~ **measured 2026-07-31 at 0.010 ms** (HMAC-SHA256 over the canonical request; credentials cached by `defaultProvider`, no per-request STS) + ~300–500 bytes of extra headers (`Authorization`, `x-amz-date`, `x-amz-content-sha256`). Memory negligible. The original figure was an unmeasured worst-case and is pessimistic by 10–50×; 20,000 signatures of a representative address-search body average 0.010 ms each. Corrected here rather than only in ADR 031, so the wrong number does not stay live as a sizing input — the same discipline the `t3.small`/`t2.nano` correction taught.
 - **Frequency**: no telemetry attached — worst-case 100 RPS; realistic 1–10 RPS (per ADR 031's assumption).
-- **Aggregate**: at 100 RPS worst-case ~5% of one core (~2.5% of the t3.small 2-vCPU); ≤0.5% at realistic load. Egress ~50 KB/s worst-case — trivial.
+- **Aggregate**: ~~at 100 RPS worst-case ~5% of one core (~2.5% of the t3.small 2-vCPU); ≤0.5% at realistic load~~ **recomputed 2026-07-31 from the measured 0.010 ms/signature**: at 100 RPS worst-case ~1.0 ms CPU per wall-clock second, i.e. **~0.1% of one core**; at realistic 1–10 RPS, ~0.001–0.01%. Two corrections in one line — the old aggregate was derived from the struck 0.1–0.5 ms estimate and so ran ~50× high, and it cited `t3.small` (2 vCPU) when production runs **`t2.nano` (1 vCPU)**, the same live-wrong-instance-class defect corrected in ADR 031. The aggregate is the sizing input a reader actually uses, so correcting only the per-request figure would have left the misleading number in place. Corroborated by the live environment at 0.36–0.45% total CPU with `CPUCreditBalance` pinned at its 144 maximum. Egress ~50 KB/s worst-case — unaffected, trivial.
 - **Same order as the read-shadow overhead already approved 2026-04-29.** Re-verify ADR 031's primary-path invariant (≤1 ms p95 delta) with SigV4 on before relying on it.
 
 ## Consequences
@@ -117,7 +117,7 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 
 ### Bad
 
-- Adds ~0.1–0.5 ms per-request SigV4 CPU on the consumer search path (quantified above; re-verify the ADR 031 invariant).
+- Adds ~~~0.1–0.5 ms~~ **0.010 ms measured** per-request SigV4 CPU on the consumer search path (quantified above). The ADR 031 invariant was re-verified on 2026-07-31 and passes at ≤ ~0.1 ms total, roughly 10× under the 1 ms gate.
 - **Does not fix the P035 index-deletion symptom** — tracked separately.
 - Local-load makes the operator machine a required participant for the populate (laptop must stay awake for the run) — accepted per the quota directive; an EC2-in-region loader is a documented alternative if laptop-bound runs prove impractical.
 
@@ -127,7 +127,14 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 - `client/elasticsearch.js` selects SigV4 vs basic on `ELASTIC_AUTH_MODE`, default basic; unit-tested both branches (TDD).
 - A local `babel-node loader.js` run with `ELASTIC_AUTH_MODE=sigv4` authenticates against the recreated `addressr4` and indexes documents (SigV4 as the operator identity).
 - Cucumber `test:nogeo` stays green with `ELASTIC_AUTH_MODE` unset (basic-auth default preserved).
-- ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.
+- ~~ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.~~ **DISCHARGED 2026-07-31 at ≤ ~0.1 ms p95, roughly 10× under the gate.**
+
+  Read literally this criterion asks for one measurement with SigV4 on. It was met by a decomposed one, and the substitution is recorded here rather than left for a reader to reconcile: mirror dispatch was measured by a controlled shadow-off/shadow-on A/B (basic auth, separate shadow instance, three replicates each arm) at +0.09 ms p95, and SigV4 signing was measured separately at 0.010 ms per signature.
+
+  The decomposition is exhaustive rather than convenient. Under SigV4 the synchronous path is base-Connection dispatch plus signing plus a sub-microsecond credential-expiry check: `AwsSigv4SignerTransport.request` calls `super.request` on the same stack whenever cached credentials are live, reaching `buildSignedRequestObject` — which contains both the `sha256` body hash and `aws4.sign` — synchronously. `AwsSigv4SignerConnection` extends the base `Connection`, so the basic-auth arm measured exactly the non-signing term. There is no third term.
+
+  The prescribed production k6 pair was not used: production ALB p95 swings 50–200 ms in 15-minute buckets, so a 1 ms signal sits ~50× below its resolution. Full figures, caveats and harness paths in ADR 031 `### Quantification`. Retires R005.
+
 - Broken `addressr4` destroyed and recreated under the new security-options + scoped policy (toggling FGAC is the AWS-side reconfiguration class 2 of 3 P036 clobbers followed — recreate, do not reconfigure in place, per ADR 030).
 
 ## Amends
