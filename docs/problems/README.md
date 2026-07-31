@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-31 **P073 downgraded, P074 captured — the P069 cutover is NOT blocked** — measuring P073's blast radius reversed its premise. Sampling 145 street-level addresses that also have sub-units, identical sample and query on both domains: production violates the ADR-025 street-level-first invariant on **73/145 = 50.3%**, and the ADR-041 index on **71/145 = 49.0%**. ADR-041 is marginally BETTER in aggregate, not worse, so holding the migration on one flipped case was the wrong call and P073 drops from High (12) to Low (4). The real finding is **P074**: P007 is substantially unfixed on the revenue endpoint and has been invisible because the SSLA-14 baseline and the Cucumber scenarios pin instances that happen to work rather than the property itself. Confirmed through the live RapidAPI endpoint, not just the backend — `8 WATERS RD, NEUTRAL BAY NSW 2089` returns eight UNIT records and never the street-level address, every one scoring an identical 53.560207, which is the tell: the sub-units tie, the sort tie-break decides, and the street-level doc is not in contention at all. That is a different and worse failure than P073's narrow margin inversion. Small corpora give a false clean bill of health — OT (5,186 docs) and TAS (375,613) both measure 0% violations, because the failure concentrates in dense metro addresses. Testing another state was the user's suggestion and is what exposed all of this. The ADR-042 supersession of ADR-041 drafted earlier was reverted unpushed, since its justification rested on P073 blocking the cutover.
+> Last reviewed: 2026-07-31 **P075 + P076 captured** — ADR-041 inverts one exact-vs-range pair, and an ADR Confirmation item was prescribed but never implemented (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -23,9 +23,11 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap       | Medium (8)   | Open        | M      | 2026-07-21 | internal                |
 | 4.0  | P007 | Exact street address ranked below sub-units (REOPENED)                | High (16)    | Known Error | L      | 2026-04-12 | internal                |
 | 4.0  | P074 | P007 street-level-first unfixed for ~50% of sub-unit addresses        | High (16)    | Open        | L      | 2026-07-31 | internal                |
+| 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented        | Medium (8)   | Open        | M      | 2026-07-31 | internal                |
 | 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open        | M      | 2026-07-30 | internal                |
 | 3.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | Medium (6)   | Open        | M      | 2026-04-28 | internal                |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open        | M      | 2026-07-16 | internal                |
+| 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open        | M      | 2026-07-31 | internal                |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open        | M      | 2026-07-19 | internal                |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open        | M      | 2026-07-19 | internal                |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open        | M      | 2026-07-31 | internal                |
