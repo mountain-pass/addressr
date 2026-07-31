@@ -1,6 +1,24 @@
 # Problem 007: Search scoring ranks exact address below sub-unit variants
 
-**Status**: Closed
+## REOPENED 2026-07-31 — the fix was verified on instances, not on the property
+
+Closed on the strength of ADR-025 (symmetric `ssla` indexing) plus the SSLA-14 baseline and Cucumber scenarios. Those gates all still pass. **The defect is nonetheless still live for about half of the affected addresses.**
+
+Measured against live production (`addressr5`) on 2026-07-31: 145 street-level addresses that also have sub-units, each queried exactly as written with no sub-unit token, checking whether the street-level record ranks first per ADR-025 Decision Driver 1.
+
+**73 of 145 = 50.3% return a sub-unit first.**
+
+Confirmed through the public RapidAPI endpoint, not only the backend. `8 WATERS RD, NEUTRAL BAY NSW 2089` returns eight UNIT records and never the street-level address, every one scoring an identical `53.560207`. The bare street-level document exists in the index and does not appear on the first page.
+
+**Why the closure held despite this.** The gates pin _instances_ that happen to work — `278 ROSS RIVER RD`, `19 MURRAY RD`, `16 GAZE RD` — rather than the _property_ ADR-025 Decision Driver 1 actually states. A green baseline was read as a fixed defect.
+
+**Why nobody noticed since.** The failure concentrates in dense metro addresses with many sub-units. Small corpora give a false clean bill of health: measured **0%** violations on both the OT fixture (5,186 docs) and a full TAS load (375,613 docs). Any local or fixture-scale reproduction will look healthy.
+
+Surfaced while measuring the blast radius of P073, which was itself opened on the mistaken premise that ADR-041 had introduced this. It had not — the ADR-041 index measures 71/145 (49.0%) on the identical sample, marginally better than production.
+
+Investigation, remediation and the fix decision are tracked on **P074**, which carries the full measurement and the open tasks. This ticket is reopened so the closure record does not stand as evidence that the defect is resolved.
+
+**Status**: Known Error — REOPENED 2026-07-31
 **Reported**: 2026-04-15
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)
 
