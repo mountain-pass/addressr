@@ -118,6 +118,23 @@ describe('terraform-plan.yml', () => {
     }
   });
 
+  it('refuses a ref whose deploy.sh would apply, before terraform runs', () => {
+    // The caller (deploy:plan) and the guard (deploy.sh's PLAN_ONLY branch) can
+    // land in either order across refs, and dispatch takes an ARBITRARY ref. On
+    // a ref without the branch, PLAN_ONLY is an unread variable and control
+    // falls through to `terraform apply -auto-approve`. This step is the only
+    // thing between a mis-selected ref and a production apply, so it must exist
+    // AND precede the plan step. Pinned so it cannot be dropped later as
+    // redundant.
+    const names = steps().map((x) => String(x.name ?? ''));
+    const guard = names.findIndex((n) => /Refuse to run against a ref/i.test(n));
+    const plan = names.findIndex((n) => /Terraform plan/i.test(n));
+    assert.ok(guard > -1, 'the fail-closed ref guard must exist');
+    assert.ok(plan > -1);
+    assert.ok(guard < plan, 'the guard must run before terraform does');
+    assert.match(steps()[guard].run, /grep -q 'PLAN_ONLY' deploy\/deploy\.sh/);
+  });
+
   it('cannot reach apply — the single gated path stays single', () => {
     // Executable content only. The header comment legitimately discusses
     // `terraform apply` when explaining what this workflow exists to avoid, and
@@ -133,5 +150,48 @@ describe('terraform-plan.yml', () => {
       !/deploy_only/.test(code),
       'must not invoke the release deploy path',
     );
+  });
+});
+
+describe('deploy.sh PLAN_ONLY branch', () => {
+  const sh = readFileSync('deploy/deploy.sh', 'utf8');
+
+  it('exits before the apply branch', () => {
+    // JTBD-400's single-gated-path outcome, as a checkable artefact rather than
+    // prose. This is the assertion that carries the weight: deploy.sh is the
+    // only place the PLAN_ONLY early exit and the apply branch coexist, so it
+    // is the only place the invariant can actually break. The workflow-side
+    // absence checks would not catch a reordering here.
+    const planOnly = sh.indexOf('PLAN_ONLY:-');
+    const apply = sh.indexOf('terraform apply');
+    assert.ok(planOnly > -1 && apply > -1);
+    assert.ok(
+      planOnly < apply,
+      'PLAN_ONLY branch must precede the apply branch',
+    );
+    assert.match(sh, /PLAN_ONLY[\s\S]{0,600}?exit 0/);
+  });
+
+  it('treats a changes-present plan (exit 2) as success', () => {
+    // -detailed-exitcode returns 2 when the plan HAS changes. Propagating that
+    // would fail the job in exactly the case the workflow exists to serve, and
+    // would skip the caller's assertion step, which is the real verdict.
+    assert.match(sh, /\[ "\$retVal" -eq 1 \] && exit 1/);
+  });
+
+  it('refuses to derive a workspace under PLAN_ONLY', () => {
+    assert.match(sh, /PLAN_ONLY requires an explicit TF_WORKSPACE/);
+  });
+
+  it('clears any stale plan before planning', () => {
+    assert.match(sh, /rm -f tfplan tfplan\.json/);
+  });
+
+  it('leaves deploy:prod behaviour unchanged', () => {
+    assert.match(
+      sh,
+      /TF_WORKSPACE="\$\{TF_WORKSPACE:-\$\{npm_lifecycle_event#deploy:\}\}"/,
+    );
+    assert.match(sh, /terraform apply -auto-approve -input=false/);
   });
 });
