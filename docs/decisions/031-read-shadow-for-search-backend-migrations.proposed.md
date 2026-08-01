@@ -352,20 +352,99 @@ Cutover (ADR 029 step 7) proceeds **only after all** of these are true:
    `_nodes/stats/indices/search.query_total` has grown over the window by at
    least the primary's `query_total` delta over the same window — mirror
    _parity_, not merely non-zero — and the target-side SearchRate liveness
-   alarm has recorded no ALARM transition across the window. Measuring on the
-   target is the whole point: every blind spot in P035's inventory lives inside
-   the application's swallow path, so any app-reported figure can be healthy
-   while nothing is mirrored.
+   alarm has recorded no ALARM transition across the window **that survives
+   triage**. Measuring on the target is the whole point: every blind spot in
+   P035's inventory lives inside the application's swallow path, so any
+   app-reported figure can be healthy while nothing is mirrored.
+
+   **Amended 2026-08-01 — three ALARM transitions are excluded from the ADR-041
+   soak window, and the clause is qualified so this is a rule rather than a
+   waiver.** The alarm flapped three times overnight on 2026-07-31/08-01, all
+   self-recovering. Triaged rather than assumed: the threshold was a placeholder
+   sitting _above_ the legitimate overnight trough, so it fired on quiet traffic
+   rather than on failure. The threshold was retuned the same day.
+
+   The evidence is split deliberately, because this criterion's own standard is
+   _target-side_. **Discharging the burden (target-side):** the v4 domain's
+   CloudWatch `SearchRate` stayed **non-zero** through the flap windows — the
+   domain was still being queried, so mirroring was reaching it. It sat _below_
+   the placeholder threshold, which is why the alarm fired; that is the defect
+   in the threshold, not evidence of a dead mirror. (An earlier draft of this
+   clause said the rate sat _above_ the threshold, which is self-contradictory:
+   a floor alarm cannot fire on a rate above its floor. Non-zero, not
+   above-threshold, is the load-bearing observation.) **Corroboration only (app-side):** shadow successes
+   rose monotonically with zero failures and `lastError == null` across all
+   three. The app-side half is P035 BS-1 territory and cannot discharge the
+   burden alone; it is recorded because it agrees, not because it proves.
+
+   This amendment is deliberately in the normative clause and not in
+   Confirmation, and not left in the Terraform variable description where the
+   evidence was first written down. Recording a gate's real behaviour somewhere
+   other than the gate is exactly the failure this section's own 2026-07-31
+   rewrite exists to stop — the 48-hour clock was under-run twice because the
+   corrections were appended elsewhere while the section kept its stale text in
+   normative voice. A bare "no ALARM transition" clause would have made this
+   criterion unsatisfiable for the current window on the strength of a
+   mis-set threshold, forcing either a silent waiver or a pointless restart.
+
+   "Survives triage" means: an ALARM transition disqualifies the window unless
+   it is shown, on target-side evidence, to be a false positive — and the cause
+   is fixed before the window continues. An untriaged transition disqualifies.
+   The burden is on the operator to demonstrate the negative, not to assert it.
 
 2. **Parity.** Zero shadow failures and `lastError == null` throughout, and
    primary/target document-count parity held for the window's **duration**,
    not merely checked at its start.
 
-3. **Warmth convergence — this is what "48 hours" was a proxy for.** The
-   target's `SearchLatency` p90 over the trailing 6 hours is within 10% of the
-   preceding 6 hours: the improvement curve has flattened. Warmth is an
+3. **Warmth convergence — this is what "48 hours" was a proxy for.** Take the
+   **ratio** of target to primary `SearchLatency` p90, per 30-minute bucket,
+   and require `|mean(trailing 6 h) − mean(preceding 6 h)| / mean(preceding 6 h) ≤ 0.10`.
+   The estimator is the arithmetic mean of per-bucket ratios. Warmth is an
    asymptote, not a duration. Gate on the asymptote and the duration becomes a
    consequence rather than a guess.
+
+   **Use the ratio, never the target's absolute p90 — corrected 2026-08-01, the
+   first time this criterion was evaluated.** Absolute p90 tracks query volume,
+   so a diurnal trough collapses it and the test fails while the target is
+   getting _faster_. Measured on the ADR-041 soak: overnight traffic fell 73%,
+   the target's absolute p90 fell from 29.68 ms to 4.83 ms, and the criterion
+   reported an 83.7% change and a spurious NOT MET. Both domains receive the
+   same mirrored distribution 1:1, so the ratio divides common-mode volume out
+   and the absolute figure cannot.
+
+   **This depends on criterion 1.** The 1:1 mirroring is what makes the primary
+   a valid control, and criterion 1 is what establishes it. If mirror parity is
+   not holding, criterion 3 is **not evaluable** — do not compute it.
+
+   **Require a signal floor of 5 ms on BOTH sides of a bucket to include it.**
+   Where the primary's p90 approaches zero the ratio explodes on a near-zero
+   denominator: the same soak data gave a mean of 14.3× without the floor and
+   1.03× with it. A criterion that can report a 14× regression from a quiet
+   half-hour is worse than no criterion. The 5 ms value is **chosen, not
+   derived** — it is above the observed quiet-period noise floor and below the
+   ~30 ms working range, and it is tunable.
+
+   Note the floor bounds the **denominator**, not the ratio: a bucket at 5 ms
+   primary against 100 ms target clears the floor and contributes 20×, which
+   over a handful of buckets would dominate the mean. That is why the bucket
+   count below is disqualifying rather than advisory.
+
+   **Fewer than 6 usable buckets in either window → NOT EVALUABLE, treated as
+   NOT MET; extend the window.** Overnight windows routinely leave very few
+   buckets clearing the floor — the trailing window on first evaluation had 4
+   of 12 — and a mean over 4 buckets is not equivalent to one over 12. Report
+   the usable count with the result.
+
+   **The band is two-sided but the two directions mean different things.** A
+   trailing ratio _below_ preceding is "still improving — keep soaking". A
+   trailing ratio _above_ preceding is the target degrading relative to the
+   primary under an identical query stream, which is a regression signal, not a
+   wait signal. Do not resolve this by making the band one-sided; that would be
+   a relaxation.
+
+   This criterion measures convergence, not **level** — a ratio flat at 3.0×
+   satisfies it. Level is held by criterion 5's 1.5× k6 band and by ADR-041's
+   Confirmation item 2. Convergence alone is not sufficient.
 
 4. **Time floor, with a diurnal requirement.** Not less than 24 hours **and
    spanning at least one full business-hours peak**. A bare 24-hour floor is

@@ -163,8 +163,8 @@ Self-hosted operators get a real choice and a fast path. Nobody gets a silent ha
 
   Still **before** cutover, by construction — ADR-031's soak gate precedes ADR-029 step 7. Discharged when all three hold, each naming an instrument that already exists rather than a quantity someone must invent at discharge time:
 
-  1. v4 `SearchLatency` p90 satisfies ADR-031 soak criterion 3 (flattening to within 10% across the trailing 6 hours) — the warmth asymptote.
-  2. v4 p90 lands within 1.5× of v3's **concurrent** p90 on the v3-vs-v4 search-parity dashboard. Criterion 1 alone is self-relative and cannot catch this: a target can flatten at 3× the primary's p90 and still satisfy it, which is close to what the `t3.small` did in July.
+  1. v4 `SearchLatency` p90 satisfies ADR-031 soak criterion 3 — the warmth asymptote. Note criterion 3 was **corrected 2026-08-01** to compare the v4/v3 p90 **ratio** rather than v4's absolute p90, because absolute p90 tracks query volume and collapsed across a diurnal trough. Read the current ADR-031 text; do not rely on this summary.
+  2. v4 p90 lands within 1.5× of v3's **concurrent** p90 on the v3-vs-v4 search-parity dashboard. This is a **level** guard, and it survives the 2026-08-01 correction even though its original justification did not. That justification said criterion 3 was self-relative; since the correction it is a target-vs-primary ratio, so it is not. The guard is still required because a ratio can be **flat but bad** — convergence at a poor level satisfies criterion 3 while leaving the target materially slower, which is close to what the `t3.small` did in July.
   3. v4 `ReadThroughput` is not sustained above v3's across the business-hours peak that ADR-031 soak criterion 4 requires. This is the honest proxy for page-cache pressure — AWS OpenSearch emits no page-cache metric, and sustained disk reads are the exact observable ADR-029's 2026-07-09 I/O-bound diagnosis rested on, where CPU and JVM both ran _lower_ than the comparison at equal query rate so the cost had to be disk.
 
 ## Pros and Cons of the Options
