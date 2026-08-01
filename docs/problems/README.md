@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-07-31 **P075 + P076 captured** — ADR-041 inverts one exact-vs-range pair, and an ADR Confirmation item was prescribed but never implemented (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-01 **P077 captured** — the risk scorer rates deferral as mitigation because it scores one hop rather than the path (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -14,6 +14,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error | S      | 2026-04-21 | internal                |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open        | S      | 2026-07-26 | internal                |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open        | M      | 2026-07-29 | internal                |
+| 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open        | M      | 2026-08-01 | internal                |
 | 4.0  | P069 | Partial-prefix search drops results a shorter query returns           | High (16)    | Known Error | L      | 2026-07-29 | inbound-reported (#365) |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error | M      | 2026-05-14 | internal                |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error | M      | 2026-05-14 | internal                |
