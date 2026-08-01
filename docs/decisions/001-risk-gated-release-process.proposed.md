@@ -90,7 +90,15 @@ Use GitHub's built-in environment protection (required reviewers, wait timers) t
 
 **Option 1: Risk-gated `release:watch` script.**
 
-It integrates with the existing hook infrastructure, provides a single command for the release workflow, and enforces risk assessment before releases proceed. No new branches, CI workflows, or GitHub configuration changes are required.
+It integrates with the existing hook infrastructure, provides a single command for the release workflow, and enforces risk assessment before releases proceed. No new branches, CI workflows, or GitHub configuration changes are required **for the release gate itself** — the clause scopes the gate, and is not a blanket bar on CI (see the amendment below).
+
+> **Amendment 2026-08-01 — read-only plan verification narrows the push-tier gap.** This ADR records the `deploy/**` push axis reaching prod at push-tier governance as "a lower governance tier accepted and recorded rather than satisfied". That gap is now **narrower, not closed**.
+>
+> `.github/workflows/terraform-plan.yml` runs `terraform plan` against the real prod workspace and never applies, so a `deploy/**` change can be inspected before the push that applies it. Previously that was impossible rather than merely skipped: the root module's variables come from GitHub Actions secrets, so `terraform plan` cannot run on an operator machine at all, and reading the changed files answers the wrong question — `apply` reconciles the whole root module, so an Elastic Beanstalk change can arise from drift unrelated to the diff.
+>
+> **Advisory, not blocking.** An operator can still push `deploy/**` and apply without ever dispatching it. The gap therefore narrows rather than closes, and whether a green plan should become a _precondition_ of a `deploy/**` push is a live question, deliberately left open here.
+>
+> **Deliberately `workflow_dispatch`-only, and deliberately ungated by the risk scorer.** Dispatch-only because a fork `pull_request` receives no secrets, so every `TF_VAR_*` resolves to empty and the plan renders as tearing down the ADR-024 enforcement boundary — a confidently wrong answer from a green run; `pull_request_target` would hand fork-authored code the production AWS keys. Ungated because the job is read-only, so a release-risk score has nothing to gate. Note nonetheless that its trust boundary is identical to `release.yml`'s: it holds the full production credential set. The missing gate is a considered choice, not an oversight.
 
 This decision covers:
 

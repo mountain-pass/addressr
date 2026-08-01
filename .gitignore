@@ -73,6 +73,13 @@ lib
 deploy/resolved_*
 deploy/task-definitions/addressr-server.json
 deploy/plan.out
+# Terraform plan artifacts (deploy:plan / terraform-plan.yml). BOTH the binary
+# plan and its JSON rendering contain every root variable value in CLEARTEXT,
+# including TF_VAR_aws_secret_key, the ADR-024 proxy-auth secret and the
+# Cloudflare token — `sensitive = true` flags them, it does not redact them.
+# This repo is public; see RISK-POLICY.md "Confidential Information".
+deploy/tfplan
+deploy/tfplan.json
 deploy/.terraform
 **/terraform.tfstate
 **/*.auto.tfvars

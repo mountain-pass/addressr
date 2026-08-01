@@ -8,11 +8,12 @@ date-created: 2026-04-15
 screens:
   - .changeset/
   - .github/workflows/release.yml
+  - .github/workflows/terraform-plan.yml
   - .github/workflows/docker-image.yml
   - .github/workflows/rapidapi-listing-sync.yml
   - .github/workflows/update-*.yml
   - 'deploy/** (Terraform infra axis per ADR 040; excludes deploy/.terraform.lock.hcl. Worker auth behaviour under deploy/cloudflare-worker/ is JTBD-200 — this job owns the deploy mechanism only)'
-  - 'package.json (release surface only — version, changesets config, build:docker / docker:push scripts; the dependency block serves the runtime jobs)'
+  - 'package.json (release surface only — version, changesets config, build:docker / docker:push scripts, and the deploy:* scripts including the read-only deploy:plan; the dependency block serves the runtime jobs)'
   - scripts/release-watch.sh
   - scripts/push-and-watch.sh
   - scripts/docker-tags.sh
@@ -27,6 +28,24 @@ Help contributors trust that every commit which declares a changeset will actual
 
 ## Job Stories
 
+When I have a `deploy/**` change I intend to land, I want to run `terraform plan`
+against the real prod workspace from CI without applying it, so I can see the
+resource-change set **before** the push that applies it — because the root
+module's variables come from GitHub Actions secrets and cannot be supplied on an
+operator machine, which previously made pre-verification impossible rather than
+merely inconvenient.
+
+Reading the changed files is not a substitute: `apply` refreshes and reconciles
+the whole root module, so an Elastic Beanstalk change can arise from drift that
+has nothing to do with the diff. Only a plan answers "will this bounce the
+fleet?"
+
+Mechanics, because the story is only true if a not-yet-landed change can be
+planned: `release.yml`'s auto-apply trigger is `branches: [master]`, so
+dispatching the plan workflow against a short-lived branch is safe and does not
+fire it. That is compatible with the trunk-based constraint — short-lived, for
+the duration of one plan, not a feature branch.
+
 - When I intend a commit to ship a version bump, I want the corresponding `.changeset/*.md` file to actually land in that commit, so the changesets GitHub Action opens a version PR and the next release ships.
 - When I forget to stage a changeset alongside the code it describes, I want a cheap local check (pre-push or post-commit) to catch it before I push, so recovery is a local re-stage rather than a failed `changeset publish` run in CI.
 - When pre-commit tooling (lint-staged, husky, license check) would drop, rewrite, or silently exclude any staged file, I want the commit to fail loudly instead of succeeding with missing content. This class of silent-drop bug is guarded by a regression test so it cannot regress unnoticed.
@@ -35,6 +54,8 @@ Help contributors trust that every commit which declares a changeset will actual
 - When I land an infra-only change that ships no published artifact, I want an explicit, risk-governed trigger that applies it to prod, so committed infra does not sit unapplied waiting for an unrelated publish to carry it out as a rider.
 
 ## Desired Outcomes
+
+- A read-only, `workflow_dispatch`-only plan path exists that cannot reach `terraform apply`, so pre-verification never becomes a second path to prod. The single gated path stays single.
 
 - A regression test proves that a commit staging a `.changeset/*.md` plus the typical ef66d39-class fileset retains the changeset in `HEAD` after the pre-commit hook runs.
 - Authorship tooling (agents, humans) has a cheap way to verify that release-intending commits include their changeset, before push.

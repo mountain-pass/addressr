@@ -192,7 +192,15 @@ The other two deploy entry points carry a **release-tier** risk score, because t
 
 ADR 001 is not amended here, but not because amending a `confirmed` ADR is off-limits — this repo does exactly that, in ADR 001's own 2026-07-26 block and in ADR 004 the same day. The reason is narrower: an ADR 001 amendment has to describe the trigger **as actually implemented**, and no trigger exists until stage 2. Writing it now would document a mechanism that is not there. So the amendment is a **hard prerequisite on the wiring**, enforced as a greppable predicate in Confirmation below, mirrored onto the P039 ticket for discoverability from the ADR 001 side, and pinned mechanically in the stage-2 test.
 
-### Consequences
+> **Amendment 2026-08-01 — a fourth, read-only axis.** The change-type→action matrix gains `terraform-plan.yml`: a `workflow_dispatch`-only job that plans the prod workspace and never applies.
+>
+> **The absence of an auto-trigger is deliberate**, not an omission. It carries no push or `pull_request` trigger for two reasons: the Terraform Cloud workspace is remote-state/local-execution, so a plan takes the workspace lock and would contend with an in-flight release; and a fork PR receives no secrets, making the resulting plan confidently wrong rather than merely failed. It shares `release.yml`'s concurrency group so it queues behind an apply instead of racing it.
+>
+> **What this axis is structurally blind to.** `aws_s3_object.elasticapp` carries no `etag`/`source_hash`, so Terraform diffs only the key/source strings and a rebuilt deployment bundle produces no diff at all. This axis verifies infrastructure _configuration_ only. A green plan must not be read as "the deployed artifact is correct".
+>
+> Pinned in `test/js/__tests__/terraform-plan-workflow.test.mjs` per this ADR's own Confirmation that the trigger be asserted in test rather than by grep.
+
+## Consequences
 
 - Good: a Docker-only change publishes an image and nothing else; an infra-only change deploys and nothing else; neither needs a version bump. P039 symptoms 1 and 2 are retired at the root rather than worked around
 - Good: an existing `mountainpass/addressr:3.0.2` pin can never be re-pointed by a rebuild. Self-hosters gain a reproducible pin (`:<version>-<gitsha>`) they do not have today

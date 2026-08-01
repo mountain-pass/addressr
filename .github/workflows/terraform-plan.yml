@@ -1,0 +1,167 @@
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+#
+# Read-only Terraform plan — pre-verify a deploy/** change before the push that
+# applies it.
+#
+# WHY THIS EXISTS. A `deploy/**` push on master fires a full production
+# `terraform apply` (release.yml), with no plan-approval gate in front of it.
+# And the root module's variables come from GitHub Actions secrets, so
+# `terraform plan` cannot run on an operator machine at all — which made
+# pre-verification impossible rather than merely inconvenient.
+#
+# Reading the changed files is not a substitute. `apply` refreshes and
+# reconciles the WHOLE root module, so an Elastic Beanstalk change can arise
+# from drift with nothing to do with your diff: a managed-platform update
+# against the pinned solution_stack_name, console-side mutation, ASG drift.
+# Only a plan answers "will this bounce the fleet?"
+#
+# Not theoretical: applying mid-soak would bounce the EB fleet at ADR-004's
+# BatchSize=100% with no traffic ramp, resetting the cumulative-since-boot
+# read-shadow counters (P035 BS-1) and invalidating a multi-day soak window —
+# the soak that gates the ADR-041 cutover for P069 (issue #365).
+#
+# DISPATCH-ONLY, for two reasons, the second decisive:
+#   1. The TFC workspace is remote-state / local-execution, so `terraform plan`
+#      takes the workspace lock and would contend with an in-flight release.
+#   2. A fork pull_request receives NO secrets, so every TF_VAR_* resolves to
+#      empty. That is not a failed plan, it is a confidently wrong one: the
+#      proxy-auth pair both default to "", main.tf's precondition passes on the
+#      empty pair, and the plan renders as tearing down the ADR-024 enforcement
+#      boundary — from a green run. `pull_request_target` is categorically off
+#      the table: it would hand fork-authored code the production AWS keys.
+# To plan a change that is not yet on master, dispatch this against a
+# short-lived branch — release.yml's auto-apply is gated on `master` both by its
+# push trigger and by a job-level ref check, so it will not fire.
+#
+# WHAT IT CANNOT TELL YOU. `aws_s3_object.elasticapp` has no `etag`/`source_hash`,
+# so Terraform diffs only the key/source strings and a rebuilt deployment zip
+# produces no diff. This verifies infra CONFIG only and is structurally blind to
+# the deployed bundle's contents — a green plan does not mean the artifact is
+# right. Separately, the S3 key embeds `elasticapp_version`, so dispatching when
+# package.json differs from the deployed version shows EB churn that is an
+# artifact of when you dispatched, not of your change.
+name: Terraform Plan (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expect_only:
+        description: >
+          Optional. Comma-separated Terraform resource addresses the plan is
+          allowed to change; the job FAILS if it changes anything else. Leave
+          EMPTY for a baseline run that reports the plan and asserts nothing —
+          do that first, to establish the real steady-state change set before
+          trusting an assertion.
+        required: false
+        type: string
+
+# Ref-INDEPENDENT on purpose. release.yml runs only on master, so its group is
+# always `Release-refs/heads/master`. Interpolating github.ref here would match
+# that only when the plan is dispatched on master — and on a short-lived branch,
+# which is the path this workflow documents as the recommended one, it would form
+# its own group and lose the protection entirely. Local execution means a plan
+# takes the TFC workspace lock, so a plan racing an apply fails on a locked
+# workspace and would be meaningless anyway. release.yml sets no
+# cancel-in-progress, so this queues rather than cancels.
+concurrency: Release-refs/heads/master
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npx npm@10 ci
+
+      # Mirrors release.yml's Deploy step exactly — same devcontainer, same var
+      # set, same TFC token. A plan run under different inputs than the apply
+      # answers a different question and would be worse than no plan. Pinned in
+      # test/js/__tests__/terraform-plan-workflow.test.mjs so it cannot drift.
+      - name: Terraform plan (no apply)
+        uses: devcontainers/ci@v0.3
+        env:
+          TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
+          TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
+          TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
+          TF_VAR_proxy_auth_value: ${{ secrets.TF_VAR_proxy_auth_value }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.TF_VAR_cloudflare_api_token }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.TF_VAR_cloudflare_account_id }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.TF_VAR_cloudflare_zone_id }}
+          TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
+        with:
+          runCmd: |
+            npm run deploy:plan
+          env: |
+            TF_IN_AUTOMATION=1
+            TF_WORKSPACE=prod
+            TF_VAR_elasticapp=mountainpass-addressr
+            TF_VAR_aws_secret_key
+            TF_VAR_aws_access_key
+            TF_VAR_proxy_auth_header
+            TF_VAR_proxy_auth_value
+            TF_VAR_cloudflare_api_token
+            TF_VAR_cloudflare_account_id
+            TF_VAR_cloudflare_zone_id
+            TF_VAR_cloudflare_rapidapi_key
+            TF_TOKEN_app_terraform_io
+
+      # WHITELIST projection, never a redaction of the full document. `terraform
+      # show -json` emits every root variable value in CLEARTEXT — sensitive=true
+      # flags but does not redact — so the raw plan must never leave the runner
+      # on a public repo. Address + action verbs is exactly what "what does this
+      # touch?" needs and carries no attribute values. A whitelist cannot fail
+      # open when a new sensitive variable is added to the root module.
+      - name: Project the plan to addresses and actions
+        if: always()
+        run: |
+          set -euo pipefail
+          test -f deploy/tfplan.json || { echo "::error::no plan JSON produced"; exit 1; }
+          jq '[.resource_changes[]?
+               | select(.change.actions | any(. == "create" or . == "update" or . == "delete"))
+               | {address, actions: .change.actions}]' \
+            deploy/tfplan.json > "$RUNNER_TEMP/plan-summary.json"
+          echo "--- resources this plan would change ---"
+          jq -r '.[] | "\(.actions | join(",")) \(.address)"' "$RUNNER_TEMP/plan-summary.json"
+
+      # Empty expect_only means "baseline run, assert nothing" — deliberate, so a
+      # blank input is never mistaken for a silent skip. Run it that way first.
+      - name: Assert the plan changes only what was expected
+        if: inputs.expect_only != ''
+        run: |
+          set -euo pipefail
+          actual=$(jq -r '.[].address' "$RUNNER_TEMP/plan-summary.json" | sort)
+          expected=$(printf '%s' "${{ inputs.expect_only }}" \
+            | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' | sort)
+
+          echo "--- would change ---"; echo "${actual:-(nothing)}"
+          echo "--- allowed ---";      echo "$expected"
+
+          unexpected=$(comm -23 \
+            <(printf '%s\n' "$actual" | grep -v '^$' || true) \
+            <(printf '%s\n' "$expected"))
+          if [ -n "$unexpected" ]; then
+            echo "::error::plan changes resources outside the allowed set:"
+            echo "$unexpected"
+            exit 1
+          fi
+          echo "OK — plan is within the allowed set."
+
+      - name: Upload plan summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-summary
+          path: ${{ runner.temp }}/plan-summary.json
+          retention-days: 7
+          if-no-files-found: warn
