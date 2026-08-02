@@ -19,7 +19,7 @@ The consequence is not hypothetical. **This project has surrendered the warm-sta
 
 So "we will exercise it later" has a **0-for-2 completion record** here. That is an observed base rate, not a projection, and it is precisely what register entry R010 (`warm-standby-decommission-removes-instant-rollback-net`) was scaffolded to name — while itself sitting uncurated with `not estimated` in every scoring field.
 
-The drill finally ran on 2026-08-02 (see `## Related`), which discharges the evidence for the CURRENT pair. It does not fix the structural gap: the next migration re-opens it, and the next decommission after that will face the same absent gate.
+The drill ran on 2026-08-02 (see `## Related`) and discharged the evidence. Per the user direction recorded under Treatment, that is a ONE-OFF: the mechanism is now proven and future cutovers do not re-prove it. The structural gap this ticket treats is therefore not "nobody re-runs the drill" but "nothing stops the standby being deleted while rollback is still worth having".
 
 ## Symptoms
 
@@ -42,12 +42,25 @@ The exercise and the decommission are separated in time and recorded in differen
 
 Secondary contributor: the counterfactual is invisible to per-action risk scoring. Not-exercising scores as nothing because the hazard attaches to a _different, later_ action. See the sibling ticket on that scoring defect in `## Related`.
 
+### Treatment — settled by user direction 2026-08-02
+
+The original framing of this ticket proposed a **repeating** pre-decommission exercise gate. That is not the treatment. User direction, verbatim in substance:
+
+> "We don't need to prove rollback each time. We've done it today, so all good. The treatment for the risk is to keep the old server for a period. After a certain number of successful requests, the need for a rollback disappears. The server cannot be deleted until we reach that point."
+
+Two consequences, both deliberate:
+
+1. **Proving the mechanism is a ONE-OFF, and it is done.** The 2026-08-02 drill discharged it (6m36s, ADR-029 Confirmation). Future cutovers do not re-prove it. This ticket should NOT install a per-migration drill requirement — that was over-engineering on my part, and it would cost a real consumer-visible defect window every time for evidence already held.
+2. **The control is a RETENTION CONDITION, not a ritual.** The standby is retained until the new primary has served enough successful production traffic that rollback stops being worth having. Delete is blocked until then; after it, the risk closes on its own. This is self-terminating and measurable, where the exercise gate depended on somebody remembering.
+
+**Accepted trade, user-confirmed 2026-08-02**: a rollback taken late in the retention window serves STALE address data. The quarterly loader was repointed to the new domain at cutover, so the standby is warm but no longer fed; from the next G-NAF refresh onward its data ages. This is accepted rather than mitigated — dual-feeding the standby was considered and not chosen.
+
 ### Investigation Tasks
 
-- [ ] Add "rollback flip exercised and timed since the last cutover" as a standing PRE-DECOMMISSION gate in `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md`
-- [ ] Decide whether the gate is prose-only or enforced (a `deploy/**` check that fails when a domain module is removed without a recorded exercise)
-- [ ] Prefer scheduling the exercise in migrations where blue and green are behaviourally EQUIVALENT, so the drill costs zero consumer-visible defect — the 2026-08-02 drill cost a real P069 window only because the analyzer divergence was the point of that migration
-- [ ] Curate R010 out of its auto-scaffold `not estimated` state with real Impact/Likelihood/Controls, now that the counterfactual has been scored at 15/25
+- [ ] Set the retention threshold. Express it in committed artefacts as a DURATION, not a request count — absolute request and read counts are confidential traffic volumes under RISK-POLICY and this repo is public. Derive the duration from `SearchRate` on the primary and record only the derived date.
+- [ ] Encode the retention condition where it will actually be read: `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md` at the decommission step, and the `deploy/main.tf` comment on the standby module.
+- [ ] Set R010's treatment to this retention condition and its re-read trigger to "a standby decommission is proposed" — currently it fires only on scorer hint noise, which is why it slept through three cutovers. Route via `/wr-risk-scorer:create-risk` rather than editing scoring fields by hand.
+- [ ] Consider whether the retention condition should be enforced rather than documented (a check that fails when a domain module is removed before the retention date)
 
 ## Dependencies
 
