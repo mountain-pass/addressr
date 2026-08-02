@@ -17,7 +17,7 @@ Governing decisions: **ADR 029** (two-phase blue/green), **ADR 030** (Terraform-
 
 5. **Soak + measure PARITY** — let the shadow warm the new domain, then compare `SearchLatency` (CloudWatch, both domains) and run the k6 pair. **Gate: new-domain warm search p95 ≤ 1.5× a baseline measured immediately before THIS cutover.** The 1.5× multiplier is normative; the absolute number is not, and must be re-derived every time. Do not reuse the historical ~1443 ms figure — it descends from a retired 961 ms baseline, carries several times the slack against anything measured since, and therefore could not fail. ADR-031 criterion 5 retires it explicitly. Compare `SearchLatency` as a target/primary **ratio** per bucket rather than the target's absolute p90: absolute latency tracks query volume, so a diurnal trough makes a cold target look fast (ADR-031 criterion 3, corrected 2026-08-01). Also run the SSLA-14 ranking check + the full nodejs Cucumber suite AGAINST the real new domain (point `ELASTIC_HOST` at it + SigV4).
 6. **Confirm the zero-outage safety net is live**: `/health` pings the backend (`src/es-health.js`) so a bad cutover fails EB's health-gated rollout → `RollbackLaunchOnFailure`. (Built in Phase 1; carries forward.)
-7. **Cutover** — flip the EB primary `ELASTIC_*` to the new domain (see §Cutover-config), one atomic commit; EB rolling deploy + `/health` gate + post-deploy smoke. Rollback = git-revert + apply (old domain untouched + warm).
+7. **Cutover** — flip the EB primary `ELASTIC_*` to the new domain (see §Cutover-config), one atomic commit; EB rolling deploy + `/health` gate + post-deploy smoke. Rollback = flip the ONE `ELASTIC_HOST` line back + apply, NOT git-revert of the cutover commit (a cutover commit typically bundles several changes; reverting it re-enables the read-shadow and re-arms retired alarms — corrected 2026-08-02). Measured at 6m36s. Old domain untouched + warm).
 8. **Explicitly repoint every WRITER** — the serving cutover does NOT carry them (see §Repoint-writers).
 9. **Soak in production**, then **decommission the old domain** (`aws opensearch delete-domain`), then cleanup (drop the old-version CI matrix leg + `package.json` image entry; remove dangling vars/dashboard refs) + promote the ADRs to accepted.
 
@@ -53,7 +53,9 @@ ADR 030 slipped un-ratified (`human-oversight: confirmed` missing) and blocked t
 
 ## §Cutover-config (the exact EB primary flip)
 
-See `deploy/main.tf` (the `ELASTIC_*` settings block, ~line 99) as landed for Phase 1 (commit `1b76c61`) — replicate for Phase 2 with the 3.x domain endpoint. `ELASTIC_PORT=443` / `ELASTIC_PROTOCOL=https` are unchanged (AWS domains). Rollback = `git revert` the cutover commit + apply.
+See `deploy/main.tf` (the `ELASTIC_*` settings block, ~line 99) as landed for Phase 1 (commit `1b76c61`) — replicate for Phase 2 with the 3.x domain endpoint. `ELASTIC_PORT=443` / `ELASTIC_PROTOCOL=https` are unchanged (AWS domains). Rollback = set the single `ELASTIC_HOST` value back to the previous domain module's endpoint + apply. **NOT `git revert` of the cutover commit** — corrected 2026-08-02: a cutover commit bundles several changes (`33e6c04` carried five), so reverting it does more than flip the host. Exercised and measured 2026-08-02 at 6m36s push-to-EB-updated.
+
+**Verify a flip with a query that has NEVER been requested.** Edge caching served stale responses for several minutes after the environment had already switched, in both directions. A canonical verification query will tell you the flip did not work when it did, which during an incident is the reading that makes you flip again. `/health` cannot discriminate either — it is a `ping()` that goes green against whichever domain is wired.
 
 ## §Repoint-writers
 
