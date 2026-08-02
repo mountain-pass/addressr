@@ -96,27 +96,42 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 041 CUTOVER: the EB primary points at the v4 domain
-  # (addressr6, OpenSearch 3.5, equivalent-synonym analyzer) over IAM/SigV4.
+  # ROLLBACK DRILL IN PROGRESS - the EB primary is TEMPORARILY pointed at the
+  # v3 domain (addressr5, pre-ADR-041 analyzer) over IAM/SigV4. Step 1 of 2 of
+  # the P069 runbook step 4 rollback exercise. A DRILL, not incident response:
+  # nothing is wrong with v4.
   #
-  # ROLLBACK IS THIS ONE LINE: set value back to module.opensearch_v3.endpoint
-  # and apply. v3 (addressr5) is retained fully populated and WARM - it served
-  # production until this commit - so rollback is a flip, not the hours-long
-  # rebuild-from-G-NAF that ADR 035 was stuck with. Do not go looking elsewhere.
+  # EXPECTED WHILE APPLIED: P069 reproduces. Queries shaped
+  # <number> <word> <partial-token> return empty ("55 Pyrmont Bri" -> []).
+  # That is the positive control that the flip took effect, not a new defect.
+  # The SHORTER query "55 Pyrmont" must still return 8 - a zero THERE is an
+  # outage and the abort trigger.
   #
-  # Gated on all five ADR 031 Soak Gate criteria, measured over 33.8 h: mirror
-  # parity, zero failures with sustained doc parity, p90 ratio flattened within
-  # the 10% band, >=24 h spanning two business peaks, and k6 green p95 at 1.05x
-  # a freshly measured blue baseline against a 1.5x gate.
+  # TO COMPLETE THE DRILL, SET THIS ONE LINE to module.opensearch_v4.endpoint
+  # and apply. v4 (addressr6) carries the ADR-041 analyzer and was primary
+  # until this drill began.
+  #
+  # DO NOT read the pre-drill instruction that used to live here ("set value
+  # back to module.opensearch_v3.endpoint"). While the primary is already v3
+  # that is a no-op, and applying it would look like a successful flip.
+  #
+  # The CUTOVER to v4 (not this drill) was gated on all five ADR 031 Soak Gate
+  # criteria, measured over 33.8 h: mirror parity, zero failures with sustained
+  # doc parity, p90 ratio flattened within the 10% band, >=24 h spanning two
+  # business peaks, and k6 green p95 at 1.05x a freshly measured blue baseline
+  # against a 1.5x gate. The drill's own gate is the pre-flight target check
+  # plus the abort trigger, not the soak.
   #
   # Username/password stay EMPTIED so buildClientNode builds the credential-less
-  # node URL the SigV4 signer wraps. The EB instance role holds es:ESHttp* on the
-  # v4 ARN (eb_opensearch_v4). In-deploy safety: EB rolling deploy + /health
-  # auto-rollback.
+  # node URL the SigV4 signer wraps. The EB instance role holds es:ESHttp* on BOTH
+  # domains - aws_iam_role_policy.eb_opensearch_v3 and .eb_opensearch_v4 - so the
+  # flip needs no IAM change in either direction. WHILE THE DRILL IS APPLIED the
+  # operative grant is eb_opensearch_v3; diagnose any 403 against that one, not v4.
+  # In-deploy safety: EB rolling deploy + /health auto-rollback.
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
-    value     = module.opensearch_v4.endpoint
+    value     = module.opensearch_v3.endpoint
     resource  = ""
   }
   setting {
@@ -156,8 +171,10 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 031 read-shadow REMOVED at the ADR-041 cutover: v4 (addressr6)
-  # is now PRIMARY (ELASTIC_HOST above), so mirroring v4 to v4 would be redundant.
+  # ADR 031 read-shadow REMOVED at the ADR-041 cutover. In STEADY STATE v4
+  # (addressr6) is primary, so mirroring v4 to v4 would be redundant. NOTE while
+  # the rollback drill is applied ELASTIC_HOST above points at v3 - read the
+  # setting, not this comment, for the current primary.
   # The soak ran 33.8 h and all five Soak Gate criteria passed: mirror parity 1.001,
   # zero failures with sustained doc parity, p90 ratio flattened to 1.046x within
   # the 10% band on 12/12 buckets, >=24 h spanning two business peaks, and k6 green
@@ -653,7 +670,8 @@ module "cloudflare_worker" {
 # m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
 # footprint but we don't assume it — right-size later if measured, via
 # from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-# ELASTIC_HOST (EB settings above) now sources module.opensearch_v4.endpoint; this module is the rollback target.
+# ELASTIC_HOST (EB settings above) sources THIS module during the rollback drill;
+# v4 (module.opensearch_v4) is the forward target. Steady state is the reverse.
 module "opensearch_v3" {
   source = "./modules/opensearch"
 
@@ -778,9 +796,9 @@ resource "aws_cloudwatch_dashboard" "search_parity" {
 # plus a synonym-free search analyzer — which cannot be applied to an existing
 # index and forces a full ~15M-doc reindex. It is NOT an engine upgrade.
 #
-# Provisioned QUIET per the migration playbook step 1: no shadow traffic, and the
-# EB primary ELASTIC_HOST moved to module.opensearch_v4.endpoint at the ADR-041
-# ADR-041 cutover. This module is now the ROLLBACK TARGET, retained warm.
+# Provisioned QUIET per the migration playbook step 1, then promoted to primary
+# at the ADR-041 cutover. TEMPORARILY the forward target while the rollback drill
+# runs. Steady state is this module as primary.
 #
 # Sized identically to v3 ON PURPOSE. ADR-041's Confirmation makes the green
 # index's on-disk size and resident hot-set a pre-cutover GATE rather than a note,
