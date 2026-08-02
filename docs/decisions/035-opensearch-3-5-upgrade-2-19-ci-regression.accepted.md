@@ -70,7 +70,7 @@ Chosen option: **Option C + a standing 2.19 CI-regression leg**, because it hono
 
 ### Bad
 
-- Rollback after v2 decommission is rebuild-from-G-NAF (hours), not instant-flip — accepted, consistent with the ADR 029 step-9 2026-07-11 v1 trade. Mitigated by the pre-cutover gate + `/health` auto-rollback during the deploy window.
+- Rollback after v2 decommission is rebuild-from-G-NAF (hours), not instant-flip **[SCOPE NARROWED — correction 2026-08-03.** This is correct for the case it describes (cross-generation rollback after the standby is gone), and wrong as a flat generalisation. AWS automated snapshots are live on the primary (`cs-automated-enc`, hourly, verified 2026-08-02), so IN-PLACE index loss or a red cluster on the surviving domain recovers by snapshot restore, not from G-NAF. They do NOT cover domain-level loss, are not a cross-domain restore, and cannot undo an analyzer decision — for those three, rebuild-from-G-NAF still stands. Scored in `docs/risks/R010-...active.md`; detail at the point of use in `deploy/main.tf`. Decision Outcome unchanged.]** — accepted, consistent with the ADR 029 step-9 2026-07-11 v1 trade. Mitigated by the pre-cutover gate + `/health` auto-rollback during the deploy window.
 
 ## Confirmation
 
