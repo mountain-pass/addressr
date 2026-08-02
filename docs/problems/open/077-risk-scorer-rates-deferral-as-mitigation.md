@@ -68,9 +68,25 @@ There were two failures, not one. The agent emitted a per-action-scoped recommen
 - **Blocked by**: upstream `windyroad/agent-plugins`.
 - **Composes with**: P053 (scorer defers to policy prose over gate numeric), P054 (label bands disagree across the plugin) — same agent, same class of scoring-rule defect.
 
+## Second instance, same defect with the sign inverted (2026-08-02)
+
+The scorer scored a deliberate production rollback drill at 15/25 and returned STOP, on the grounds that the consumer exposure was irreducible. It had scored the drill against an **implicit zero baseline** — treating "do nothing" as a null state.
+
+"Do nothing" was not null. It was the state in which a rollback path credited as a control in the residual of every search-tier change had never once been executed. Asked directly to score the counterfactual, the scorer reversed:
+
+> "I scored against an implicit zero baseline. 'Do nothing' is not null here — it is a standing 15/25 state that I never scored. This is the P077 shape with the sign inverted: there, deferral scored low because the hazard moved outside the window; here, not-acting scored zero because the hazard sits outside the window. Same defect, and P077 should carry this instance."
+
+Result after scoring both states: **drill 12/25 (later 8/25 with remediations) versus not-drilling 15/25**. Net −3. `RISK_BYPASS: reducing` earned, and the drill ran.
+
+It also self-corrected an unrelated mis-levelling in the same pass: it had scored consumer exposure at Impact 5 when RISK-POLICY's Impact 4 describes degraded autocomplete verbatim.
+
+**Why this matters for the rule.** The proposed rule in this ticket is currently framed around deferral ("a control that DEFERS an action does not reduce that action's risk"). This instance shows the general form is broader: **the scorer prices the action in front of it against an unscored baseline**. Deferral is one way the hazard leaves the window; inaction is another. A rule written only about deferral would not have caught this case, because nothing was being deferred — a rehearsal was being declined.
+
+Suggested generalisation for the upstream report: when a proposed action is compared against not-acting, the scorer must score BOTH states, not the action against zero. The counterfactual is a risk item with its own impact and likelihood, and "we would deal with it if it happened" is a statement of the failure scenario, not a control.
+
 ## Related
 
-- **R027** (`docs/risks/R027-deferred-integration-accumulates-unpriced-risk.active.md`) — the register entry this ticket is the treatment for.
+- **R027 — NOT YET CREATED.** This ticket was written as the treatment for a register entry `R027-deferred-integration-accumulates-unpriced-risk` that does not exist: `docs/risks/` currently tops out at R026. Creating it is outstanding work on this ticket, not a link to follow. Noted 2026-08-02 after a risk assessment flagged the dangling reference.
 - **AR20** in `AGENTIC_RISK_REGISTER.md` — names the branch-divergence hazard. This ticket names something different: a governance mechanism recommending the thing the delivery policy prohibits.
 - **ADR-040** — its `deploy/**` axis is what makes a push reach production, so a split produces two applies. Cited for that narrow point only; it does not ratify trunk-based delivery, and neither does ADR-001.
 - Upstream siblings: P048, P052, P053, P054, P058 — all `upstream-blocked (@windyroad/risk-scorer)`.

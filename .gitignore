@@ -106,3 +106,6 @@ install.sh
 .claude/settings.local.json
 scratchpad/
 test/perf/*.out
+
+# AFK orchestrator session run-state (P-retro 2026-08-02)
+.afk-run-state/

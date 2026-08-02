@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-02 **P069 released and verified in production** — the ADR-041 blue/green cutover landed (commit 33e6c04) and the four-year-old inbound partial-prefix defect is fixed on the live endpoint; issue #365 closed with the fix detail. P078 captured for the shard-local phrase_prefix expansion mechanism behind the exact-vs-range flips (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-02 **rollback drill run; P079 + P080 captured** — the ADR-041 rollback path is now EXERCISED rather than assumed (flipped to v3 and back, 6m36s, discharging ADR-029's never-measured 10-minute criterion). P079 captures that nothing gates decommission on the exercise having happened, which this project has skipped twice. P080 captures that the external-comms gate cannot read --body-file, so the documented path can never clear it. P077 gains a second instance: the scorer scores against an implicit zero baseline (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -15,6 +15,8 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open        | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open        | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open        | M      | 2026-08-01 | internal |
+| 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission       | High (12)    | Open        | M      | 2026-08-02 | internal |
+| 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Open        | S      | 2026-08-02 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error | M      | 2026-07-18 | internal |

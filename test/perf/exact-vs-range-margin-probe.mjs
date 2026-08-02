@@ -1,42 +1,91 @@
-// P075 R1, corrected frame. Stratified on BOTH axes the mechanism needs:
-//   (a) blue-side margin — ratio compression only flips narrow-margin pairs
-//   (b) QUERY FORM — the defect appears under the short form users type, not
-//       the full SLA. Under the full SLA blue is often already range-first, so
-//       a full-SLA frame has no regression to detect. My first attempt missed
-//       the known instance for exactly this reason.
-// Fails loud if it cannot reproduce the known instance: a null result from an
-// instrument that cannot see the one flip we know about is worthless.
+// P075: does ADR-041's co-positioning flip exact-vs-range pairs?
+//
+// The mechanism compresses BM25 score RATIOS, so it can only flip pairs whose
+// pre-existing margin is narrow. Two axes must be stratified, and missing
+// either produces a null result that reads as evidence but is not:
+//
+//   1. MARGIN — a uniform random draw under-samples the narrow band where the
+//      mechanism bites. It also has to SPAN the band: a draw clustered far
+//      below the known instance cannot bound the rate at the margin that
+//      instance occupies.
+//   2. QUERY FORM — under the full SLA blue often already ranks the range doc
+//      first, so there is no blue-exact-first transition to detect at all. The
+//      defect appears under the SHORT form users actually type. A first attempt
+//      at this probe queried full SLAs and excluded the known instance by
+//      construction.
+//
+// Reports green-side margin, not just a boolean: a null over pairs whose swing
+// is ~0 means the frame is off-mechanism and the null is vacuous. A null over
+// pairs with large-but-insufficient swings is real evidence.
+//
+// Needs BOTH domains warm. Must run before the v3 decommission.
+//   node test/perf/exact-vs-range-margin-probe.mjs   (blue :6061, green :6060)
 import fs from 'node:fs';
-const KNOWN = { probe: '108 GAZE RD CHRISTMAS ISLAND', range: '96-108 GAZE RD, CHRISTMAS ISLAND OT 6798', full: '108 GAZE RD, CHRISTMAS ISLAND OT 6798' };
-const short = (sla) => { const m = sla.match(/^(.*?),\s*([^,]+?)\s+[A-Z]{2,3}\s+\d{4}$/); return m ? `${m[1]} ${m[2]}` : sla; };
+
+const KNOWN = {
+  full: '108 GAZE RD, CHRISTMAS ISLAND OT 6798',
+  range: '96-108 GAZE RD, CHRISTMAS ISLAND OT 6798',
+};
+const BAND = [0, 25];
+const short = (sla) => {
+  const m = sla.match(/^(.*?),\s*([^,]+?)\s+[A-Z]{2,3}\s+\d{4}$/);
+  return m ? `${m[1]} ${m[2]}` : sla;
+};
 async function hits(port, q) {
   const r = await fetch(`http://localhost:${port}/addresses?q=${encodeURIComponent(q)}`);
-  if (!r.ok) return null;
-  return (await r.json()).map((h) => ({ sla: h.sla, score: h.score }));
+  return r.ok ? (await r.json()).map((h) => ({ sla: h.sla, score: h.score })) : null;
+}
+function margin(list, exact, range) {
+  const e = list.find((h) => h.sla === exact), r = list.find((h) => h.sla === range);
+  if (!e || !r) return { m: null, exactAbsent: !e, rangeAbsent: !r };
+  return { m: ((e.score - r.score) / r.score) * 100, exactAbsent: false, rangeAbsent: false };
 }
 async function assess(fullExact, fullRange) {
   const q = short(fullExact);
-  const b = await hits(6061, q); if (!b) return null;
-  const be = b.find((h) => h.sla === fullExact), br = b.find((h) => h.sla === fullRange);
-  if (!be || !br) return null;
-  const margin = (be.score - br.score) / br.score * 100;
-  const g = await hits(6060, q); if (!g) return null;
-  const gi = g.findIndex((h) => h.sla === fullExact), gr = g.findIndex((h) => h.sla === fullRange);
-  return { q, margin, blueExactFirst: margin > 0, greenRangeFirst: gi > -1 && gr > -1 && gr < gi, greenExactAbsent: gi === -1 };
+  const [b, g] = await Promise.all([hits(6061, q), hits(6060, q)]);
+  if (!b || !g) return { verdict: 'query-error' };
+  const bm = margin(b, fullExact, fullRange);
+  if (bm.m === null) return { verdict: bm.exactAbsent ? 'blue-exact-absent' : 'blue-range-absent' };
+  if (bm.m <= 0) return { verdict: 'blue-range-first', blueMargin: bm.m };
+  const gm = margin(g, fullExact, fullRange);
+  // green losing the exact doc entirely is STRICTLY WORSE than a range-first
+  // flip, so it is a failure verdict, not a pass.
+  if (gm.exactAbsent) return { verdict: 'green-exact-absent', q, blueMargin: bm.m };
+  if (gm.m === null) return { verdict: 'green-range-absent', q, blueMargin: bm.m };
+  return {
+    verdict: gm.m <= 0 ? 'FLIP-green-range-first' : 'ok',
+    q, blueMargin: bm.m, greenMargin: gm.m, swing: gm.m - bm.m,
+  };
 }
-// SENSITIVITY GATE
+
 const k = await assess(KNOWN.full, KNOWN.range);
-console.log(`sensitivity: ${KNOWN.probe}\n  blue margin ${k.margin.toFixed(1)}%  blueExactFirst=${k.blueExactFirst}  greenRangeFirst=${k.greenRangeFirst}`);
-if (!(k.blueExactFirst && k.greenRangeFirst)) {
-  console.log('\n  FRAME STILL CANNOT SEE THE KNOWN FLIP — results below are not evidence.');
+console.log(`SENSITIVITY GATE — ${short(KNOWN.full)}`);
+console.log(`  blue ${k.blueMargin?.toFixed(1)}%  green ${k.greenMargin?.toFixed(1)}%  swing ${k.swing?.toFixed(1)}  verdict ${k.verdict}`);
+if (k.verdict !== 'FLIP-green-range-first') {
+  console.log('  ABORT: frame cannot reproduce the known flip. Nothing below is evidence.');
+  process.exit(1);
 }
-const probes = JSON.parse(fs.readFileSync('/tmp/probes.json', 'utf8'));
-const narrow = [], flips = [];
-for (const { probe, range } of probes) {
-  const full = probe.match(/,/) ? probe : null; if (!full) continue;
-  const r = await assess(full, range); if (!r || !r.blueExactFirst) continue;
-  if (r.margin > 25) continue;
-  narrow.push(+r.margin.toFixed(1));
-  if (r.greenRangeFirst) flips.push({ q: r.q, margin: +r.margin.toFixed(1) });
+
+const frame = JSON.parse(fs.readFileSync(new URL('./exact-vs-range-frame.json', import.meta.url)));
+const buckets = {}, inBand = [], flips = [];
+let read = 0;
+for (const { probe, range } of frame) {
+  if (inBand.length >= 60) break;
+  read += 1;
+  const r = await assess(probe.includes(',') ? probe : `${probe}`, range);
+  buckets[r.verdict] = (buckets[r.verdict] || 0) + 1;
+  if (r.blueMargin === undefined || r.blueMargin <= BAND[0] || r.blueMargin > BAND[1]) continue;
+  if (!['ok', 'FLIP-green-range-first', 'green-exact-absent', 'green-range-absent'].includes(r.verdict)) continue;
+  inBand.push(r);
+  if (r.verdict !== 'ok') flips.push(r);
 }
-console.log(JSON.stringify({ narrow_margin_pairs: narrow.length, margins: narrow.sort((a,b)=>a-b), green_flips: flips.length, flips }, null, 1));
+const swings = inBand.filter((x) => x.swing !== undefined).map((x) => x.swing);
+const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))] ?? null;
+console.log(JSON.stringify({
+  frame_size: frame.length, probes_read: read,
+  verdict_buckets: buckets,
+  in_band_pairs: inBand.length, band_pct: BAND,
+  blue_margin_spread: { min: q(inBand.map((x) => x.blueMargin), 0)?.toFixed(1), median: q(inBand.map((x) => x.blueMargin), 0.5)?.toFixed(1), max: q(inBand.map((x) => x.blueMargin), 1)?.toFixed(1) },
+  green_swing: { min: q(swings, 0)?.toFixed(1), median: q(swings, 0.5)?.toFixed(1), max: q(swings, 1)?.toFixed(1) },
+  failures: flips.length, failure_detail: flips.slice(0, 5),
+}, null, 1));
