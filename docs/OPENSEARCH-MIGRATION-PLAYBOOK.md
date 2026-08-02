@@ -19,6 +19,20 @@ Governing decisions: **ADR 029** (two-phase blue/green), **ADR 030** (Terraform-
 6. **Confirm the zero-outage safety net is live**: `/health` pings the backend (`src/es-health.js`) so a bad cutover fails EB's health-gated rollout → `RollbackLaunchOnFailure`. (Built in Phase 1; carries forward.)
 7. **Cutover** — flip the EB primary `ELASTIC_*` to the new domain (see §Cutover-config), one atomic commit; EB rolling deploy + `/health` gate + post-deploy smoke. Rollback = flip the ONE `ELASTIC_HOST` line back + apply, NOT git-revert of the cutover commit (a cutover commit typically bundles several changes; reverting it re-enables the read-shadow and re-arms retired alarms — corrected 2026-08-02). Measured at 6m36s. Old domain untouched + warm).
 8. **Explicitly repoint every WRITER** — the serving cutover does NOT carry them (see §Repoint-writers).
+
+> **RETENTION GATE — the old domain may NOT be deleted until BOTH hold** (set 2026-08-02, treatment for the warm-standby risk; see P079):
+>
+> 1. the new primary has served **at least a quarter of its average daily request volume** since cutover, and
+> 2. the searchable-documents alarm has not fired.
+>
+> Expressed as a fraction of average daily traffic, never as an absolute request count — absolute request and read counts are confidential traffic volumes under RISK-POLICY and this repo is public. Commit the fraction and the go/no-go, never the underlying figures. Baseline the denominator on the primary's representative pre-cutover traffic, excluding idle days; the cutover day itself reads near-zero on the OLD domain and will poison a naive average.
+>
+> Why a fraction of traffic rather than a number of days: it self-extends over a quiet period, where a calendar date would expire having proved nothing. Why so short: rollback remedies fast-surfacing failures (unreachable domain, wrong analyzer, empty index), which are invariant to time of day and appear within the first thousands of requests. It does not remedy slow-surfacing relevance regressions — those get fixed forward, never by unwinding a months-old cutover.
+>
+> **The window is short BECAUSE of the read-shadow soak.** The two are substitutes, not complements: the soak runs real production traffic against the new domain before any user depends on it, front-loading the evidence a long retention window would otherwise accumulate. If you ever cut over WITHOUT a comparable soak, this fraction is too small — size it up rather than copying it.
+>
+> Proving the rollback MECHANISM is a separate, one-off matter and is already done: exercised and timed 2026-08-02 at 6m36s (ADR-029 Confirmation). Do not re-run a drill per migration.
+
 9. **Soak in production**, then **decommission the old domain** (`aws opensearch delete-domain`), then cleanup (drop the old-version CI matrix leg + `package.json` image entry; remove dangling vars/dashboard refs) + promote the ADRs to accepted.
 
 ## Hard-won learnings (the expensive ones)
