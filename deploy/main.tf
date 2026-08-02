@@ -99,30 +99,34 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   # ADR 041: the EB primary points at the v4 domain (addressr6, OpenSearch 3.5,
   # equivalent-synonym analyzer) over IAM/SigV4.
   #
-  # ROLLBACK IS THIS ONE LINE: set value to module.opensearch_v3.endpoint and
-  # apply. v3 (addressr5) is retained fully populated and WARM. This path is
-  # EXERCISED, not assumed: the 2026-08-02 rollback drill flipped to v3 and back,
-  # and discharged ADR 029's open criterion at 6m36s push-to-EB-updated, inside
-  # the 10 minute bound. Two things that drill found, worth knowing before you
-  # rely on it: v3 is no longer fed by the quarterly loader (repointed to
-  # gha_v4_loader), so a rollback serves progressively staler data after each
-  # G-NAF refresh; and edge caching masked the flip for several minutes, so
-  # verify with a NOVEL query rather than a canonical one or you will read a
-  # cached response and conclude wrongly in either direction.
+  # THE ONE-LINE ROLLBACK IS RETIRED as of decommission apply 1 (2026-08-02).
+  # Read this before reaching for it in an incident: setting this value back to
+  # module.opensearch_v3.endpoint NO LONGER WORKS on its own. That apply removed
+  # the EB instance role's es:ESHttp* grant on v3 and dropped it from the v3
+  # domain's access policy, so a bare host flip now yields 403 -> /health 503 ->
+  # RollbackLaunchOnFailure. That is intended: it makes an ACCIDENTAL flip fail
+  # loudly rather than silently serve a stale index. A DELIBERATE rollback in the
+  # window before apply 2 therefore costs an IAM re-apply first, then the flip.
+  # After apply 2 the v3 domain is gone and there is no flip at all.
   #
-  # The CUTOVER to v4 (not this drill) was gated on all five ADR 031 Soak Gate
-  # criteria, measured over 33.8 h: mirror parity, zero failures with sustained
-  # doc parity, p90 ratio flattened within the 10% band, >=24 h spanning two
-  # business peaks, and k6 green p95 at 1.05x a freshly measured blue baseline
-  # against a 1.5x gate. The drill's own gate is the pre-flight target check
-  # plus the abort trigger, not the soak.
+  # What replaces it. For index loss or a red cluster ON THIS DOMAIN, recovery is
+  # an AWS automated snapshot restore: the cs-automated-enc repository is present
+  # and taking hourly snapshots of addressr and addressr-localities (69 held as of
+  # 2026-08-02, spanning ~3 days since the domain was built; AWS's service default
+  # retention is 14 days, which is policy rather than an observed span, so do not
+  # infer a pre-cutover restore point). Note the scope honestly — automated
+  # snapshots restore IN PLACE to the same domain. They do NOT cover domain-level
+  # loss, they are not a cross-domain restore, and they cannot undo a bad ANALYZER
+  # decision, because every snapshot carries the analyzer that took it. For that
+  # last case recovery is a rebuild from G-NAF.
+  #
+  # The rollback MECHANISM was exercised and timed 2026-08-02 at 6m36s
+  # (ADR-029 Confirmation, commits 43b3309 / f295bd8) before being retired here.
   #
   # Username/password stay EMPTIED so buildClientNode builds the credential-less
-  # node URL the SigV4 signer wraps. The EB instance role holds es:ESHttp* on BOTH
-  # domains - aws_iam_role_policy.eb_opensearch_v3 and .eb_opensearch_v4 - so the
-  # flip needs no IAM change in either direction. WHILE THE DRILL IS APPLIED the
-  # operative grant is eb_opensearch_v3; diagnose any 403 against that one, not v4.
-  # In-deploy safety: EB rolling deploy + /health auto-rollback.
+  # node URL the SigV4 signer wraps. The EB instance role holds es:ESHttp* on the
+  # v4 ARN (eb_opensearch_v4). In-deploy safety: EB rolling deploy + /health
+  # auto-rollback.
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
@@ -166,10 +170,9 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 031 read-shadow REMOVED at the ADR-041 cutover. In STEADY STATE v4
-  # (addressr6) is primary, so mirroring v4 to v4 would be redundant. NOTE while
-  # the rollback drill is applied ELASTIC_HOST above points at v3 - read the
-  # setting, not this comment, for the current primary.
+  # ADR 031 read-shadow REMOVED at the ADR-041 cutover. v4 (addressr6) is the
+  # primary, so mirroring v4 to v4 would be redundant. Re-enable only for the
+  # next migration, when a new green domain needs warming.
   # The soak ran 33.8 h and all five Soak Gate criteria passed: mirror parity 1.001,
   # zero failures with sustained doc parity, p90 ratio flattened to 1.046x within
   # the 10% band on 12/12 buckets, >=24 h spanning two business peaks, and k6 green
@@ -665,8 +668,22 @@ module "cloudflare_worker" {
 # m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
 # footprint but we don't assume it — right-size later if measured, via
 # from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-# ELASTIC_HOST (EB settings above) sources THIS module during the rollback drill;
-# v4 (module.opensearch_v4) is the forward target. Steady state is the reverse.
+# DECOMMISSIONED 2026-08-02 - this module is being torn down over two applies.
+# ELASTIC_HOST (EB settings above) points at v4 (module.opensearch_v4) and does
+# NOT source this module. Apply 1 removed the EB instance role's access; apply 2
+# removes this block, the v3 alarm, gha_v3_loader + policy + output, and the
+# elastic_v3_* / v3_searchable_documents_floor vars.
+#
+# RETENTION GATE on apply 2 (P079, user direction 2026-08-02). This domain may
+# NOT be deleted until BOTH hold:
+#   1. the primary has served >= 0.25x its average daily request volume since
+#      cutover, and
+#   2. the v3 searchable-documents alarm has not fired.
+# Both, not either. Expressed as a MULTIPLE of average daily traffic and never
+# as an absolute request count - absolute counts are confidential traffic
+# volumes under RISK-POLICY and this repo is public. Baseline the denominator on
+# representative PRE-cutover traffic excluding idle days; the cutover day reads
+# near-zero on this domain and poisons a naive average.
 module "opensearch_v3" {
   source = "./modules/opensearch"
 
@@ -676,10 +693,14 @@ module "opensearch_v3" {
   instance_count  = 2
   ebs_volume_size = 20
 
-  # ADR 033/035 scoped principals: EB app instance role + local operator loader
-  # + the GitHub Actions OIDC v3 loader role (see deploy/oidc.tf).
+  # DECOMMISSION APPLY 1 (2026-08-02): the EB app instance role is REMOVED from
+  # this list. The running service points at v4 and never queries v3, so this is
+  # a no-op for production — but it is deliberately NOT a no-op for a mis-flip:
+  # with the grant gone, pointing ELASTIC_HOST back here yields 403 -> /health
+  # 503 -> RollbackLaunchOnFailure, i.e. a loud self-correcting failure instead
+  # of silently serving a stale index. Remaining principals are the local
+  # operator loader and the OIDC v3 loader role, both of which die in apply 2.
   allowed_principal_arns = [
-    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
     var.loader_principal_arn,
     aws_iam_role.gha_v3_loader.arn,
   ]
@@ -689,24 +710,6 @@ module "opensearch_v3" {
     Component = "search"
     Adr       = "035"
   }
-}
-
-# ADR 033/035: let the EB app SigV4-call the v3 domain (belt-and-suspenders with
-# the domain access policy). Granted pre-cutover — permission only; EB does not
-# query v3 until ELASTIC_HOST flips at cutover.
-resource "aws_iam_role_policy" "eb_opensearch_v3" {
-  name = "addressr-opensearch-v3-eshttp"
-  role = "aws-elasticbeanstalk-ec2-role"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "es:ESHttp*"
-        Resource = "${module.opensearch_v3.arn}/*"
-      }
-    ]
-  })
 }
 
 # ADR 035 / P035 trip-wire: v3 SearchableDocuments-drop alarm, mirroring v2.
@@ -792,8 +795,7 @@ resource "aws_cloudwatch_dashboard" "search_parity" {
 # index and forces a full ~15M-doc reindex. It is NOT an engine upgrade.
 #
 # Provisioned QUIET per the migration playbook step 1, then promoted to primary
-# at the ADR-041 cutover. TEMPORARILY the forward target while the rollback drill
-# runs. Steady state is this module as primary.
+# at the ADR-041 cutover. This module is THE production search domain.
 #
 # Sized identically to v3 ON PURPOSE. ADR-041's Confirmation makes the green
 # index's on-disk size and resident hot-set a pre-cutover GATE rather than a note,
