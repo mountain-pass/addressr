@@ -33,7 +33,7 @@ Governing decisions: **ADR 029** (two-phase blue/green), **ADR 030** (Terraform-
 >
 > Proving the rollback MECHANISM is a separate, one-off matter and is already done: exercised and timed 2026-08-02 at 6m36s (ADR-029 Confirmation). Do not re-run a drill per migration.
 
-9. **Soak in production**, then **decommission the old domain** (`aws opensearch delete-domain`), then cleanup (drop the old-version CI matrix leg + `package.json` image entry; remove dangling vars/dashboard refs) + promote the ADRs to accepted.
+9. **Soak in production**, then **decommission the old domain via TERRAFORM — never `aws opensearch delete-domain`** (corrected 2026-08-03: since ADR 030 brought domains under Terraform, an out-of-band CLI delete leaves state holding a phantom resource and the NEXT apply recreates the domain). Remove the module block, its EB IAM policy, the loader role + policy + output, the alarm and the vars in one commit, then apply. Stage it as TWO applies: first sever the EB instance role's grant and drop it from the domain's access policy, verify production unaffected; then destroy the rest with a plan asserting zero change to `aws_elastic_beanstalk_environment`. Note apply 1 is the point of no return — it retires the one-line rollback, so a deliberate rollback between applies costs an IAM re-apply first. Then cleanup (drop the old-version CI matrix leg + `package.json` image entry; remove dangling vars/dashboard refs) + promote the ADRs to accepted.
 
 ## Hard-won learnings (the expensive ones)
 

@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     # Explicitly read-only. This workflow runs on master, so declaring
     # `id-token: write` would make it a SECOND principal able to assume the
-    # gha-v3-loader role against the production index, silently widening a
+    # loader role (gha-v4-loader) against the production index, silently widening a
     # Level-5 asset's access surface with no ADR amendment. It needs no AWS
     # credentials at all — do not "tidy up" by copying the loader workflows'
     # permissions block.

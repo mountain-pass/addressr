@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-02 **rollback drill run; P079 + P080 captured** — the ADR-041 rollback path is now EXERCISED rather than assumed (flipped to v3 and back, 6m36s, discharging ADR-029's never-measured 10-minute criterion). P079 captures that nothing gates decommission on the exercise having happened, which this project has skipped twice. P080 captures that the external-comms gate cannot read --body-file, so the documented path can never clear it. P077 gains a second instance: the scorer scores against an implicit zero baseline (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-02 **standby decommission apply 1 landed; P081 + P082 captured** — the EB role's reach to addressr5 is severed (plan-verified as exactly two resources, EB environment untouched), so a mis-flip now fails loudly instead of silently serving a stale index. P081 captures that the assistant escalates judgement calls it holds the evidence to settle while acting freely on mechanical ones — user-identified, four instances in one session. P082 captures that one `RISK_BYPASS: reducing` line opens the commit, push AND release gates, with the push marker sitting ahead of the CI check (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -17,6 +17,8 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open        | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission       | High (12)    | Open        | M      | 2026-08-02 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Open        | S      | 2026-08-02 | internal |
+| 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI     | High (12)    | Open        | S      | 2026-08-02 | internal |
+| 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open        | M      | 2026-08-02 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error | M      | 2026-07-18 | internal |

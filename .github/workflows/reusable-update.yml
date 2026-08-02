@@ -8,11 +8,12 @@ on:
         type: string
       target:
         # ADR 034/035: which OpenSearch domain to load, over OIDC/SigV4. 'v4'
-        # (addressr6, OpenSearch 3.5, ADR-041 analyzer) is the production domain;
-        # 'v3' (addressr5) is retained WARM as the rollback target since the
-        # v2 (addressr4, 2.19) decommission 2026-07-14 (ADR 035 Phase 2 step 6).
-        # The 9 update-{state}.yml crons and populate-search-domain.yml all pass
-        # target: v4. Kept parameterised for the next version-generation upgrade.
+        # (addressr6, OpenSearch 3.5, ADR-041 analyzer) is the SOLE production
+        # domain. v3 (addressr5) was decommissioned 2026-08-03 along with its
+        # gha-v3-loader role, so the v3 arm is GONE - resolving it would assume a
+        # role that no longer exists. The 9 update-{state}.yml crons and
+        # populate-search-domain.yml all pass target: v4. Kept parameterised for
+        # the next version-generation upgrade, which adds its own arm.
         #
         # The v4 arm REQUIRES the TF_VAR_ELASTIC_V4_HOST repo secret — the resolve
         # step below fails closed without it. Note the asymmetry, which is easy to
@@ -26,8 +27,6 @@ on:
       # the loader needs is the target domain's endpoint (the v1 basic-auth
       # secrets were removed 2026-07-11 with the v1 decommission; the v2
       # TF_VAR_ELASTIC_V2_HOST input was removed 2026-07-14 with the v2 one).
-      TF_VAR_ELASTIC_V3_HOST:
-        required: false
       TF_VAR_ELASTIC_V4_HOST:
         required: false
   workflow_dispatch:
@@ -53,7 +52,7 @@ jobs:
       group: reusable-update-${{ inputs.target }}-${{ inputs.state }}
       cancel-in-progress: false
     # ADR 034/035: id-token needed for the target's loader OIDC role assumption
-    # (gha-v4-loader by default; gha-v3-loader when target: v3).
+    # (gha-v4-loader; v3 was decommissioned 2026-08-03).
     # contents:read keeps checkout working once permissions are declared
     # explicitly.
     permissions:
@@ -74,24 +73,17 @@ jobs:
         # missing endpoint secret or an unsupported target.
         env:
           TARGET: ${{ inputs.target }}
-          V3_HOST: ${{ secrets.TF_VAR_ELASTIC_V3_HOST }}
           V4_HOST: ${{ secrets.TF_VAR_ELASTIC_V4_HOST }}
         run: |
           set -e
-          if [ "$TARGET" = "v3" ]; then
-            [ -n "$V3_HOST" ] || { echo "::error::target=v3 but TF_VAR_ELASTIC_V3_HOST is not set"; exit 1; }
-            echo "RESOLVED_HOST=$V3_HOST" >> "$GITHUB_ENV"
-            echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v3-loader" >> "$GITHUB_ENV"
-            echo "::add-mask::$V3_HOST"
-            echo "Resolved target: v3 (SigV4, gha-v3-loader)"
-          elif [ "$TARGET" = "v4" ]; then
+          if [ "$TARGET" = "v4" ]; then
             [ -n "$V4_HOST" ] || { echo "::error::target=v4 but TF_VAR_ELASTIC_V4_HOST is not set"; exit 1; }
             echo "RESOLVED_HOST=$V4_HOST" >> "$GITHUB_ENV"
             echo "RESOLVED_ROLE=arn:aws:iam::869772437473:role/gha-v4-loader" >> "$GITHUB_ENV"
             echo "::add-mask::$V4_HOST"
             echo "Resolved target: v4 (SigV4, gha-v4-loader)"
           else
-            echo "::error::Unsupported target: $TARGET (expected 'v3' or 'v4')"
+            echo "::error::Unsupported target: $TARGET (expected 'v4')"
             exit 1
           fi
           echo "RESOLVED_AUTH_MODE=sigv4" >> "$GITHUB_ENV"

@@ -99,15 +99,21 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   # ADR 041: the EB primary points at the v4 domain (addressr6, OpenSearch 3.5,
   # equivalent-synonym analyzer) over IAM/SigV4.
   #
-  # THE ONE-LINE ROLLBACK IS RETIRED as of decommission apply 1 (2026-08-02).
-  # Read this before reaching for it in an incident: setting this value back to
-  # module.opensearch_v3.endpoint NO LONGER WORKS on its own. That apply removed
-  # the EB instance role's es:ESHttp* grant on v3 and dropped it from the v3
-  # domain's access policy, so a bare host flip now yields 403 -> /health 503 ->
-  # RollbackLaunchOnFailure. That is intended: it makes an ACCIDENTAL flip fail
-  # loudly rather than silently serve a stale index. A DELIBERATE rollback in the
-  # window before apply 2 therefore costs an IAM re-apply first, then the flip.
-  # After apply 2 the v3 domain is gone and there is no flip at all.
+  # THERE IS NO ROLLBACK DOMAIN. The v3 standby (addressr5) was decommissioned
+  # 2026-08-03 over two applies: apply 1 (2026-08-02) severed the EB instance
+  # role's es:ESHttp* grant and dropped it from v3's access policy; apply 2
+  # destroyed the domain, its alarm, the gha_v3_loader role and the elastic_v3_*
+  # vars. Setting this value to a v3 endpoint does nothing - there is no domain.
+  #
+  # Why it went. The rollback MECHANISM was exercised and timed 2026-08-02 at
+  # 6m36s (ADR-029 Confirmation, commits 43b3309 / f295bd8), so the path is
+  # proven rather than assumed. The standby's only UNIQUE cover was "the ADR-041
+  # analyzer is wrong", and that was retired by a 33.8h read-shadow soak with all
+  # five criteria passed, an 800-pair relevance differential at 793/800 top-1
+  # unchanged, the SSLA baseline, and production traffic post-cutover. The P079
+  # retention gate was met at 157% of threshold on a denominator computed from 20
+  # representative pre-cutover days, with both trip-wire alarms OK. Retaining it
+  # further was a certain recurring cost against a retired hazard.
   #
   # What replaces it. For index loss or a red cluster ON THIS DOMAIN, recovery is
   # an AWS automated snapshot restore: the cs-automated-enc repository is present
@@ -668,73 +674,7 @@ module "cloudflare_worker" {
 # m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
 # footprint but we don't assume it — right-size later if measured, via
 # from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-# DECOMMISSIONED 2026-08-02 - this module is being torn down over two applies.
-# ELASTIC_HOST (EB settings above) points at v4 (module.opensearch_v4) and does
-# NOT source this module. Apply 1 removed the EB instance role's access; apply 2
-# removes this block, the v3 alarm, gha_v3_loader + policy + output, and the
-# elastic_v3_* / v3_searchable_documents_floor vars.
-#
-# RETENTION GATE on apply 2 (P079, user direction 2026-08-02). This domain may
-# NOT be deleted until BOTH hold:
-#   1. the primary has served >= 0.25x its average daily request volume since
-#      cutover, and
-#   2. the v3 searchable-documents alarm has not fired.
-# Both, not either. Expressed as a MULTIPLE of average daily traffic and never
-# as an absolute request count - absolute counts are confidential traffic
-# volumes under RISK-POLICY and this repo is public. Baseline the denominator on
-# representative PRE-cutover traffic excluding idle days; the cutover day reads
-# near-zero on this domain and poisons a naive average.
-module "opensearch_v3" {
-  source = "./modules/opensearch"
 
-  name            = var.elastic_v3_name
-  engine_version  = var.elastic_v3_engine_version
-  instance_type   = "m6g.large.search"
-  instance_count  = 2
-  ebs_volume_size = 20
-
-  # DECOMMISSION APPLY 1 (2026-08-02): the EB app instance role is REMOVED from
-  # this list. The running service points at v4 and never queries v3, so this is
-  # a no-op for production — but it is deliberately NOT a no-op for a mis-flip:
-  # with the grant gone, pointing ELASTIC_HOST back here yields 403 -> /health
-  # 503 -> RollbackLaunchOnFailure, i.e. a loud self-correcting failure instead
-  # of silently serving a stale index. Remaining principals are the local
-  # operator loader and the OIDC v3 loader role, both of which die in apply 2.
-  allowed_principal_arns = [
-    var.loader_principal_arn,
-    aws_iam_role.gha_v3_loader.arn,
-  ]
-
-  tags = {
-    ManagedBy = "terraform"
-    Component = "search"
-    Adr       = "035"
-  }
-}
-
-# ADR 035 / P035 trip-wire: v3 SearchableDocuments-drop alarm, mirroring v2.
-# Floor raised to 15M (var default) at cutover 2026-07-14 now that v3 is populated
-# (16.9M, exact G-NAF parity) and serving as primary — it started at 1M during
-# provision+populate so a fresh empty domain would clear once populate crossed ~1M.
-resource "aws_cloudwatch_metric_alarm" "v3_searchable_documents_drop" {
-  alarm_name  = "addressr-v3-searchable-documents-drop"
-  namespace   = "AWS/ES"
-  metric_name = "SearchableDocuments"
-  dimensions = {
-    DomainName = var.elastic_v3_name
-    ClientId   = data.aws_caller_identity.current.account_id
-  }
-  statistic           = "Minimum"
-  period              = 300
-  evaluation_periods  = 2
-  comparison_operator = "LessThanThreshold"
-  threshold           = var.v3_searchable_documents_floor
-  treat_missing_data  = "breaching"
-  # ADR 041: wired to SNS. Until then this alarm reached nobody.
-  alarm_actions     = [aws_sns_topic.search_ops.arn]
-  ok_actions        = [aws_sns_topic.search_ops.arn]
-  alarm_description = "ADR 035: v3 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Investigate before it self-heals."
-}
 
 # ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
 # before any v2 spend to prove the parity signal at real traffic volume; used
@@ -749,7 +689,7 @@ locals {
   # ADR 041: v3 AND v4 during the analyzer-migration overlap — this is what the
   # parity dashboard was built for and what it did during the 2.19 to 3.5 overlap.
   # Drops back to v4-only when v3 is decommissioned post-cutover.
-  search_parity_domains = [var.elastic_v3_name, var.elastic_v4_name]
+  search_parity_domains = [var.elastic_v4_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
   # the statistic/period choice is validated on v1 during Stage 0d.
@@ -805,10 +745,13 @@ resource "aws_cloudwatch_dashboard" "search_parity" {
 # Escalation if the measured hot-set exceeds RAM is m6g.xlarge.search (16 GB),
 # decided on the number. Resize is safe (FGAC-off removed the P036 clobber).
 #
-# The overlap TERMINATES. ADR-035's cost driver is breached in substance if this
-# becomes open-ended: decommission v3 after cutover + soak, removing
-# module.opensearch_v3, eb_opensearch_v3, gha_v3_loader + policy, the v3 alarm,
-# and the elastic_v3_* / v3_searchable_documents_floor vars.
+# The overlap TERMINATED 2026-08-03, as this block required. v3 was decommissioned
+# over two applies once the P079 retention gate was met - module.opensearch_v3,
+# eb_opensearch_v3, gha_v3_loader + policy + output, the v3 alarm and the
+# elastic_v3_* / v3_searchable_documents_floor vars are all gone. This is now the
+# SOLE search domain. Recovery for index loss or a red cluster here is an AWS
+# automated snapshot restore (cs-automated-enc, hourly, in-place to this domain
+# only); domain-level loss or a wrong-analyzer decision is a rebuild from G-NAF.
 module "opensearch_v4" {
   source = "./modules/opensearch"
 
@@ -818,8 +761,8 @@ module "opensearch_v4" {
   instance_count  = 2
   ebs_volume_size = 20
 
-  # Same scoped principals as v3, but with the generation-4 GHA role rather than
-  # gha_v3_loader — see the reasoning in oidc.tf.
+  # Scoped principals: EB app instance role, local operator loader, and the
+  # generation-4 GHA OIDC loader role — see the reasoning in oidc.tf.
   allowed_principal_arns = [
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-elasticbeanstalk-ec2-role",
     var.loader_principal_arn,

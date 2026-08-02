@@ -15,7 +15,6 @@ jobs:
       contents: read
     uses: ./.github/workflows/reusable-update.yml
     secrets:
-      TF_VAR_ELASTIC_V3_HOST: ${{ secrets.TF_VAR_ELASTIC_V3_HOST }}
       TF_VAR_ELASTIC_V4_HOST: ${{ secrets.TF_VAR_ELASTIC_V4_HOST }}
     with:
       state: SA

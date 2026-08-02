@@ -51,33 +51,11 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
-# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain — the PREVIOUS production search
-# domain since the v2 (addressr4) decommission 2026-07-14. The elastic_v2_* +
-# v2_searchable_documents_floor vars were removed then (no config references them
-# once module.opensearch_v2 is gone). Operators: clear any stale elastic_v2_*
-# override in the TFC workspace (Terraform ignores undeclared vars — warn, not fail).
-variable "elastic_v3_name" {
-  type        = string
-  nullable    = false
-  default     = "addressr5"
-  description = "ADR 035 Phase 2: domain name for the v3 OpenSearch 3.5 domain, provisioned in parallel during the 2.19→3.5 blue/green cutover. Endpoint reads search-addressr5-…. Mirrors elastic_v2_name."
-}
-variable "elastic_v3_engine_version" {
-  type        = string
-  nullable    = false
-  default     = "OpenSearch_3.5"
-  description = "ADR 035 Phase 2: engine version for the v3 domain (AWS OpenSearch Service latest supported 3.x, GA March 2026)."
-}
-variable "v3_searchable_documents_floor" {
-  type        = number
-  default     = 15000000
-  description = "ADR 035 / P035 trip-wire: alarm fires if v3 SearchableDocuments drops below this. Raised 1M→15M at cutover 2026-07-14 now that v3 is populated (16.9M, exact G-NAF parity) and serving as primary — ~15M leaves headroom for legit per-state churn during a quarterly delta load but catches a delta that drops the index, exactly as v2's floor went 1M→15M."
-}
 variable "loader_principal_arn" {
   type        = string
   nullable    = false
   default     = "arn:aws:iam::869772437473:user/tompahoward"
-  description = "ADR 033: IAM principal that runs the loader locally (SigV4) and is granted access to the v3 domain. Since the data load moved off GitHub Actions to the local operator machine (GHA quota), this is the operator's IAM identity. Override if a different identity/role runs the load."
+  description = "ADR 033: IAM principal that runs the loader locally (SigV4) and is granted access to the search domain. Since the data load moved off GitHub Actions to the local operator machine (GHA quota), this is the operator's IAM identity. Override if a different identity/role runs the load."
 }
 
 
@@ -119,7 +97,7 @@ variable "elastic_v4_engine_version" {
   type        = string
   nullable    = false
   default     = "OpenSearch_3.5"
-  description = "ADR 041: engine version for the generation-4 domain. DELIBERATELY IDENTICAL to elastic_v3_engine_version — generation is not engine major (ADR 035 naming note). This migration changes the index analyzer, not the engine, so a reader diffing these two vars and finding them equal is seeing intent, not a stale value."
+  description = "ADR 041: engine version for the generation-4 domain. Matches the engine version the v3 domain ran, so the ADR-041 cutover changed the analyzer only, never the engine. v3 was decommissioned 2026-08-03."
 }
 
 variable "v4_searchable_documents_floor" {

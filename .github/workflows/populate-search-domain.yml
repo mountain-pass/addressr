@@ -13,13 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target search domain (v4 = production, addressr6, ADR-041 equivalent-synonym analyzer; v3/addressr5 retained warm for rollback until decommission)'
+        description: 'Target search domain (v4 = production, addressr6, ADR-041 equivalent-synonym analyzer)'
         required: true
         default: 'v4'
         type: choice
         options:
           - v4
-          - v3
       states:
         description: 'States to load (comma-separated, or "all")'
         required: false

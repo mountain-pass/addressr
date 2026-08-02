@@ -3,7 +3,7 @@
 # least-privilege identity via OIDC — no long-lived access key in a GHA secret.
 # Amends ADR 033 (which removed GitHub from the data path) for the small quarterly
 # DELTA loads only; the initial bulk load stays local. The role is a scoped
-# principal on the domain access policy (see module.opensearch_v3 in main.tf).
+# principal on the domain access policy (see module.opensearch_v4 in main.tf).
 # The v2 (gha-v2-loader) role was removed 2026-07-14 with the v2 decommission.
 
 # GitHub's OIDC issuer. Since mid-2023 AWS validates the OIDC token against a
@@ -23,64 +23,6 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
     Component = "search"
     Adr       = "034"
   }
-}
-
-# ADR 035 Phase 2: the loader role GitHub Actions assumes to populate + refresh
-# the v3 (OpenSearch 3.5) domain over SigV4. Trust scoped to the master ref only
-# (the 9 update-{state}.yml crons + populate/canary workflow_dispatch all run from
-# master); shared OIDC provider (AWS allows one provider per URL per account, so it
-# is reused, not redeclared); least-privilege Get/Put/Post/Head (no ESHttpDelete —
-# delta upserts never index-delete), scoped to the v3 ARN only.
-resource "aws_iam_role" "gha_v3_loader" {
-  name = "gha-v3-loader"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Principal = { Federated = aws_iam_openid_connect_provider.github_actions.arn }
-        Action    = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:mountain-pass/addressr:ref:refs/heads/master"
-          }
-        }
-      }
-    ]
-  })
-
-  tags = {
-    ManagedBy = "terraform"
-    Component = "search"
-    Adr       = "035"
-  }
-}
-
-resource "aws_iam_role_policy" "gha_v3_loader_eshttp" {
-  name = "addressr-gha-v3-loader-eshttp"
-  role = aws_iam_role.gha_v3_loader.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "es:ESHttpGet",
-          "es:ESHttpPut",
-          "es:ESHttpPost",
-          "es:ESHttpHead",
-        ]
-        Resource = "${module.opensearch_v3.arn}/*"
-      }
-    ]
-  })
-}
-
-output "gha_v3_loader_role_arn" {
-  value       = aws_iam_role.gha_v3_loader.arn
-  description = "ADR 035: IAM role GitHub Actions assumes via OIDC to populate + refresh the v3 (OpenSearch 3.5) domain over SigV4."
 }
 
 # ADR 041 / P069: generation-4 loader role. SAME engine (OpenSearch 3.5) as
