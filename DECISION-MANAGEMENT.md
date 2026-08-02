@@ -9,6 +9,7 @@ This document defines how architectural and technical decisions are documented, 
 ### 1. Innovation vs. Standardization Balance
 
 Decisions represent standards that provide consistency while allowing innovation. The system should:
+
 - Generate standards that teams follow
 - Keep standards healthy and fresh through natural evolution
 - Focus on the health of the decision-making system, not rigid enforcement
@@ -88,7 +89,7 @@ All decisions follow the MADR 4.0 format with Claude Code-specific extensions:
 
 ```yaml
 ---
-status: "proposed|accepted|rejected|deprecated|superseded"
+status: 'proposed|accepted|rejected|deprecated|superseded'
 date: YYYY-MM-DD
 decision-makers: [list of makers]
 consulted: [list of consulted resources/people]
@@ -193,6 +194,7 @@ A decision moves to `accepted` status when:
 4. Team/Claude Code validates successful production use
 
 **Process:**
+
 1. Rename file from `.proposed.md` to `.accepted.md`
 2. Update status in frontmatter to `accepted`
 3. Add production validation evidence to decision
@@ -208,6 +210,7 @@ A decision moves to `rejected` status when:
 4. Production trial fails
 
 **Process:**
+
 1. Rename file from `.proposed.md` to `.rejected.md`
 2. Update status in frontmatter to `rejected`
 3. Document specific reasons for rejection
@@ -236,6 +239,7 @@ When new decision is accepted: Update old decision as superseded
 When decision NNN is superseded by decision MMM:
 
 1. **Create new decision** (MMM) with:
+
    ```yaml
    supersedes: [NNN-old-decision-title]
    ```
@@ -334,6 +338,7 @@ Maintain `docs/decisions/README.md` with:
 4. **Rejected** - Decisions not adopted (collapsed/expandable)
 
 Format:
+
 ```markdown
 # Decision Index
 
@@ -350,12 +355,14 @@ Format:
 <summary>Superseded Decisions</summary>
 
 - [003 - Use CommonJS](./003-use-commonjs.superseded.md) - Superseded by 004
+
 </details>
 
 <details>
 <summary>Rejected Decisions</summary>
 
 - [005 - Use Flow](./005-use-flow.rejected.md)
+
 </details>
 ```
 
@@ -383,6 +390,24 @@ Stories should reference decisions that influenced implementation:
 - [001 - Use TypeScript](../../decisions/001-use-typescript.accepted.md)
 - [004 - Use ESM](../../decisions/004-use-esm.accepted.md)
 ```
+
+### Citing External Decision Records
+
+The Windy Road plugins keep their own decision records, numbered from 001 in their own corpora. Those numbers **collide with this repo's** — a bare `ADR-042` or `ADR-056` in our prose points at a slot that either holds something unrelated or does not exist here at all. A reader following the reference finds nothing and cannot tell whether the citation is stale or the file is missing.
+
+Qualify every external ADR with its owning plugin, in bold:
+
+```markdown
+Per **wr-risk-scorer ADR-042 Rule 1**, remediations auto-apply until residual is within appetite.
+```
+
+Not `ADR-042`, and not `` `wr-risk-scorer` ADR-042 `` — bold, plugin name first. Where the collision is live rather than merely possible, say so:
+
+> **wr-architect ADR-026** — plugin-scoped. This repo's ADR-026 is Range-Number Address Expansion, an unrelated search-ranking decision.
+
+Two reasons this is worth the keystrokes. The hook-generated `docs/decisions/README.md` compendium harvests inline `ADR-NNN` mentions into each entry's `**Related:**` line, so an unqualified external citation becomes a dangling intra-repo edge in the relationship graph architect review actually loads. And it has already bitten twice — `ADR-042` in ADR-037 and `ADR-056` across the risk register — which is why this is written down rather than left to judgement.
+
+This is a citation style rule, not an architectural trade-off, so it lives here rather than consuming an ADR slot of its own.
 
 ## Tools and Automation
 

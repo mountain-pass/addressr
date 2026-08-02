@@ -178,9 +178,9 @@ _37 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-037 — CORS preflight caching policy: emit `Access-Control-Max-Age` at the origin, exempt OPTIONS from proxy-auth
 
 **Status:** proposed | **Oversight:** confirmed
-**Decides:** Emit `Access-Control-Max-Age` (default `86400`) and `Access-Control-Allow-Methods` (default `GET,OPTIONS`) from an explicit `app.options` handler in `buildRest2App()` returning 204, registered before `proxyAuthMiddleware` so preflights are never 401-ed — with the whole registration gated behind the same `ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN` opt-in the sibling CORS headers use (R1 remediation), cutting the cross-origin preflight tax without a new dependency and without opening a data path. Ordering is the exemption: it narrows ADR-024 to a method-level OPTIONS carve-out on the CORS-enabled profile only.
+**Decides:** Emit `Access-Control-Max-Age` (default `86400`) and `Access-Control-Allow-Methods` (default `GET,OPTIONS`) from an explicit `app.options` handler in `buildRest2App()` returning 204, registered before `proxyAuthMiddleware` so cross-origin preflights are cached instead of re-run per GET and are never 401-ed — with the whole registration gated behind the same `ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN` opt-in the sibling CORS headers use (R1 remediation of a STOP-scoring always-on blast radius), costing no new dependency and opening no data path. Ordering is the exemption: it narrows ADR-024 to a method-level OPTIONS carve-out on the CORS-enabled profile only, and end-to-end efficacy through the RapidAPI gateway is explicitly not claimed — P023 investigation task 4 gates that.
 **Confirmation:** CORS on → `OPTIONS /` 204 with both directives; CORS off → handler unregistered, no `Max-Age` emitted; proxy-auth on → preflight 204 but data GET without the secret still 401; source-inspection tests pin the ACAO gating, the OPTIONS-only scope of the pre-auth short-circuit, and `app.options` before `app.use(proxyAuthMiddleware())`; `cors` absent from `package.json`/lockfile.
-**Related:** ADR-017, ADR-024, ADR-042
+**Related:** ADR-017, ADR-024
 
 ### ADR-038 — Per-Topic Briefing Tree Surfaced at Session Start
 
