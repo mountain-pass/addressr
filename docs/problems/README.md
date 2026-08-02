@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-01 **P077 captured** — the risk scorer rates deferral as mitigation because it scores one hop rather than the path (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-02 **P078 captured** — phrase_prefix sums IDF over a prefix-expansion set built per-shard, so an identical query scores two equally-good matches differently depending on which shard each landed on; pre-exists ADR-041 and affects production today (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -25,6 +25,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P007 | Exact street address ranked below sub-units (REOPENED)                | High (16)    | Known Error | L      | 2026-04-12 | internal                |
 | 4.0  | P074 | P007 street-level-first unfixed for ~50% of sub-unit addresses        | High (16)    | Open        | L      | 2026-07-31 | internal                |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented        | Medium (8)   | Open        | M      | 2026-07-31 | internal                |
+| 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set       | Medium (8)   | Open        | M      | 2026-08-02 | internal                |
 | 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open        | M      | 2026-07-30 | internal                |
 | 3.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | Medium (6)   | Open        | M      | 2026-04-28 | internal                |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open        | M      | 2026-07-16 | internal                |

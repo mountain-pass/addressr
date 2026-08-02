@@ -146,3 +146,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-08-01
 
 > Last reviewed: 2026-07-31 **P075 + P076 captured** — ADR-041 inverts one exact-vs-range pair, and an ADR Confirmation item was prescribed but never implemented (lightweight aside via /wr-itil:capture-problem)
+
+## 2026-08-02
+
+> Last reviewed: 2026-08-01 **P077 captured** — the risk scorer rates deferral as mitigation because it scores one hop rather than the path (lightweight aside via /wr-itil:capture-problem)
