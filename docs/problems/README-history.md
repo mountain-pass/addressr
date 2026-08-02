@@ -150,3 +150,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-08-02
 
 > Last reviewed: 2026-08-01 **P077 captured** — the risk scorer rates deferral as mitigation because it scores one hop rather than the path (lightweight aside via /wr-itil:capture-problem)
+
+> Last reviewed: 2026-08-02 **P078 captured** — phrase_prefix sums IDF over a prefix-expansion set built per-shard, so an identical query scores two equally-good matches differently depending on which shard each landed on; pre-exists ADR-041 and affects production today (lightweight aside via /wr-itil:capture-problem)

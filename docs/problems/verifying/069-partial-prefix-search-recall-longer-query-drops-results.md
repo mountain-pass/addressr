@@ -1,6 +1,8 @@
 # Problem 069: Partial-prefix search drops results a shorter query returns
 
-**Status**: Known Error
+**Status**: Verification Pending
+**Released**: 2026-08-02 (ADR-041 blue/green cutover, commit `33e6c04`)
+**Verified in production**: 2026-08-02 — `55 Pyrmont Bri` returns 4 results with `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` at #1 (previously 0); `55 Harris S` returns 8 (previously 0); control `55 Pyrmont` unchanged. Reporter notified and issue #365 closed.
 **Reported**: 2026-07-29
 **Origin**: inbound-reported (#365)
 **Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4) — derived at capture. Impact 4 per RISK-POLICY § Impact: live RapidAPI search/autocomplete returns missing results for a valid, more-specific query, so paid and free-tier consumers get degraded results. Likelihood 4: reproduced by an external reporter and confirmed still present by the maintainer on 2026-07-29 (ADR-076 inbound-report evidence — honest field risk).
@@ -154,9 +156,13 @@ Recorded and human-ratified as **[ADR-041](../../decisions/041-equivalent-synony
 
 **Remaining work is a production operation, not code.** Per ADR-029 and the user's ratified choice of domain-level blue/green: provision the blue domain, load with `replicas=0` and the doc-count alarm armed first, validate doc count and geo, measure parity, run the relevance gate (SSLA-14, full Cucumber `test:nogeo` + `test:geo`, k6 pair against a freshly re-derived baseline — not the inherited 1443 ms), gate the green index's hot-set against the page-cache budget, cut over, exercise rollback in both directions, then publish and notify the reporter on #365.
 
-## Migration state (2026-07-31) — READ-SHADOW SOAK RUNNING
+## Migration state (2026-08-02) — CUTOVER COMPLETE, PRODUCTION SERVES `addressr6`
 
-Playbook steps 1-4 complete. The step-5 relevance gate previously read FAILED on P073; that finding was **dissolved by measurement, not waived** — P073's blast radius turned out to be an aggregate improvement, not a regression (see P073/P074 and the row below). Read-shadow was enabled onto the green domain at **2026-07-31 02:45Z** and is mirroring. There has been no cutover; production still serves `addressr5`.
+**The cutover landed 2026-08-02 in commit `33e6c04`, and the fix is verified on the live endpoint.** `ELASTIC_HOST` now resolves to `module.opensearch_v4.endpoint` (`addressr6`); `addressr5` is retained WARM as the rollback target and must not be decommissioned yet.
+
+All playbook steps are complete. The step-5 relevance gate previously read FAILED on P073; that finding was **dissolved by measurement, not waived** — P073's blast radius turned out to be an aggregate improvement, not a regression (see P073/P074 and the row below). The read-shadow ran from **2026-07-31 02:45Z** for 33.8 hours across two business peaks, all five ADR-031 Soak Gate criteria passed, and it was removed with the cutover since it would now mirror v4 onto itself (recorded as an ADR-031 ledger amendment dated 2026-08-02).
+
+**Do not re-run the cutover runbook below as though it were pending.** It is retained as the record of what was executed and as the source of the rollback procedure, which remains live. Flipping `ELASTIC_HOST` back to v3 returns consumers to the domain where this ticket's defect reproduces.
 
 | Step                                 | State                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -199,9 +205,9 @@ SEARCH "55 Harris S"         : 55@0 HARRIS@1 S@2
 - Watch `_stats` `indexing.index_total`, not the `_cat/indices` doc count. Refresh is throttled under heavy indexing, so the doc count lags by ~15 minutes and looks stalled when it is not. This cost an unnecessary investigation.
 - The SNS subscription for `addressr-search-ops` was still `PendingConfirmation` throughout the load, so the doc-count trip-wire alarms reached nobody during a ~9.5h unattended window. Confirm the subscription before the next long-running step.
 - The loader runs `x64` node under Rosetta on Apple Silicon (see `reference_env_arch_and_skill_tool`), which is why throughput was ~20-100k/min rather than better.
-- `addressr6` is loaded, green, and costing money. It is the correct green domain to cut over **once P073 is resolved** — do not tear it down and do not reload it unless the fix is index-time.
+- `addressr6` is now the PRODUCTION domain as of 2026-08-02. `addressr5` is the warm rollback target and is still costing money: do not tear either down. P073 was resolved by measurement rather than by a fix, and did not block the cutover.
 
-## Cutover runbook (written 2026-07-31 while the soak runs)
+## Cutover runbook (written 2026-07-31 while the soak ran; EXECUTED 2026-08-02, commit `33e6c04`)
 
 Written now, while the evidence is fresh, so the next session executes rather
 than reconstructs this from three ADRs and a playbook. Every path, role name and

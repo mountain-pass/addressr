@@ -1,6 +1,7 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-07-29
+accepted-date: 2026-08-02
 human-oversight: confirmed
 oversight-date: 2026-07-29
 decision-makers: [Tom Howard]
@@ -11,7 +12,7 @@ reassessment-date: 2026-10-29
 
 # Equivalent synonyms with a synonym-free search analyzer
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context, then corrected after architecture review caught a factual error in the authority-table directions. Human-ratified 2026-07-29; `status: proposed` until the fix is verified in production.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context, then corrected after architecture review caught a factual error in the authority-table directions. Human-ratified 2026-07-29. Promoted to `accepted` on 2026-08-02: the stated condition (`status: proposed` until the fix is verified in production) is met. The blue/green cutover landed in commit `33e6c04` and the goal condition is confirmed on the live endpoint: `55 Pyrmont Bri` returns 4 results with the target at #1 (previously 0), `55 Harris S` returns 8 (previously 0), and the control `55 Pyrmont` is unchanged.
 
 ## Context and Problem Statement
 
