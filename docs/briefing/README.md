@@ -17,23 +17,25 @@ Seeded manually 2026-07-26 (the `run-retro` skill has no bin shim in adopter rep
 
 ## Topic Index
 
-Decomposed by subject on 2026-07-28 (Tier-3 budget — the two original files exceeded 2× the per-file ceiling).
+Decomposed by subject 2026-07-28, rotated again 2026-08-02 (Tier-3 budget — eight files were over the per-file ceiling; the largest were split on subtopic boundaries).
 
-| File                                                                   | Subject                                                                       |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [what-you-need-to-know.md](./what-you-need-to-know.md)                 | General project facts (API version, trunk-based dev, credentials, ADR index)  |
-| [what-will-surprise-you.md](./what-will-surprise-you.md)               | Domain-data + API-shape surprises (G-NAF, OpenSearch naming, WayCharter)      |
-| [opensearch-and-deploy-state.md](./opensearch-and-deploy-state.md)     | Current search topology, SigV4/health/cutover mechanics, migration playbook   |
-| [markers-and-edit-gates.md](./markers-and-edit-gates.md)               | Architect / JTBD / oversight marker mechanics + recovery incantations         |
-| [commit-time-gates.md](./commit-time-gates.md)                         | Compendium-pairing, README-refresh, RISK-POLICY gates + git-staging traps     |
-| [external-comms-and-compendium.md](./external-comms-and-compendium.md) | External-comms / voice-tone commit gates + the decisions-compendium generator |
-| [releases-and-ci.md](./releases-and-ci.md)                             | Changesets, workflow traps, the push guard, the risk-appetite commit gate     |
-| [deploy-infra-and-caching.md](./deploy-infra-and-caching.md)           | EB deploys, Cloudflare/RapidAPI edge, HTTP caching, GHCR publishing           |
-| [agent-and-workflow-patterns.md](./agent-and-workflow-patterns.md)     | Recurring assistant failure modes + ITIL workflow traps                       |
-| [testing-tdd-and-code.md](./testing-tdd-and-code.md)                   | The TDD hook, test anti-patterns, ESM/babel quirks                            |
-
-## Preamble
-
-# Project Briefing
-
-This file is injected into every Claude Code session. It contains institutional knowledge that isn't obvious from the code alone. Maintained by the `/retrospective` skill.
+| File                                                                       | Subject                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [what-you-need-to-know.md](./what-you-need-to-know.md)                     | General project facts (API version, trunk-based dev, credentials, ADR index)   |
+| [what-will-surprise-you.md](./what-will-surprise-you.md)                   | Domain-data + API-shape surprises (G-NAF, OpenSearch naming, WayCharter)       |
+| [opensearch-and-deploy-state.md](./opensearch-and-deploy-state.md)         | Search topology, backends, sizing, the migration playbook                      |
+| [cutover-mechanics.md](./cutover-mechanics.md)                             | What must happen for a cutover/rollback to take effect, and how each step lies |
+| [search-relevance-and-scoring.md](./search-relevance-and-scoring.md)       | BM25 / analyzer internals behind ranking; reading the evidence correctly       |
+| [markers-and-edit-gates.md](./markers-and-edit-gates.md)                   | Architect / JTBD edit-gate verdict + prompt literal-matching mechanics         |
+| [oversight-markers.md](./oversight-markers.md)                             | The `human-oversight: confirmed` evidence gate and its resumed-session trap    |
+| [commit-time-gates.md](./commit-time-gates.md)                             | Compendium-pairing, README-refresh, RISK-POLICY gates + git-staging traps      |
+| [external-comms-marker-mechanics.md](./external-comms-marker-mechanics.md) | How the external-comms gate derives and matches its marker                     |
+| [external-comms-content-rules.md](./external-comms-content-rules.md)       | What the gate rejects on content: em-dashes, absolute traffic counts           |
+| [decisions-compendium.md](./decisions-compendium.md)                       | How `docs/decisions/README.md` is generated and why not to run it by hand      |
+| [releases-and-ci.md](./releases-and-ci.md)                                 | Workflow traps (boolean inputs, concurrency, k6) and dependency freshness      |
+| [changesets-and-release-flow.md](./changesets-and-release-flow.md)         | Changesets, the two manual approvals, the `published` gate, `release:watch`    |
+| [push-guard-and-risk-gate.md](./push-guard-and-risk-gate.md)               | Red-master push guard and risk-scorer commit-gate behaviour at appetite        |
+| [deploy-infra-and-caching.md](./deploy-infra-and-caching.md)               | EB deploys, Cloudflare/RapidAPI edge, HTTP caching, GHCR publishing            |
+| [agent-and-workflow-patterns.md](./agent-and-workflow-patterns.md)         | Recurring assistant failure modes                                              |
+| [itil-workflow-traps.md](./itil-workflow-traps.md)                         | Problem/ADR lifecycle traps: anchoring, README drift, Confirmation wording     |
+| [testing-tdd-and-code.md](./testing-tdd-and-code.md)                       | The TDD hook, test anti-patterns, ESM/babel quirks                             |
