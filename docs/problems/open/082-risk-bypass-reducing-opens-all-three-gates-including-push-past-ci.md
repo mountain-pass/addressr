@@ -1,6 +1,6 @@
 # Problem 082: `RISK_BYPASS: reducing` opens all three gates at once, including push-past-CI
 
-**Status**: Open
+**Status**: Open — upstream-blocked (@windyroad/wr-risk-scorer), [#407](https://github.com/windyroad/agent-plugins/issues/407)
 **Reported**: 2026-08-02
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3) — derived at capture; a bypass issued for one tier silently releases the other two, and the push tier is the one that reaches production
 **Origin**: internal
@@ -53,9 +53,9 @@ Aggravating factor: the marker sits **ahead of** the CI-status check in `git-pus
 
 ### Investigation Tasks
 
-- [ ] Confirm the behaviour against the current upstream version before reporting — the observed hook is `wr-risk-scorer/0.18.6`; several versions are present in the local plugin cache and the gate that fires is not always the newest.
-- [ ] Report upstream to `windyroad/agent-plugins` per the P077 precedent (issue, then offer a PR). Proposed shape: make the bypass tier-qualified (`RISK_BYPASS: reducing-commit`), or have the mark hook write only the marker for the tier the verdict was issued against.
-- [ ] Separately: argue that `reducing-push` should sit **after** the CI-status check regardless. A risk bypass is a statement about risk, not about whether the build passes; those are different claims and one should not silently satisfy the other.
+- [x] **Confirmed on the newest cached version 2026-08-03.** `0.18.6` is the highest in the local cache and its `risk-score-mark.sh:61-65` still fans `reducing` out to all three markers, with `git-push-gate.sh:43` reading `reducing-push` ahead of the CI-status precondition at line 61. Not a stale-cache artefact.
+- [x] **Reported upstream** as [issue #407](https://github.com/windyroad/agent-plugins/issues/407) on 2026-08-03, per the P077 precedent, with a PR offered on whichever shape they prefer.
+- [x] **Both asks carried in the same issue, kept separable.** (1) Tier-qualify the bypass, either by accepting `RISK_BYPASS: reducing-commit` or by having the mark hook infer the tier from which of the three `RISK_SCORES` the verdict was issued against. (2) Independently, move the `reducing-push` check after the CI-status precondition, because a risk bypass is a claim about risk and a green build is a different claim. Argued that (2) holds even if (1) lands, and distinguished it from the `incident-release` short-circuit, which is deliberately ahead of CI per JTBD-201 and is well-reasoned.
 
 ## Dependencies
 

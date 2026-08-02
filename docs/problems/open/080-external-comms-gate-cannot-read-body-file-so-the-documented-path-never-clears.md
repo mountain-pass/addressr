@@ -1,6 +1,6 @@
 # Problem 080: The external-comms gate cannot read `--body-file`, so the documented path can never clear it
 
-**Status**: Open
+**Status**: Open — upstream-blocked (@windyroad/wr-risk-scorer), [#408](https://github.com/windyroad/agent-plugins/issues/408)
 **Reported**: 2026-08-02
 **Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Almost certain (3) — derived at capture; developer-time only, but deterministic whenever the `--body-file` form is used
 **Origin**: internal
@@ -29,9 +29,11 @@ Observed 2026-08-02 closing issue #365: the voice-tone gate cleared (its marker 
 
 ## Workaround
 
-Inline the body with `--body '...'` in single quotes so the gate's regex can extract it. The body must then contain no single quote, since the pattern is `--body[= ]'([^']*)'`. Verified working on the #365 closure.
+Use the **quoted-heredoc** form, `--body "$(cat <<'EOF' ... EOF)"`. This is the briefing's existing advice and it is correct. Confirmed working 2026-08-03 on both upstream filings (#407, #408) and on a `git commit -m` in the same session.
 
-The briefing's existing advice is the quoted-heredoc form `--body "$(cat <<'EOF' ... EOF)"`. That is ALSO command text, so it may or may not match the double-quoted alternative depending on how the shell string reaches the hook; the plain single-quoted form is what was demonstrated to work.
+The gate's pattern list puts the heredoc first, ahead of `--body`/`-m`, and matches it **literally** — the comment in the source says as much, because the AI-canonical form is the quoted `<<'EOF'` heredoc whose body bash does not unescape. So it carries apostrophes, double quotes and backticks safely.
+
+The single-quoted `--body '...'` form also works but is worse, and the earlier version of this section recommended it on thin evidence. The pattern is `--body[= ]'([^']*)'`, so the body cannot contain a single quote — which rules out ordinary English contractions. The double-quoted form is worse still: `-m "..."` is captured by `(?:-m|--message)[= ]"([^"]*)"`, and an escaped `\"` inside the body truncates the capture at the backslash, so the marker key diverges and the gate re-blocks after a PASS. That was observed 2026-08-03 on a commit message containing a quoted phrase.
 
 ## Impact Assessment
 
@@ -46,9 +48,11 @@ The gate extracts its draft from command text rather than from the tool's resolv
 
 ### Investigation Tasks
 
-- [ ] Confirm current-version behaviour before reporting upstream — the observed hook is `wr-risk-scorer/0.9.0/hooks/external-comms-gate.sh` while the skills in the same install are `0.17.0`, so the gate may be a stale cached version rather than current
-- [ ] Decide the upstream ask: read the file when `--body-file <path>` is present (path is in the command text and readable), OR fail loudly with a directive naming `--body-file` as unsupported instead of denying with a misleading message
-- [ ] Report upstream to `windyroad/agent-plugins` per the P077 precedent (issue, then offer a PR)
+- [x] **Confirmed on the newest cached version 2026-08-03.** `wr-risk-scorer/0.18.6/hooks/external-comms-gate.sh` still has exactly one occurrence of `body-file` and it is the comment quoted above, so the extraction gap is current and not an artefact of the stale 0.9.0 cache directory the gate happened to fire from.
+- [x] **Upstream ask decided and filed** as [issue #408](https://github.com/windyroad/agent-plugins/issues/408) on 2026-08-03. Both options offered, with a stated preference for the smaller one: detect `--body-file` and deny with a directive that names it, rather than denying with a message that sends the reader after a marker-persistence bug that is not there. The version-skew observation went in as a note, since a fix needs a cache-invalidation story alongside it.
+- [x] **Reported upstream** as [issue #408](https://github.com/windyroad/agent-plugins/issues/408) on 2026-08-03 per the P077 precedent, with a PR offered on whichever option they prefer.
+
+Nothing further is owed in this repo; the remaining work is upstream. The Workaround section above was corrected in the same pass — the heredoc form is what to reach for, not the single-quoted one it previously recommended.
 
 ## Dependencies
 
