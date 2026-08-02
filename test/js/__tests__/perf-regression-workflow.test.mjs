@@ -19,8 +19,10 @@
 // tolerance looks harmless in review and silently re-disarms the nightly perf
 // signal. These assertions fail if it does.
 //
-// Coverage caveat (accepted): `test:js` runs from the pre-commit hook, not from
-// any workflow, so a `--no-verify` commit bypasses this pin.
+// Coverage note: `test:js` runs from the pre-commit hook AND, since 2026-08-02,
+// as the "Workflow and unit pins" step in release.yml's build-and-test job. The
+// caveat this block previously recorded — hook-only, so `--no-verify` bypasses
+// it — no longer holds.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

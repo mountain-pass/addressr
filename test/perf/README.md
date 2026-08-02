@@ -70,3 +70,21 @@ Note that a construction failure reports `attempts: 0` alongside a large
 Run several replicates per arm and discard the first — cold JIT dominates it.
 Arms were blocked (all off, then all on) rather than interleaved in the original
 run; interleaving would control drift better if you are chasing a tighter bound.
+
+## `exact-vs-range-margin-probe.mjs` — TERMINAL, cannot run again
+
+Two-arm probe comparing exact-address versus range-address ranking on blue
+(`addressr5`, pre-ADR-041 analyzer) against green (`addressr6`). It produced the
+evidence cited by P073, P074, P075 and P078 — most importantly the finding that
+green is aggregate-neutral to blue rather than a regression, which is what
+unblocked the ADR-041 cutover.
+
+**It cannot be re-run.** `addressr5` was decommissioned 2026-08-02 (commit
+`2e557b9`), so the blue arm does not exist. The probe now fails fast with that
+reason rather than hanging on a dead tunnel. Its results are frozen in
+`exact-vs-range-margin-probe.out`, against the sample frame in
+`exact-vs-range-frame.json` — treat both as the terminal record.
+
+Do not make the blue arm optional to get it running again. A green-only run
+emits output shaped like a result while being no evidence at all, which is the
+same trap the invariant harness above warns about.

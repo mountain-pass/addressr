@@ -1,3 +1,25 @@
+// TERMINAL AS OF 2026-08-02 — THIS PROBE CANNOT RUN AGAIN.
+//
+// It is constitutively differential: it compares blue (addressr5, the
+// pre-ADR-041 analyzer) against green (addressr6). Its sensitivity gate aborts
+// unless blue reproduces the known flip, and every verdict it emits
+// (blue-range-first, blue-exact-absent, swing) is a two-arm concept.
+//
+// addressr5 was DECOMMISSIONED 2026-08-02 (commit 2e557b9) after the ADR-041
+// cutover and the P079 retention gate was met. There is no blue arm and there
+// cannot be one again without a rebuild-from-G-NAF onto the old analyzer.
+//
+// The measurements it produced are therefore TERMINAL and unreproducible. They
+// are preserved in exact-vs-range-margin-probe.out and in the frame at
+// exact-vs-range-frame.json, and they are the evidence cited by P073, P074,
+// P075 and P078. Treat those figures as the frozen record.
+//
+// Do NOT "fix" this by making the blue arm optional. A green-only run would emit
+// output shaped like this probe's output while being no evidence at all — the
+// same class of artefact test/perf/README.md warns about: "A reproducible 'the
+// change made it faster' result is the signature of a broken A/B, not a win."
+// If a future migration needs this comparison, stand up both arms first.
+
 // P075: does ADR-041's co-positioning flip exact-vs-range pairs?
 //
 // The mechanism compresses BM25 score RATIOS, so it can only flip pairs whose
@@ -42,6 +64,17 @@ function margin(list, exact, range) {
 }
 async function assess(fullExact, fullRange) {
   const q = short(fullExact);
+  // Fail with the REASON, not the symptom. Without this the probe hangs on a
+  // tunnel to a domain that no longer exists and reports a timeout, which reads
+  // like a flaky network rather than a decommissioned control arm.
+  {
+    throw new Error(
+      'exact-vs-range-margin-probe requires a BLUE arm on :6061 (addressr5), ' +
+        'which was decommissioned 2026-08-02 (commit 2e557b9). This probe is ' +
+        'terminal - see the header. Its results are frozen in ' +
+        'exact-vs-range-margin-probe.out.',
+    );
+  }
   const [b, g] = await Promise.all([hits(6061, q), hits(6060, q)]);
   if (!b || !g) return { verdict: 'query-error' };
   const bm = margin(b, fullExact, fullRange);

@@ -9,7 +9,7 @@ on:
       target:
         # ADR 034/035: which OpenSearch domain to load, over OIDC/SigV4. 'v4'
         # (addressr6, OpenSearch 3.5, ADR-041 analyzer) is the SOLE production
-        # domain. v3 (addressr5) was decommissioned 2026-08-03 along with its
+        # domain. v3 (addressr5) was decommissioned 2026-08-02 along with its
         # gha-v3-loader role, so the v3 arm is GONE - resolving it would assume a
         # role that no longer exists. The 9 update-{state}.yml crons and
         # populate-search-domain.yml all pass target: v4. Kept parameterised for
@@ -52,7 +52,7 @@ jobs:
       group: reusable-update-${{ inputs.target }}-${{ inputs.state }}
       cancel-in-progress: false
     # ADR 034/035: id-token needed for the target's loader OIDC role assumption
-    # (gha-v4-loader; v3 was decommissioned 2026-08-03).
+    # (gha-v4-loader; v3 was decommissioned 2026-08-02).
     # contents:read keeps checkout working once permissions are declared
     # explicitly.
     permissions:
