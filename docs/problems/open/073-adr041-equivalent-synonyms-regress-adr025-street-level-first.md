@@ -74,7 +74,9 @@ Two further notes on the gate run, recorded so a later reader does not re-chase 
 
 ## Workaround
 
-None needed yet — **this was caught pre-cutover**. Production still serves `addressr5` on the old analyzer, so no consumer is affected. The workaround is simply not to cut over, which is the current state.
+None needed — **this was caught pre-cutover**, and the measurement that followed removed the reason for one. The original workaround was "do not cut over", on the assumption that ADR-041 regressed the ADR-025 street-level-first invariant. Measuring the blast radius reversed that premise: across 145 street-level addresses that also have sub-units, blue violates the invariant on 50.3% and green on 49.0%, so green is marginally **better** in aggregate. Holding the migration on one flipped case was the wrong call, and this ticket dropped from High (12) to Low (4) accordingly.
+
+The cutover therefore proceeds on the measured evidence rather than being blocked by this ticket. This section describes why no workaround is needed, not which domain is currently primary — for that, read `deploy/main.tf`'s `ELASTIC_HOST` and the ADR-031 amendment ledger, which record the posture at a point in time.
 
 ## Impact Assessment
 
@@ -125,7 +127,7 @@ The absolute score collapse (290 to 30) is a separate and expected consequence o
 - [x] Confirm which ADR invariant is violated and quote it — ADR-025 Decision Driver 1.
 - [x] Establish the blast radius across the SSLA-14 baseline — 1 of 14 regressed, canonical P007 case unaffected.
 - [x] Decompose the score with `_explain` on both domains — done, and it **falsified** the field-length-norm hypothesis. The ADR-025 `bool_prefix` clause is intact; the regression is in the ADR-028 `phrase_prefix` clause, on both fields.\n- [x] Determine why `phrase_prefix` favours the sub-unit doc — CLOSED. The premise was wrong: token counts are 7 vs 8, not equal. ADR-041's constant +3 compresses the length-norm ratio from 12.5% to 9.1%. Verified against both domains.
-- [ ] Quantify how many addresses are affected — sample street addresses that have sub-units and compare street-level rank across the two domains at scale, rather than extrapolating from one case.
+- [x] Quantify how many addresses are affected — 145-address sample, green 49.0% vs blue 50.3% — sample street addresses that have sub-units and compare street-level rank across the two domains at scale, rather than extrapolating from one case.
 - [ ] Decide the fix (see Candidate fixes) and re-run the full SSLA-14 gate against it.
 
 ## Candidate fixes
@@ -138,7 +140,8 @@ Not yet decided; recorded so the options are not re-derived.
 
 ## Dependencies
 
-- **Blocks**: P069 cutover. The ADR-041 blue/green migration is halted at the relevance gate; the green domain is loaded, green, and verified for P069 itself, but must not take traffic until this is resolved.
+- **Blocks**: (none). This section previously read "Blocks: P069 cutover ... must not take traffic until this is resolved". That was written before the blast-radius measurement and is now false: the 145-address sample shows green at 49.0% violations against blue at 50.3%, i.e. aggregate better, which is why the Status line reads DOWNGRADED. Corrected 2026-08-01 so the ticket no longer says both that it blocks and that it does not.
+
 - **Blocked by**: (none)
 - **Composes with**: P007 (the original street-level-below-sub-units defect this re-opens).
 

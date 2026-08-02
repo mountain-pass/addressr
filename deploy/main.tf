@@ -96,22 +96,27 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 035 Phase 2 CUTOVER 2026-07-14: the EB primary now points at the v3
-  # domain (addressr5, OpenSearch 3.5) over IAM/SigV4 (ADR 033). ELASTIC_HOST is
-  # sourced from module.opensearch_v3.endpoint. Gated on the ADR 031 read-shadow
-  # soak: ~1 day of real production traffic mirrored to v3 with full read coverage
-  # and 0 failures, plus full doc parity (16.9M) + behavioural CI on 3.5 +
-  # warm-latency parity+. Username/password stay EMPTIED so buildClientNode
-  # (src/client-node-url.js) builds a credential-less node URL — the exact shape
-  # the SigV4 signer wraps. The EB instance role (aws-elasticbeanstalk-ec2-role)
-  # holds es:ESHttp* on the v3 ARN (eb_opensearch_v3). Since the v2 (addressr4)
-  # decommission 2026-07-14 (step 6), rollback is rebuild-from-G-NAF (hours), not
-  # an instant flip to a warm v2 — the ADR 035 Option C trade, same as v1 at ADR
-  # 029 step 9. In-deploy safety stays: EB rolling deploy + /health auto-rollback.
+  # ADR 041 CUTOVER: the EB primary points at the v4 domain
+  # (addressr6, OpenSearch 3.5, equivalent-synonym analyzer) over IAM/SigV4.
+  #
+  # ROLLBACK IS THIS ONE LINE: set value back to module.opensearch_v3.endpoint
+  # and apply. v3 (addressr5) is retained fully populated and WARM - it served
+  # production until this commit - so rollback is a flip, not the hours-long
+  # rebuild-from-G-NAF that ADR 035 was stuck with. Do not go looking elsewhere.
+  #
+  # Gated on all five ADR 031 Soak Gate criteria, measured over 33.8 h: mirror
+  # parity, zero failures with sustained doc parity, p90 ratio flattened within
+  # the 10% band, >=24 h spanning two business peaks, and k6 green p95 at 1.05x
+  # a freshly measured blue baseline against a 1.5x gate.
+  #
+  # Username/password stay EMPTIED so buildClientNode builds the credential-less
+  # node URL the SigV4 signer wraps. The EB instance role holds es:ESHttp* on the
+  # v4 ARN (eb_opensearch_v4). In-deploy safety: EB rolling deploy + /health
+  # auto-rollback.
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
-    value     = module.opensearch_v3.endpoint
+    value     = module.opensearch_v4.endpoint
     resource  = ""
   }
   setting {
@@ -151,68 +156,12 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ADR 031 read-shadow RE-ENABLED 2026-07-31, now pointed at v4 (addressr6) for
-  # the ADR-041 blue/green. v3 stays PRIMARY (ELASTIC_HOST above) — this mirrors
-  # production reads onto green so its page cache is warm before the cutover flips
-  # ELASTIC_HOST. Green has never served a real query, ADR-004 deploys at
-  # BatchSize=100% with no traffic ramp, and /health is a ping() that cannot detect
-  # slow — so a cold cutover would put all production traffic onto a cold cache with
-  # no automatic protection. That is the recorded ADR-029 2026-07-09 failure, where
-  # the cold side's p90 climbed while the warm comparison held flat.
-  #
-  # ADR 033: v4 is FGAC-off/IAM, so the shadow client SigV4-signs as the EB instance
-  # role, which holds es:ESHttp* on the v4 domain ARN via aws_iam_role_policy
-  # .eb_opensearch_v4, and that role is in module.opensearch_v4.allowed_principal_arns.
-  # BOTH halves are required: with only the resource-policy half, v4 returns 403,
-  # classifyError maps 401/403 to 'AuthError' (src/read-shadow.js), and the release
-  # smoke gate USED TO ACCEPT AuthError as passing — so the soak would have looked
-  # healthy while mirroring nothing. That is P035 BS-5, and it is how the 2026-05-11
-  # regression ran at a 96.5% AuthError rate for eight days behind a green build.
-  # That hole is closed in this same commit; see release.yml.
-  #
-  # No USERNAME/PASSWORD — there is no internal credential on v4. This also defuses
-  # P035 BS-3: under SigV4 there is no shared password for clientFingerprint to miss
-  # rotating, because credentials come from defaultProvider().
-  #
-  # Soak-validity gate (ADR 031 / P028): the clock does not start until the v4
-  # populate is complete and indexing is quiescent — the first Phase 1 attempt ran
-  # shadow during populate and bulk-index contention drove shadow success from 95%
-  # to 52%, invalidating that soak (ADR 031 amendment 2026-07-06). Verified before
-  # enabling: v4 index_current=0, not throttled, doc count at exact parity with v3.
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_HOST"
-    value     = module.opensearch_v4.endpoint
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PORT"
-    value     = "443"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_PROTOCOL"
-    value     = "https"
-    resource  = ""
-  }
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_AUTH_MODE"
-    value     = "sigv4"
-    resource  = ""
-  }
-  # Redundant against read-shadow.js's DEFAULT_REGION, but set explicitly: if the
-  # region is ever absent, buildEsClientOptions throws rather than downgrading to
-  # basic auth. Explicit is the fail-safe posture.
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "ADDRESSR_SHADOW_REGION"
-    value     = "ap-southeast-2"
-    resource  = ""
-  }
-
+  # ADR 031 read-shadow REMOVED at the ADR-041 cutover: v4 (addressr6)
+  # is now PRIMARY (ELASTIC_HOST above), so mirroring v4 to v4 would be redundant.
+  # The soak ran 33.8 h and all five Soak Gate criteria passed: mirror parity 1.001,
+  # zero failures with sustained doc parity, p90 ratio flattened to 1.046x within
+  # the 10% band on 12/12 buckets, >=24 h spanning two business peaks, and k6 green
+  # p95 at 1.05x a freshly measured blue baseline against a 1.5x gate.
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "NODE_ENV"
@@ -698,13 +647,13 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
-# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain — the SOLE production search
+# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain — the PREVIOUS production search
 # domain since the v2 (addressr4, 2.19) cutover 2026-07-14 (Stage 5) and
 # decommission (step 6). Provisioned via the blue/green pattern that took v1→v2→v3.
 # m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
 # footprint but we don't assume it — right-size later if measured, via
 # from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-# ELASTIC_HOST (EB settings above) sources module.opensearch_v3.endpoint.
+# ELASTIC_HOST (EB settings above) now sources module.opensearch_v4.endpoint; this module is the rollback target.
 module "opensearch_v3" {
   source = "./modules/opensearch"
 
@@ -830,7 +779,8 @@ resource "aws_cloudwatch_dashboard" "search_parity" {
 # index and forces a full ~15M-doc reindex. It is NOT an engine upgrade.
 #
 # Provisioned QUIET per the migration playbook step 1: no shadow traffic, and the
-# EB primary ELASTIC_HOST stays on module.opensearch_v3.endpoint until cutover.
+# EB primary ELASTIC_HOST moved to module.opensearch_v4.endpoint at the ADR-041
+# ADR-041 cutover. This module is now the ROLLBACK TARGET, retained warm.
 #
 # Sized identically to v3 ON PURPOSE. ADR-041's Confirmation makes the green
 # index's on-disk size and resident hot-set a pre-cutover GATE rather than a note,
@@ -913,17 +863,23 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
 
 # ADR 041 / P035 trip-wire: absolute floor for generation 4.
 #
-# Held at 1M through provision and load. The playbook asks for a floor NEAR the
-# expected count rather than a low 1M, and that is the right instinct, but an
-# absolute floor cannot serve both jobs during a load that legitimately starts at
-# zero. What 1M does catch is a full wipe, which goes to 0 — the P035 deletion was
-# caught within minutes at floor 1M. What it cannot catch is a PARTIAL drop
-# mid-load, and neither can a static high floor. Partial-drop detection is carried
-# by the rate alarm below instead.
+# Raised to 15M at the ADR-041 cutover. During provision and bulk load the floor
+# was held at 1M so a fresh empty domain would clear once the load crossed ~1M:
+# an absolute floor cannot both sit near the expected count AND tolerate a load
+# that legitimately starts at zero. A low floor catches a full wipe (which goes
+# to 0 — the P035 deletion was caught within minutes at floor 1M) but not a
+# PARTIAL drop mid-load; partial-drop detection is carried by the rate alarm
+# below instead.
 #
-# Expected state: this alarm sits in ALARM from terraform apply until the load
-# crosses 1M, because treat_missing_data is breaching. That is correct, matches
-# v3's pre-cutover behaviour, and is not something to "fix".
+# EXPECTED STATE, POST-CUTOVER — read this before dismissing an alarm. v4 is
+# loaded (16,905,824 docs) and the floor is 15M, so this alarm should go OK
+# almost immediately after apply and STAY there. An ALARM here is now a REAL
+# signal — a P035-class silent index deletion or a partial drop — not the
+# expected empty-domain state it was during the load. That earlier "sits in
+# ALARM until the load crosses 1M, and is not something to fix" reasoning
+# applied to the 1M provisioning floor and is retired with it. Headroom is
+# ~11%; v3 has run at an identical 15M floor against the same corpus since
+# 2026-07-14 with no false trip.
 resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_drop" {
   alarm_name  = "addressr-v4-searchable-documents-drop"
   namespace   = "AWS/ES"
@@ -940,7 +896,7 @@ resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_drop" {
   treat_missing_data  = "breaching"
   alarm_actions       = [aws_sns_topic.search_ops.arn]
   ok_actions          = [aws_sns_topic.search_ops.arn]
-  alarm_description   = "ADR 041: v4 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Raise the floor to 15M at cutover."
+  alarm_description   = "ADR 041: v4 OpenSearch searchable-document count dropped below floor — possible P035-class silent index deletion. Floor raised to 15M at the ADR-041 cutover."
 }
 
 # ADR 041: partial-drop detection, which no absolute floor delivers during a load.
@@ -977,43 +933,7 @@ resource "aws_cloudwatch_metric_alarm" "v4_searchable_documents_rate_drop" {
   }
 }
 
-# ADR 031 / P035 deferred investigation task, now due: a shadow-liveness alarm on
-# the TARGET domain. Every blind spot in P035's inventory lives inside the app's
-# swallow path — BS-2's counter arithmetic, BS-3's stale client, BS-4's per-instance
-# sampling, BS-5's AuthError-accepted-as-passing. All of them are invisible to
-# /debug/shadow-config in one direction or another. This alarm asks a different
-# question from outside the process entirely: is anything actually querying v4? It
-# is immune to all four at once, which is why it is worth the deploy-config change
-# that kept it deferred until now. Its old blocker — no SNS topic to notify — was
-# removed by ADR 041.
-#
-# SearchRate is a per-node per-minute average, so the threshold is an observed
-# baseline, not a derived one, and it cannot tell shadow traffic from hand-probing.
-# Held deliberately low for the soak: the job here is to catch mirroring stopping
-# dead, not to police the rate. Retire or repoint at cutover, when v4 becomes
-# primary and its search rate is production's rather than the shadow's.
-#
-# EXPECTED STATE, same as the searchable-documents floor alarm above: treat_missing_data
-# is "breaching", so this alarm sits in ALARM from terraform apply until the shadow
-# deploy lands and traffic starts mirroring, and it will re-enter ALARM whenever the
-# shadow is disabled and at cutover. That is the alarm working, not something to fix.
-resource "aws_cloudwatch_metric_alarm" "v4_shadow_search_rate_floor" {
-  alarm_name  = "addressr-v4-shadow-search-rate-floor"
-  namespace   = "AWS/ES"
-  metric_name = "SearchRate"
-  dimensions = {
-    DomainName = var.elastic_v4_name
-    ClientId   = data.aws_caller_identity.current.account_id
-  }
-  statistic          = "Average"
-  period             = 900
-  evaluation_periods = 2
-  # No data means nothing is querying the domain, which IS the failure this alarm
-  # exists to catch. Missing must breach, not be excused.
-  treat_missing_data  = "breaching"
-  comparison_operator = "LessThanThreshold"
-  threshold           = var.v4_shadow_search_rate_floor
-  alarm_actions       = [aws_sns_topic.search_ops.arn]
-  ok_actions          = [aws_sns_topic.search_ops.arn]
-  alarm_description   = "ADR 031: v4 search rate fell to the floor during the read-shadow soak — mirroring has likely stopped. Unlike /debug/shadow-config this observes the target, so it survives the P035 blind spots that let a dead shadow report healthy."
-}
+# ADR 031 shadow liveness alarm REMOVED at the ADR-041 cutover. It watched v4's
+# SearchRate as a dead-mirror detector while v4 was the shadow target. Now that v4
+# is primary its search rate is production's, not the shadow's, so a 0.1/node/min
+# floor is meaningless. Removed rather than repointed: v3 is being decommissioned.

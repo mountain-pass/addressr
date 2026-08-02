@@ -366,58 +366,75 @@ jobs:
 
           # P035 / risk-scorer R3: /debug/shadow-config must be reachable
           # without gateway auth (ADR 024 allowlist) and must return the
-          # documented JSON shape. Catches the silent-no-op P035 failure
-          # mode automatically on every deploy: if the running addressr-server
-          # process can't see ADDRESSR_SHADOW_HOST, hostSet will be false
-          # and we'll know within minutes of deploy instead of hours via
-          # operator probing. The endpoint must also respect the closed
-          # lastError.class enum — we assert it against null OR enum members.
+          # documented JSON shape.
+          #
+          # READ THE POLARITY BEFORE EDITING. What "good" looks like here
+          # INVERTS with whether a migration is in flight, and getting it
+          # backwards is how P035 ran green for eight days:
+          #   - shadow ENABLED (a migration is warming a green domain):
+          #     hostSet MUST be true. false means the process cannot see
+          #     ADDRESSR_SHADOW_HOST and is warming nothing — the silent no-op.
+          #   - shadow DISABLED (steady state, no migration): hostSet MUST be
+          #     false. true means we are mirroring a domain onto itself.
+          # ADR 031 is the ledger of which posture is current. This block is
+          # written for the DISABLED posture — see the assertion below.
           echo "P035 R3: probing /debug/shadow-config..."
           shadow_body=$(curl -sf --retry 3 --retry-delay 10 \
             https://backend.addressr.io/debug/shadow-config)
           echo "$shadow_body" | jq -e '.' > /dev/null || {
             echo "/debug/shadow-config did not return valid JSON"; exit 1;
           }
-          # ADR 041 blue/green soak (2026-07-31): the read-shadow is ENABLED again,
-          # now mirroring onto v4 (addressr6) to warm it before the cutover flips
-          # ELASTIC_HOST. Assert hostSet=true so a shadow that silently fails to
-          # configure — the P035 silent-no-op — fails the deploy instead of quietly
-          # warming nothing. Flip this back to false at cutover, when v4 becomes
-          # primary and a v4→v4 shadow would be redundant.
+          # DISABLED posture. The ADR-041 cutover makes v4 (addressr6) the EB
+          # primary and removes the read-shadow settings, so a shadow would now
+          # be mirroring v4 onto itself. Assert hostSet=false — a stray
+          # ADDRESSR_SHADOW_HOST surviving the cutover is a real misconfiguration
+          # and should fail the deploy. Re-enable (and flip this assertion back
+          # to true) at the next migration, when a new green domain needs warming.
           host_set=$(echo "$shadow_body" | jq -r '.hostSet')
-          if [ "$host_set" != "true" ]; then
-            echo "/debug/shadow-config hostSet=$host_set, expected true (ADR 041 read-shadow soak onto v4)"
+          if [ "$host_set" != "false" ]; then
+            echo "/debug/shadow-config hostSet=$host_set, expected false (read-shadow disabled — no migration in flight)"
             echo "body: $shadow_body"; exit 1
           fi
           # P035 BS-5 fix. This gate used to accept ANY member of the closed enum,
           # AuthError included — which is how the 2026-05-11 regression ran at a
-          # 96.5% AuthError rate for eight days behind a green build. While the
-          # shadow is enabled the only acceptable state is a clean one: no failures
-          # and no last error at all. A 403 from a mis-wired IAM policy now fails
-          # the deploy rather than passing as a recognised error class.
+          # 96.5% AuthError rate for eight days behind a green build. The only
+          # acceptable state is a clean one: no failures and no last error at all,
+          # so a 403 from a mis-wired IAM policy fails the deploy rather than
+          # passing as a recognised error class.
+          #
+          # DORMANT IN THE DISABLED POSTURE, deliberately retained. With the host
+          # unset, getShadowStatus returns failures:0 and lastError:null as
+          # INITIALISED values (src/read-shadow.js), so both gates below pass
+          # trivially and prove nothing right now. They are kept in place — not
+          # deleted — so that re-enabling the shadow for the next migration
+          # restores the BS-5 control by flipping one setting, with no risk of
+          # someone forgetting to re-add the gate. Do not read a green smoke here
+          # as evidence the shadow is healthy; while disabled there is no shadow.
           last_error_class=$(echo "$shadow_body" | jq -r '.lastError.class // "null"')
           if [ "$last_error_class" != "null" ]; then
-            echo "/debug/shadow-config lastError.class=$last_error_class, expected null while the shadow is enabled (P035 BS-5)"
+            echo "/debug/shadow-config lastError.class=$last_error_class, expected null (P035 BS-5)"
             echo "body: $shadow_body"; exit 1
           fi
           failures=$(echo "$shadow_body" | jq -r '.failures // 0')
           if [ "$failures" != "0" ]; then
-            echo "/debug/shadow-config failures=$failures, expected 0 while the shadow is enabled (P035 BS-5)"
+            echo "/debug/shadow-config failures=$failures, expected 0 (P035 BS-5)"
             echo "body: $shadow_body"; exit 1
           fi
-          # successes>0 is reported, NOT gated. It is the one assertion that answers
-          # "is it mirroring anything at all", but it depends on real traffic landing
-          # in the deploy-to-smoke window — the smoke's own calls never reach
-          # /addresses, since the ADR 024 bypass probe below returns 401 without
-          # searching. Gating on it would buy a flaky release for a question the
-          # addressr-v4-shadow-search-rate-floor CloudWatch alarm answers continuously
-          # and from outside the process. Counters are cumulative-since-boot, so a
-          # single reading here cannot prove liveness anyway (P035 BS-1).
+          # successes>0 is reported, NOT gated. In the DISABLED posture it is
+          # always 0 and that is correct — there is no shadow to mirror. It stays
+          # here because it is the one field that answers "is it mirroring anything
+          # at all" once the shadow is re-enabled, and even then it is unreliable
+          # as a gate: it depends on real traffic landing in the deploy-to-smoke
+          # window (the smoke's own calls never reach /addresses — the ADR 024
+          # bypass probe returns 401 without searching), and counters are
+          # cumulative-since-boot, so a single reading cannot prove liveness
+          # (P035 BS-1). Mirror liveness was watched by the
+          # addressr-v4-shadow-search-rate-floor alarm, which the ADR-041 cutover
+          # removes along with the shadow itself. The v4 SearchableDocuments alarm
+          # is NOT a substitute — it is a data-presence floor on the index, not a
+          # check that anything is mirroring.
           successes=$(echo "$shadow_body" | jq -r '.successes // 0')
-          if [ "$successes" = "0" ]; then
-            echo "NOTE: shadow successes=0 at smoke time — expected if no traffic landed in the window; the SearchRate alarm is the liveness check."
-          fi
-          echo "P035 R3 ok: hostSet=true (ADR 041 v4 soak), failures=0, lastError=null, successes=$successes"
+          echo "P035 R3 ok: hostSet=false (read-shadow disabled — no migration in flight), failures=0, lastError=null, successes=$successes"
           echo ""
           # ADR 024 bypass probe: direct-without-header must be rejected.
           # Any status other than 401 fails the release — enforcement is the

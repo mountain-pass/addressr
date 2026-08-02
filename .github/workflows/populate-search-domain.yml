@@ -1,8 +1,8 @@
 name: Populate Search Domain
 
-# ADR 029/035: populate the v3 OpenSearch domain (addressr5, OpenSearch 3.5) from
+# ADR 029/035: populate the production search domain (addressr6, OpenSearch 3.5, ADR-041 analyzer) from
 # G-NAF source — a full re-index / rebuild path. Reuses the same loader path as the
-# quarterly update-{state}.yml workflows via reusable-update.yml (target=v3,
+# quarterly update-{state}.yml workflows via reusable-update.yml (target=v4,
 # OIDC/SigV4). v1 (addressr3) was decommissioned 2026-07-11; v2 (addressr4, 2.19)
 # was decommissioned 2026-07-14 (ADR 035 Phase 2 step 6).
 #
@@ -13,11 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target search domain (v3 = production OpenSearch 3.5, addressr5; v2/addressr4 decommissioned 2026-07-14, ADR 035 Phase 2 step 6)'
+        description: 'Target search domain (v4 = production, addressr6, ADR-041 equivalent-synonym analyzer; v3/addressr5 retained warm for rollback until decommission)'
         required: true
-        default: 'v3'
+        default: 'v4'
         type: choice
         options:
+          - v4
           - v3
       states:
         description: 'States to load (comma-separated, or "all")'
@@ -56,10 +57,10 @@ jobs:
 
   populate:
     needs: resolve-states
-    # ADR 034/035: target=v3 loads over OIDC/SigV4. id-token:write MUST be
+    # ADR 034/035: target=v4 loads over OIDC/SigV4. id-token:write MUST be
     # granted here on the caller — a reusable workflow's id-token is capped by
     # the caller's token (the ADR-034 caller-chain lesson), so without this the
-    # gha-v3-loader role assumption fails. contents:read keeps checkout
+    # loader role assumption fails. contents:read keeps checkout
     # working once permissions are declared explicitly.
     permissions:
       id-token: write
@@ -70,7 +71,7 @@ jobs:
       # windows. Sequential default (max-parallel: 1) respects that bulk-load
       # discipline. Operator can edit this workflow file before triggering
       # if they want parallel; doing so puts more concurrent ingest pressure
-      # on the v3 domain instance class. The 'fail-fast: false' lets a
+      # on the target domain's instance class. The 'fail-fast: false' lets a
       # state's failure not cancel other in-flight states (matters more
       # under operator-overridden parallelism than under sequential).
       fail-fast: false

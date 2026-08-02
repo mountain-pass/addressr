@@ -51,7 +51,7 @@ variable "proxy_auth_value" {
   default     = ""
   description = "ADR 024: gateway auth header expected value. Empty = enforcement off."
 }
-# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain — the sole production search
+# ADR 035 Phase 2: the v3 (OpenSearch 3.5) domain — the PREVIOUS production search
 # domain since the v2 (addressr4) decommission 2026-07-14. The elastic_v2_* +
 # v2_searchable_documents_floor vars were removed then (no config references them
 # once module.opensearch_v2 is gone). Operators: clear any stale elastic_v2_*
@@ -124,15 +124,10 @@ variable "elastic_v4_engine_version" {
 
 variable "v4_searchable_documents_floor" {
   type        = number
-  default     = 1000000
-  description = "ADR 041 / P035 trip-wire: absolute floor for the generation-4 SearchableDocuments alarm. Held at 1M during provision and bulk load so a fresh empty domain clears once the load crosses ~1M, mirroring what v3's floor did pre-cutover; raised to 15M at cutover. NOTE the playbook asks for a floor near the expected count rather than a low 1M — an absolute floor cannot do both jobs during a load that legitimately starts at zero, so partial-drop detection is carried by the separate metric-math rate alarm instead. See the alarm comments in main.tf."
+  default     = 15000000
+  description = "ADR 041 / P035 trip-wire: absolute floor for the generation-4 SearchableDocuments alarm. Held at 1M during provision and bulk load so a fresh empty domain clears once the load crosses ~1M, mirroring what v3's floor did pre-cutover; raised to 15M at the ADR-041 cutover. NOTE the playbook asks for a floor near the expected count rather than a low 1M — an absolute floor cannot do both jobs during a load that legitimately starts at zero, so partial-drop detection is carried by the separate metric-math rate alarm instead. See the alarm comments in main.tf."
 }
 
-variable "v4_shadow_search_rate_floor" {
-  type        = number
-  default     = 0.1
-  description = "ADR 031 read-shadow soak: floor for the v4 SearchRate liveness alarm, in searches per node per minute. Tuned down from a 0.5 placeholder on 2026-08-01 using 18.5 h of observed soak data — this discharges the instruction the previous description carried (tune from an observed baseline rather than replacing one unanchored number with another). Deliberately expressed in MARGINS, not levels: absolute production search rates are traffic volumes, which RISK-POLICY classes as confidential in this public repo, and every step of this rationale is a ratio anyway. The placeholder sat ABOVE the legitimate overnight trough, so it alarmed on quiet periods rather than on failure — three false-positive flaps in one night. The tuned floor sits below that trough with margin. Note the diurnal swing is roughly 60x peak-to-trough, which is why no static absolute floor can discriminate degraded-from-healthy at all hours: at peak either value needs a ~99% drop to fire, and near the trough the placeholder was above the healthy rate. This was a threshold error, not a window error — the alarm already evaluates 2 x 900s (30 minutes sustained) and the trough lasts hours, so a longer window would fire on the same false condition later. Mirroring never stopped during any flap: shadow successes rose monotonically with zero failures and lastError null throughout. This alarm detects DEAD, not DEGRADED. Degraded-mirror detection belongs to soak-gate criterion 1, which is measured ON THE TARGET (query_total parity against the primary's delta over the same window) and is diurnal-invariant by construction, so it catches a partial-loss mirror at any hour and is immune to the P035 app-side blind spots exactly as this alarm is. The residual gap is that criterion 1 is evaluated at the gate rather than continuously; closing it wants a target/primary SearchRate ratio alarm using metric math, mirroring the v4_searchable_documents_rate_drop DIFF precedent in main.tf. Retire or repoint at cutover, when v4's search rate becomes production's rather than the shadow's."
-}
 
 variable "ops_alert_email" {
   type        = string

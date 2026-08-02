@@ -83,6 +83,29 @@ jobs:
       - name: Install dependencies
         run: npx npm@10 ci
 
+      # FAIL-CLOSED PRECONDITION. `npm run deploy:plan` sets PLAN_ONLY=1, but that
+      # only means anything if the CHECKED-OUT ref's deploy.sh honours it. On a
+      # ref without the PLAN_ONLY branch the variable is simply unread and
+      # control falls through to `terraform apply -auto-approve` — this workflow
+      # would APPLY to production while calling itself read-only.
+      #
+      # That is not hypothetical: it was the exact state of master during the
+      # window between landing this workflow and landing deploy.sh's guard. A
+      # guard must land before or with its caller, never after.
+      #
+      # Keep this step even once every ref has the branch. Dispatch takes an
+      # arbitrary ref, including old ones, and this is the only thing standing
+      # between a mis-selected ref and a production apply.
+      - name: Refuse to run against a ref whose deploy.sh would apply
+        run: |
+          set -euo pipefail
+          if ! grep -q 'PLAN_ONLY' deploy/deploy.sh; then
+            echo "::error::This ref's deploy/deploy.sh has no PLAN_ONLY branch."
+            echo "::error::Running it would TERRAFORM APPLY to production, not plan."
+            exit 1
+          fi
+          echo "OK — this ref's deploy.sh honours PLAN_ONLY."
+
       # Mirrors release.yml's Deploy step exactly — same devcontainer, same var
       # set, same TFC token. A plan run under different inputs than the apply
       # answers a different question and would be worse than no plan. Pinned in

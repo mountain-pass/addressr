@@ -268,7 +268,7 @@ Transition P069 to Verification Pending citing the release, and reply on #365.
 ## Dependencies
 
 - **Blocks**: (none)
-- **Blocked by**: P073 — the ADR-041 analyzer regresses the ADR-025 street-level-first invariant. The green domain is loaded and P069 is verified fixed on it, but it cannot take traffic until that is resolved.
+- **Blocked by**: (none) — P073 no longer blocks. It was raised on the premise that the ADR-041 analyzer regresses the ADR-025 street-level-first invariant; measuring the blast radius across 145 street-level-plus-sub-unit addresses reversed that premise (blue violates on 50.3%, green on 49.0% — green is marginally better), and P073 was downgraded High (12) → Low (4). P075's exact-vs-range inversion was likewise measured at zero occurrences across 800 random pairs, and P078 attributes it to a per-shard `phrase_prefix` expansion mechanism that pre-exists ADR-041 and is present on blue identically.
 - **Composes with**: P007 (search-scoring / ranking), P026 (numeric ranking, closed) — same search-relevance subsystem.
 
 ## Related

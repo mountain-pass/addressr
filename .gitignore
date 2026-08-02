@@ -105,3 +105,4 @@ install.sh
 # Claude Code local per-machine settings
 .claude/settings.local.json
 scratchpad/
+test/perf/*.out

@@ -74,7 +74,19 @@ Verified green-vs-blue on the same run:
 
 - [x] Confirm the inversion against both domains on identical data through the real API.
 - [x] Measure blast radius across a range/exact probe sample — 0/120 regressions.
-- [ ] Characterise which exact-vs-range pairs are at risk. The 120-probe sample missed the one known instance, so the sampling frame needs re-designing around margin size rather than random selection.
+- [x] Characterise which exact-vs-range pairs are at risk — **done 2026-08-02, and the frame needed re-designing on TWO axes, not one.**
+
+  Margin was the obvious one: ratio compression only flips pairs whose pre-existing margin is narrow, so a uniform random draw under-samples exactly where the mechanism bites.
+
+  The second axis was **query form**, and it is the one that made the first attempt worthless. The probe set queried full SLAs (`108 GAZE RD, CHRISTMAS ISLAND OT 6798`); under that form blue already ranks the range doc first (margin −5.5%), so there is no blue-exact-first→green-range-first transition to detect and a `margin > 0` filter excludes the known instance by construction. The defect appears under the **short form users actually type** (`108 GAZE RD CHRISTMAS ISLAND`), where blue's margin is +21.6%.
+
+  Corrected frame, stratified on both, with a **sensitivity gate that fails loud** if it cannot reproduce the known instance — a null result from an instrument that cannot see the one flip we know about is not evidence:
+
+  - sensitivity: `108 GAZE RD CHRISTMAS ISLAND` → blue margin 21.6%, blue exact-first, **green range-first — detected**
+  - 15 narrow-margin pairs (≤25%) drawn under the short form: **zero green flips**
+
+  Harness committed at `test/perf/exact-vs-range-margin-probe.mjs` so this is re-runnable rather than a transcript claim. It needs both domains warm, so it must run before the v3 decommission.
+
 - [ ] Decide whether the compression is worth treating at all, or whether per-case inversions inside an aggregate-neutral change are acceptable. This is the same disposition question P073 settled as "not a regression"; it should be settled once for the parent class, not three times.
 - [ ] Build a **corpus-scale** exact-vs-range property check. A fixture-scale assertion cannot work — see P076.
 
