@@ -96,24 +96,19 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
     resource  = ""
   }
 
-  # ROLLBACK DRILL IN PROGRESS - the EB primary is TEMPORARILY pointed at the
-  # v3 domain (addressr5, pre-ADR-041 analyzer) over IAM/SigV4. Step 1 of 2 of
-  # the P069 runbook step 4 rollback exercise. A DRILL, not incident response:
-  # nothing is wrong with v4.
+  # ADR 041: the EB primary points at the v4 domain (addressr6, OpenSearch 3.5,
+  # equivalent-synonym analyzer) over IAM/SigV4.
   #
-  # EXPECTED WHILE APPLIED: P069 reproduces. Queries shaped
-  # <number> <word> <partial-token> return empty ("55 Pyrmont Bri" -> []).
-  # That is the positive control that the flip took effect, not a new defect.
-  # The SHORTER query "55 Pyrmont" must still return 8 - a zero THERE is an
-  # outage and the abort trigger.
-  #
-  # TO COMPLETE THE DRILL, SET THIS ONE LINE to module.opensearch_v4.endpoint
-  # and apply. v4 (addressr6) carries the ADR-041 analyzer and was primary
-  # until this drill began.
-  #
-  # DO NOT read the pre-drill instruction that used to live here ("set value
-  # back to module.opensearch_v3.endpoint"). While the primary is already v3
-  # that is a no-op, and applying it would look like a successful flip.
+  # ROLLBACK IS THIS ONE LINE: set value to module.opensearch_v3.endpoint and
+  # apply. v3 (addressr5) is retained fully populated and WARM. This path is
+  # EXERCISED, not assumed: the 2026-08-02 rollback drill flipped to v3 and back,
+  # and discharged ADR 029's open criterion at 6m36s push-to-EB-updated, inside
+  # the 10 minute bound. Two things that drill found, worth knowing before you
+  # rely on it: v3 is no longer fed by the quarterly loader (repointed to
+  # gha_v4_loader), so a rollback serves progressively staler data after each
+  # G-NAF refresh; and edge caching masked the flip for several minutes, so
+  # verify with a NOVEL query rather than a canonical one or you will read a
+  # cached response and conclude wrongly in either direction.
   #
   # The CUTOVER to v4 (not this drill) was gated on all five ADR 031 Soak Gate
   # criteria, measured over 33.8 h: mirror parity, zero failures with sustained
@@ -131,7 +126,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "ELASTIC_HOST"
-    value     = module.opensearch_v3.endpoint
+    value     = module.opensearch_v4.endpoint
     resource  = ""
   }
   setting {
