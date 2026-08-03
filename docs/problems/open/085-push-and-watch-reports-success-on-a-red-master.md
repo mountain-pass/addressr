@@ -1,6 +1,6 @@
 # Problem 085: `push:watch` reports "completed successfully" on a red master
 
-**Status**: Open — fix landed, awaiting a real red run to confirm in anger
+**Status**: Open — both scripts fixed and regression-tested against a replayed red run; awaiting a live failure to confirm in anger
 **Reported**: 2026-08-03
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Almost certain (5) — derived at capture; the false green is deterministic for the most common failure shape, and it is the signal the maintainer acts on
 **Origin**: internal
@@ -71,8 +71,15 @@ This lists every job including matrix-suffixed and newly added ones, and `--exit
 
 - [x] **Closed a fourth defect the risk scorer found in the fix itself.** An empty jobs array would still have reported green: `printf` feeds awk one blank line, it matches no rule, and execution falls through to the success path. The script now treats an empty scan as UNKNOWN and exits 1. A scan that learned nothing must not report success — which is the same shape as the three defects above, silence read as a pass.
 
-- [ ] `scripts/release-watch.sh` still carries the class: `gh run watch "$RUN_ID" || true` discards the exit code, the job scan tests only the literal `"failure"`, and a `select(.name == "build")` PR-check selector matches no job and degrades to `SKIPPED` after ~60s. Same fix shape; separate commit.
-- [ ] Check `scripts/release-watch.sh` for the same three defects — R023 already records the false-negative shape there, and this ticket is the sibling on the push path.
+- [x] **`scripts/release-watch.sh` fixed the same way 2026-08-03.** It carried three defects of its own, and the PR-check one was worse than the push-path original:
+
+  - `select(.name == "build")` on the release PR's checks. `release.yml` has no job by that name, so the selector matched nothing on **every** run, the empty branch was taken unconditionally, and after ~60s the script announced "No build check found (expected for changeset PRs)" and proceeded. The "expected for changeset PRs" rationale is sometimes true, but the broken selector meant that branch fired regardless — so a genuinely red release PR was never caught, and the 60-second wait was theatre. It now reads every check, fails on any that concluded badly, and treats "no checks" as proceed-worthy only when the list is genuinely empty rather than when a selector missed.
+  - The job scan selected only `conclusion == "failure"`, so `cancelled`, `timed_out`, `startup_failure`, `neutral` and `action_required` all reached the green path, as did an empty jobs array. Now allow-lists nothing: anything not `success` or `skipped` fails, with `check-deps` the single ADR-015 exemption, and an empty scan is UNKNOWN. That last one matters more here than on the push path, because this check runs **after** npm publish and the prod deploy.
+  - `gh run watch "$RUN_ID" || true` discarded the exit code. Now `--exit-status` with the code captured and subordinate to the job scan.
+
+  Regression-tested against the same real red run `30787856504`: correctly fails and names both matrix legs, ignores advisory `check-deps`, passes `skipped`. A synthetic `cancelled` leg is now caught where it previously passed.
+
+- [ ] Replace the source-inspection pin with a fixture test. `release-workflow-deploy-only.test.mjs` now asserts seven properties of `release-watch.sh`, but two of them are awk-literal, so a reimplementation in `jq` or a `case` statement would hold the property and still break the pin — it is less brittle than the string pins it replaced, not mechanism-independent. The strictly stronger shape is to extract the conclusion predicate from the script and feed it a TSV of conclusions, asserting the exit code and the named jobs. Raised by the risk scorer while reviewing the pin rewrite, along with two holes since closed: nothing asserted `WATCH_STATUS` was ever _read_ (deleting the block passed every assertion), and the empty-scan property pinned the message rather than the exit.
 
 ## Dependencies
 

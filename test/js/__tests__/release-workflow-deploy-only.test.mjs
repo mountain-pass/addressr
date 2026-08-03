@@ -203,26 +203,91 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
 
   it('watches every job, so a red docker-publish cannot report as a clean release', () => {
     // P004 false-negative class, new surface. release.yml became MULTI-JOB at
-    // ADR-040 stage 3, and release-watch.sh swallows `gh run watch`'s exit code
-    // with `|| true`. A job-name-specific conclusion check would therefore print
+    // ADR-040 stage 3, so a job-name-specific conclusion check would print
     // "completed successfully" while the image publish was red — after npm
     // publish and the prod deploy had already gone through.
     //
-    // Pinned as a NEGATIVE too: the old single-job filter must not come back,
-    // because re-introducing it is silent (the script still exits 0 and still
-    // looks correct) and every future job added to release.yml would be
-    // invisible to the watcher again.
-    assert.ok(
-      releaseWatch.includes('select(.conclusion == "failure")'),
-      'release-watch.sh must fail on any failed job, not a named one',
+    // REWRITTEN 2026-08-03 (P085). This previously pinned the literal jq
+    // fragments `select(.conclusion == "failure")` and
+    // `select(.name != "check-deps")`. Both are gone: the scan moved to awk and
+    // now allow-lists nothing, because testing for the literal "failure" let
+    // `cancelled`, `timed_out`, `startup_failure`, `neutral` and an empty jobs
+    // array all reach the green path. Pinning the old strings would have
+    // blocked the fix, which is what pinning an implementation rather than a
+    // property does — the P033 shape. So assert the PROPERTIES instead.
+    //
+    // Kept as negatives too: re-introducing any of these is silent, because the
+    // script still exits 0 and still looks correct.
+    //
+    // HONEST LIMIT, per the risk scorer's review of this pin: two of the
+    // assertions below are awk-LITERAL, so a reimplementation in jq or a `case`
+    // statement would hold the property and still break the pin. This is less
+    // brittle than the string pins it replaces, not mechanism-independent. The
+    // strictly better shape is a fixture test — feed a TSV of conclusions
+    // through the predicate and assert the exit code and the named jobs — which
+    // needs the predicate extracted from the script first. Recorded on P085.
+
+    // 1. The exit code of `gh run watch` must not be discarded.
+    assert.doesNotMatch(
+      releaseWatch,
+      /gh run watch "\$RUN_ID" \|\| true/,
+      'release-watch.sh must not swallow gh run watch\'s exit code',
+    );
+    assert.match(
+      releaseWatch,
+      /gh run watch "\$RUN_ID" --exit-status/,
+      'release-watch.sh must run gh run watch with --exit-status',
+    );
+    // Capturing the status is not the property — ACTING on it is. Without this
+    // the `if [ "${WATCH_STATUS:-0}" -ne 0 ]` block could be deleted and every
+    // other assertion here would still pass, restoring exactly the discard the
+    // two above forbid. Caught by the risk scorer reviewing this pin.
+    assert.match(
+      releaseWatch,
+      /if \[ "\$\{WATCH_STATUS:-0\}" -ne 0 \]/,
+      'release-watch.sh must ACT on the captured watch status, not merely capture it',
+    );
+
+    // 2. The scan must be default-deny, not an allow-list of failure words.
+    //    Anything that is not success or skipped has to fail.
+    assert.match(
+      releaseWatch,
+      /\$1 == "success" \|\| \$1 == "skipped" \{ next \}/,
+      'release-watch.sh must treat any non-success, non-skipped conclusion as failure',
     );
     assert.doesNotMatch(
       releaseWatch,
-      /select\(\.name == "release"\) \| \.conclusion'\s*2>\/dev\/null\)\nif \[ "\$RELEASE_CONCLUSION"/,
+      /select\(\.conclusion == "failure"\)/,
+      'the failure-word allow-list must not come back: cancelled and timed_out passed through it',
     );
-    // check-deps is advisory per ADR 015 and carries continue-on-error, so it
-    // must stay excluded or every mature-dependency notice reds the release.
-    assert.ok(releaseWatch.includes('select(.name != "check-deps")'));
+
+    // 3. An empty scan must not read as success. This check runs AFTER npm
+    //    publish and the prod deploy, so silence is the worst possible pass.
+    // Pin the EXIT, not just the message. Printing "UNKNOWN" and then falling
+    // through to the success path would satisfy a message-only assertion.
+    assert.match(
+      releaseWatch,
+      /Release status UNKNOWN[\s\S]{0,400}?exit 1/,
+      'the empty-job-list branch must exit non-zero, not just print',
+    );
+
+    // 4. check-deps stays exempt — advisory per ADR 015, carries
+    //    continue-on-error, so a mature-dependency notice must not red a release.
+    assert.match(
+      releaseWatch,
+      /\$2 == "check-deps" \{ next \}/,
+      'check-deps must stay exempt from the failure scan',
+    );
+
+    // 5. The PR-checks gate must not select a job name that does not exist.
+    //    `select(.name == "build")` matched nothing on every run, so the
+    //    "no build check found, proceeding" branch fired unconditionally and a
+    //    red release PR was never caught.
+    assert.doesNotMatch(
+      releaseWatch,
+      /select\(\.name == "build"\)/,
+      'the non-existent "build" job selector must not come back',
+    );
   });
 
   it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {

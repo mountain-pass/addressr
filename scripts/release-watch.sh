@@ -41,8 +41,12 @@ show_failure_guidance() {
 
   echo ""
   echo "Failed checks:"
+  # Must use the SAME default-deny predicate as the scan that called us. It
+  # previously selected only `conclusion == "failure"`, so a cancelled or
+  # timed_out job would fail the scan and then print nothing here \u2014 the operator
+  # gets told the release failed and shown an empty list.
   gh run view "$run_id" --json jobs \
-    --jq '.jobs[] | select(.conclusion == "failure") | "  \u2717 \(.name)"' 2>/dev/null || true
+    --jq '.jobs[] | select((.conclusion // "pending") != "success" and (.conclusion // "pending") != "skipped") | "  \u2717 \(.conclusion // "pending")  \(.name)"' 2>/dev/null || true
 
   echo ""
   echo "Fix the failure above, then re-run: npm run release:watch"
@@ -108,41 +112,72 @@ echo "Checking CI status..."
 # Note: The changeset release PR may not have CI checks if the branch was
 # pushed by GITHUB_TOKEN (which doesn't trigger workflows). In that case,
 # we proceed — the release workflow itself runs tests before publishing.
-echo "Waiting for build check to complete..."
+# P085 sibling fix. This loop used to select `.name == "build"`, and release.yml
+# has no job by that name — the jobs are check-deps, engine-floor,
+# build-and-test (<engine>) and release. So the selector matched nothing on
+# EVERY run, the empty case was taken every time, and after ~60s the script
+# announced "No build check found (expected for changeset PRs)" and proceeded.
+# The "expected for changeset PRs" rationale is sometimes true, but the broken
+# selector meant that branch was taken unconditionally, so a genuinely red
+# release PR was never caught here. The wait was theatre.
+#
+# Same fix shape as scripts/push-and-watch.sh: allow-list nothing. Read every
+# check, fail on any that concluded badly, and only treat "no checks" as
+# proceed-worthy when the list is genuinely empty rather than when a selector
+# missed.
+echo "Waiting for release PR checks to complete..."
 BUILD_STATUS=""
 for i in $(seq 1 30); do
-  BUILD_STATUS=$(gh pr checks "$PR_NUMBER" --json name,state --jq '.[] | select(.name == "build") | .state' 2>/dev/null)
-  case "$BUILD_STATUS" in
-    SUCCESS)
-      echo "Build check passed."
+  CHECKS_TSV=$(gh pr checks "$PR_NUMBER" --json name,state \
+    --jq '.[] | "\(.state)\t\(.name)"' 2>/dev/null || true)
+
+  if [ -z "$CHECKS_TSV" ]; then
+    # Genuinely no checks. A changeset PR pushed by GITHUB_TOKEN does not
+    # trigger workflows, and the post-merge release workflow runs the tests
+    # before publishing, so proceeding is safe here.
+    if [ "$i" -ge 6 ]; then
+      echo ""
+      echo "No checks found on the release PR (expected when GITHUB_TOKEN opened it). Proceeding."
+      BUILD_STATUS="SKIPPED"
       break
-      ;;
-    FAILURE|ERROR)
-      echo "Build check failed on the release PR. Fix CI first." >&2
-      gh pr checks "$PR_NUMBER" 2>/dev/null
-      exit 1
-      ;;
-    "")
-      # No build check found — changeset PR pushed by GITHUB_TOKEN won't trigger CI.
-      # Safe to proceed: the post-merge release workflow runs tests before publishing.
-      if [ "$i" -ge 6 ]; then
-        echo ""
-        echo "No build check found on PR (expected for changeset PRs). Proceeding."
-        BUILD_STATUS="SKIPPED"
-        break
-      fi
-      printf '.'
-      sleep 10
-      ;;
-    *)
-      printf '.'
-      sleep 10
-      ;;
-  esac
+    fi
+    printf '.'
+    sleep 10
+    continue
+  fi
+
+  BAD_CHECKS=$(printf '%s\n' "$CHECKS_TSV" | awk -F'\t' '
+    $2 == "check-deps" { next }
+    $1 == "FAILURE" || $1 == "ERROR" || $1 == "CANCELLED" || $1 == "TIMED_OUT" || $1 == "ACTION_REQUIRED" || $1 == "STARTUP_FAILURE" { print }
+  ')
+  if [ -n "$BAD_CHECKS" ]; then
+    echo ""
+    echo "Release PR checks did not pass. Fix CI first." >&2
+    printf '%s\n' "$BAD_CHECKS" | sed 's/^/  /' >&2
+    exit 1
+  fi
+
+  PENDING_CHECKS=$(printf '%s\n' "$CHECKS_TSV" | awk -F'\t' '
+    $2 == "check-deps" { next }
+    $1 == "SUCCESS" || $1 == "SKIPPED" || $1 == "NEUTRAL" { next }
+    { print }
+  ')
+  if [ -z "$PENDING_CHECKS" ]; then
+    echo ""
+    echo "Release PR checks passed:"
+    printf '%s\n' "$CHECKS_TSV" | awk -F'\t' '{ printf "  %-16s %s\n", $1, $2 }'
+    BUILD_STATUS="SUCCESS"
+    break
+  fi
+
+  printf '.'
+  sleep 10
 done
+
 if [ "$BUILD_STATUS" != "SUCCESS" ] && [ "$BUILD_STATUS" != "SKIPPED" ]; then
   echo ""
-  echo "Build check did not complete within 5 minutes." >&2
+  echo "Release PR checks did not reach a terminal state in time. Not merging." >&2
+  gh pr checks "$PR_NUMBER" 2>/dev/null || true
   exit 1
 fi
 echo ""
@@ -191,7 +226,11 @@ echo "Release workflow: $RUN_URL"
 echo ""
 
 # ── 5. Watch the workflow ────────────────────────────────────────────────────
-gh run watch "$RUN_ID" || true
+# `--exit-status` and capture, not `|| true`. Discarding this was one of the
+# defects P085 records on the push-path sibling. The job scan below is
+# authoritative, so do not exit on the watch status alone — but do not throw it
+# away either.
+gh run watch "$RUN_ID" --exit-status && WATCH_STATUS=0 || WATCH_STATUS=$?
 
 # Fail on ANY failed job, not just `release`. As of ADR-040 stage 3 release.yml
 # is MULTI-JOB — `docker-publish` calls the docker-image reusable workflow — and
@@ -204,12 +243,45 @@ gh run watch "$RUN_ID" || true
 #
 # check-deps stays excluded by name: it is advisory per ADR 015 and carries
 # continue-on-error, so a red one must not fail the release.
-FAILED_JOBS=$(gh run view "$RUN_ID" --json jobs \
-  --jq '[.jobs[] | select(.conclusion == "failure") | select(.name != "check-deps") | .name] | join(", ")' 2>/dev/null)
+# P085 sibling fix. The whole-job-set check above was right in principle, but it
+# selected only `conclusion == "failure"`, so `cancelled`, `timed_out`,
+# `startup_failure`, `neutral` and `action_required` all fell through to the
+# green path — and so did an empty jobs array. Allow-list nothing instead:
+# anything that is not `success` or `skipped` fails. That also covers a job
+# added to release.yml later without this script being edited.
+JOBS_TSV=$(gh run view "$RUN_ID" --json jobs \
+  --jq '.jobs[] | "\(.conclusion // "pending")\t\(.name)"' 2>/dev/null)
+
+# No jobs is not "nothing failed" — it means the scan learned nothing, and this
+# runs AFTER npm publish and the prod deploy, so silence is the worst possible
+# thing to read as success.
+if [ -z "$JOBS_TSV" ]; then
+  echo ""
+  echo "Release status UNKNOWN — $RUN_URL"
+  echo "gh returned no jobs for this run, so nothing could be verified."
+  echo "Check the run directly before assuming the release completed."
+  exit 1
+fi
+
+FAILED_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' '
+  $2 == "check-deps" { next }
+  $1 == "success" || $1 == "skipped" { next }
+  { print }
+')
 if [ -n "$FAILED_JOBS" ]; then
   echo ""
   echo "Release failed — $RUN_URL"
-  echo "  Failed jobs: $FAILED_JOBS"
+  echo "Jobs that did not succeed:"
+  printf '%s\n' "$FAILED_JOBS" | sed 's/^/  /'
+  show_failure_guidance "$RUN_ID" "$RUN_URL"
+  exit 1
+fi
+
+if [ "${WATCH_STATUS:-0}" -ne 0 ]; then
+  echo ""
+  echo "Release failed — $RUN_URL"
+  echo "gh run watch exited ${WATCH_STATUS} but every job scanned as success or skipped."
+  echo "Treating the release as failed: the watcher saw something the job scan did not."
   show_failure_guidance "$RUN_ID" "$RUN_URL"
   exit 1
 fi
