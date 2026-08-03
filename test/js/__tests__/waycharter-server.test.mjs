@@ -50,9 +50,23 @@ describe('root / cache-control directive (P018 parked — long-lived by design)'
 //
 // Source-inspection here per this file's established precedent (buildRest2App
 // is babel-only and cannot be imported under raw `node --test`; see the
-// /debug/shadow-config block below). Live 204/header/not-401 behaviour is
-// covered behaviourally by test/resources/features/cors-preflight.feature
-// (rest2 profile, real HTTP through the auth chain).
+// /debug/shadow-config block below).
+//
+// CORRECTION, 2026-08-03. This comment previously asserted that live
+// 204/header/not-401 behaviour was "covered behaviourally by
+// test/resources/features/cors-preflight.feature (rest2 profile, real HTTP
+// through the auth chain)". That file did not exist. ADR-037 cited it in four
+// Confirmation criteria and three of them were unmet, so every guard on the
+// ADR-037 runtime behaviour was the indexOf comparison below — which is text
+// matching and would pass green through a broken preflight. Found by
+// architecture review while checking whether express 5 was safe to adopt.
+//
+// The feature file now exists and runs in the EMBEDDED profile, not rest2:
+// ADR-037 decides the app.options registration at buildRest2App() time, and
+// rest2 keeps one server for the whole run, so a fresh app per scenario is the
+// only way to cover both the CORS-on and CORS-off cases. Keep these
+// source-inspection checks — they catch a reorder at author time, cheaply —
+// but do not read them as runtime evidence.
 describe('CORS preflight caching — OPTIONS handler (P023 / ADR-037)', () => {
   async function buildAppBody() {
     const source = await readFile(serverPath, 'utf8');

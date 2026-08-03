@@ -1,5 +1,3 @@
 {
-  "exclude": {
-    "express": "Major version 5.x upgrade deferred - significant API breaking changes"
-  }
+  "exclude": {}
 }
