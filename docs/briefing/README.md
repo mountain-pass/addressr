@@ -4,20 +4,22 @@ Migrated from legacy `docs/BRIEFING.md` via `/wr-retrospective:migrate-briefing`
 
 ## Critical Points (Session-Start Surface)
 
-Seeded manually 2026-07-26 (the `run-retro` skill has no bin shim in adopter repos — P049, upstream-blocked — and the Skill tool errors in AFK subprocesses). The next `/wr-retrospective:run-retro` signal-vs-noise pass should re-derive this list properly per ADR-040.
+Re-derived 2026-08-04 by the signal-vs-noise pass. Terse by design (ADR-040 Tier 1, 2 KB) — each line names the trap and the topic file that explains it.
 
-- **Production runs the v2 API (`addressr-server-2`) on OpenSearch, not the v1 API on Elasticsearch.** `client/elasticsearch.js` and every `ELASTIC_*` env var are historical names from before the fork. Read `what-you-need-to-know.md` before touching search or deploy paths.
-- **External-comms gates are marker-hash-exact, and the commit gate hashes the LITERAL `-m` text from your bash command.** Write commit messages apostrophe-free and pass them as a single `-m`; never `-m "$(cat file)"`. Any edit after a reviewer PASS invalidates the marker, and the risk and voice-tone gates invalidate independently. Draft external prose em-dash-free — the voice-tone gate FAILs on em-dashes every time. Full detail in `what-will-surprise-you.md`; this family has cost round-trips on at least six occasions.
-- **Edit-gate markers match a LITERAL verdict string and a LITERAL reviewer-prompt shape.** The external-comms commit gate needs a prompt starting `SURFACE: git-commit-message` with the message wrapped in `<draft>...</draft>`; the architect marker wants `**Architecture Review: PASS**` (an `ALIGNED (PASS)` heading leaves the gate closed — assert manually per the block text, and never upgrade a verdict via `SendMessage`); `wr-jtbd:agent` writes PASS/FAIL to `/tmp/jtbd-verdict`. Also: a commit spanning `docs/decisions/` and `docs/jtbd/` can deadlock the compendium-pairing gate — escape with the `RISK_BYPASS: architect-compendium-deferred` trailer, and expect it to invalidate any external-comms PASS you already hold. Detail in `what-will-surprise-you.md`.
-- **`gh issue create --body-file` can never clear the external-comms gate** (it extracts an empty draft). Use the quoted-heredoc `--body "$(cat <<'EOF' ... EOF)"` form. Always inline the draft in the reviewer prompt — a `/tmp` path fails closed because the reviewer cannot read outside the working dir.
-- **Boolean `workflow_dispatch` inputs must be compared UNQUOTED in `if:`.** `inputs.x == 'true'` silently never matches and the run goes GREEN with the gated step skipped.
-- **A workflow gaining `workflow_call` must move `concurrency:` off `${{ github.workflow }}`** — in a callee that resolves to the CALLER's name, so caller and callee land in one group and deadlock.
-- **Migrating OpenSearch? Read `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md` FIRST.** Two full blue/green runs are complete; sizing is empirical, re-measure rather than assume.
-- **Never commit an absolute request or read count.** The external-comms gate treats traffic volumes as confidential disclosure, in commit messages and code comments alike. Describe soaks qualitatively. Dataset sizes and latency figures are fine.
+- **Production is the v2 API on AWS-managed OpenSearch.** Every `ELASTIC_*` name is historical. Read `what-you-need-to-know.md` before touching search or deploy.
+- **External-comms gates hash the LITERAL draft from your command.** Use `-m "$(cat <<'EOF' ... EOF)"` — the extractor tries heredoc first and matches it literally. Escaped quotes inside `-m "..."` truncate the capture; `--body-file` extracts an empty draft and can never clear. Any edit after a PASS re-invalidates, and risk/voice-tone invalidate independently. Draft em-dash-free. `external-comms-marker-mechanics.md`.
+- **Edit-gate markers match literal verdict strings**, and a commit spanning `docs/decisions/` + `docs/jtbd/` can deadlock the compendium gate. `markers-and-edit-gates.md`, `commit-time-gates.md`.
+- **`git add` must be its own Bash call.** A gate-denied `git add X && git commit` never runs the add, so the retry commits the wrong tree. Verify with `git show --stat HEAD` AND `git diff HEAD -- <files>`. `git-staging-and-agent-io.md`.
+- **Never trust a pipeline summary line.** Both watchers reported success on a red master. Verify: `gh run view <id> --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'`. `ci-observability-and-perf.md`.
+- **Compiling is not loading.** `npm run build` exits 0 on output that cannot be required. Pack the tarball and start it. `babel-esm-and-toolchain.md`.
+- **A test that exists may never run**, and a config note explaining why something is impossible is a hypothesis, not a finding. Mutation-test new tests; re-check deferral notes before repeating them. `cucumber-profiles-and-tags.md`, `agent-and-workflow-patterns.md`.
+- **Boolean `workflow_dispatch` inputs compare UNQUOTED**; a reusable workflow needs `concurrency:` off `${{ github.workflow }}`. Both fail GREEN. `releases-and-ci.md`.
+- **Migrating OpenSearch? Read `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md` first.** Sizing is empirical; re-measure. `opensearch-and-deploy-state.md`, `cutover-mechanics.md`.
+- **Never commit an absolute request or read count.** Traffic volumes are confidential disclosure in commit messages and comments alike. Ratios and go/no-go only. `external-comms-content-rules.md`.
 
 ## Topic Index
 
-Decomposed by subject 2026-07-28, rotated again 2026-08-02 (Tier-3 budget — eight files were over the per-file ceiling; the largest were split on subtopic boundaries).
+Decomposed by subject 2026-07-28; rotated 2026-08-02 and again 2026-08-04 (Tier-3 budget — four new files split off on subtopic boundaries).
 
 | File                                                                       | Subject                                                                        |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -39,3 +41,7 @@ Decomposed by subject 2026-07-28, rotated again 2026-08-02 (Tier-3 budget — ei
 | [agent-and-workflow-patterns.md](./agent-and-workflow-patterns.md)         | Recurring assistant failure modes                                              |
 | [itil-workflow-traps.md](./itil-workflow-traps.md)                         | Problem/ADR lifecycle traps: anchoring, README drift, Confirmation wording     |
 | [testing-tdd-and-code.md](./testing-tdd-and-code.md)                       | The TDD hook, test anti-patterns, ESM/babel quirks                             |
+| [babel-esm-and-toolchain.md](./babel-esm-and-toolchain.md)                 | Babel/ESM transpilation, the real vs declared Node floors, lockfile traps      |
+| [cucumber-profiles-and-tags.md](./cucumber-profiles-and-tags.md)           | How profiles select scenarios, and how a feature can run never                 |
+| [ci-observability-and-perf.md](./ci-observability-and-perf.md)             | Whether the pipeline is telling the truth; what the k6 harness can resolve     |
+| [git-staging-and-agent-io.md](./git-staging-and-agent-io.md)               | How commits lose content; literal shapes agent/hook plumbing expects           |
