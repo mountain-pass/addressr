@@ -1,6 +1,6 @@
 # Problem 085: `push:watch` reports "completed successfully" on a red master
 
-**Status**: Open
+**Status**: Open — fix landed, awaiting a real red run to confirm in anger
 **Reported**: 2026-08-03
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Almost certain (5) — derived at capture; the false green is deterministic for the most common failure shape, and it is the signal the maintainer acts on
 **Origin**: internal
@@ -62,10 +62,16 @@ This lists every job including matrix-suffixed and newly added ones, and `--exit
 
 ### Investigation Tasks
 
-- [ ] Replace the exact-equality selectors with prefix matching so matrix legs are covered: `.jobs[] | select(.name | startswith("build-and-test"))`. Do not enumerate leg names — they change with the OpenSearch matrix.
-- [ ] Treat any conclusion that is not `success` or `skipped-because-not-applicable` as failure, rather than testing for the literal `"failure"`. A `cancelled` or `timed_out` leg is currently a green report too.
-- [ ] Stop discarding `gh run watch`'s exit code, or pass `--exit-status` and act on it.
-- [ ] Make the check job-agnostic so a newly added job is covered by default. The `engine-floor` job added on 2026-08-03 is already outside every selector in this script — the same defect class, freshly re-created, which is the argument for allow-listing nothing.
+- [x] **Went further than prefix matching: the script now allow-lists nothing.** It enumerates every job in the run and treats anything that is not `success` or `skipped` as a failure. Prefix matching would have fixed the matrix legs and left the next new job uncovered, which is the defect repeating rather than closing.
+- [x] **Any non-success conclusion now fails**, so `cancelled` and `timed_out` are caught too, not just the literal `"failure"`.
+- [x] **`gh run watch` now runs with `--exit-status`** and its code is captured rather than discarded. The job scan is authoritative, but a non-zero watch exit with an all-green scan is also treated as a failure, on the grounds that the watcher saw something the scan did not.
+- [x] **Job-agnostic by construction**, so `engine-floor` is covered without the script being edited. `check-deps` is the single deliberate exemption because ADR-015 makes it `continue-on-error: true`.
+
+  **Regression-tested against the real red run.** Replaying run `30787856504` — the one that reported "completed successfully" while both matrix legs failed — through the new filter correctly reports failure and names both offending legs. The advisory `check-deps` failure is correctly ignored, and `skipped` jobs correctly pass.
+
+- [x] **Closed a fourth defect the risk scorer found in the fix itself.** An empty jobs array would still have reported green: `printf` feeds awk one blank line, it matches no rule, and execution falls through to the success path. The script now treats an empty scan as UNKNOWN and exits 1. A scan that learned nothing must not report success — which is the same shape as the three defects above, silence read as a pass.
+
+- [ ] `scripts/release-watch.sh` still carries the class: `gh run watch "$RUN_ID" || true` discards the exit code, the job scan tests only the literal `"failure"`, and a `select(.name == "build")` PR-check selector matches no job and degrades to `SKIPPED` after ~60s. Same fix shape; separate commit.
 - [ ] Check `scripts/release-watch.sh` for the same three defects — R023 already records the false-negative shape there, and this ticket is the sibling on the push path.
 
 ## Dependencies

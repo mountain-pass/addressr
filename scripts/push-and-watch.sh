@@ -62,29 +62,77 @@ echo "Release workflow: $RUN_URL"
 echo ""
 
 # ── 3. Watch the workflow ───────────────────────────────────────────────────
-gh run watch "$RUN_ID" || true
+# `--exit-status` is load-bearing, and the old `|| true` that discarded it was
+# one of the three defects in P085. Capture rather than discard: a non-zero here
+# is a real signal, but the job scan below is the authoritative check, so do not
+# exit on it alone.
+gh run watch "$RUN_ID" --exit-status && WATCH_STATUS=0 || WATCH_STATUS=$?
 
-# Check the release job specifically (check-deps is advisory per ADR 015)
-RELEASE_CONCLUSION=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null)
-BUILD_CONCLUSION=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "build") | .conclusion' 2>/dev/null)
-if [ "$RELEASE_CONCLUSION" = "failure" ] || [ "$BUILD_CONCLUSION" = "failure" ]; then
+# ── 4. Verify EVERY job, job-agnostically (P085) ───────────────────────────
+# This block replaces three compounding defects that made the script report
+# "completed successfully" on a red master, which is how a Babel 8 regression
+# sat on master unnoticed on 2026-08-03:
+#
+#   1. It selected a job named "build". No such job exists, so that guard could
+#      never fire.
+#   2. It selected the exact name "build-and-test", but a matrix names its jobs
+#      "build-and-test (2.19.5)" and "build-and-test (3.5.0)", matching neither.
+#   3. It tested only for the literal "failure". When build-and-test fails,
+#      `release` never runs and its conclusion is "skipped" — so the one
+#      selector that did match a real job returned a value the guard ignored.
+#
+# The fix is to allow-list nothing. Enumerate every job and treat anything that
+# is not `success` or `skipped` as a failure. That way a job added later — like
+# `engine-floor`, added the same day and already outside every old selector — is
+# covered by default rather than needing this script edited again.
+#
+# `check-deps` is advisory per ADR 015 (`continue-on-error: true`), so it is the
+# one deliberate exemption. Keep that list as short as this.
+JOBS_TSV=$(gh run view "$RUN_ID" --json jobs \
+  --jq '.jobs[] | "\(.conclusion // "pending")\t\(.name)"' 2>/dev/null)
+
+# No jobs is not "nothing failed" — it means the scan learned nothing, and a
+# scan that learned nothing must not report success. Without this, an empty
+# jobs array feeds awk one blank line, matches no rule, and falls through to
+# the green path. That is the same shape as the defects above: silence read
+# as a pass.
+if [ -z "$JOBS_TSV" ]; then
+  echo ""
+  echo "Push pipeline status UNKNOWN — $RUN_URL"
+  echo "gh returned no jobs for this run, so nothing could be verified."
+  exit 1
+fi
+
+BAD_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' '
+  $2 == "check-deps" { next }
+  $1 == "success" || $1 == "skipped" { next }
+  { print }
+')
+
+if [ -n "$BAD_JOBS" ]; then
   echo ""
   echo "Push pipeline failed — $RUN_URL"
+  echo "Jobs that did not succeed:"
+  printf '%s\n' "$BAD_JOBS" | sed 's/^/  /'
   show_failure_guidance "$RUN_ID" "$RUN_URL"
   exit 1
 fi
 
-# ── 4. Report results ──────────────────────────────────────────────────────
-BUILD_JOB=$(gh run view "$RUN_ID" --json jobs \
-  --jq '.jobs[] | select(.name == "build-and-test") | .conclusion' 2>/dev/null || echo "unknown")
+if [ "${WATCH_STATUS:-0}" -ne 0 ]; then
+  echo ""
+  echo "Push pipeline failed — $RUN_URL"
+  echo "gh run watch exited ${WATCH_STATUS} but every job scanned as success or skipped."
+  echo "Treating the run as failed: the watcher saw something the job scan did not."
+  show_failure_guidance "$RUN_ID" "$RUN_URL"
+  exit 1
+fi
 
-RELEASE_JOB=$(gh run view "$RUN_ID" --json jobs \
-  --jq '.jobs[] | select(.name == "release") | .conclusion' 2>/dev/null || echo "skipped")
-
+# ── 5. Report results ──────────────────────────────────────────────────────
+# Print every job rather than two hand-picked ones, so the report cannot go
+# quiet about a job it was never taught to look for.
 echo ""
 echo "Push pipeline completed successfully."
-echo "  Build and test: $BUILD_JOB"
-echo "  Release job: ${RELEASE_JOB:-skipped (not on master)}"
+printf '%s\n' "$JOBS_TSV" | awk -F'\t' '{ printf "  %-12s %s\n", $1, $2 }'
 echo ""
 
 # ── 5. Check for release PR ────────────────────────────────────────────────
