@@ -45,6 +45,41 @@ jobs:
       - name: Check for mature dependency updates
         run: npx dry-aged-deps --check
 
+  # `engines.node` is `>=22` and scripts/check-version.js enforces that floor at
+  # postinstall with a process.exit(1), so the bottom of that range is SUPPORTED
+  # for self-hosted operators rather than merely tolerated. Every other job here
+  # runs `22.x`, which floats to latest, so the bottom was exercised by nothing.
+  #
+  # The gap has teeth: service/gnaf-directory.js uses `fs/promises` glob, which
+  # Node marks experimental across 22.0-22.16 and supported from 22.17. The
+  # loader depends on its trailing-slash pattern restricting matches to
+  # directories, and that is undocumented for the built-in. Measured identical
+  # on 22.0.0, 22.16.0, 22.17.1 and 24.16; this leg keeps it measured instead of
+  # leaving it a one-off check.
+  #
+  # WHY 22.7 AND NOT 22.0, which is what `engines` actually declares. The .mjs
+  # tests import untranspiled `.js` service modules, and ESM-in-.js only loads
+  # from 22.7 where module syntax detection landed. On 22.0 the suite reports 92
+  # failures, all of that one cause and none of them real. Shipped code is
+  # unaffected — babel emits CJS into lib/ — so this is a test-harness floor
+  # above the declared engine floor, not a product bug. 22.7 is the lowest
+  # version that can run the suite at all, and it still sits inside the
+  # experimental-glob range this leg exists to cover.
+  #
+  # No OpenSearch and no G-NAF fixture, so it is cheap.
+  engine-floor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.7.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests on the declared engine floor
+        run: npm run test:js
+
   build-and-test:
     runs-on: ubuntu-latest
     strategy:
@@ -149,7 +184,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/master'
-    needs: build-and-test
+    needs: [build-and-test, engine-floor]
     runs-on: ubuntu-latest
     # ADR-040 stage 3. `published` is a STEP output inside this job, so a
     # declared job-level output is the only way the docker-publish job below can

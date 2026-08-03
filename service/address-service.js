@@ -29,7 +29,7 @@ import {
 } from './covered-states';
 import { mirrorRequest } from '../src/read-shadow';
 import crypto from 'node:crypto';
-import { glob } from 'glob';
+import { findGnafDirectory } from './gnaf-directory';
 
 const fsp = fs.promises;
 
@@ -1757,13 +1757,18 @@ export async function loadGnaf({ refresh = false } = {}) {
     if (contents.length === 0) {
       throw new Error(`Data dir '${unzipped}' is empty`);
     }
-    const gnafDirectory = await glob('**/G-NAF/', { cwd: unzipped });
+    const gnafDirectory = await findGnafDirectory(unzipped);
     console.log(gnafDirectory);
     if (gnafDirectory.length === 0) {
       throw new Error(
         `Cannot find 'G-NAF' directory in Data dir '${unzipped}'`,
       );
     }
+    // `.slice(0, -1)` is vestigial: it dates from an older `glob` major that
+    // returned a trailing slash, and today it just strips the `F` off `G-NAF`.
+    // `path.dirname` then discards that whole segment either way, so the result
+    // is the parent of G-NAF regardless. Left as-is to keep this a one-for-one
+    // swap — do not "fix" it without checking that.
     mainDirectory = path.dirname(
       `${unzipped}/${gnafDirectory[0].slice(0, -1)}`,
     );
