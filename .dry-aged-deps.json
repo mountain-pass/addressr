@@ -14,6 +14,7 @@
     "@babel/register": "Babel 8 toolchain migration deferred - coordinated major upgrade across the whole @babel/* stack, out of scope for routine maintenance",
     "@babel/runtime": "Babel 8 toolchain migration deferred - coordinated major upgrade across the whole @babel/* stack, out of scope for routine maintenance",
     "babel-plugin-istanbul": "Major version 8.x targets Babel 8 - deferred with the @babel/* stack until the toolchain migrates",
-    "lint-staged": "Major version 17.x deferred - pre-commit tooling, upgrade needs isolated verification of the commit hook chain"
+    "lint-staged": "Major version 17.x deferred - pre-commit tooling, upgrade needs isolated verification of the commit hook chain",
+    "eslint-plugin-unicorn": "Major 66+ requires eslint >=10.4 \u2014 same @babel/eslint-parser (eslint ^9) wall that blocks the eslint entry above. 65.0.1 is the ceiling under eslint 9; revisit with the Babel 8 migration"
   }
 }
