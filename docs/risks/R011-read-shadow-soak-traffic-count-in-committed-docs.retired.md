@@ -1,12 +1,12 @@
 # Risk R011: Read Shadow Soak Traffic Count In Committed Docs
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-04 — merged into R004)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-18
 **Owner**: pending review
-**Last reviewed**: 2026-07-18
-**Next review**: 2026-07-18
-**Curation**: pending review (auto-scaffolded 2026-07-18)
+**Last reviewed**: 2026-08-04
+**Next review**: n/a (retired)
+**Curation**: curated at retirement 2026-08-04
 
 ## Description
 
@@ -65,3 +65,9 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement
+
+Merged into **R004** (traffic sample counts in public prose) on 2026-08-04. All three entries described the same hazard — absolute traffic figures committed to a public repository — differing only in which instance triggered the scorer hint. This one was a briefing file re-committing a previously-scrubbed read-shadow figure.
+
+Scoring lives on R004, which carries the merged base rate of four instances and holds the residual **above appetite at 9/25** because the file-content surface has no mechanical control. Do not re-open this entry; add instances to R004's count.
