@@ -1,7 +1,5 @@
 {
   "exclude": {
-    "chai": "Major version 6.x is ESM-only, requires test infrastructure migration",
-    "express": "Major version 5.x upgrade deferred - significant API breaking changes",
-    "lint-staged": "Major version 17.x deferred - pre-commit tooling, upgrade needs isolated verification of the commit hook chain"
+    "express": "Major version 5.x upgrade deferred - significant API breaking changes"
   }
 }
