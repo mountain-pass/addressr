@@ -9,18 +9,21 @@ import pluginPromise from 'eslint-plugin-promise';
 import nodePlugin from 'eslint-plugin-n';
 import { importX } from 'eslint-plugin-import-x';
 import pluginChaiFriendly from 'eslint-plugin-chai-friendly';
+import { globalIgnores } from 'eslint/config';
 
 export default [
-  {
-    ignores: [
-      'nodemodules/**/*',
-      'target/**/*',
-      'coverage/**',
-      'test-results/**',
-      'lib/**/*',
-      '.env',
-    ],
-  },
+  // MUST be `globalIgnores()`, not a bare `{ ignores: [...] }` object. Under
+  // ESLint 9 those were equivalent; under 10 the bare form no longer applies
+  // globally, so `lib/**` fell back into scope and the transpiled build output
+  // reported 2604 problems of its own — 78% of the tree-wide total, all noise.
+  globalIgnores([
+    'target/**',
+    'coverage/**',
+    'test-results/**',
+    'lib/**',
+    'scratchpad/**',
+    '.env',
+  ]),
   js.configs.recommended,
   pluginSecurity.configs.recommended,
   comments.recommended,
@@ -58,8 +61,14 @@ export default [
           },
         },
       ],
-      'unicorn/prevent-abbreviations': [
-        'error',
+      // Renamed from `unicorn/prevent-abbreviations` in unicorn 72. The old
+      // name still resolves but its schema is gone, so passing these options
+      // to it fails config validation outright rather than warning.
+      //
+      // `warn`, not `error`, and deliberately so — see the no-this-outside-of-class
+      // note below. Raise back to `error` once the backlog is swept.
+      'unicorn/name-replacements': [
+        'warn',
         {
           replacements: {
             res: { response: true },
@@ -67,6 +76,14 @@ export default [
           },
         },
       ],
+      // The two rules unicorn 72 introduced that this codebase violates at
+      // scale and that `--fix` cannot clear: 173 and 41 occurrences, concentrated
+      // in service/ and src/. Enforcement here is the lint-staged pre-commit
+      // hook, so leaving them at `error` would hard-block the next edit to any
+      // of those files for a reason unrelated to that edit. `warn` keeps the
+      // signal visible without making an 8-major dependency bump into a tax on
+      // everyone's next commit. Raise per directory as the sweep lands.
+      'unicorn/no-this-outside-of-class': 'warn',
       // Blocked by ADR 005 (Babel/CJS — requires native ESM)
       'unicorn/prefer-module': 'off',
       // waycharter ops.find()/ops.filter() are not Array.prototype — false positives

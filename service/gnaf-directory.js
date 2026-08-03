@@ -43,11 +43,10 @@ import { glob } from 'node:fs/promises';
  *   "Cannot find 'G-NAF' directory" error.
  */
 export async function findGnafDirectory(unzipped) {
-  const matches = [];
-  for await (const match of glob('**/G-NAF/', { cwd: unzipped })) {
-    matches.push(match);
-  }
+  const matches = await Array.fromAsync(glob('**/G-NAF/', { cwd: unzipped }));
   // The caller indexes [0]. Neither implementation guarantees an order, so sort
   // here rather than let filesystem iteration order decide which extract wins.
-  return matches.toSorted();
+  // Any total order will do; these are paths from a G-NAF zip, so ASCII, where
+  // every locale agrees with codepoint order anyway.
+  return matches.toSorted((a, b) => a.localeCompare(b));
 }

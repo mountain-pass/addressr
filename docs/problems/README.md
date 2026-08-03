@@ -34,6 +34,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | Medium (6)   | Open          | M      | 2026-04-28 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open          | M      | 2026-07-16 | internal |
 | 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
+| 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |
