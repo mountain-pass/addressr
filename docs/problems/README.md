@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-03 **P083 captured, and P080 + P082 reported upstream** ([#408](https://github.com/windyroad/agent-plugins/issues/408), [#407](https://github.com/windyroad/agent-plugins/issues/407)) after confirming both behaviours are still present on the newest cached plugin version rather than artefacts of a stale cache. P083 carries the risk register curation backlog, triaged rather than left open-ended. Prior: 2026-08-02 **standby decommission apply 1 landed; P081 + P082 captured** — the EB role's reach to addressr5 is severed (plan-verified as exactly two resources, EB environment untouched), so a mis-flip now fails loudly instead of silently serving a stale index. P081 captures that the assistant escalates judgement calls it holds the evidence to settle while acting freely on mechanical ones — user-identified, four instances in one session. P082 captures that one `RISK_BYPASS: reducing` line opens the commit, push AND release gates, with the push marker sitting ahead of the CI check (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-05 **P087 captured** — the architect gate binds to the Edit/Write tool, so any bulk edit routed through Bash modifies governed files with no review demanded; found after a node script rewrote 141 link targets across 14 ADR bodies ungated and the gate then blocked the very next Edit-tool call. Also this session: P083 batch six drained the risk register to 3 uncurated entries and repaired 174 broken doc links. (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -13,6 +13,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
+| 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
