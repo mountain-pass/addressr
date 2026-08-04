@@ -73,7 +73,7 @@ Recorded rather than decided, because the choice is the maintainer's and option 
 
 - Criteria: `RISK-POLICY.md`
 - Treatment ADRs: **ADR-040** (release-pipeline change-type action matrix) — the decision that created the push-tier axis; **ADR-001** (risk-gated release process) — its 2026-07-26 amendment names the axis and its push-tier score.
-- Siblings: **R021** (push-tier deploy axis arms prod terraform apply) and **R020** — the same hazard from the axis's side rather than the working tree's. Consider consolidating the three; P083 records that decision as open.
+- Siblings: **R021** (the axis's governance level) and **R020** (the manual `deploy_only` recovery path, never exercised) — the same machinery from different angles. **Consolidation was considered and REJECTED 2026-08-04**: these are distinct hazards that happen to share the word "terraform apply". R021 is about _who can start_ an apply, R020 about a _recovery route_ that has never run, and this entry about _unreviewed content_ reaching one. Only R025 turned out to be a genuine duplicate, and it merged into R020. See P083.
 - Personas affected: `docs/jtbd/addressr-maintainer/`
 
 ## Evidence Log

@@ -1,12 +1,12 @@
 # Risk R025: Deploy Axis Armed Jtbd400 Manual Deploy Path Unexercised
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-04 — merged into R020)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-27
 **Owner**: pending review
-**Last reviewed**: 2026-07-27
-**Next review**: 2026-07-27
-**Curation**: pending review (auto-scaffolded 2026-07-27)
+**Last reviewed**: 2026-08-04
+**Next review**: n/a (retired)
+**Curation**: curated at retirement 2026-08-04
 
 ## Description
 
@@ -18,7 +18,7 @@ Push-tier deploy/** axis wired live while JTBD-400 manual --deploy-only path nev
 
 ## Inherent Risk
 
-Impact × Likelihood *before* controls.
+Impact × Likelihood _before_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -31,7 +31,7 @@ Impact × Likelihood *before* controls.
 
 ## Residual Risk
 
-Impact × Likelihood *after* controls.
+Impact × Likelihood _after_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -63,3 +63,11 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-27: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement
+
+Merged into **R020** on 2026-08-04. The two entries described one hazard — the `deploy/**` push-tier axis armed while JTBD-400's manual `--deploy-only` precondition is unmet — and this one named R020 in its own description, so the duplication was self-declared and then outlived the curation that would have caught it. Same shape as R011/R016 merging into R004 earlier in the same drain.
+
+Scoring lives on R020, which carries the measured split: the axis half is **discharged** (three successful production applies, each verified by reading the `Deploy new version` step's conclusion) while the recovery half is **not** (all four `workflow_dispatch` runs skipped every deploy step, so `deploy_only=true` has never been dispatched). R020 holds the residual at **8/25, above appetite**, with a one-action treatment: dispatch it once.
+
+Do not re-open this entry. Add evidence to R020.
