@@ -32,6 +32,7 @@ Decomposed by subject 2026-07-28; rotated 2026-08-02 and again 2026-08-04 (Tier-
 | [oversight-markers.md](./oversight-markers.md)                             | The `human-oversight: confirmed` evidence gate and its resumed-session trap    |
 | [commit-time-gates.md](./commit-time-gates.md)                             | Compendium-pairing, README-refresh, RISK-POLICY gates + git-staging traps      |
 | [external-comms-marker-mechanics.md](./external-comms-marker-mechanics.md) | How the external-comms gate derives and matches its marker                     |
+| [gate-command-detection.md](./gate-command-detection.md)                   | How gates detect governed commands: what slips past, what falsely trips        |
 | [external-comms-content-rules.md](./external-comms-content-rules.md)       | What the gate rejects on content: em-dashes, absolute traffic counts           |
 | [decisions-compendium.md](./decisions-compendium.md)                       | How `docs/decisions/README.md` is generated and why not to run it by hand      |
 | [releases-and-ci.md](./releases-and-ci.md)                                 | Workflow traps (boolean inputs, concurrency, k6) and dependency freshness      |

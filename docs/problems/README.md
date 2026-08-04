@@ -12,6 +12,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
+| 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
