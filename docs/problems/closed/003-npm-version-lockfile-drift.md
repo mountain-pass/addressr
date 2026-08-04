@@ -69,5 +69,5 @@ Either change warrants an ADR proposal at the time it is undertaken.
 ## Related
 
 - Memory: `feedback_npm_version_mismatch.md` — explicit user direction 2026-04-13: "Local npm 11 incompatible with CI npm 10; use npx npm@10 install"
-- [ADR 020: MCP smoke testing](../decisions/020-mcp-smoke-testing.proposed.md) — names Node 22 as the CI version in passing
-- [ADR 013: Docker image](../decisions/013-docker-image.accepted.md) — base image Node version
+- [ADR 020: MCP smoke testing](../../decisions/020-mcp-smoke-testing.proposed.md) — names Node 22 as the CI version in passing
+- [ADR 013: Docker image](../../decisions/013-docker-image.superseded.md) — base image Node version

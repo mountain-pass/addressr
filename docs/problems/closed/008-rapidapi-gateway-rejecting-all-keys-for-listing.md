@@ -118,9 +118,9 @@ When the same call succeeds, the incident is resolved at the RapidAPI layer.
 
 ## Related
 
-- ADR [016](../decisions/016-uptime-robot-monitoring.accepted.md) — Uptime Robot monitoring (affected, returns DOWN)
-- ADR [017](../decisions/017-rapidapi-distribution.accepted.md) — RapidAPI distribution (the layer that has failed)
-- ADR [018](../decisions/018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (ADR's "Reassessment Criteria" already flagged hardcoded key and lack of version control as risks; this incident is unrelated to those, but the worker's reliance on RapidAPI means it is a downstream casualty)
-- ADR [023](../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec RapidAPI CI sync (proposed; the recent attempt to implement sync, then revert, may be relevant context for RapidAPI investigation)
-- Problem [006](006-rapidapi-ci-sync-deferred.open.md) — RapidAPI CI sync deferred (related; documents the spec-sync attempts that landed and were reverted yesterday)
+- ADR [016](../../decisions/016-uptime-robot-monitoring.accepted.md) — Uptime Robot monitoring (affected, returns DOWN)
+- ADR [017](../../decisions/017-rapidapi-distribution.accepted.md) — RapidAPI distribution (the layer that has failed)
+- ADR [018](../../decisions/018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (ADR's "Reassessment Criteria" already flagged hardcoded key and lack of version control as risks; this incident is unrelated to those, but the worker's reliance on RapidAPI means it is a downstream casualty)
+- ADR [023](../../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec RapidAPI CI sync (proposed; the recent attempt to implement sync, then revert, may be relevant context for RapidAPI investigation)
+- Problem [006](006-rapidapi-ci-sync-deferred.md) — RapidAPI CI sync deferred (related; documents the spec-sync attempts that landed and were reverted yesterday)
 - Pending follow-up problem (P009 candidate) — `backend.addressr.io` is openly accessible, allowing both this incident's stopgap and unauthorised bypass of RapidAPI; should require `X-RapidAPI-Proxy-Secret` from upstream

@@ -69,8 +69,8 @@ Unblocked 2026-07-24: `RAPIDAPI_KEY` secret provisioned; listing API ID `api_5f1
 
 ## Related
 
-- [ADR 023: OpenAPI Spec RapidAPI CI Sync](../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md)
-- [ADR 017: RapidAPI Distribution](../decisions/017-rapidapi-distribution.accepted.md)
+- [ADR 023: OpenAPI Spec RapidAPI CI Sync](../../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md)
+- [ADR 017: RapidAPI Distribution](../../decisions/017-rapidapi-distribution.accepted.md)
 
 ## RFCs
 

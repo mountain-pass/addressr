@@ -46,7 +46,7 @@ TDD ordering per project mandate: the feature-file assertions land first and fai
 
 ## Related
 
-- [P029](../problems/known-error/029-will-not-include-step-v2-api-bug.md) — driving problem ticket
+- [P029](../problems/closed/029-will-not-include-step-v2-api-bug.md) — driving problem ticket
 - [ADR 027 — fuzziness AUTO:5,8](../decisions/027-fuzziness-auto-5-8.proposed.md) — restored fuzz-exclusion assertion strengthens its Confirmation coverage
 - [ADR 028 — range-number endpoint-only](../decisions/028-range-number-endpoint-only.proposed.md) — restored mid-range absence assertion strengthens its Confirmation coverage
 - Commit `cccac53` — the fix-forward workaround this RFC reverses

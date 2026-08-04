@@ -1,11 +1,11 @@
 # Risk R017: Distroless Docker Image Unverified No Docker Build Ci
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-05 — the discharge condition stated on the entry has been met)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-26
 **Owner**: pending review
-**Last reviewed**: 2026-07-26
-**Next review**: 2026-07-26
+**Last reviewed**: 2026-08-05
+**Next review**: n/a (retired)
 **Curation**: pending review (auto-scaffolded 2026-07-26)
 
 ## Description
@@ -103,7 +103,7 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
   **Still unverified**: nothing has confirmed the fix. This risk stays Active until a
   `build-and-smoke` run goes green end to end with `tini` in place. Note also that the fix restores
   prompt termination and not graceful shutdown — in-flight requests are still dropped, tracked
-  separately as [P067](../problems/open/067-no-sigterm-graceful-shutdown-handler.md), so a green
+  separately as [P067](../problems/verifying/067-no-sigterm-graceful-shutdown-handler.md), so a green
   `<10s` assertion should not be read as more than stop latency.
 
 ## Change Log
@@ -117,3 +117,11 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
   four CI criteria are now evidenced; the fourth is evidenced negative with an unverified fix
   against it. No scoring change (fields remain uncurated). Still not dischargeable: this risk exists
   because the image was unverified, and a fix nobody has built is not verification.
+
+## Retirement (2026-08-05)
+
+The entry recorded a Distroless runtime shipped with "no build, start or smoke verification and no Docker-build CI". All four now exist in `.github/workflows/docker-image.yml`, which runs on push: **Build image**, **Runtime user is non-root**, **Container starts and serves /health** (a real `curl` against a booted container), and a SIGTERM-forwarding check.
+
+That last step is the load-bearing one and is not theoretical — the workflow comment records it catching the image being SIGKILLed at the 10s deadline on 2026-07-26, which is the defect this entry existed to anticipate.
+
+This discharges ADR-039 Confirmation criteria rather than merely adding a control that happens to cover the risk.

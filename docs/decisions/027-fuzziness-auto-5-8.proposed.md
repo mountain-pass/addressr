@@ -13,7 +13,7 @@ reassessment-date: 2026-10-29
 
 ## Context and Problem Statement
 
-Problem [P026](../problems/026-numeric-fuzziness-inflates-ranking.open.md) documents that the `searchForAddress` `bool_prefix` clause uses `fuzziness: 'AUTO'` (= `AUTO:3,6`), which allows a 1-character edit for 3-5 char tokens. Street numbers are almost always 3-5 digits, so adjacent numbers (`135-137` vs `138`) fuzzy-match each other, inflating term-frequency on docs that don't contain the exact query number. In production v2.3.0 this causes:
+Problem [P026](../problems/closed/026-numeric-fuzziness-inflates-ranking.md) documents that the `searchForAddress` `bool_prefix` clause uses `fuzziness: 'AUTO'` (= `AUTO:3,6`), which allows a 1-character edit for 3-5 char tokens. Street numbers are almost always 3-5 digits, so adjacent numbers (`135-137` vs `138`) fuzzy-match each other, inflating term-frequency on docs that don't contain the exact query number. In production v2.3.0 this causes:
 
 - `"138 Whitehorse Rd Blackburn"` → `135-137 WHITEHORSE RD` ranks first; the target `138-144 WHITEHORSE RD` ranks 3 (baseline query 2).
 - `"225 drummond st carlton"` → `CARSPACE 225, 255 DRUMMOND ST` ranks first via tf=2 (225 exact + 255 fuzzy); the target `TRAVEL INN HOTEL, 225-245 DRUMMOND ST` ranks 6 (baseline query 3).
@@ -166,7 +166,7 @@ Re-visit this decision if any of the following occur:
 
 ### 2026-07-29 — amended by ADR 041 (equivalent synonyms with a synonym-free search analyzer)
 
-[ADR 041](041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md) changes the analysis chain this decision's tuning sits on top of, so the `AUTO:5,8` interaction changes shape and must be re-verified rather than assumed.
+[ADR 041](041-equivalent-synonyms-with-synonym-free-search-analyzer.accepted.md) changes the analysis chain this decision's tuning sits on top of, so the `AUTO:5,8` interaction changes shape and must be re-verified rather than assumed.
 
 Under ADR 041 the synonym filter emits **equivalents** instead of directional replacements and no longer runs at search time. Street types therefore occupy the index in both forms: `RD` and `ROAD` at the same position, where previously only the abbreviation was stored. `AUTO:5,8` now sees a 4-character `ROAD` alongside the 2-character `RD`, which crosses the 5-character threshold this ADR chose — the token that previously took 0 edits now has a co-positioned sibling that also takes 0 edits, but the term statistics behind both have changed.
 
@@ -183,8 +183,8 @@ This is an amendment, not a supersession: the decision to disable fuzziness on s
 
 ## Related
 
-- [ADR 041 — Equivalent synonyms with a synonym-free search analyzer](041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md) — amends this decision; see Amendments above.
-- [Problem P026 — Numeric fuzziness in bool_prefix inflates ranking](../problems/026-numeric-fuzziness-inflates-ranking.open.md)
+- [ADR 041 — Equivalent synonyms with a synonym-free search analyzer](041-equivalent-synonyms-with-synonym-free-search-analyzer.accepted.md) — amends this decision; see Amendments above.
+- [Problem P026 — Numeric fuzziness in bool_prefix inflates ranking](../problems/closed/026-numeric-fuzziness-inflates-ranking.md)
 - [Baseline capture for P026 (v2.3.0)](../problems/026-baseline-v2.3.0.md) — 14-query pre-change snapshot used for post-deploy diff.
 - [ADR 025 — Symmetric `ssla` indexing for search ranking](025-search-ranking-symmetric-ssla.accepted.md) — explicit non-triggering.
 - [ADR 028 — Range-number address expansion, endpoint-only](028-range-number-endpoint-only.proposed.md) — explicit non-triggering. Ships together in v2.4.0.

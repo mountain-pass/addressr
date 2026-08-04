@@ -21,7 +21,7 @@
 
 Close this ticket once both are done.
 
-> **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](./026-numeric-fuzziness-inflates-ranking.open.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1. **Settled 2026-07-26**: P026 closed 2026-07-19, so both dimensions are shipped — see `## Fix Released` above; what is left is the production re-query and the #367 response.
+> **Framing update (2026-04-19)**: This ticket was scoped as a **recall** problem — "range-number addresses are not findable by mid-range numbers". ADR 026 addressed that scope and shipped in v2.3.0; post-deploy smoke confirmed the target range addresses now appear in result lists for all three reporter cases. However, post-deploy smoke also revealed the reporter's **ranking** complaint for case 3 (`hirani89` 2022-06-24: "comes up, but down the list") was not captured by this ticket's scope and was not fixed by ADR 026. That ranking dimension is the underlying user-facing defect the reporter described, and it is captured in [P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs over exact number matches](026-numeric-fuzziness-inflates-ranking.md). This ticket stays open until P026's fix ships and all three #367 cases rank the target at or near position 1. **Settled 2026-07-26**: P026 closed 2026-07-19, so both dimensions are shipped — see `## Fix Released` above; what is left is the production re-query and the #367 response.
 
 ## Description
 
@@ -88,11 +88,11 @@ Shipped. ADR-026 expands each hyphenated range into a multi-valued `sla_range_ex
 ## Related
 
 - GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367) — original report
-- [ADR 025](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — symmetric ssla indexing (P007 fix) — related approach
-- [ADR 026](../decisions/026-range-number-address-expansion.proposed.md) — range-number expansion via multi-valued text alias field — proposed fix
-- [P007](./007-search-scoring-exact-address-ranked-below-subunits.known-error.md) — search scoring (different but related query-builder issue)
-- [`client/elasticsearch.js:58-76`](../../client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
-- [`service/address-service.js:950-1003`](../../service/address-service.js) — `searchForAddress` query builder
+- [ADR 025](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — symmetric ssla indexing (P007 fix) — related approach
+- [ADR 026](../../decisions/026-range-number-address-expansion.superseded.md) — range-number expansion via multi-valued text alias field — proposed fix
+- [P007](../known-error/007-search-scoring-exact-address-ranked-below-subunits.md) — search scoring (different but related query-builder issue)
+- [`client/elasticsearch.js:58-76`](../../../client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
+- [`service/address-service.js:950-1003`](../../../service/address-service.js) — `searchForAddress` query builder
 
 ## Closed — verified
 

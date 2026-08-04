@@ -122,6 +122,19 @@ All three are the same hazard: absolute traffic figures committed to a public re
 - **Blocked by**: (none)
 - **Composes with**: P079, P077
 
+## Progress
+
+| Batch | Date       | Entries                                                                                                      | Register after         | Sentinel-bearing after |
+| ----- | ---------- | ------------------------------------------------------------------------------------------------------------ | ---------------------- | ---------------------- |
+| 1–5   | 2026-08-04 | R001, R011, R013, R016, R025 retired; R004, R006, R020, R022 re-scoped; R003, R008, R009, R021, R023 curated | 20 active / 6 retired  | 10                     |
+| 6     | 2026-08-05 | R002, R014, R017, R019 retired; R012, R015, R018 curated                                                     | 16 active / 10 retired | 3                      |
+
+**Remaining: R007, R024, R026.** R024 and R026 are the ADR-ratification pair and overlap heavily — R026's own description cites R024 — so they are a merge candidate to verify by mechanism, not by title. R007 is the last apply-adjacent entry.
+
+Batch six also produced work beyond curation, because R018's re-scope required it. The entry's original framing was factually wrong (it claimed a problem ticket did not exist; the file had moved), and correcting it exposed **174 broken relative doc links across 50 files** — problem tickets carry lifecycle state as a directory and ADRs carry status as a filename suffix, so every transition breaks every inbound link. All 174 were repaired and `test/js/__tests__/doc-links-resolve.test.mjs` landed as R018's evidenced control.
+
+**Six of fifteen curated entries now sit at or above appetite.** That is the expected shape of an honestly-scored register, not a backlog signal.
+
 ## Related
 
 - **R010** (`docs/risks/R010-warm-standby-decommission-removes-instant-rollback-net.active.md`) — curated 2026-08-03 in commit `9507d29`. The worked example and the template.

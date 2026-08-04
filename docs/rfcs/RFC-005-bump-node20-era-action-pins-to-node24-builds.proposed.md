@@ -56,7 +56,7 @@ Verification: next CI run on master after push completes green with zero Node de
 
 ## Related
 
-- [P025](../problems/open/025-github-actions-node20-deprecation.md) — driving problem ticket
+- [P025](../problems/closed/025-github-actions-node20-deprecation.md) — driving problem ticket
 - [GitHub changelog: Deprecation of Node.js 20 on GitHub Actions runners](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
 - [`.github/workflows/release.yml`](../../.github/workflows/release.yml), [`.github/workflows/reusable-update.yml`](../../.github/workflows/reusable-update.yml)
 - [ADR-007](../decisions/007-changesets-versioning.accepted.md) — Confirmation criterion loosened to version-agnostic form as part of this RFC's change

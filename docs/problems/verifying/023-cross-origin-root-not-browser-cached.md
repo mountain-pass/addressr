@@ -127,11 +127,11 @@ This is a **NEEDS-DIRECTION** decision (no CORS/preflight-policy ADR exists; ≥
 
 ## Related
 
-- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.closed.md) — same RapidAPI gateway layer; demonstrates that gateway responses behave independently of origin intent.
-- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](018-root-cache-ttl-too-long-for-versioned-contract.open.md) — adjacent cache concern at the CDN edge layer. Fixing P018 (short origin TTL) would not fix P023 (browser isn't caching at all).
-- [P019: No deploy-time smoke check for root Link header rel completeness](019-missing-root-link-header-smoke-assertion.open.md) — CI observability gap; could also cover a preflight-count smoke test if we go that route.
-- [ADR 017: RapidAPI Distribution](../decisions/017-rapidapi-distribution.accepted.md)
-- [ADR 024: Origin gateway auth header enforcement](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — relevant because proxy-auth headers affect cross-origin request patterns.
+- [P017: RapidAPI root missing postcode/locality/state rels](../closed/017-rapidapi-root-missing-postcode-locality-state-rels.md) — same RapidAPI gateway layer; demonstrates that gateway responses behave independently of origin intent.
+- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](../parked/018-root-cache-ttl-too-long-for-versioned-contract.md) — adjacent cache concern at the CDN edge layer. Fixing P018 (short origin TTL) would not fix P023 (browser isn't caching at all).
+- [P019: No deploy-time smoke check for root Link header rel completeness](../closed/019-missing-root-link-header-smoke-assertion.md) — CI observability gap; could also cover a preflight-count smoke test if we go that route.
+- [ADR 017: RapidAPI Distribution](../../decisions/017-rapidapi-distribution.accepted.md)
+- [ADR 024: Origin gateway auth header enforcement](../../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — relevant because proxy-auth headers affect cross-origin request patterns.
 - `src/waycharter-server.js:560-581` — current CORS middleware (env-var-driven, no Access-Control-Max-Age); `proxyAuthMiddleware()` at line 583 gates OPTIONS (ADR-024 interaction, see Fix Strategy).
 - SDK team's Playwright CDP probe (external — not yet in this repo).
 

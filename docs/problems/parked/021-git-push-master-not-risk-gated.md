@@ -66,8 +66,8 @@ Integrate with the existing risk-scorer flow rather than duplicating score compu
 
 ## Related
 
-- [P022: CLAUDE.md missing risk-gate and verification-ownership guardrails](022-claude-md-missing-behavioral-guardrails.open.md) — prompt-layer mirror of this hook-layer enforcement.
-- [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.open.md) — adjacent pattern: missing process gate on external-facing actions.
+- [P022: CLAUDE.md missing risk-gate and verification-ownership guardrails](../closed/022-claude-md-missing-behavioral-guardrails.md) — prompt-layer mirror of this hook-layer enforcement.
+- [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.md) — adjacent pattern: missing process gate on external-facing actions.
 - RISK-POLICY.md — the appetite threshold (5) this hook will read.
 - `.husky/pre-commit` and `package.json` `pre-commit` script — existing commit-time gates (lint-staged, licenses, cli2-tags) that do not cover push risk.
 - Usage-data report 2026-03-17 → 2026-04-16 — evidence of recurring pattern.

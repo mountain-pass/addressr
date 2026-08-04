@@ -85,8 +85,8 @@ Awaiting user verification on next deploy via the existing cucumber scenarios in
 
 - GitHub issue [#95](https://github.com/mountain-pass/addressr/issues/95) — 404 returning 500
 - GitHub issue [#81](https://github.com/mountain-pass/addressr/issues/81) — ES errors causing 500
-- [`service/address-service.js:1827`](../../service/address-service.js) — catch block with error detection
-- [`src/waycharter-server.js:587`](../../src/waycharter-server.js) — itemLoader that consumes statusCode
+- [`service/address-service.js:1827`](../../../service/address-service.js) — catch block with error detection
+- [`src/waycharter-server.js:587`](../../../src/waycharter-server.js) — itemLoader that consumes statusCode
 
 ## Closed — verified
 

@@ -3,7 +3,9 @@
 Domain-data and API-shape surprises specific to G-NAF, OpenSearch, and WayCharter. The rest of this section was split by subject on 2026-07-28 (Tier-3 budget) into:
 
 - [markers-and-edit-gates.md](./markers-and-edit-gates.md) — architect / JTBD / oversight marker mechanics
-- [external-comms-and-compendium.md](./external-comms-and-compendium.md) — external-comms / voice-tone commit gates + the compendium generator
+- [external-comms-marker-mechanics.md](./external-comms-marker-mechanics.md) — external-comms / voice-tone commit gates
+- [external-comms-content-rules.md](./external-comms-content-rules.md) — what those gates reject on content
+- [decisions-compendium.md](./decisions-compendium.md) — the compendium generator
 - [releases-and-ci.md](./releases-and-ci.md) — changesets, workflow traps, the push guard, the risk-appetite gate
 - [deploy-infra-and-caching.md](./deploy-infra-and-caching.md) — EB deploys, Cloudflare/RapidAPI edge, HTTP caching, GHCR publishing
 - [agent-and-workflow-patterns.md](./agent-and-workflow-patterns.md) — recurring assistant failure modes + ITIL workflow traps

@@ -82,11 +82,11 @@ Not implementable locally — no `packages/` tree. Reported upstream as windyroa
 
 ## Related
 
-- [P026](../verifying/026-numeric-fuzziness-inflates-ranking.md) — the stale-Open instance that surfaced this gap (transitioned Open → Verifying 2026-07-16, commit dd34e04).
+- [P026](../closed/026-numeric-fuzziness-inflates-ranking.md) — the stale-Open instance that surfaced this gap (transitioned Open → Verifying 2026-07-16, commit dd34e04).
 - [ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md) + commit `920fce6` — the fix commit that skipped the transition fold.
 - Hang-off-check subagent dispatch skipped at capture: mechanical pre-filter matched &gt;5 candidate tickets sharing ADR/skill/path signals (P027, P029, P039, P045, P046, P026, P036, P042, …) — re-evaluate absorption at next `/wr-itil:review-problems` per the capture-problem Step 2b candidate-cap contract.
 - Captured via `/wr-itil:capture-problem` from the P026 iteration retro (Step 4b Stage 1); expand at next investigation.
-- [P040](../verifying/040-uptime-robot-401-api-addressr-missing-proxy-auth.md) — second confirmed instance (2026-07-18 iter retro): P040's fix shipped 2026-05-25 via the P042 Terraform cutover (commit 3969b9e) but the K→V transition fold was skipped; the ticket sat Known Error ~54 days ranked WSJF 20.0 at the top of the dev-work queue until the 2026-07-18 AFK iteration discovered the fix was live. Likelihood may warrant re-rate from Unlikely (2) at next review — two confirmed occurrences across ~50 tickets, both multi-week.
+- [P040](../closed/040-uptime-robot-401-api-addressr-missing-proxy-auth.md) — second confirmed instance (2026-07-18 iter retro): P040's fix shipped 2026-05-25 via the P042 Terraform cutover (commit 3969b9e) but the K→V transition fold was skipped; the ticket sat Known Error ~54 days ranked WSJF 20.0 at the top of the dev-work queue until the 2026-07-18 AFK iteration discovered the fix was live. Likelihood may warrant re-rate from Unlikely (2) at next review — two confirmed occurrences across ~50 tickets, both multi-week.
 - [P057](057-relevance-close-evaluator-misses-platform-version-rooted-tickets.md) — sibling upstream ticket against the same `evaluate-relevance` evaluator, same missed-positive direction, different signal (version-pin vs reverse fix-citation). Filed upstream as windyroad/agent-plugins#391.
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/394 (2026-07-26)
 

@@ -170,8 +170,8 @@ Re-visit this decision if any of the following occur:
 
 ## Related
 
-- [Problem P015 — Range-number addresses not findable by base number](../problems/015-range-number-addresses-not-searchable-by-base-number.open.md) — the originating problem.
-- [Problem P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs](../problems/026-numeric-fuzziness-inflates-ranking.open.md) — the sibling ranking problem addressed by ADR 027.
+- [Problem P015 — Range-number addresses not findable by base number](../problems/closed/015-range-number-addresses-not-searchable-by-base-number.md) — the originating problem.
+- [Problem P026 — Numeric fuzziness in bool_prefix inflates ranking of adjacent docs](../problems/closed/026-numeric-fuzziness-inflates-ranking.md) — the sibling ranking problem addressed by ADR 027.
 - [Baseline capture (v2.3.0)](../problems/026-baseline-v2.3.0.md) — pre-change smoke for post-deploy diff.
 - [ADR 026 — Range-number address expansion (SUPERSEDED)](026-range-number-address-expansion.superseded.md) — the interpolation decision this supersedes.
 - [ADR 027 — `fuzziness: 'AUTO:5,8'`](027-fuzziness-auto-5-8.proposed.md) — ships in the same release. Complementary fix.

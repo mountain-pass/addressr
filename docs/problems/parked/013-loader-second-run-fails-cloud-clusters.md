@@ -81,5 +81,5 @@ The same pattern likely exists for the locality index at `client/elasticsearch.j
 ## Related
 
 - GitHub issue [#388](https://github.com/mountain-pass/addressr/issues/388) — original report
-- [`client/elasticsearch.js:111-143`](../../client/elasticsearch.js) — `initAddressIndex`, the update branch with the bug
-- [`client/elasticsearch.js:230-260`](../../client/elasticsearch.js) — `initLocalityIndex`, likely same issue
+- [`client/elasticsearch.js:111-143`](../../../client/elasticsearch.js) — `initAddressIndex`, the update branch with the bug
+- [`client/elasticsearch.js:230-260`](../../../client/elasticsearch.js) — `initLocalityIndex`, likely same issue

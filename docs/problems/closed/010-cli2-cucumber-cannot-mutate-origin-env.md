@@ -59,9 +59,9 @@ Deployed in v2.2.0 (released 2026-04-16). This is an "accept + guardrail" resolu
 
 ## Related
 
-- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.closed.md) — discovery context; proxy-auth scenarios triggered the detection.
-- [ADR 024](../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — motivated the scenarios that exposed this harness gap.
+- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.md) — discovery context; proxy-auth scenarios triggered the detection.
+- [ADR 024](../../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — motivated the scenarios that exposed this harness gap.
 - `test/resources/features/proxy-auth-enforcement.feature` — current `@not-cli2` usage site.
 - `package.json` `test:cli2:nogeo` — the profile definition.
 - `scripts/check-not-cli2-tags.mjs` + `test/precommit/not-cli2-tags.test.mjs` — the guardrail.
-- [JTBD J7](../JOBS_TO_BE_DONE.md#j7-ship-releases-reliably-from-trunk) — the job this guardrail serves.
+- [JTBD-400 Ship releases reliably from trunk](../../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md) — the job this guardrail serves (was J7 before the ADR-008 corpus migration).

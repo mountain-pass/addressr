@@ -85,11 +85,11 @@ Preliminary hypotheses, not yet verified:
 
 ## Related
 
-- [Problem P028 — OpenSearch 1.3.20 version debt](./028-opensearch-1-3-20-version-debt.known-error.md) — subset of the 46 alerts may be blocked by the 1.3 server/client compatibility pin; upgrading OpenSearch may clear some of them.
-- [Problem P025 — GitHub Actions Node.js 20 deprecation](./025-github-actions-node20-deprecation.open.md) — adjacent version-debt ticket; the pattern is the same (managed-platform clock ticking while we don't upgrade).
-- [BRIEFING.md](../BRIEFING.md) — "Dockerfile is stale: uses Node 16" — the Dockerfile's Node 16 base is itself a CVE source and should be addressed alongside this ticket.
-- [`package.json`](../../package.json) — direct dependency list; `dotenv@10.0.0` is the most visibly-stale direct dep flagged by `dry-aged-deps`.
-- [ADR-003 — Dual API Architecture](../decisions/003-dual-api-v1-swagger-v2-hateoas.accepted.md) — swagger-tools is load-bearing for the v1 API; ADR-003's "security liability" reassessment trigger is now met (see Fix Strategy).
+- [Problem P028 — OpenSearch 1.3.20 version debt](028-opensearch-1-3-20-version-debt.md) — subset of the 46 alerts may be blocked by the 1.3 server/client compatibility pin; upgrading OpenSearch may clear some of them.
+- [Problem P025 — GitHub Actions Node.js 20 deprecation](025-github-actions-node20-deprecation.md) — adjacent version-debt ticket; the pattern is the same (managed-platform clock ticking while we don't upgrade).
+- [BRIEFING.md as it stood](../../BRIEFING.md.migrated-2026-07-26) — "Dockerfile is stale: uses Node 16" — the Dockerfile's Node 16 base is itself a CVE source and should be addressed alongside this ticket. Cited as-of: the successor entry in [what-you-need-to-know.md](../../briefing/what-you-need-to-know.md) now records the opposite, that any stale-Node-16 note is obsolete and must not be cited as a CVE source.
+- [`package.json`](../../../package.json) — direct dependency list; `dotenv@10.0.0` is the most visibly-stale direct dep flagged by `dry-aged-deps`.
+- [ADR-003 — Dual API Architecture](../../decisions/003-dual-api-v1-swagger-v2-hateoas.superseded.md) — swagger-tools is load-bearing for the v1 API; ADR-003's "security liability" reassessment trigger is now met (see Fix Strategy).
 - **Upstream report pending** -- false positive; detection misfire (remaining findings are already-published third-party security advisories — there is nothing new to report upstream; remediation is local migration off the affected dependency lines).
 
 ## Fix path decided — ADR-036 (2026-07-17)

@@ -66,12 +66,12 @@ In the meantime, the addressr-side workaround stands: manual delegation per file
 
 ## Related
 
-- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — first ADR drafted in the session that surfaced this problem (2026-04-21).
-- [ADR 030 — OpenSearch domain under Terraform](../decisions/030-opensearch-domain-terraform-module.proposed.md) — sibling ADR; required the second pair of delegations that exposed the per-file unlock pattern.
+- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) — first ADR drafted in the session that surfaced this problem (2026-04-21).
+- [ADR 030 — OpenSearch domain under Terraform](../../decisions/030-opensearch-domain-terraform-module.accepted.md) — sibling ADR; required the second pair of delegations that exposed the per-file unlock pattern.
 - `docs/BRIEFING.md` — bullet under "What Will Surprise You" updated 2026-04-21 to capture the per-file marker behaviour and the "send the actual draft, not a summary" lesson.
 - Upstream skill: `/Users/tomhoward/.claude/plugins/cache/windyroad/wr-architect/0.3.1/skills/create-adr` (and `/Users/tomhoward/.claude/plugins/cache/windyroad/wr-architect/0.3.1/agents/wr-architect.md`).
 - Upstream hook scripts (project-side): `${CLAUDE_PLUGIN_ROOT}/hooks/architect-enforce-edit.sh`, `${CLAUDE_PLUGIN_ROOT}/hooks/jtbd-enforce-edit.sh`.
-- [Problem P024 — Architect agent misses performance implications](024-architect-agent-misses-performance-implications.parked.md) — different concern (review quality, not hook integration); listed for proximity only.
+- [Problem P024 — Architect agent misses performance implications](../parked/024-architect-agent-misses-performance-implications.md) — different concern (review quality, not hook integration); listed for proximity only.
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/364 (2026-07-18) — repro-confirmed in 0.20.0 (self-satisfies oversight marker, still no pre-Write edit-gate delegation)
 
 ## Reported Upstream

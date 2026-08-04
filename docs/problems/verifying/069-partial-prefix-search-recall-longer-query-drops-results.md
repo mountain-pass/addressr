@@ -143,7 +143,7 @@ Next concrete step needs backend access this session did not have (prod is SigV4
 
 ## Fix Strategy
 
-Recorded and human-ratified as **[ADR-041](../../decisions/041-equivalent-synonyms-with-synonym-free-search-analyzer.proposed.md)**: emit synonyms as equivalents rather than directional replacements so both forms share an index position, and add a `search_analyzer` without the synonym filter so a partial query token is never rewritten.
+Recorded and human-ratified as **[ADR-041](../../decisions/041-equivalent-synonyms-with-synonym-free-search-analyzer.accepted.md)**: emit synonyms as equivalents rather than directional replacements so both forms share an index position, and add a `search_analyzer` without the synonym filter so a partial query token is never rewritten.
 
 **Implemented and merged to master, deliberately unreleased:**
 

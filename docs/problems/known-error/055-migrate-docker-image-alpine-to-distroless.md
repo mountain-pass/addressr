@@ -86,7 +86,7 @@ base-image digest-pin trigger assessed and declined).
 
   So JTBD-202 should carry FOUR desired outcomes, not one, when it is authored: (a) diagnosis without an in-container shell, (b) the tag-pinning contract, (c) the container terminates within the orchestrator grace window on `SIGTERM`, with the in-flight-drain guarantee stated explicitly as either in scope or a named exclusion, and (d) **image currency** — under what circumstances a dependency or security fix reaches `:latest`, and the maximum staleness an operator tracking `:latest` should expect. Screen mapping to land in the same run: `Dockerfile` and `.github/workflows/docker-image.yml` onto JTBD-202's `screens:`, and `docker-image.yml` additionally onto JTBD-400's, folded into the omissions listed above.
 
-  This is also why [P067](../open/067-no-sigterm-graceful-shutdown-handler.md) is personed `self-hosted-operator` / `JTBD-202 (pending)` rather than the `addressr-maintainer` / `JTBD-400` its capture supplied: request draining is a runtime property, and JTBD-400 is release determinism.
+  This is also why [P067](../verifying/067-no-sigterm-graceful-shutdown-handler.md) is personed `self-hosted-operator` / `JTBD-202 (pending)` rather than the `addressr-maintainer` / `JTBD-400` its capture supplied: request draining is a runtime property, and JTBD-400 is release determinism.
 
 - **ADR-039 oversight.** Authored `human-oversight: unconfirmed` for the same reason. The substance was decided by the user on 2026-07-18; `/wr-architect:review-decisions` should promote it.
 - **ADR-013 composes-with gap — CLOSED, not deferred.** ADR-013 recorded "no Docker-build CI workflow exists" as an open gap, which is why nothing ever caught a Dockerfile regression. `.github/workflows/docker-image.yml` closes it. Publishing stays manual (`npm run docker:push`) as of that commit; **the "separate decision" it deferred is [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md)**, which promotes CI to the publisher. The wiring is a later stage.
@@ -163,7 +163,7 @@ rewritten, three declined alternatives recorded, two reassessment triggers disch
 **This fixes prompt termination, not graceful shutdown.** node as tini's child dies at once, so
 in-flight requests are still dropped, and the `<10s` assertion will now pass while saying nothing
 about draining. Captured as
-[P067](../open/067-no-sigterm-graceful-shutdown-handler.md) — wire the existing `stopServer()` to
+[P067](../verifying/067-no-sigterm-graceful-shutdown-handler.md) — wire the existing `stopServer()` to
 `process.on('SIGTERM')`, which is a `src/` change and therefore an npm release.
 
 **Not verified.** Nothing has built or booted the `tini` image; this iteration was again barred from

@@ -6,7 +6,7 @@
 
 ## Description
 
-The Cucumber step definition `Then the returned address list will NOT include:` at [`test/js/steps.js:379-393`](../../test/js/steps.js) reads response content from `this.current.json` only, without the `this.current.json || this.current.content` fallback that the sibling `Then the returned address list will include:` step uses at [`steps.js:337`](../../test/js/steps.js).
+The Cucumber step definition `Then the returned address list will NOT include:` at [`test/js/steps.js:379-393`](../../../test/js/steps.js) reads response content from `this.current.json` only, without the `this.current.json || this.current.content` fallback that the sibling `Then the returned address list will include:` step uses at [`steps.js:337`](../../../test/js/steps.js).
 
 For v1 API scenarios (`addresses.feature`) the response lands on `.json` and the step works. For v2 API scenarios (`addressv2.feature` — served by waycharter-based HATEOAS) the response lands on `.content`, so `this.current.json` is `undefined` and the step throws `TypeError: Cannot read properties of undefined (reading 'find')`.
 
@@ -62,7 +62,7 @@ Currently in use in `addressv2.feature` lines 164-188 (ADR 028 mid-range scenari
 
 ### Confirmed cause
 
-[`test/js/steps.js:383`](../../test/js/steps.js) reads `this.current.json` directly. The v1 API flow (via `rels/address-search` link template follow) stores response body on `.json`. The v2 API flow (via waycharter HATEOAS collection + `canonical` link) stores response body on `.content`. The sibling `will include:` step at [`steps.js:335`](../../test/js/steps.js) correctly handles both via the `|| this.current.content` fallback; the `will NOT include:` step was written earlier or simply missed the same treatment when v2 was added.
+[`test/js/steps.js:383`](../../../test/js/steps.js) reads `this.current.json` directly. The v1 API flow (via `rels/address-search` link template follow) stores response body on `.json`. The v2 API flow (via waycharter HATEOAS collection + `canonical` link) stores response body on `.content`. The sibling `will include:` step at [`steps.js:335`](../../../test/js/steps.js) correctly handles both via the `|| this.current.content` fallback; the `will NOT include:` step was written earlier or simply missed the same treatment when v2 was added.
 
 ### Why it persisted
 
@@ -100,12 +100,12 @@ Exercise evidence from the releasing session: TDD red observed (`TypeError: Cann
 
 ## Related
 
-- [ADR 028 — Range-number endpoint-only](../decisions/028-range-number-endpoint-only.proposed.md) — the scenarios rewording lives in that ADR's Confirmation section.
-- [ADR 027 — `fuzziness: 'AUTO:5,8'`](../decisions/027-fuzziness-auto-5-8.proposed.md) — the joint-integration scenario workaround.
-- [ADR 009 — Cucumber BDD testing](../decisions/009-cucumber-bdd-testing.accepted.md) — unchanged by this fix.
-- [`test/js/steps.js:337`](../../test/js/steps.js) — the sibling `will include:` step with the correct v2 fallback.
-- [`test/js/steps.js:379-393`](../../test/js/steps.js) — the buggy step.
-- [`test/resources/features/addressv2.feature`](../../test/resources/features/addressv2.feature) — scenarios 164-188 and 228-259 currently use the workaround.
+- [ADR 028 — Range-number endpoint-only](../../decisions/028-range-number-endpoint-only.proposed.md) — the scenarios rewording lives in that ADR's Confirmation section.
+- [ADR 027 — `fuzziness: 'AUTO:5,8'`](../../decisions/027-fuzziness-auto-5-8.proposed.md) — the joint-integration scenario workaround.
+- [ADR 009 — Cucumber BDD testing](../../decisions/009-cucumber-bdd-testing.accepted.md) — unchanged by this fix.
+- [`test/js/steps.js:337`](../../../test/js/steps.js) — the sibling `will include:` step with the correct v2 fallback.
+- [`test/js/steps.js:379-393`](../../../test/js/steps.js) — the buggy step.
+- [`test/resources/features/addressv2.feature`](../../../test/resources/features/addressv2.feature) — scenarios 164-188 and 228-259 currently use the workaround.
 - Commit `cccac53` — fix-forward that introduced the workaround.
 
 ## RFCs

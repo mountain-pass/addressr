@@ -11,13 +11,13 @@ reassessment-date: 2026-07-19
 
 # ADR 026: Range-Number Address Expansion via Multi-Valued Text Alias Field
 
-> **SUPERSEDED 2026-04-19 by [ADR 028](028-range-number-endpoint-only.proposed.md).** This ADR shipped in v2.3.0 with a full-interpolation semantic: for a G-NAF range like `103-107 GAZE RD`, `sla_range_expanded` contained five aliases (103, 104, 105, 106, 107). Post-deploy smoke revealed this produces **false positives**: under Australian addressing convention, `104` and `106` belong to the opposite side of the street; `105` may not belong to the property at all. ADR 028 corrects the semantic to **endpoint-only** (aliases for NUMBER_FIRST and NUMBER_LAST only). See ADR 028 Context section for the full rationale and [P026 / #367](../problems/026-numeric-fuzziness-inflates-ranking.open.md) for the sibling ranking-problem ticket.
+> **SUPERSEDED 2026-04-19 by [ADR 028](028-range-number-endpoint-only.proposed.md).** This ADR shipped in v2.3.0 with a full-interpolation semantic: for a G-NAF range like `103-107 GAZE RD`, `sla_range_expanded` contained five aliases (103, 104, 105, 106, 107). Post-deploy smoke revealed this produces **false positives**: under Australian addressing convention, `104` and `106` belong to the opposite side of the street; `105` may not belong to the property at all. ADR 028 corrects the semantic to **endpoint-only** (aliases for NUMBER_FIRST and NUMBER_LAST only). See ADR 028 Context section for the full rationale and [P026 / #367](../problems/closed/026-numeric-fuzziness-inflates-ranking.md) for the sibling ranking-problem ticket.
 >
 > The body below describes the SUPERSEDED ADR 026 decision as originally authored. Do not implement from this document.
 
 ## Context and Problem Statement
 
-Problem [P015](../problems/015-range-number-addresses-not-searchable-by-base-number.open.md) (GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367)) documents a ranking and recall defect visible to every RapidAPI consumer: G-NAF assigns a single address record to range-numbered properties (e.g., `225-245 DRUMMOND ST, CARLTON VIC 3053`) and addressr indexes only the hyphenated canonical form. Consumers typically know only one number in the range — the one on the sign, the one their customer provided, the one listed in a legacy CRM — and expect it to resolve. Today it does not.
+Problem [P015](../problems/closed/015-range-number-addresses-not-searchable-by-base-number.md) (GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367)) documents a ranking and recall defect visible to every RapidAPI consumer: G-NAF assigns a single address record to range-numbered properties (e.g., `225-245 DRUMMOND ST, CARLTON VIC 3053`) and addressr indexes only the hyphenated canonical form. Consumers typically know only one number in the range — the one on the sign, the one their customer provided, the one listed in a legacy CRM — and expect it to resolve. Today it does not.
 
 **Jobs-to-be-done impact**: this is a direct J1 ("Search and autocomplete addresses from partial input") and J3 ("Validate addresses against G-NAF") regression. A valid G-NAF address returns zero results for a reasonable query. Personas affected: Web/App Developer, AI Assistant User, Data Quality Analyst.
 
@@ -210,6 +210,6 @@ Re-visit this decision if any of the following occur:
 - [ADR 025 — Symmetric `ssla` indexing for search ranking](025-search-ranking-symmetric-ssla.accepted.md) — prior art for the "symmetric vs asymmetric population" trade-off. This ADR explicitly diverges from 025's symmetric-population rule on storage-cost grounds, justified by query-clause isolation and mitigated by an invariant test rather than data-level symmetry.
 - [ADR 002 — OpenSearch as search engine](002-opensearch-as-search-engine.accepted.md)
 - [ADR 009 — Cucumber BDD testing](009-cucumber-bdd-testing.accepted.md)
-- [Problem 015 — Range-number addresses not findable by base number](../problems/015-range-number-addresses-not-searchable-by-base-number.open.md)
-- [Problem 007 — Search scoring exact address ranked below sub-units](../problems/007-search-scoring-exact-address-ranked-below-subunits.closed.md) — ranking-asymmetry precedent
+- [Problem 015 — Range-number addresses not findable by base number](../problems/closed/015-range-number-addresses-not-searchable-by-base-number.md)
+- [Problem 007 — Search scoring exact address ranked below sub-units](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md) — ranking-asymmetry precedent
 - GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367) — original report

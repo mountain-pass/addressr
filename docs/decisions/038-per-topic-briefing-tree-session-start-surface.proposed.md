@@ -25,7 +25,7 @@ ADR 019 recorded a single committed `docs/BRIEFING.md` injected into every conve
 - It `awk`-extracts the section under the literal heading `## Critical Points (Session-Start Surface)`, up to the next H2, and emits it under a `CROSS-SESSION BRIEFING — critical points` banner.
 - Every miss is a **silent `exit 0`** — absent tree, absent file, absent heading, or empty section all produce no output and no warning.
 
-Because addressr never migrated its content into `docs/briefing/`, the hook has been silent-exiting since the plugin changed: **no briefing content has reached any session**, interactive or AFK. That is [P062](../problems/parked/062-afk-iter-subprocess-sessions-missing-briefing-md-content.md), whose confirmed root cause is exactly this record-vs-reality gap, and whose fix (the `docs/BRIEFING.md` to `docs/briefing/` migration) was parked pending this reconciliation.
+Because addressr never migrated its content into `docs/briefing/`, the hook has been silent-exiting since the plugin changed: **no briefing content has reached any session**, interactive or AFK. That is [P062](../problems/verifying/062-afk-iter-subprocess-sessions-missing-briefing-md-content.md), whose confirmed root cause is exactly this record-vs-reality gap, and whose fix (the `docs/BRIEFING.md` to `docs/briefing/` migration) was parked pending this reconciliation.
 
 The supersession is **pre-authorised by ADR 019's own Reassessment Criteria**: "BRIEFING.md growing too large (> 2000 tokens)". The legacy file is 45 KB — roughly 8-11k tokens, 4-5x that ceiling.
 
@@ -91,6 +91,6 @@ End-to-end: a fresh session emits the `CROSS-SESSION BRIEFING — critical point
 - [ADR 019](019-session-learning-briefing-system.superseded.md) — superseded by this ADR
 - [ADR 001](001-risk-gated-release-process.proposed.md) — precedent for plugin-owned governance surfaces this repo cannot edit or test
 - [ADR 011](011-license-compliance-precommit.accepted.md) — contrast case: a repo-local hook this repo does own
-- [P062](../problems/parked/062-afk-iter-subprocess-sessions-missing-briefing-md-content.md) — the driving ticket; confirmed root cause and un-park trigger
+- [P062](../problems/verifying/062-afk-iter-subprocess-sessions-missing-briefing-md-content.md) — the driving ticket; confirmed root cause and un-park trigger
 - R011 — active risk over briefing content in committed docs; the migration carries it into the tree
 - JTBD-400 (Ship releases reliably from trunk) — "checkable artefacts, not memory". The trace is thematically sound but imprecise: the harm here is per-session institutional-context loss, not release non-determinism. A future `addressr-maintainer` job along the lines of "each working session starts with the institutional context it needs" would be the precise home; noted as a future consideration only, not authored here.

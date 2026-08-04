@@ -70,6 +70,6 @@ One limit worth knowing before you rely on it: the container stops **promptly**,
 Requests in flight when the stop signal arrives are dropped rather than allowed to finish. If you
 run behind a load balancer, drain it before stopping the container. Adding a graceful-shutdown
 handler is tracked as
-[P067](problems/open/067-no-sigterm-graceful-shutdown-handler.md).
+[P067](problems/verifying/067-no-sigterm-graceful-shutdown-handler.md).
 
 The npm package is unchanged by this image release.

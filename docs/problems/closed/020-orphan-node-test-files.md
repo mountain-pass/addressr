@@ -80,8 +80,8 @@ Not moved: `test/js/locality-search.test.js` remains in place (still dead). Movi
 
 ## Related
 
-- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.closed.md) — architect review during this investigation raised the orphan-test concern.
-- [P019: No deploy-time smoke check for root Link header rel completeness](019-missing-root-link-header-smoke-assertion.open.md) — overlaps if the smoke probe is implemented as a node-test file.
+- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.md) — architect review during this investigation raised the orphan-test concern.
+- [P019: No deploy-time smoke check for root Link header rel completeness](019-missing-root-link-header-smoke-assertion.md) — overlaps if the smoke probe is implemented as a node-test file.
 - ADR 009: Cucumber BDD testing.
 - `test/js/proxy-auth.test.js`, `test/js/locality-search.test.js` — the orphans.
 - `package.json:109-110` — the existing `node --test` scripts to mirror.

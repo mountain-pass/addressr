@@ -1,11 +1,11 @@
 # Risk R002: Onepassword V2 Credential Sync Deferred
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-05 — the condition has no surface in this architecture)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-18
 **Owner**: pending review
-**Last reviewed**: 2026-07-18
-**Next review**: 2026-07-18
+**Last reviewed**: 2026-08-05
+**Next review**: n/a (retired)
 **Curation**: pending review (auto-scaffolded 2026-07-18)
 
 ## Description
@@ -64,3 +64,13 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement (2026-08-05)
+
+Retired for the same architectural fact that retired [R001](R001-aws-managed-opensearch-fgac-password-clobber-on-blue-green.retired.md): there is no FGAC master user, so there is no password for the EB and 1Password planes to diverge _on_.
+
+Verified at source rather than inferred from the entry: `deploy/modules/opensearch/main.tf` carries `# ADR 033: no advanced_security_options block → FGAC off` and no such block exists, and `deploy/main.tf` sets `ELASTIC_PASSWORD = ""`. A grep for `advanced_security_options` returns exactly one hit — the comment stating the block is absent — which is a good example of why a match count is not evidence.
+
+Second, independent reason: the entry names the 1Password item for "Addressr v2 OpenSearch". That domain generation no longer exists; the live module is `module.opensearch_v4`.
+
+This entry never described a live condition post-ADR-033. It is retired as having no surface, not as discharged.

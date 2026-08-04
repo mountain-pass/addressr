@@ -10,7 +10,7 @@ The `searchForAddress` query builder at `service/address-service.js:984` applies
 
 Reported in post-deploy smoke of v2.3.0 (2026-04-19). The ADR 026 fix addressed the recall gap in [issue #367](https://github.com/mountain-pass/addressr/issues/367) (cases 2, 3, 4) — the target range addresses now appear in the result list. But the ranking problem reporter `hirani89` originally described for case 3 ("comes up, but down the list") is still present, and a new observation on case 4 shows it too.
 
-This is the **underlying problem** that [P015](./015-range-number-addresses-not-searchable-by-base-number.open.md) only partially addressed. P015 was scoped as recall ("addresses not findable by base number"), which is true for cases 2 and 4 but insufficient for case 3. The real user-facing job is: "my exact street number should be the first hit, not buried behind fuzzy-similar numbers."
+This is the **underlying problem** that [P015](015-range-number-addresses-not-searchable-by-base-number.md) only partially addressed. P015 was scoped as recall ("addresses not findable by base number"), which is true for cases 2 and 4 but insufficient for case 3. The real user-facing job is: "my exact street number should be the first hit, not buried behind fuzzy-similar numbers."
 
 ## Symptoms
 
@@ -81,13 +81,13 @@ The fuzzy-hit doc has 25% higher summed tf. BM25's field-length normalisation do
 - [x] Confirm numeric fuzziness is the cause — smoke run against v2.3.0 on 2026-04-19 shows the exact pattern described above.
 - [x] Confirm this is pre-existing (not an ADR 026 regression) — ADR 026 only added `sla_range_expanded` to the `phrase_prefix` clause; the `bool_prefix` fuzziness behaviour is unchanged from pre-v2.3.0 (and from pre-v2.0.0).
 - [x] Confirm ADR 025 and ADR 026 ranking invariants still hold — they do. P007 sub-unit ranking unchanged; ADR 026 non-range-outranks-range still holds (there's no non-range 138 or 225-street-number record in these cases).
-- [x] Decide fix strategy — decided 2026-04-19 in [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md): Option A `AUTO:5,8`. The token-split proposal below was evaluated as ADR 027 Option D and **rejected** (its `should` → `must` restructure would drop `sla_range_expanded` from the matching contract and regress the range-recall guarantee; query-time token classification judged brittle per ADR 025 Option E precedent).
+- [x] Decide fix strategy — decided 2026-04-19 in [ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md): Option A `AUTO:5,8`. The token-split proposal below was evaluated as ADR 027 Option D and **rejected** (its `should` → `must` restructure would drop `sla_range_expanded` from the matching contract and regress the range-recall guarantee; query-time token classification judged brittle per ADR 025 Option E precedent).
 
 **Root cause confirmed (2026-07-16 re-verification):** the pre-fix `bool_prefix` clause used `fuzziness: 'AUTO'` (= `AUTO:3,6`, 1 edit for 3-5 char tokens), so 3-4 digit street numbers fuzzy-matched adjacent numbers and tf-inflated neighbouring docs. The fix is live in the query builder at `service/address-service.js:959` (`fuzziness: 'AUTO:5,8'` with the ADR 027 rationale comment at lines 953-958), shipped in commit `920fce6` (v2.4.0, 2026-04-20). Regression-pinned by the source-pattern unit test at `test/js/__tests__/address-service.test.mjs:360-389` and the ADR 027 Cucumber scenarios in `test/resources/features/addressv2.feature` (OT-fixture equivalents; plus the tagged `@known-regression-adr-027` documentation scenario for the accepted 4-char typo-tolerance loss).
 
 ## Fix Strategy (proposed)
 
-> **Superseded by [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md) (2026-04-19).** The token-split proposal below was considered as ADR 027 Option D and rejected; the shipped fix is Option A — tune `fuzziness` from `AUTO` (= `AUTO:3,6`) to `AUTO:5,8`, removing edit tolerance from 3-4 char tokens (street numbers, postcodes) while keeping 1 edit for 5-7 char and 2 edits for 8+ char names. Single-parameter change at `service/address-service.js:959`; no query-shape restructure, no reindex; ADR 025 summation-symmetry and ADR 028 `phrase_prefix` invariants untouched.
+> **Superseded by [ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md) (2026-04-19).** The token-split proposal below was considered as ADR 027 Option D and rejected; the shipped fix is Option A — tune `fuzziness` from `AUTO` (= `AUTO:3,6`) to `AUTO:5,8`, removing edit tolerance from 3-4 char tokens (street numbers, postcodes) while keeping 1 edit for 5-7 char and 2 edits for 8+ char names. Single-parameter change at `service/address-service.js:959`; no query-shape restructure, no reindex; ADR 025 summation-symmetry and ADR 028 `phrase_prefix` invariants untouched.
 >
 > **Release vehicle**: v2.4.0 (commit `920fce6`, 2026-04-20; changeset drained at release).
 
@@ -135,11 +135,11 @@ Shipped in **v2.4.0** (commit `920fce6`, 2026-04-20) as part of "exact-number ra
 - GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367) — reporter `hirani89`'s original 2022 report, specifically:
   - Case 3 comment [#1165031892](https://github.com/mountain-pass/addressr/issues/367#issuecomment-1165031892): "138-144 WHITEHORSE RD … does come up. Although it is down the list." This is the ranking problem, not the recall problem.
   - Case 4 comment [#1179803885](https://github.com/mountain-pass/addressr/issues/367#issuecomment-1179803885): "TRAVEL INN HOTEL, 225-245 … When you search for '225 drummond st, carlton', the address above does not show." Recall fixed in ADR 026 but ranking target (first result) not met.
-- [P015 — Range-number addresses not findable by base number](./015-range-number-addresses-not-searchable-by-base-number.open.md) — originally captured the recall dimension. Closed by ADR 026 for cases 2 and 4 recall. This ticket captures the ranking dimension that P015's framing missed.
-- [ADR 026](../decisions/026-range-number-address-expansion.proposed.md) — the recall fix. Ranking invariants documented there remain satisfied; this problem is orthogonal.
-- [ADR 025](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — `ssla` symmetric-population precedent; the `bool_prefix` summation-symmetry property from ADR 025 is preserved by the proposed fix (field list unchanged).
-- [`service/address-service.js:982-1005`](../../service/address-service.js) — `searchForAddress` query-builder location (post-v2.4.0: the `bool_prefix` clause with `AUTO:5,8` sits at lines 947-965).
-- [ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md) — the shipped fix (`AUTO:5,8`); documents why the token-split Fix Strategy above was rejected (Option D).
+- [P015 — Range-number addresses not findable by base number](015-range-number-addresses-not-searchable-by-base-number.md) — originally captured the recall dimension. Closed by ADR 026 for cases 2 and 4 recall. This ticket captures the ranking dimension that P015's framing missed.
+- [ADR 026](../../decisions/026-range-number-address-expansion.superseded.md) — the recall fix. Ranking invariants documented there remain satisfied; this problem is orthogonal.
+- [ADR 025](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — `ssla` symmetric-population precedent; the `bool_prefix` summation-symmetry property from ADR 025 is preserved by the proposed fix (field list unchanged).
+- [`service/address-service.js:982-1005`](../../../service/address-service.js) — `searchForAddress` query-builder location (post-v2.4.0: the `bool_prefix` clause with `AUTO:5,8` sits at lines 947-965).
+- [ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md) — the shipped fix (`AUTO:5,8`); documents why the token-split Fix Strategy above was rejected (Option D).
 - [Baseline + post-deploy checklist](../026-baseline-v2.3.0.md) — the 14 v2.3.0 production queries and the unticked post-deploy verification checklist.
-- [P027 — Synonym expansion bypasses AUTO fuzziness](../open/027-synonym-expansion-bypasses-auto-fuzziness.md) — sibling fuzziness ticket, separate root cause; not addressed by ADR 027.
+- [P027 — Synonym expansion bypasses AUTO fuzziness](027-synonym-expansion-bypasses-auto-fuzziness.md) — sibling fuzziness ticket, separate root cause; not addressed by ADR 027.
 - **Upstream report pending** -- false positive; detection misfire (the scoped-package mention `@mountainpass/addressr` is this project's own package; root cause is internal query configuration, not an upstream dependency).

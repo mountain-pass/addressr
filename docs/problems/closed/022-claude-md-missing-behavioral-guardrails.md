@@ -84,8 +84,8 @@ Awaiting user verification (observe the new sections take effect across future s
 
 ## Related
 
-- [P021: git push origin master is not risk-gated](021-git-push-master-not-risk-gated.known-error.md) — hook-layer enforcement this ticket mirrors at the prompt layer.
-- [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.open.md) — voice/tone corner of the same family. Already covered by docs/VOICE-AND-TONE.md + hook.
+- [P021: git push origin master is not risk-gated](../parked/021-git-push-master-not-risk-gated.md) — hook-layer enforcement this ticket mirrors at the prompt layer.
+- [P016: External comms missing voice-tone and risk checks](../parked/016-external-comms-missing-voice-tone-and-risk-checks.md) — voice/tone corner of the same family. Already covered by docs/VOICE-AND-TONE.md + hook.
 - ADR-001 (Risk-Gated Release Process) — decision record this section reinforces at the prompt layer.
 - Usage-data report 2026-03-17 → 2026-04-16 — source of the recurring-pattern evidence.
 - `CLAUDE.md`, `AGENTS.md` — target docs for the additions.

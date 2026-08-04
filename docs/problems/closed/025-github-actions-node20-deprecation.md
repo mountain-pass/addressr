@@ -64,7 +64,7 @@ Executed 2026-07-19 as stage 2 only of the original two-stage proposal — stage
 ## Related
 
 - GitHub Actions changelog: [Deprecation of Node.js 20 on GitHub Actions runners](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
-- [`.github/workflows/release.yml`](../../.github/workflows/release.yml) — workflow file containing the pinned actions
+- [`.github/workflows/release.yml`](../../../.github/workflows/release.yml) — workflow file containing the pinned actions
 - CI annotation output from release run `72041445878` (2026-04-19) first surfaced the warning against the repo's own workflow.
 - **Upstream report pending** -- false positive; root cause is GitHub's platform-wide Node 20 retirement and every affected upstream action has already shipped a Node 24 build (verified 2026-07-19) — nothing to report upstream.
 

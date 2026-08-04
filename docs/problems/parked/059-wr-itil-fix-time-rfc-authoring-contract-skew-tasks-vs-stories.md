@@ -47,7 +47,7 @@ Judgement-call applied 2026-07-19 (RFC-004): author a populated `## Scope` from 
 
 - Hang-off-check verdict 2026-07-19 (capture-problem sub-step 2b): PROCEED_NEW. Candidates considered: P043 (wr-itil SID-helper fallback picks subagent UUID — hook-lib race, different root cause and artefact class), P058 (restage-commit helper bypasses external-comms gate — @windyroad/risk-scorer surface regex, different plugin), P029 (Cucumber will-NOT-include v2 step bug — the RFC-004 signal is provenance, not shared root cause; absorbing an upstream-plugin process ticket into a shipping test-bug ticket would break its INVEST shape). No candidate shares the root cause (SKILL-prose contradiction inside @windyroad/itil 0.59.1) or fix locus.
 - [RFC-004](../../rfcs/RFC-004-v2-fallback-will-not-include-step-absence-assertions.proposed.md) — the fix-time auto-create during which the skew was observed
-- [P029](../verifying/029-will-not-include-step-v2-api-bug.md) — the ticket whose I13 gate surfaced the skew
+- [P029](../closed/029-will-not-include-step-v2-api-bug.md) — the ticket whose I13 gate surfaced the skew
 - Upstream fix home: `@windyroad/itil` (windyroad/agent-plugins) — align `packages/itil/skills/manage-problem/SKILL.md` I13 prose with `packages/itil/skills/capture-rfc/SKILL.md` ADR-089 story mandate
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/370 (2026-07-20)
 

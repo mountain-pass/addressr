@@ -70,7 +70,7 @@ The `ADDRESSR_` prefix is consistent with existing conventions (`ADDRESSR_ACCESS
 - **Both set** → middleware rejects requests whose configured header does not equal the configured value with **HTTP 401** and a short JSON body `{"message":"Authentication required"}`.
 - **Exactly one set** → process fails at startup with a non-zero exit code. The error message must name **both** env vars and identify **which** is missing, so operators can diagnose without tracing source.
 - **Allowlist (routes exempt from enforcement):** `/health`, `/api-docs`. These routes expose no user data and are consumed by infrastructure (monitoring, gateway imports) that cannot carry the secret. **The allowlist is a closed list defined in code, not operator-configurable**, to prevent accidental widening.
-- **Method-level exemption (`OPTIONS`, CORS-enabled only) — see [ADR 037](037-cors-preflight-caching-policy.proposed.md).** When CORS is enabled (`ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN` set), CORS preflight (`OPTIONS`) requests are answered `204` by an explicit handler ordered *before* this middleware, so `OPTIONS /<any-path>` is exempt from enforcement on the method axis (a preflight is inherently unauthenticated — a browser cannot attach the gateway secret — and exposes no user data). When CORS is **not** enabled the handler is not registered and `OPTIONS` falls through to this middleware like any other method (ADR-037 R1 refinement, 2026-07-25). Enforcement of the data-carrying methods (GET etc.) is **unchanged** on both profiles.
+- **Method-level exemption (`OPTIONS`, CORS-enabled only) — see [ADR 037](037-cors-preflight-caching-policy.proposed.md).** When CORS is enabled (`ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN` set), CORS preflight (`OPTIONS`) requests are answered `204` by an explicit handler ordered _before_ this middleware, so `OPTIONS /<any-path>` is exempt from enforcement on the method axis (a preflight is inherently unauthenticated — a browser cannot attach the gateway secret — and exposes no user data). When CORS is **not** enabled the handler is not registered and `OPTIONS` falls through to this middleware like any other method (ADR-037 R1 refinement, 2026-07-25). Enforcement of the data-carrying methods (GET etc.) is **unchanged** on both profiles.
 
 ### Supported deployment profiles
 
@@ -186,13 +186,13 @@ Revisit this decision if any of the following occur:
 
 ## Related
 
-- [ADR 013](./013-docker-image.accepted.md) — Docker image distribution (self-hosted topology; must remain zero-config)
+- [ADR 013](013-docker-image.superseded.md) — Docker image distribution (self-hosted topology; must remain zero-config)
 - [ADR 016](./016-uptime-robot-monitoring.accepted.md) — UptimeRobot monitoring (unaffected; monitor path goes through the Cloudflare Worker → RapidAPI → origin, and `/health` is allowlisted in any case)
 - [ADR 017](./017-rapidapi-distribution.accepted.md) — RapidAPI distribution (the current fronted topology this ADR protects)
 - [ADR 018](./018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (unaffected; worker still calls `addressr.p.rapidapi.com`, not the upstream directly)
 - [ADR 023](./023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec RapidAPI CI sync (imposes constraint that `/api-docs` must remain unauthenticated; honoured by the allowlist)
-- [Problem 008](../problems/008-rapidapi-gateway-rejecting-all-keys-for-listing.known-error.md) — outage that formally raised this follow-up
-- [Problem 009](../problems/009-upstream-backends-openly-callable-bypassing-rapidapi.open.md) — the problem this ADR resolves
+- [Problem 008](../problems/closed/008-rapidapi-gateway-rejecting-all-keys-for-listing.md) — outage that formally raised this follow-up
+- [Problem 009](../problems/closed/009-upstream-backends-openly-callable-bypassing-rapidapi.md) — the problem this ADR resolves
 - [RISK-POLICY.md](../../RISK-POLICY.md) — Confidential Information section; secret values stay out of the repository
 
 ## Reassessment Log

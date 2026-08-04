@@ -76,9 +76,9 @@ Expected rels list (per `test/resources/features/addressv2.feature:10-15`):
 
 ## Related
 
-- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.closed.md) — the motivator.
-- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](018-root-cache-ttl-too-long-for-versioned-contract.open.md) — complementary propagation fix.
-- [P020: Orphan `test/js/*.test.js` — no script runs them](020-orphan-node-test-files.open.md) — if we pick the node-test approach for the smoke probe.
+- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.md) — the motivator.
+- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](../parked/018-root-cache-ttl-too-long-for-versioned-contract.md) — complementary propagation fix.
+- [P020: Orphan `test/js/*.test.js` — no script runs them](020-orphan-node-test-files.md) — if we pick the node-test approach for the smoke probe.
 - `.github/workflows/release.yml:151-199` — the smoke-test block to extend.
 - ADR 023: OpenAPI spec RapidAPI CI sync — related marketplace-drift concern.
 

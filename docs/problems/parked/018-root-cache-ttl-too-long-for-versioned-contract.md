@@ -66,9 +66,9 @@ A short-TTL directive (`public, max-age=60, must-revalidate` or `no-cache`) woul
 
 ## Related
 
-- [P017: RapidAPI root missing postcode/locality/state rels](017-rapidapi-root-missing-postcode-locality-state-rels.closed.md) — one instance of the accepted drift-window cost.
-- [P019: No deploy-time smoke check for root Link header rel completeness](019-missing-root-link-header-smoke-assertion.open.md) — complementary observability gap, still worth fixing.
-- [P023: Browser does not cache root `/` for cross-origin fetches](023-cross-origin-root-not-browser-cached.open.md) — separate concern; browser disk cache isn't populating regardless of origin TTL.
+- [P017: RapidAPI root missing postcode/locality/state rels](../closed/017-rapidapi-root-missing-postcode-locality-state-rels.md) — one instance of the accepted drift-window cost.
+- [P019: No deploy-time smoke check for root Link header rel completeness](../closed/019-missing-root-link-header-smoke-assertion.md) — complementary observability gap, still worth fixing.
+- [P023: Browser does not cache root `/` for cross-origin fetches](../verifying/023-cross-origin-root-not-browser-cached.md) — separate concern; browser disk cache isn't populating regardless of origin TTL.
 - `src/waycharter-server.js` root handler — the directive (long-lived by design).
 - `test/js/__tests__/waycharter-server.test.mjs` — regression guard.
 - ADR 012: HATEOAS waycharter API.

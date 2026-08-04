@@ -60,6 +60,6 @@ Permanent guardrails (ordered by cost):
 
 ## Related
 
-- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.closed.md) — discovery context; lost the changeset on commit `ef66d39` during P009 v2.1.4 release.
-- [Problem 003](003-npm-version-lockfile-drift.open.md) — unrelated lockfile-drift issue, but same class of "commit metadata silently wrong" concern.
+- [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.md) — discovery context; lost the changeset on commit `ef66d39` during P009 v2.1.4 release.
+- [Problem 003](003-npm-version-lockfile-drift.md) — unrelated lockfile-drift issue, but same class of "commit metadata silently wrong" concern.
 - Memory file `feedback_lint_staged_changeset.md` — session-level reminder to `git show --stat HEAD` after any `.changeset/` commit.

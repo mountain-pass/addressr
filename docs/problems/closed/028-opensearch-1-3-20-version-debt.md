@@ -11,7 +11,7 @@
 
 addressr's production search backend is an **AWS-managed OpenSearch Service** domain (`search-addressr3-….aos.ap-southeast-2.on.aws`) running the **OpenSearch 1.3 engine family** (believed to be 1.3.x — exact engine version still to be confirmed via the AWS console / API; local Docker and the npm client are pinned to 1.3.20). Local development and CI use the `opensearchproject/opensearch:1.3.20` Docker image (see `package.json` `SEARCH_IMAGE`). The Node.js client is pinned at `@opensearch-project/opensearch@^3.5.1`. OpenSearch 1.3 is the final release of the 1.x major line and is past its support horizon; 2.x is the current stable major (2.19+ as of Q1 2026) and 3.x is also available upstream. Staying on 1.3 is accumulating a set of negatives that are independent of any single defect.
 
-This problem captures the **version debt itself**, not any individual bug caused by it. Specific bugs that the debt is suspected to cause or perpetuate are tracked separately (e.g., [P027](./027-synonym-expansion-bypasses-auto-fuzziness.open.md) — synonym-expansion fuzziness interaction in `match_bool_prefix`). The cost of P028 is the ongoing risk exposure across all the following axes simultaneously, and the stranded improvement value in newer releases.
+This problem captures the **version debt itself**, not any individual bug caused by it. Specific bugs that the debt is suspected to cause or perpetuate are tracked separately (e.g., [P027](027-synonym-expansion-bypasses-auto-fuzziness.md) — synonym-expansion fuzziness interaction in `match_bool_prefix`). The cost of P028 is the ongoing risk exposure across all the following axes simultaneously, and the stranded improvement value in newer releases.
 
 ### What we're missing and exposed to
 
@@ -74,8 +74,8 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 - [ ] Spin up `opensearchproject/opensearch:2.19` locally (shared with P027 investigation). Run the Cucumber suite and the 14-query baseline against it. Note any behavioural deltas.
 - [ ] Enumerate OpenSearch 2.x features that would unlock addressr product value (vector / knn, point_in_time, improved aggregations, bulk indexing ergonomics). Quantify the value where possible.
 - [x] Check `@opensearch-project/opensearch` client's stated 1.x deprecation timeline. _(see "Client library status" below, 2026-04-21)_
-- [x] Create an INVEST story / ADR for the upgrade once the plan options are scoped. Supersede or amend ADR 021's "retain 1.x" posture. _(2026-04-21 — [ADR 029](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) drafted (proposed) with two-phase blue/green plan; [ADR 030](../decisions/030-opensearch-domain-terraform-module.proposed.md) drafted (proposed) for the Terraform-managed domain. ADR 029 amends ADR 021 on the version axis; retain-OpenSearch and multi-backend directions preserved. P028 transitions to Known Error on ADR 029 acceptance per ADR 029's Confirmation section.)_
-- [ ] Create a reproduction test that catches regressions during the upgrade — baseline the Cucumber + unit suite on 1.3.20, diff against 2.x locally. _(Scope carried into ADR 029 Phase 1: local Cucumber + 14-query symmetric-SSLA baseline ([ADR 025](../decisions/025-search-ranking-symmetric-ssla.accepted.md)) run against `opensearchproject/opensearch:2.19` before cutover. The comparison itself becomes the regression test.)_
+- [x] Create an INVEST story / ADR for the upgrade once the plan options are scoped. Supersede or amend ADR 021's "retain 1.x" posture. _(2026-04-21 — [ADR 029](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) drafted (proposed) with two-phase blue/green plan; [ADR 030](../../decisions/030-opensearch-domain-terraform-module.accepted.md) drafted (proposed) for the Terraform-managed domain. ADR 029 amends ADR 021 on the version axis; retain-OpenSearch and multi-backend directions preserved. P028 transitions to Known Error on ADR 029 acceptance per ADR 029's Confirmation section.)_
+- [ ] Create a reproduction test that catches regressions during the upgrade — baseline the Cucumber + unit suite on 1.3.20, diff against 2.x locally. _(Scope carried into ADR 029 Phase 1: local Cucumber + 14-query symmetric-SSLA baseline ([ADR 025](../../decisions/025-search-ranking-symmetric-ssla.accepted.md)) run against `opensearchproject/opensearch:2.19` before cutover. The comparison itself becomes the regression test.)_
 
 ### Research findings (2026-04-21)
 
@@ -106,7 +106,7 @@ The repository history shows 1.3.x was pinned when the project first stabilised.
 
 #### Implications for priority
 
-Updated to **15 (High) — Impact: Moderate (3) × Likelihood: Almost certain (5)** on 2026-04-21. The prior "12 (High) — Likelihood Likely (4)" line under-stated reality: the **security-patch drought** trigger already fired on 2025-05-06 (upstream 1.x end-of-maintenance, 11 months before this ticket), and AWS has not published 1.3 Standard/Extended Support dates — so at least one material trigger is already active and another is pending publication. The Impact rating (Moderate, 3) is unchanged; the version debt still manifests today as release-pipeline and design-drag rather than user-visible failure. Label remains "High" (10–16 band). Re-score anchored to the existence of the upgrade plan ADRs ([ADR 029](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) and [ADR 030](../decisions/030-opensearch-domain-terraform-module.proposed.md), both proposed 2026-04-21).
+Updated to **15 (High) — Impact: Moderate (3) × Likelihood: Almost certain (5)** on 2026-04-21. The prior "12 (High) — Likelihood Likely (4)" line under-stated reality: the **security-patch drought** trigger already fired on 2025-05-06 (upstream 1.x end-of-maintenance, 11 months before this ticket), and AWS has not published 1.3 Standard/Extended Support dates — so at least one material trigger is already active and another is pending publication. The Impact rating (Moderate, 3) is unchanged; the version debt still manifests today as release-pipeline and design-drag rather than user-visible failure. Label remains "High" (10–16 band). Re-score anchored to the existence of the upgrade plan ADRs ([ADR 029](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) and [ADR 030](../../decisions/030-opensearch-domain-terraform-module.accepted.md), both proposed 2026-04-21).
 
 #### Known Error transition (2026-04-21)
 
@@ -121,7 +121,7 @@ Fix path is clear via ADRs 029 and 030 (both proposed). Closure (this file → `
 
 #### ADR 030 module scaffolded (2026-04-24)
 
-Scaffolded `deploy/modules/opensearch/` per [ADR 030](../decisions/030-opensearch-domain-terraform-module.proposed.md)'s module shape:
+Scaffolded `deploy/modules/opensearch/` per [ADR 030](../../decisions/030-opensearch-domain-terraform-module.accepted.md)'s module shape:
 
 - `versions.tf` — matches root `deploy/versions.tf` (AWS provider, `required_version >= 0.13`; no backend block in the module)
 - `variables.tf` — `name`, `engine_version`, `instance_type` (default `t3.small.search`), `instance_count`, `ebs_volume_size`/`ebs_volume_type`, `master_user_name`/`master_user_password` (sensitive), `tags`. VPC/subnet vars deliberately omitted in this module version; comment explains deferral to a future network-hardening ADR.
@@ -258,14 +258,14 @@ Architect re-review PASS (all four prior items resolved); JTBD re-review PASS (p
 
 ## Related
 
-- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.
-- [ADR 030 — OpenSearch domain under Terraform](../decisions/030-opensearch-domain-terraform-module.proposed.md) — **proposed 2026-04-21.** Sibling decision; brings the AWS-managed domain under IaC via a new `deploy/modules/opensearch/` module. ADR 029 Phase 1 depends on ADR 030's module being applied at least once.
-- [ADR 021 — Retain OpenSearch, plan multi-backend](../decisions/021-retain-opensearch-plan-multi-backend.proposed.md) — flagged 1.3.x EOL as a reassessment trigger. P028 is the operational capture of that trigger being active. ADR 029 amends ADR 021 on the version axis; ADR 021's retain-OpenSearch and multi-backend directions are preserved.
-- [ADR 002 — OpenSearch as search engine](../decisions/002-opensearch-as-search-engine.accepted.md) — version-agnostic; OpenSearch remains the engine. An upgrade does not contradict ADR 002. ADR 002's Confirmation section will be updated at ADR 029 Phase 1 cutover to reflect 2.19.
-- [Problem P027 — Synonym expansion bypasses AUTO:5,8 fuzziness](./027-synonym-expansion-bypasses-auto-fuzziness.open.md) — candidate bug whose fix may be an upgrade. Related but independent of P028.
-- [Problem P025 — GitHub Actions Node.js 20 deprecation](./025-github-actions-node20-deprecation.open.md) — adjacent version-debt ticket on a different axis (CI runtime). Similar pattern: managed-platform deprecation schedule forces our hand.
-- [`package.json`](../../package.json) — `SEARCH_IMAGE: "opensearchproject/opensearch:1.3.20"` and `@opensearch-project/opensearch: ^3.5.1`.
-- [`client/elasticsearch.js`](../../client/elasticsearch.js) — addressr's connection + index mapping code; will need review under 2.x for any DSL or mapping changes.
+- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) — **proposed 2026-04-21.** The fix plan for this problem. Phase 1 (1.3.20 → 2.19 via blue/green) is imminent; Phase 2 (2.19 → 3.x) is deferred. Amends ADR 021 on the version axis.
+- [ADR 030 — OpenSearch domain under Terraform](../../decisions/030-opensearch-domain-terraform-module.accepted.md) — **proposed 2026-04-21.** Sibling decision; brings the AWS-managed domain under IaC via a new `deploy/modules/opensearch/` module. ADR 029 Phase 1 depends on ADR 030's module being applied at least once.
+- [ADR 021 — Retain OpenSearch, plan multi-backend](../../decisions/021-retain-opensearch-plan-multi-backend.proposed.md) — flagged 1.3.x EOL as a reassessment trigger. P028 is the operational capture of that trigger being active. ADR 029 amends ADR 021 on the version axis; ADR 021's retain-OpenSearch and multi-backend directions are preserved.
+- [ADR 002 — OpenSearch as search engine](../../decisions/002-opensearch-as-search-engine.accepted.md) — version-agnostic; OpenSearch remains the engine. An upgrade does not contradict ADR 002. ADR 002's Confirmation section will be updated at ADR 029 Phase 1 cutover to reflect 2.19.
+- [Problem P027 — Synonym expansion bypasses AUTO:5,8 fuzziness](027-synonym-expansion-bypasses-auto-fuzziness.md) — candidate bug whose fix may be an upgrade. Related but independent of P028.
+- [Problem P025 — GitHub Actions Node.js 20 deprecation](025-github-actions-node20-deprecation.md) — adjacent version-debt ticket on a different axis (CI runtime). Similar pattern: managed-platform deprecation schedule forces our hand.
+- [`package.json`](../../../package.json) — `SEARCH_IMAGE: "opensearchproject/opensearch:1.3.20"` and `@opensearch-project/opensearch: ^3.5.1`.
+- [`client/elasticsearch.js`](../../../client/elasticsearch.js) — addressr's connection + index mapping code; will need review under 2.x for any DSL or mapping changes.
 
 ## Closed — version debt retired (2026-07-15)
 

@@ -72,9 +72,9 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 
 Traced by [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) (CI perf-regression probe). Three artefacts, authored together as one atomic change (CI + test infra only, so no changeset per the workflow-only discipline — cf. RFC-002):
 
-1. [`test/k6/regression.js`](../../test/k6/regression.js) — small deterministic regression profile (warm-up + 60 s / 5 VU measured window, conservative gating thresholds).
-2. `test:perf:regression` npm script in [`package.json`](../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
-3. [`.github/workflows/perf-regression.yml`](../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
+1. [`test/k6/regression.js`](../../../test/k6/regression.js) — small deterministic regression profile (warm-up + 60 s / 5 VU measured window, conservative gating thresholds).
+2. `test:perf:regression` npm script in [`package.json`](../../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
+3. [`.github/workflows/perf-regression.yml`](../../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
 
 **Status**: fix authored, pushed, and exercised once — the first real nightly run FAILED and reddened master. Repaired 2026-07-25 (see below). Stays **Known Error**: the repair itself has not yet had a clean validation run.
 
@@ -142,10 +142,10 @@ All three branches were exercised locally against a stub under GitHub's exact sh
 
 ## Related
 
-- [`package.json`](../../package.json) — `test:performance` script at line 136.
-- [`test/k6/script.js`](../../test/k6/script.js) — the existing 38-min stress profile.
-- [`.github/workflows/release.yml`](../../.github/workflows/release.yml) — `build-and-test` job; would either grow a perf step or sit alongside a sibling workflow.
-- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../decisions/029-opensearch-blue-green-two-phase-upgrade.proposed.md) — line 21 cites "Performance" as a Decision Driver. P032 is the operational follow-on for catching perf changes during and after Phase 1.
-- [ADR 025 — Search ranking symmetric SSLA](../decisions/025-search-ranking-symmetric-ssla.accepted.md) — covers correctness of ranking; perf coverage is the missing axis.
-- [Problem P028 — OpenSearch 1.3.20 version debt](./028-opensearch-1-3-20-version-debt.known-error.md) — engine bump that motivates closing this gap; P028 can land Phase 1 cutover without P032 resolved (production monitoring is the fallback control), but P032 is the right follow-on for institutionalising perf gating.
-- [Problem P024 — Architect agent misses performance implications](./024-architect-agent-misses-performance-implications.parked.md) — adjacent (governance tooling for perf review) but distinct (P032 is automated regression detection in CI; P024 is upfront perf reasoning by the architect agent).
+- [`package.json`](../../../package.json) — `test:performance` script at line 136.
+- [`test/k6/script.js`](../../../test/k6/script.js) — the existing 38-min stress profile.
+- [`.github/workflows/release.yml`](../../../.github/workflows/release.yml) — `build-and-test` job; would either grow a perf step or sit alongside a sibling workflow.
+- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) — line 21 cites "Performance" as a Decision Driver. P032 is the operational follow-on for catching perf changes during and after Phase 1.
+- [ADR 025 — Search ranking symmetric SSLA](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — covers correctness of ranking; perf coverage is the missing axis.
+- [Problem P028 — OpenSearch 1.3.20 version debt](../closed/028-opensearch-1-3-20-version-debt.md) — engine bump that motivates closing this gap; P028 can land Phase 1 cutover without P032 resolved (production monitoring is the fallback control), but P032 is the right follow-on for institutionalising perf gating.
+- [Problem P024 — Architect agent misses performance implications](../parked/024-architect-agent-misses-performance-implications.md) — adjacent (governance tooling for perf review) but distinct (P032 is automated regression detection in CI; P024 is upfront perf reasoning by the architect agent).

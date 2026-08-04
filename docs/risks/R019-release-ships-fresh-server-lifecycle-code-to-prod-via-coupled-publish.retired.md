@@ -1,11 +1,11 @@
 # Risk R019: Release Ships Fresh Server Lifecycle Code To Prod Via Coupled Publish
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-05 — merged into R015)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-26
 **Owner**: pending review
-**Last reviewed**: 2026-07-26
-**Next review**: 2026-07-26
+**Last reviewed**: 2026-08-05
+**Next review**: n/a (retired)
 **Curation**: pending review (auto-scaffolded 2026-07-26)
 
 ## Description
@@ -18,7 +18,7 @@ Graceful-shutdown server-lifecycle rewrite reaches prod EB through the R015 npm-
 
 ## Inherent Risk
 
-Impact × Likelihood *before* controls.
+Impact × Likelihood _before_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -31,7 +31,7 @@ Impact × Likelihood *before* controls.
 
 ## Residual Risk
 
-Impact × Likelihood *after* controls.
+Impact × Likelihood _after_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -63,3 +63,11 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-26: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement (2026-08-05)
+
+Self-declared duplicate — the entry body already read "Dedupes against R015" — and confirmed by mechanism rather than accepted on the label.
+
+There is one coupling, not two: `.github/workflows/release.yml:358` gates the **Deploy new version** step on `steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true'`. The first disjunct is the coupling. The graceful-shutdown server-lifecycle rewrite this entry named was one payload riding it, not a separate hazard.
+
+Folded into [R015](R015-npm-publish-coupled-to-prod-deploy-p039-unresolved.active.md), which owns the coupling itself.

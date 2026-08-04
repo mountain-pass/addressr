@@ -66,8 +66,8 @@ The 2026-04-18 P018 architect review explicitly said "Load is genuinely negligib
 
 ## Related
 
-- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](018-root-cache-ttl-too-long-for-versioned-contract.parked.md) — the incident that surfaced this problem. Architect recommended `no-cache`; user rejected for exactly the performance reason this ticket names.
-- [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.open.md) — adjacent family: governance tooling has blind spots for output-quality and now performance-cost dimensions.
+- [P018: Root `/` cache TTL too long for a version-gated HATEOAS contract](018-root-cache-ttl-too-long-for-versioned-contract.md) — the incident that surfaced this problem. Architect recommended `no-cache`; user rejected for exactly the performance reason this ticket names.
+- [P016: External comms missing voice-tone and risk checks](016-external-comms-missing-voice-tone-and-risk-checks.md) — adjacent family: governance tooling has blind spots for output-quality and now performance-cost dimensions.
 - Memory: `~/.claude/projects/-Users-tomhoward-Projects-addressr/memory/feedback_ask_before_ops_tradeoffs.md` — per-session wrapper guardrail added 2026-04-18.
 - Usage-data report 2026-03-17 → 2026-04-16 — noted "shipping prematurely" as a recurring Claude pattern, which aligns with this ticket's concern.
 - **Upstream ticket (systemic fix)**: [windyroad/agent-plugins P046 (architect-agent-misses-performance-implications)](https://github.com/windyroad/agent-plugins/blob/main/docs/problems/046-architect-agent-misses-performance-implications.open.md) — the fix lands in the `@windyroad/architect` plugin. Addressr retains this ticket as the local record of the pattern and any downstream workaround (memory guardrail, project-specific performance-budget ADR).

@@ -14,7 +14,7 @@ The defect is not reproducible on the current production stack, the original roo
 
 ## Description
 
-[ADR 027](../decisions/027-fuzziness-auto-5-8.proposed.md) set `fuzziness: 'AUTO:5,8'` on the `searchForAddress` `bool_prefix` `multi_match` clause so that 3-4 digit numeric tokens (street numbers, postcodes) require exact match. Post-deploy smoke against v2.4.0 shows the fuzziness tune **does not apply** when the query contains a short-form street type (e.g., `Rd`, `St`, `Ave`) in a non-last position AND includes additional locality tokens — specifically, the classic "number + street + street-type + locality" query shape that users type most often.
+[ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md) set `fuzziness: 'AUTO:5,8'` on the `searchForAddress` `bool_prefix` `multi_match` clause so that 3-4 digit numeric tokens (street numbers, postcodes) require exact match. Post-deploy smoke against v2.4.0 shows the fuzziness tune **does not apply** when the query contains a short-form street type (e.g., `Rd`, `St`, `Ave`) in a non-last position AND includes additional locality tokens — specifically, the classic "number + street + street-type + locality" query shape that users type most often.
 
 **Symptom query**: `"138 Whitehorse Rd Blackburn"` against production v2.4.0.
 
@@ -46,7 +46,7 @@ Reproduction evidence (2026-04-20 smoke against production v2.4.0):
 
 The failure is specific to the combination of: short-form street-type token (`Rd`) in non-last position + full-query shape containing a numeric token that has fuzzy-adjacent neighbours. Not a generic fuzziness failure — the parameter IS honoured for most queries.
 
-Reported during post-deploy smoke of [v2.4.0](../../CHANGELOG.md) (2026-04-20).
+Reported during post-deploy smoke of [v2.4.0](../../../CHANGELOG.md) (2026-04-20).
 
 ## Symptoms
 
@@ -77,7 +77,7 @@ OpenSearch 1.3.20's `match_bool_prefix` query builder, when encountering a synon
 
 ### Evidence for the hypothesis
 
-1. **Synonym filter present in the `my_analyzer`** (see [`client/elasticsearch.js:41-67`](../../client/elasticsearch.js)): `my_synonym_filter` expands street-type abbreviations bidirectionally (`RD ↔ ROAD`, `ST ↔ STREET`, `AVE ↔ AVENUE`, etc.). Loaded from G-NAF street type codes via `service/address-service.js:1312`.
+1. **Synonym filter present in the `my_analyzer`** (see [`client/elasticsearch.js:41-67`](../../../client/elasticsearch.js)): `my_synonym_filter` expands street-type abbreviations bidirectionally (`RD ↔ ROAD`, `ST ↔ STREET`, `AVE ↔ AVENUE`, etc.). Loaded from G-NAF street type codes via `service/address-service.js:1312`.
 2. **Position matters** — `Rd` as the LAST token is treated as a prefix query (`match_prefix` for `Rd*`) and does not go through the synonym expansion code path. Queries with `Rd` last (e.g., `138 Blackburn Rd` or `138 Rd Blackburn` [wait, Rd isn't last here]) — only `138 Whitehorse Rd` applies: clean. Queries with `Rd` in the middle fail.
 3. **Long form bypasses the problem** — `138 WHITEHORSE ROAD BLACKBURN` with `ROAD` triggers synonym filter too (expanding back to `RD`), but the behaviour is different. Needs more investigation — possibly OpenSearch's synonym filter handles the "original token" path differently from the "expanded synonym" path.
 4. **The fuzziness IS parsed correctly by OpenSearch 1.3** — OpenSearch 1.3.20 `Fuzziness.java` parses `AUTO:5,8` into `lowLimit=5, highLimit=8` (verified by reading upstream source).
@@ -135,13 +135,13 @@ Investigation (above) will narrow the choice. Option 2 (query-analyser split) lo
 
 ## Related
 
-- [ADR 027 — `fuzziness: 'AUTO:5,8'` on bool_prefix](../decisions/027-fuzziness-auto-5-8.proposed.md) — this problem is a partial regression of ADR 027's correctness claim for the dominant query shape. Reassessment criterion #4 is triggered.
-- [ADR 028 — Range-number endpoint-only expansion](../decisions/028-range-number-endpoint-only.proposed.md) — independent, not directly affected. Mid-range recall still correct under ADR 028 even with P027's fuzziness leak.
-- [Problem P026 — Numeric fuzziness inflates ranking](./026-numeric-fuzziness-inflates-ranking.open.md) — the parent problem ADR 027 addressed. P027 is the edge case ADR 027 missed.
-- [Problem P015 — Range-number addresses not findable by base number](./015-range-number-addresses-not-searchable-by-base-number.open.md) — originating problem for the whole thread.
+- [ADR 027 — `fuzziness: 'AUTO:5,8'` on bool_prefix](../../decisions/027-fuzziness-auto-5-8.proposed.md) — this problem is a partial regression of ADR 027's correctness claim for the dominant query shape. Reassessment criterion #4 is triggered.
+- [ADR 028 — Range-number endpoint-only expansion](../../decisions/028-range-number-endpoint-only.proposed.md) — independent, not directly affected. Mid-range recall still correct under ADR 028 even with P027's fuzziness leak.
+- [Problem P026 — Numeric fuzziness inflates ranking](026-numeric-fuzziness-inflates-ranking.md) — the parent problem ADR 027 addressed. P027 is the edge case ADR 027 missed.
+- [Problem P015 — Range-number addresses not findable by base number](015-range-number-addresses-not-searchable-by-base-number.md) — originating problem for the whole thread.
 - [GitHub issue #367](https://github.com/mountain-pass/addressr/issues/367) — reporter `hirani89`'s original 2022 case 3 ("`138-144 WHITEHORSE RD BLACKBURN` comes up, but down the list") that this problem re-opens.
-- [Baseline capture (v2.3.0)](./026-baseline-v2.3.0.md) — 14-query pre-change snapshot; post-deploy diff confirmed this edge case.
-- [`client/elasticsearch.js:41-67`](../../client/elasticsearch.js) — `my_analyzer` with `my_synonym_filter`.
-- [`service/address-service.js:984-997`](../../service/address-service.js) — `searchForAddress` `bool_prefix` clause with `fuzziness: 'AUTO:5,8'`.
-- [`service/address-service.js:1312-1319`](../../service/address-service.js) — synonym list construction.
+- [Baseline capture (v2.3.0)](.././026-baseline-v2.3.0.md) — 14-query pre-change snapshot; post-deploy diff confirmed this edge case.
+- [`client/elasticsearch.js:41-67`](../../../client/elasticsearch.js) — `my_analyzer` with `my_synonym_filter`.
+- [`service/address-service.js:984-997`](../../../service/address-service.js) — `searchForAddress` `bool_prefix` clause with `fuzziness: 'AUTO:5,8'`.
+- [`service/address-service.js:1312-1319`](../../../service/address-service.js) — synonym list construction.
 - OpenSearch 1.3 `Fuzziness.java` — confirmed parses `AUTO:m,n` format correctly; the failure is further downstream in `match_bool_prefix` query generation.

@@ -1,11 +1,11 @@
 # Risk R014: Cors Preflight Exempts Options From Proxy Auth Ahead Of Gate
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-05 — the discharge condition stated on the entry has been met)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-24
 **Owner**: pending review
-**Last reviewed**: 2026-07-24
-**Next review**: 2026-07-24
+**Last reviewed**: 2026-08-05
+**Next review**: n/a (retired)
 **Curation**: pending review (auto-scaffolded 2026-07-24)
 
 ## Description
@@ -63,3 +63,13 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-24: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement (2026-08-05)
+
+The entry scored itself 6/25 "above appetite **until preflight headers are gated behind CORS opt-in**". That gating has landed.
+
+`src/waycharter-server.js:599` gates the entire `app.options` registration behind `process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined`. With CORS off — the default — the handler is never registered, `Access-Control-Max-Age` is never emitted, and an `OPTIONS` request falls through to `proxyAuthMiddleware()` at line 613 like any other method. The auth exemption now exists only where an operator has explicitly opted into CORS.
+
+The exemption in that opted-in case is correct by design rather than residual risk: a preflight response is a 204 with no body, and browsers do not send credentials on preflight.
+
+Exercised by `test/resources/features/cors-preflight.feature`, which did not exist when this entry was raised.

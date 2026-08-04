@@ -18,7 +18,7 @@ addressr declares its production deployment via Terraform under `deploy/`: the E
 
 This is a standalone IaC-hygiene gap, independent of any specific upgrade plan: the configuration of the largest single line item in the AWS bill (per ADR 021) lives in console screenshots and operator memory rather than in version control. Drift between declared and actual configuration cannot be detected. Future provisioning patterns (e.g., the locality/postcode secondary indices flagged in ADR 021's direction; Phase 2 of the engine upgrade plan; any disaster-recovery rebuild) all require either a new manual provision or a retrofit. The longer the gap persists, the more "tribal knowledge" accretes around the un-IaC'd resource.
 
-[ADR 029](029-opensearch-blue-green-two-phase-upgrade.proposed.md) is the **forcing function** that brings this work to the front of the queue: Phase 1 of the blue/green upgrade requires a second OpenSearch domain (`search-addressr4-…`), which is the natural moment to choose how OpenSearch domains are provisioned going forward. The IaC-hygiene case stands on its own — even if ADR 029 Phase 2 changes shape or a future ADR replaces the engine entirely, this decision continues to make sense.
+[ADR 029](029-opensearch-blue-green-two-phase-upgrade.accepted.md) is the **forcing function** that brings this work to the front of the queue: Phase 1 of the blue/green upgrade requires a second OpenSearch domain (`search-addressr4-…`), which is the natural moment to choose how OpenSearch domains are provisioned going forward. The IaC-hygiene case stands on its own — even if ADR 029 Phase 2 changes shape or a future ADR replaces the engine entirely, this decision continues to make sense.
 
 ## Decision Drivers
 
@@ -38,7 +38,7 @@ This is a standalone IaC-hygiene gap, independent of any specific upgrade plan: 
 
 ## Decision Outcome
 
-Chosen option: **Option 4 — create a new `deploy/modules/opensearch/` Terraform module, use it to provision `search-addressr4-…`, leave `search-addressr3-…` unmanaged until decommissioning at the end of [ADR 029](029-opensearch-blue-green-two-phase-upgrade.proposed.md) Phase 1 soak.**
+Chosen option: **Option 4 — create a new `deploy/modules/opensearch/` Terraform module, use it to provision `search-addressr4-…`, leave `search-addressr3-…` unmanaged until decommissioning at the end of [ADR 029](029-opensearch-blue-green-two-phase-upgrade.accepted.md) Phase 1 soak.**
 
 Reasoning:
 
@@ -155,6 +155,7 @@ Narrative:
 - [ADR 010 — DevContainer-based deployment in CI](010-devcontainer-ci-deployment.accepted.md) — the existing CI Terraform-via-devcontainer path absorbs the new module without changes.
 - [ADR 021 — Retain OpenSearch, plan multi-backend](021-retain-opensearch-plan-multi-backend.proposed.md) — the locality/postcode direction is a future consumer of this module.
 - [ADR 024 — Origin-gateway auth header enforcement](024-origin-gateway-auth-header-enforcement.accepted.md) — adjacent EB env-var concern; unaffected by this ADR.
-- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](029-opensearch-blue-green-two-phase-upgrade.proposed.md) — sibling ADR; the forcing function for this work but not its sole justification.
-- [Problem P028 — OpenSearch 1.3.20 version debt](../problems/028-opensearch-1-3-20-version-debt.known-error.md) — context for why both ADRs exist now.
-- [`docs/JOBS_TO_BE_DONE.md`](../JOBS_TO_BE_DONE.md) — J7 (maintainer release integrity); J6 (self-hosted) explicitly out of scope.
+- [ADR 029 — Two-phase blue/green upgrade off OpenSearch 1.3.20](029-opensearch-blue-green-two-phase-upgrade.accepted.md) — sibling ADR; the forcing function for this work but not its sole justification.
+- [Problem P028 — OpenSearch 1.3.20 version debt](../problems/closed/028-opensearch-1-3-20-version-debt.md) — context for why both ADRs exist now.
+- [JTBD-400 Ship releases reliably from trunk](../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md) — maintainer release integrity (was J7).
+- [JTBD-200 Protect the gateway boundary](../jtbd/self-hosted-operator/JTBD-200-protect-gateway-boundary.validated.md) — self-hosted operator, explicitly out of scope for this decision (was J6).
