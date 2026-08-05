@@ -12,11 +12,16 @@
 
 ## Description
 
-Modified `deploy/.terraform.lock.hcl` is unstaged and user-directed to stay untouched; once the deploy/** axis lands, any future push sweeping that path up fires an unintended production Terraform apply.
+Unstaged working-tree changes under `deploy/**` can be swept into a commit, and once pushed, the ADR-040 stage-3 axis fires a whole-root-module production `terraform apply` at push-tier governance with no plan-approval gate.
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+**Re-scoped 2026-08-04 from the lockfile instance to the `.tf` class.** The original prefill named `deploy/.terraform.lock.hcl` specifically. That instance is discharged by construction — `release.yml:235` excludes the provider lockfile from the deploy pathspec and announces the exclusion with a `::notice::`. The class is not: `deploy/main.tf` and `deploy/vars.tf` have been dirty in the working tree continuously since 2026-08-02 and neither is excluded. P083's triage had listed this entry as a retirement candidate on the strength of the lockfile exclusion, which is exactly the label-over-mechanism error that check caught.
+
+The Description is restated here rather than left as the prefill because it is the field the ADR-059 judgement-fallback filter reads — a future scorer matching on the old text would match the discharged instance and miss the live class.
+
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Re-scope, and why the obvious retirement was wrong
 
@@ -81,10 +86,6 @@ Recorded rather than decided, because the choice is the maintainer's and option 
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-27T01:18:00Z: fired in `.risk-reports/2026-07-27T01-18-00-commit.md` (reason: user-stated-precondition)
-
-## Change Log
-
-- 2026-07-27: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 
 ## Change Log
 

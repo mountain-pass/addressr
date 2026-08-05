@@ -12,6 +12,10 @@ reassessment-date: 2027-01-26
 # ADR 040: Release Pipeline Decoupled into a Change-Type to Action Matrix
 
 > **Oversight note.** The substance of this decision — three independent axes, the SHA-based tag scheme, CI as the Docker publisher, and auto-deploy on a `deploy/**` change — was taken by the user on 2026-07-26. This ADR was authored by an AFK iteration with no interactive access, so it is born `human-oversight: unconfirmed` for the `/wr-architect:review-decisions` drain to promote rather than self-certifying. The architect review noted that the substance is user-pinned and the marker could reasonably be born `confirmed`; the drain should be able to promote it quickly. [ADR 039](039-distroless-docker-runtime.proposed.md) is in the same state and **must be ratified in the same pass** — this ADR amends it in three places, and stage 2 must not land ahead of that drain.
+>
+> **Ratified 2026-07-27 (recorded 2026-08-05).** The drain ran and promoted both ADRs in one pass: this ADR and ADR 039 each carry `human-oversight: confirmed` with the identical `oversight-date: 2026-07-27`, and that identical date is the evidence of the single drain — it is load-bearing for the retirement of register entries R024 and R026 and must not be re-issued. The paragraph above is retained as provenance for how the substance was taken, not as a description of the current marker state. Stage 2 did land ahead of the drain, on 2026-07-26 by user direction; that is recorded in the stage-2 amendment below and struck from Confirmation criterion 1, because a violated ordering clause can never be ticked and an unsatisfiable criterion is worse than none.
+>
+> **One gap the marker does not cover.** The 2026-07-28 GHCR amendment — a registry, namespace and credential change — post-dates `oversight-date: 2026-07-27` by a day, so the confirmed marker does not strictly cover this ADR's current content. The substance was separately user-pinned: the user chose GHCR on 2026-07-28 after a Docker registry auth-token scope probe, recorded in that amendment. So the substance is confirmed and only the marker date was not re-issued, which is a provenance-recording gap rather than an unconfirmed-substance gap. Recorded here rather than left implicit, which is what allowed R024 and R026 to retire.
 
 ## Amendment 2026-07-26 (stage 2, as built)
 
@@ -116,6 +120,7 @@ The consequence is that the _only_ way to make anything happen is to bump the np
 - Publishing an image must never silently re-point a tag a self-hoster has already pinned
 - One definition per action, invoked from every path that needs it, so two paths cannot drift apart
 - The change must not be able to red master before the user adds the Docker Hub secrets
+  > **Premise retired by the 2026-07-28 GHCR amendment.** There are no secrets to add: auth is the workflow's built-in `GITHUB_TOKEN` with `packages: write`, which is always present. The driver is moot rather than wrong; retained because it shaped the two-guard design recorded below.
 - Whatever governs a production deploy today must keep governing it
 
 ## Considered Options
@@ -146,7 +151,9 @@ That guard is why the docker publish path lives **in `release.yml`**. `published
 
 > **Rationale substituted, conclusion unchanged (stage-3 amendment point 3).** With the guard deleted, "unimplementable across a workflow boundary" no longer holds. The docker publish path still lives in `release.yml`, for a different reason: only `release.yml` can read `published` to decide whether to pass `publish_semver: true`, which is the release-only bare-`:<semver>` rule. The job-level output and `needs: release` are built exactly as written above.
 
-**Path detection is a plain `git diff --name-only` shell step, scoped to `github.event_name == 'push'`** — not a third-party filter action. Two reasons, both load-bearing. The job holds `DOCKER_ID_PASS`, so a marketplace action there would be registry-credential supply-chain surface. And the event scoping closes a silent-green trap: on a `deploy_only` dispatch the changesets step is skipped, so the job-level output resolves to the **empty string**, not `'false'`, which makes `published != 'true'` evaluate true. The second disjunct then rests entirely on path detection yielding nothing on a non-push event, so that must be explicit rather than incidental. This is the same class as the boolean-coercion trap already documented at `release.yml:18-24`.
+**Path detection is a plain `git diff --name-only` shell step, scoped to `github.event_name == 'push'`** — not a third-party filter action. Two reasons, both load-bearing. The job holds `DOCKER_ID_PASS`, so a marketplace action there would be registry-credential supply-chain surface.
+
+> **Premise updated by the 2026-07-28 GHCR amendment.** `DOCKER_ID_PASS` no longer exists; auth is the workflow's `GITHUB_TOKEN` with `packages: write`. **The conclusion is unchanged and still load-bearing** — a write-scoped registry credential is still in the job, so a marketplace action there is still supply-chain surface. Only the secret's name has changed. Recorded per the stage-3 device: do not leave a load-bearing "why" standing on a premise that no longer holds. And the event scoping closes a silent-green trap: on a `deploy_only` dispatch the changesets step is skipped, so the job-level output resolves to the **empty string**, not `'false'`, which makes `published != 'true'` evaluate true. The second disjunct then rests entirely on path detection yielding nothing on a non-push event, so that must be explicit rather than incidental. This is the same class as the boolean-coercion trap already documented at `release.yml:18-24`.
 
 ### Topology — one definition per action
 
@@ -172,6 +179,8 @@ Three facts about the scheme a reader will otherwise trip over:
 ### CI as the publisher
 
 Docker Hub credentials move to GitHub Actions secrets `DOCKER_ID_USER` / `DOCKER_ID_PASS`. The publish step is guarded twice, independently:
+
+> **SUPERSEDED by the 2026-07-28 GHCR amendment.** There are no Docker Hub secrets: auth is the built-in `GITHUB_TOKEN` with `packages: write`. Guard 2 ("the secrets must be non-empty, else no-op") is **retired** — a token that is always present cannot be absent, so guard 1 now carries the whole boundary alone. The two-guard scheme below is the as-designed record, not current behaviour. See amendment points 1 and 2.
 
 1. The reusable workflow only pushes when its `push` input is true — the pull-request caller passes false. This matters because on a same-repo pull request the secrets _are_ available, so secret-presence alone would let a PR build publish.
 2. The publish step additionally requires the secrets to be non-empty, and no-ops cleanly when they are absent. The wiring can therefore land before the user adds them without turning master red.
@@ -215,6 +224,7 @@ ADR 001 is not amended here, but not because amending a `confirmed` ADR is off-l
 - Bad: **the docker axis is independent in _what fires_, not in _latency_.** `release` carries `needs: build-and-test`, so a docker-only rebuild queues behind the full two-version OpenSearch matrix (`2.19.5`, `3.5.0`) that the standalone `docker-image.yml` bypasses entirely today
 - ~~Bad: `SEARCH_IMAGE*` lives in `package.json`, so an OpenSearch CI pin bump under [ADR 035](035-opensearch-3-5-upgrade-2-19-ci-regression.accepted.md) is a docker-axis trigger.~~ **CORRECTED by the 2026-07-27 stage-3 amendment (point 8): option C removes `package.json` from the push filter, so an `SEARCH_IMAGE*` bump is no longer a docker-axis trigger at all.** The replacement consequences — unbounded `:latest` drift for changeset-less dependency bumps, the docker build/push machinery in `package.json` ceasing to be a trigger, the pre-existing `scripts/docker-tags.sh` gap whose blast radius this widens, the `deploy/**` axis inheriting the P044 fail-closed coupling, and `:latest` changing meaning a third time — are recorded there
 - Bad: two secrets now exist in CI that can push to a public registry. The two independent guards above are what keeps a pull request from reaching it
+  > **Both halves superseded by the 2026-07-28 GHCR amendment.** There are no longer two secrets: auth is the workflow's built-in `GITHUB_TOKEN` with `packages: write`. And there are no longer two guards — guard 2 was retired with the secrets, so guard 1 carries the boundary alone. The consequence itself survives in altered form: a write-scoped registry credential is still present in CI, and a single guard now keeps a pull request from reaching it.
 - Neutral: **prod cannot be reached by the docker axis.** [ADR 004](004-aws-elastic-beanstalk-deployment.accepted.md) runs Elastic Beanstalk on a Node.js 22 / AL2023 **source-bundle** platform, not a container platform. That is the structural fact that makes the docker and deploy axes genuinely independent rather than merely separately triggered
 - Neutral: [ADR 010](010-devcontainer-ci-deployment.accepted.md)'s devcontainer requirement is scoped to the deploy step. The docker reusable workflow runs on a plain runner and does not implicate it
 
@@ -222,20 +232,20 @@ ADR 001 is not amended here, but not because amending a `confirmed` ADR is off-l
 
 Stage 1 (this ADR, the ADR 039 amendment, the tag scheme in `package.json`, `docs/DOCKER-IMAGE-CHANGELOG.md`, README tag guidance, the P055 reconciliation, the compendium) is complete when the commits land. The axes themselves are confirmed by stages 2 and 3, against these criteria:
 
-- [ ] **Ratification ordering.** ADR 040 does not reach `accepted` ahead of [ADR 039](039-distroless-docker-runtime.proposed.md), and both are ratified in one `/wr-architect:review-decisions` drain. Stage 2 does not land before that drain
+- [x] **Ratification ordering.** ADR 040 does not reach `accepted` ahead of [ADR 039](039-distroless-docker-runtime.proposed.md), and both are ratified in one `/wr-architect:review-decisions` drain. **Discharged 2026-07-27**: both ADRs carry `human-oversight: confirmed` with the identical `oversight-date: 2026-07-27`, which is the evidence of the single drain, and neither has reached `accepted`. The third clause as originally written — "Stage 2 does not land before that drain" — was violated on 2026-07-26 by user direction and is **permanently unsatisfiable**, so it is struck rather than left to block the box forever; the deviation is recorded above and at the amendment note, which is where a historical fact belongs. A criterion nobody can ever tick is worse than none (this ADR's own stage-2 amendment, point 4)
 - [ ] **Prerequisite, mechanically checkable:** `.github/workflows/release.yml` contains no `deploy/**` path-detection step unless `docs/decisions/001-risk-gated-release-process.proposed.md` contains an amendment block naming the `deploy/**` entry point and its push-tier score. Asserted in `test/js/__tests__/release-workflow-deploy-only.test.mjs`, not left to a human grep
 - [ ] `test/js/__tests__/release-workflow-deploy-only.test.mjs` is **updated, not deleted**. It pins the deploy gate as an exact string with an occurrence count of 3; a third disjunct changes both. Its "Known limitation (accepted)" note is revisited in the same change
 - [ ] The `release` job declares a job-level output for `steps.changesets.outputs.published`, and the docker publish job reads it via `needs.release.outputs`
 - [x] The path-detection step is scoped `github.event_name == 'push'`, and that scoping is pinned in **`test/js/__tests__/release-workflow-deploy-only.test.mjs`** — corrected from "the stage-2 test", which named the wrong file: the step lives in `release.yml`, not `docker-image.yml`. The `!= 'true'` half of this criterion is discharged differently than anticipated: the negated conjunct that created the empty-string trap was deleted outright (stage-3 amendment point 2), and both surviving gates use the positive `== 'true'` form
-- [ ] The docker build/smoke/push steps exist in exactly one file. `grep -c 'docker build'` across `.github/workflows/` returns 1
+- [ ] The docker build/smoke/push steps exist in exactly one file. **Predicate corrected** (stage-2 amendment point 4 declared the original unsatisfiable and the replacement was never written into this checklist): `grep -c 'docker build'` across `.github/workflows/` returns **0**, not 1, and always did — the literal lives in `package.json` and the workflow runs `npm run build:docker`. The predicate is therefore "exactly one workflow line matching `run: npm run build:docker`"
 - [ ] `.github/workflows/docker-image.yml`'s header comment is rewritten. It currently asserts the job does not push, that publishing stays manual, and that the job therefore cannot leak a registry credential — a security claim that stops being true when the `push` input lands
 - [ ] `start:server:docker` resolves to a tag `build:docker` produces
 - [ ] A push to `master` touching only `Dockerfile` publishes an image and does **not** publish to npm and does **not** deploy
 - [ ] A changesets release publishes to npm, publishes the image **once** (not twice), and deploys
-- [ ] A push to `master` touching only `deploy/**` deploys and does **not** publish to npm or to Docker Hub
-- [ ] With `DOCKER_ID_USER` / `DOCKER_ID_PASS` unset, the publish step skips and the workflow stays green
+- [ ] A push to `master` touching only `deploy/**` deploys and does **not** publish to npm or to GHCR (was "Docker Hub" — retired by the 2026-07-28 GHCR amendment)
+- [ ] Credential handling: **see the 2026-07-28 GHCR amendment's own Confirmation bullet** on `packages: write` and no remaining `DOCKER_ID_*` references. The Docker Hub credential-skip criterion this replaces is retired. Stated as a cross-reference rather than restated, so one check does not become two independently-tickable boxes that can disagree
 - [ ] A pull request touching `Dockerfile` builds and smoke-tests the image and does **not** push, with the secrets present
-- [ ] `docker manifest inspect mountainpass/addressr:<version>-<gitsha>` resolves after a docker-axis publish, and the bare `:<version>` digest is unchanged by that publish
+- [ ] `docker manifest inspect ghcr.io/mountain-pass/addressr:<version>-<gitsha>` resolves after a docker-axis publish, and the bare `:<version>` digest is unchanged by that publish
 
 ### Reassessment Criteria
 

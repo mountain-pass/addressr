@@ -12,9 +12,10 @@
 
 The ADR-040 stage-3 deploy/** axis adds a push-tier trigger for a full prod Terraform apply against live EB, OpenSearch and Cloudflare, at lower governance than the other two entry points and with no plan-approval gate or blue/green on that path.
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Three entry points, and this is the cheapest one
 
@@ -82,7 +83,7 @@ The operative control is not on this path at all: **keep `deploy/**` out of unre
 ## Related
 
 - Criteria: `RISK-POLICY.md`
-- Treatment ADRs: **ADR-040** (release-pipeline change-type action matrix) created the axis — note it is still `.proposed.md`, which is R026's subject; **ADR-001** (risk-gated release process) authorised it in its 2026-07-27 amendment, naming the entry point and its push-tier score.
+- Treatment ADRs: **ADR-040** (release-pipeline change-type action matrix) created the axis — note it is still `.proposed.md` — undischarged Confirmation items are P076's subject (R026 retired 2026-08-05); **ADR-001** (risk-gated release process) authorised it in its 2026-07-27 amendment, naming the entry point and its push-tier score.
 - Siblings, deliberately NOT consolidated (see P083): **R022** — unstaged `deploy/**` drift reaching this trigger, which is where the live exposure is; **R020** — the manual `deploy_only` recovery path, never exercised; **R003** — what an apply does to EB once running, which fires on all three entry points.
 - Personas affected: `docs/jtbd/addressr-maintainer/`
 

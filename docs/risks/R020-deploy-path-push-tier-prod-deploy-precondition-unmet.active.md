@@ -14,9 +14,10 @@
 
 ADR-001 Amendment 2026-07-27 authorises a `deploy/**` push-tier production Terraform apply while JTBD-400's "exercise the manual --deploy-only path first" precondition is unmet (zero dispatches); deferral lifted by user 2026-07-26 rather than satisfied.
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## What changed, measured rather than assumed
 
@@ -91,10 +92,6 @@ Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferr
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-27T01:07:31Z: fired in `.risk-reports/2026-07-27T01-07-31-commit.md` (reason: user-stated-precondition)
-
-## Change Log
-
-- 2026-07-27: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 
 ## Change Log
 

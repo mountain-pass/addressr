@@ -67,9 +67,5 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
-- 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
-
-## Change Log
-
 - 2026-07-18: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated and **retired**. Verified against source rather than against the ticket that proposed the retirement: `deploy/modules/opensearch/main.tf` has no `advanced_security_options` block and states the discharge explicitly. Scoring fields were filled in before retirement rather than left as sentinels, following the R005 precedent, so the entry records what the risk WAS worth as well as why it no longer applies. Curated as part of the P083 register drain.

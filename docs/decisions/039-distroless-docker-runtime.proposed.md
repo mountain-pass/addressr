@@ -13,6 +13,10 @@ reassessment-date: 2027-01-26
 # ADR 039: Distroless Runtime for the Published Docker Image
 
 > **Oversight note.** The substance of this decision — Distroless over Alpine, shell-loss accepted — was taken by the user on 2026-07-18 during the `/wr-architect:review-decisions` drain and is recorded on [P055](../problems/known-error/055-migrate-docker-image-alpine-to-distroless.md). This ADR was authored by an AFK iteration with no interactive access, so it carries `human-oversight: unconfirmed` for the drain to promote rather than self-certifying against that provenance. [ADR 040](040-release-pipeline-change-type-action-matrix.proposed.md) is in the same state and amends this ADR in three places; **ratify both in the same drain pass**, and do not let ADR 040 reach `accepted` first.
+>
+> **Ratified 2026-07-27 (recorded 2026-08-05).** The drain ran and promoted both in one pass: this ADR and ADR 040 each carry `human-oversight: confirmed` with the identical `oversight-date: 2026-07-27`. That identical date is the evidence of the single drain, is load-bearing for the retirement of register entries R024 and R026, and must not be re-issued. Neither has reached `accepted`, so the ordering condition holds. The paragraph above is retained as provenance for how the substance was taken, not as a description of the current marker state.
+>
+> **One gap the marker does not cover.** The 2026-07-28 GHCR amendment post-dates `oversight-date: 2026-07-27` by a day, so the confirmed marker does not strictly cover this ADR's current content. This ADR carries no independent record of that decision — its GHCR amendment defers to ADR 040 — so the provenance is [ADR 040](040-release-pipeline-change-type-action-matrix.proposed.md)'s 2026-07-28 amendment, which records the user pinning GHCR after a Docker registry auth-token scope probe. The substance is confirmed; only the marker date was not re-issued.
 
 ## Amendment 2026-07-26 (tini init) — the dropped-`dumb-init` reasoning was wrong
 

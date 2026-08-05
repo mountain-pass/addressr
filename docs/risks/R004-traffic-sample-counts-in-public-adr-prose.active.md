@@ -14,9 +14,10 @@
 
 CloudWatch SampleCount range (searches/hour on prod OpenSearch domain) written into ADR 029 amendment prose; RISK-POLICY lists traffic volumes as confidential in this public repo — no pre-commit control scrubs business metrics from committed prose.
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Merged surface
 
@@ -75,10 +76,6 @@ Until it exists, the operative control is the ratio convention plus the reviewer
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-06T14:42:39Z: fired in `.risk-reports/2026-07-06T14-42-39-commit.md` (reason: confidentiality-disclosure)
-
-## Change Log
-
-- 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 
 ## Change Log
 

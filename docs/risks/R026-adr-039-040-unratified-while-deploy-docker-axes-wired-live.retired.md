@@ -1,11 +1,11 @@
 # Risk R026: Adr 039 040 Unratified While Deploy Docker Axes Wired Live
 
-**Status**: Active (auto-scaffolded — pending review)
+**Status**: Retired (2026-08-05 — merged into R024)
 **Category**: <!-- pending review — auto-scaffolded from pipeline hint -->
 **Identified**: 2026-07-27
 **Owner**: pending review
-**Last reviewed**: 2026-07-27
-**Next review**: 2026-07-27
+**Last reviewed**: 2026-08-05
+**Next review**: n/a (retired)
 **Curation**: pending review (auto-scaffolded 2026-07-27)
 
 ## Description
@@ -18,7 +18,7 @@ ADR-039/ADR-040 remain proposed/unconfirmed while their deploy+docker axes are w
 
 ## Inherent Risk
 
-Impact × Likelihood *before* controls.
+Impact × Likelihood _before_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -31,7 +31,7 @@ Impact × Likelihood *before* controls.
 
 ## Residual Risk
 
-Impact × Likelihood *after* controls.
+Impact × Likelihood _after_ controls.
 
 - **Impact**: not estimated — no prior data
 - **Likelihood**: not estimated — no prior data
@@ -63,3 +63,9 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-27: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
+
+## Retirement (2026-08-05)
+
+Self-declared duplicate — its own description ends "ratification drain owes both ADRs plus amendments (R024)", citing the entry it duplicates. The same shape as R019 → R015 and R025 → R020.
+
+Both entries describe one condition: ADR-039 and ADR-040 unratified while their deploy and docker axes run live. Retired on the same evidence as [R024](R024-ratification-ordering-deviated-adrs-unratified-while-wired.retired.md) — both ADRs carry `human-oversight: confirmed`, `oversight-date: 2026-07-27`.

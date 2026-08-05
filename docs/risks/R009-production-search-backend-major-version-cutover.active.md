@@ -12,9 +12,10 @@
 
 Flipping the sole production search backend to a new major OpenSearch/Lucene version carries an irreducible Medium (8/25) residual — full-primary-concurrency is un-exercised by any pre-release control; recurs every engine cutover (v1→v2, v2→v3).
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## What "un-exercised at full primary concurrency" actually means
 

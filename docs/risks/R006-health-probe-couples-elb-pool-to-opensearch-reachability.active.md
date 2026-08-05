@@ -10,11 +10,12 @@
 
 ## Description
 
-/health now gates ELB pool membership + EB deploys on an OpenSearch ping; a sustained false-503 can pull healthy instances or degrade the revenue endpoint (residual 8/25, above appetite).
+/health now gates ELB pool membership + EB deploys on an OpenSearch ping; a sustained false-503 can pull healthy instances or degrade the revenue endpoint (the hint said residual 8/25; the curated residual is **10/25** — see the Change Log).
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## The coupling is deliberate, which is what makes it a risk rather than a bug
 
@@ -92,10 +93,6 @@ Neither is built. Recorded as the named treatment rather than scoring the entry 
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-10T01:11:10Z: fired in `.risk-reports/2026-07-10T01-11-10-commit.md` (reason: above-appetite-residual)
-
-## Change Log
-
-- 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 
 ## Change Log
 

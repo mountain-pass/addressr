@@ -14,9 +14,10 @@
 
 `release.yml` is now multi-job but `scripts/release-watch.sh` checks only the `release` job's conclusion and swallows `gh run watch`'s exit code, so a failed `docker-publish` is reported to the operator as a successful release (P004 false-negative class, new surface).
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Base rate — this stopped being hypothetical on 2026-08-03
 
@@ -92,10 +93,6 @@ The residual sits on two named gaps rather than on the mechanism:
 Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-27T01:35:49Z: fired in `.risk-reports/2026-07-27T01-35-49-commit.md` (reason: above-appetite-residual)
-
-## Change Log
-
-- 2026-07-27: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 
 ## Change Log
 

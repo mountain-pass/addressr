@@ -12,9 +12,10 @@
 
 EB environment redeploy on live RapidAPI app during any `terraform apply` carries Severe-impact / Unlikely-likelihood residual that recurs on every search-backend infra change (v2 re-attempt, Phase 2, locality/postcode indices)
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Trigger-independent, which is what separates this from its siblings
 

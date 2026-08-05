@@ -12,9 +12,10 @@
 
 Production OpenSearch major-version cutover flips live search serving; residual stays Medium (8/25) above appetite because the deploy-time /health auto-rollback catches connection failures but not subtle ranking/scoring regression at full production query distribution — a standing risk for every future search-backend cutover.
 
-> Auto-scaffolded by the Phase 2b drain (ADR-056) from a `wr-risk-scorer:pipeline`
-> RISK_REGISTER_HINT bullet. The description is the agent's prefill; scoring
-> fields below carry the ADR-026 ungrounded-output sentinel until human curation.
+> **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
+> `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
+> ADR-026 ungrounded-output sentinel until the curation recorded in the Change Log below;
+> they are grounded now. The original description was the agent's prefill.
 
 ## Base rate — this fired at the most recent cutover, and it is measurable
 
