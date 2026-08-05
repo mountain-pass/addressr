@@ -21,6 +21,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -64,6 +65,17 @@ const WORD_NUM = (t) => {
 // wearing the register's own house style, which is the opposite of the
 // legible-on-sight property the exemption is justified by.
 const unquoted = (text) => text.replace(/`[^`\n]*`/g, '');
+
+// A `## Canonical state` block DECLARES phrasings that must not appear as live
+// claims. It is a spec, not an assertion, so every content check has to skip it —
+// otherwise declaring a forbidden form trips the check that forbids it. Learned
+// the direct way: R020's declaration table tripped the apply-count check.
+const withoutCanonical = (text) => {
+  const start = text.indexOf('\n## Canonical state\n');
+  if (start === -1) return text;
+  const after = text.indexOf('\n## ', start + 1);
+  return text.slice(0, start) + (after === -1 ? '' : text.slice(after));
+};
 
 const scoreOf = (text, which) =>
   text.match(new RegExp(`^- \\*\\*${which} Score\\*\\*:\\s*(\\d+)`, 'm'))?.[1];
@@ -216,7 +228,7 @@ describe('docs/risks register invariants (R028)', () => {
       // Dated Change Log bullets are exempt, per the same rule the fence and the
       // apply-count check apply: a `- YYYY-MM-DD:` line records what was true then.
       // "Twelfth check landed" on 2026-08-05 stays true; a body-prose ordinal does not.
-      for (const line of unquoted(t).split('\n')) {
+      for (const line of unquoted(withoutCanonical(t)).split('\n')) {
         if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue;
         for (const m of line.matchAll(POSITIONAL)) offenders.push(`${f}: "${m[0]}"`);
       }
@@ -302,14 +314,58 @@ describe('docs/risks register invariants (R028)', () => {
     // commits, which returns empty → 0. As referrer it is then older than
     // everything; as target it fences nobody. This register retires entries by
     // `git mv` + `git add`, so that is the common case, not an edge one.
+    // NOT via git() — that helper trims the whole output, which strips the leading
+    // space of porcelain's first line ("​ M path"), so slice(3) then eats a
+    // character and the FIRST dirty file silently falls out of the set. It did,
+    // every run, from the moment this check landed: a dirty referrer scored as
+    // clean and was reported stale against a target it was being edited alongside.
+    // A check that fails open on its first input is the shape this file exists for.
+    const porcelain = execFileSync('git', ['status', '--porcelain', '--no-renames'], {
+      cwd: docsRoot,
+      encoding: 'utf8',
+    });
     const dirty = new Set(
-      git(['status', '--porcelain', '--no-renames'])
+      porcelain
         .split('\n')
-        .map((l) => l.slice(3).trim())
-        .filter(Boolean),
+        .filter((l) => l.length > 3)
+        .map((l) => l.slice(3).trim()),
     );
+    // A Change-Log-only edit is NOT a move. The fence's own remedy for a moved
+    // target is "write a verification bullet in the referrer" — which touches the
+    // referrer, which makes IT a target, which flags ITS referrers. That is not
+    // hypothetical: R008 took two verification bullets today, and each one made
+    // R009 flag, so R009 accumulated two bullets whose entire content was
+    // "R008's edit was a verification bullet and does not touch our distinction".
+    // A check whose remedy re-arms the check generates ritual, and ritual is what
+    // the register is trying to stop producing.
+    // ponytail: scoped to the DIRTY case — the sitting is where the cascade
+    // compounds. Committed history still dates from any commit; widen to a
+    // log-walk if a stale pair ever survives a sitting boundary.
+    const body = (t) => {
+      const i = t.indexOf('\n## Change Log\n');
+      return i === -1 ? t : t.slice(0, i);
+    };
+    const logOnly = (rel) => {
+      try {
+        const head = execFileSync('git', ['show', `HEAD:${rel}`], { cwd: docsRoot, encoding: 'utf8' });
+        return body(head) === body(readFileSync(path.join(docsRoot, rel), 'utf8'));
+      } catch {
+        return false; // new file, or unreadable — treat as a real move
+      }
+    };
+    // ASYMMETRIC AGAIN, and getting this backwards inverts the check. `logOnly`
+    // belongs to the TARGET axis only. On the REFERRER axis a Change-Log-only
+    // touch is precisely the prescribed remedy — write a verification bullet —
+    // so discounting it there leaves the referrer permanently unable to discharge
+    // a fence it has actually answered. A first cut applied it to both and
+    // produced exactly that: eleven pairs where the remedy had already been
+    // written and the check refused to see it.
     const touched = (rel) =>
       dirty.has(rel) ? Infinity : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
+    const movedAt = (rel) =>
+      dirty.has(rel) && !logOnly(rel)
+        ? Infinity
+        : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
 
     // ASYMMETRIC, and the asymmetry is the point — an earlier version cut both
     // axes the same way and lost a bounded, high-value half.
@@ -334,7 +390,7 @@ describe('docs/risks register invariants (R028)', () => {
     for (const target of targets) {
       const id = target.slice(0, 4);
       const targetRel = path.relative(docsRoot, path.join(RISKS, target));
-      const targetAt = touched(targetRel);
+      const targetAt = movedAt(targetRel);
       // A dirty target counts as changing NOW rather than being skipped, so a
       // clean referrer of a moving entry fails at COMMIT time — the verdict
       // that would otherwise first land in CI, on the commit arming the check.
@@ -417,7 +473,7 @@ describe('docs/risks register invariants (R028)', () => {
         const p = path.join(dir, e.name);
         if (e.isDirectory()) await walk(p);
         else if (e.name.endsWith('.md')) {
-          for (const line of unquoted(await readFile(p, 'utf8')).split('\n')) {
+          for (const line of unquoted(withoutCanonical(await readFile(p, 'utf8'))).split('\n')) {
             if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue; // dated bullet
             if (/\bas (?:at|of)\b/i.test(line)) continue; // explicitly scoped (case-insensitive: entries open sentences with "As at")
             for (const m of line.matchAll(COUNT)) {
@@ -432,6 +488,63 @@ describe('docs/risks register invariants (R028)', () => {
     };
     await walk(docs);
     assert.deepEqual(wrong, [], `push-tier apply counts disagree with R021:\n  ${wrong.join('\n  ')}`);
+  });
+
+  it('no entry contradicts a fact it declares canonical', async () => {
+    // The two intra-file moves R028 records as unreached, closed the only way
+    // they can be: the same fact restated in several sections, in DIFFERENT
+    // wordings, so fixing one leaves the rest. Literal matching cannot find those
+    // — the wordings differ — and a generic checker cannot know which sentences
+    // assert the same fact.
+    //
+    // So the entry declares it. A `## Canonical state` table names a fact, its
+    // current value, and the phrasings that would contradict it. That makes the
+    // enumeration a one-time authored artefact instead of a grep re-run from
+    // memory every batch — which is the gap R028 names as "nothing generates the
+    // enumeration". Same shape as the apply-count check, generalised so a new
+    // fact needs a table row rather than new code.
+    //
+    // Exemptions match the rest of the file: code spans are quotation, and a
+    // `- YYYY-MM-DD:` bullet records what was true then.
+    const offenders = [];
+    for (const f of [...(await entries(ACTIVE)), ...(await entries('.retired.md'))]) {
+      const text = await readFile(path.join(RISKS, f), 'utf8');
+      // Sliced, not regex-matched. A lazy `([\s\S]*?)` with a `(?=\n## |$)`
+      // lookahead under the `m` flag terminates at the FIRST line end, because `$`
+      // is per-line in multiline mode — it captured the empty string and the check
+      // silently passed over everything. Same shape as the apply-count regex's
+      // three iterations: a subtly wrong expression that fails open.
+      const start = text.indexOf('\n## Canonical state\n');
+      if (start === -1) continue;
+      const after = text.indexOf('\n## ', start + 1);
+      const section = text.slice(start, after === -1 ? undefined : after);
+
+      const phrasings = [];
+      for (const row of section.split('\n')) {
+        if (!row.startsWith('|') || /^\|[\s|-]*\|$/.test(row) || /\|\s*Fact\s*\|/.test(row)) continue;
+        const cells = row.split('|').map((c) => c.trim());
+        for (const p of (cells[3] ?? '').split(';').map((x) => x.trim()).filter(Boolean)) {
+          // Normalise the declared phrase the SAME way the line is normalised, or a
+          // phrasing containing a code span can never match: `unquoted()` strips the
+          // span from the line, leaving the two sides misaligned.
+          phrasings.push({ fact: cells[1], value: cells[2], phrase: unquoted(p).replace(/\s+/g, ' ').trim() });
+        }
+      }
+
+      // Search the entry with its own declaration table removed, so declaring a
+      // phrasing does not itself trip the check.
+      const body = withoutCanonical(text);
+      for (const line of body.split('\n')) {
+        if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue;
+        const bare = unquoted(line);
+        for (const { fact, value, phrase } of phrasings) {
+          if (phrase && bare.replace(/\s+/g, ' ').includes(phrase)) {
+            offenders.push(`${f}: "${phrase}" contradicts declared ${fact} = ${value}`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `entries contradicting their own canonical state:\n  ${offenders.join('\n  ')}`);
   });
 
   it('every active entry is listed in the Register and every retired one in Retired', async () => {

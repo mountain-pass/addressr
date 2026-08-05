@@ -2,7 +2,7 @@
 
 > **Filename retained deliberately.** The `<slug>` in this file's name is the dedupe key the ADR-056 Phase 2b drain matches on, so renaming it would let the same hazard re-scaffold as a new entry. The H1, the README row and the body carry the corrected scope; the filename is an identifier, not a description.
 
-**Status**: Active — RE-SCOPED 2026-08-04 (the lockfile half is discharged; the `.tf` half is live)
+**Status**: Active — RE-SCOPED 2026-08-04 (the lockfile half discharged by construction; the `.tf` half was the live instance, cleared 2026-08-05 at `50f1360` — the class stands)
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
@@ -30,6 +30,19 @@ P083's triage listed this entry as a retirement candidate on the grounds that `r
 But retiring on it would have been wrong, and the error is instructive. The entry's TITLE says lockfile; its actual hazard is **unstaged `deploy/**` drift arming a push-tier production apply**. The lockfile was merely the instance that triggered the hint. Excluding one filename discharges one instance and leaves the class untouched — and the class was live throughout that window: `deploy/main.tf` and `deploy/vars.tf` have been modified in the working tree continuously since 2026-08-02, held out of every commit until 2026-08-05, when they were landed deliberately against a plan verified empty, and NEITHER is excluded by that pathspec.
 
 So this is re-scoped rather than retired. The narrow reading would have closed the register's only entry covering a hazard that fired as a scoring input on more than a dozen commits in three days.
+
+## Canonical state
+
+Facts this entry asserts, with the phrasings that would contradict them. Declaring
+one here is what makes the sweep mechanical rather than remembered: the register's
+recurring failure is the same fact restated across several sections in different
+wordings, so correcting one leaves the others, and no generic checker can know
+which sentences mean the same thing. The invariants test asserts no contradicting
+phrasing appears in this entry outside a code span or a dated bullet.
+
+| Fact                           | Value                           | Contradicting phrasings                                                                                                            |
+| ------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/**` working-tree drift | cleared 2026-08-05 at `50f1360` | the `.tf` half is live; the class is live right now; are dirty in the working tree; still dirty; remains dirty; neither yet chosen |
 
 ## Inherent Risk
 

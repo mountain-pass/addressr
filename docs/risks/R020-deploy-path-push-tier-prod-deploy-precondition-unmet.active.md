@@ -42,6 +42,19 @@ This project has now twice armed a production capability on the strength of "we 
 
 R010's was closed by a deliberate drill that took one session. This one was cheaper still — a single dispatch with the box ticked, done 2026-08-05. Both cases share the shape worth keeping: the exercise was trivial and the deferral lasted months.
 
+## Canonical state
+
+Facts this entry asserts, with the phrasings that would contradict them. The
+invariants test enforces these; declaring one is what turns a sweep from
+remembered into mechanical. This entry needs it more than most — its two facts
+were restated across three sections each, and correcting one section left the
+others twice.
+
+| Fact                        | Value                                 | Contradicting phrasings                                                                                                     |
+| --------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `deploy_only` recovery path | exercised 2026-08-05, empty plan only | has never been exercised; remains at zero exercises; never been dispatched; is the one still unproven; recovery half is not |
+| push-tier axis applies      | four, one of them an empty plan       | fired on production three times; EVIDENCED, three production applies; three successful applies are evidence                 |
+
 ## Inherent Risk
 
 Impact × Likelihood _before_ controls.
