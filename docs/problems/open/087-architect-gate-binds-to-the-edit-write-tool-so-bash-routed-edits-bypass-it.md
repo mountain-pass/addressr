@@ -1,6 +1,6 @@
 # Problem 087: The architect gate binds to the Edit/Write tool, so Bash-routed edits bypass it entirely
 
-**Status**: Open
+**Status**: Open — upstream-blocked (@windyroad/wr-architect), [#412](https://github.com/windyroad/agent-plugins/issues/412)
 **Reported**: 2026-08-05
 **Priority**: 8 (Medium) — Impact: Minor (2) × Likelihood: Likely (4) — derived at capture from the description per Step 4a
 **Origin**: internal
@@ -51,10 +51,10 @@ The hook contract is expressed in terms of the **tool** that performs an action 
 
 ### Investigation Tasks
 
-- [ ] Confirm the hook registration against the installed plugin version (`architect-enforce-edit.sh` under `"matcher": "Edit|Write"`), and check whether a PostToolUse Bash matcher is available in the hook API at all.
+- [x] **Confirmed 2026-08-06 against the active plugin version, 0.20.2.** `architect-enforce-edit.sh` and `architect-oversight-marker-discipline.sh` are both `PreToolUse` `"matcher": "Edit|Write"`; `architect-refresh-hash.sh` and `architect-compendium-update-entry.sh` are both `PostToolUse` `"matcher": "Edit|Write"`. **The Bash channel is not missing — it is already wired on both sides**: `PreToolUse` `"matcher": "Bash"` runs `architect-readme-pairing-check.sh`, and `PostToolUse` `"matcher": "Agent|Bash|Skill"` runs `architect-slide-marker.sh`. So this is not an API limitation. The plugin subscribes to Bash for marker-sliding and for a README pairing check, and simply does not subscribe for governed-file detection, which makes the remediation materially cheaper than the ticket first assumed and gives the PostToolUse-diff option an existing hook to hang off.
 - [ ] Determine whether a PostToolUse-on-Bash diff check is viable: after any Bash call, diff the working tree and demand review if governed paths changed. Assess the cost of running a diff after every Bash invocation.
 - [ ] Assess the commit-time alternative — a pre-commit check that governed files in the staged set carry a fresh architect marker. Later than detection-time but path-complete, and it cannot be bypassed by choice of tool.
-- [ ] Report upstream to `windyroad/agent-plugins` as a separate issue from #410, per the reasoning above. Route the draft through `/wr-risk-scorer:assess-external-comms` first.
+- [x] **Reported upstream 2026-08-06** as [issue #412](https://github.com/windyroad/agent-plugins/issues/412), separate from #410 per the reasoning above, and carrying the already-wired-Bash-channel finding so the fix shape is concrete rather than open-ended. Both external-comms gates cleared: the leak review passed first time; the voice-tone review **failed** the first draft on eight em-dashes and the banned `Happy to` closer, and passed after a rewrite. **P080 reproduced en route**: `gh issue create --body-file` was denied twice despite valid PASS markers, because the gate sets `DRAFT=""` when no inline body is present, so its key can never match the reviewer's. Filing succeeded only with an inline `--body "$(cat <<'EOF' ... EOF)"` heredoc, which the gate extracts ahead of the `--body` patterns. That is a live reproduction to attach to [#408](https://github.com/windyroad/agent-plugins/issues/408).
 - [ ] Repair the stale architect content hashes for the 14 ADR bodies edited on 2026-08-05, or confirm the next Edit-tool touch self-heals them.
 
 ## Dependencies

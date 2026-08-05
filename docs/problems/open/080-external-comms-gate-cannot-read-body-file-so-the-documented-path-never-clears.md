@@ -27,6 +27,8 @@ The comment says the empty draft is "acceptable" — that is true for the LEAK-S
 
 Observed 2026-08-02 closing issue #365: the voice-tone gate cleared (its marker matched) while the risk gate did not, which made it look like a per-evaluator persistence bug. It is not — both gates hash the same empty draft; the two just failed at different points in the retry sequence.
 
+Reproduced again 2026-08-06 filing [#412](https://github.com/windyroad/agent-plugins/issues/412) for P087, on `wr-risk-scorer` 0.18.6, so the defect is live on the current version. Same misleading shape as the 2026-08-02 instance and in the same order: the first `--body-file` attempt was denied by the **voice-tone** gate while the risk gate cleared, and after the voice-tone review passed the second attempt was denied by the **risk** gate. Two different evaluators naming persistence, on a draft both had just returned PASS for. The cause was read directly out of `hooks/external-comms-gate.sh` this time rather than inferred: the extraction block's own comment states that when no inline body is present — it names `--body-file` explicitly — `DRAFT=""` is accepted, and `compute_external_comms_key` then hashes the empty string, which cannot match a marker keyed on the real draft. Confirming evidence: both evaluators' markers were present on disk under the **same** hash, so persistence was demonstrably fine and only the gate's own key differed. Filing succeeded on the quoted-heredoc form below.
+
 ## Workaround
 
 Use the **quoted-heredoc** form, `--body "$(cat <<'EOF' ... EOF)"`. This is the briefing's existing advice and it is correct. Confirmed working 2026-08-03 on both upstream filings (#407, #408) and on a `git commit -m` in the same session.
