@@ -97,7 +97,7 @@ variable "elastic_v4_engine_version" {
   type        = string
   nullable    = false
   default     = "OpenSearch_3.5"
-  description = "ADR 041: engine version for the generation-4 domain. Matches the engine version the v3 domain ran, so the ADR-041 cutover changed the analyzer only, never the engine. v3 was decommissioned 2026-08-03."
+  description = "ADR 041: engine version for the generation-4 domain. Matches the engine version the v3 domain ran, so the ADR-041 cutover changed the analyzer only, never the engine. v3 was decommissioned 2026-08-02."
 }
 
 variable "v4_searchable_documents_floor" {

@@ -100,7 +100,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   # equivalent-synonym analyzer) over IAM/SigV4.
   #
   # THERE IS NO ROLLBACK DOMAIN. The v3 standby (addressr5) was decommissioned
-  # 2026-08-03 over two applies: apply 1 (2026-08-02) severed the EB instance
+  # 2026-08-02 over two applies: apply 1 (2026-08-02) severed the EB instance
   # role's es:ESHttp* grant and dropped it from v3's access policy; apply 2
   # destroyed the domain, its alarm, the gha_v3_loader role and the elastic_v3_*
   # vars. Setting this value to a v3 endpoint does nothing - there is no domain.
@@ -668,27 +668,17 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
-# ADR 035 Phase 2: the v3 OpenSearch 3.5 domain — the PREVIOUS production search
-# domain since the v2 (addressr4, 2.19) cutover 2026-07-14 (Stage 5) and
-# decommission (step 6). Provisioned via the blue/green pattern that took v1→v2→v3.
-# m6g.large.search x 2 / 20 GB proven steady-state class (Lucene 10 may reduce the
-# footprint but we don't assume it — right-size later if measured, via
-# from-scratch/blue-green, never an ad-hoc resize under load per ADR 030).
-
-
-# ADR 029 Stage 0d: search-parity dashboard. Originally stood up against v1
-# before any v2 spend to prove the parity signal at real traffic volume; used
-# v2-vs-v3 during the 2.19→3.5 overlap to prove parity before cutover. Since the
-# v2 (addressr4) decommission 2026-07-14 (ADR 035 Phase 2 step 6) it was v3-only.
-# ADR 041 puts it back into parity duty for the analyzer-migration overlap:
-# v3 (addressr5) vs v4 (addressr6), same metrics, same purpose — prove parity
-# before cutover. Drops back to single-domain when v3 is decommissioned.
+# ADR 029 Stage 0d: search-parity dashboard. Built to compare two domains during
+# a migration overlap, and it has served three: v1-vs-v2, v2-vs-v3, and most
+# recently v3-vs-v4 for the ADR 041 analyzer migration. It is SINGLE-DOMAIN again
+# as of the v3 (addressr5) decommission 2026-08-02 — v4 is the only search domain.
+# The next migration puts it back into parity duty by adding the new generation to
+# local.search_parity_domains below; nothing else needs to change.
 data "aws_caller_identity" "current" {}
 
 locals {
-  # ADR 041: v3 AND v4 during the analyzer-migration overlap — this is what the
-  # parity dashboard was built for and what it did during the 2.19 to 3.5 overlap.
-  # Drops back to v4-only when v3 is decommissioned post-cutover.
+  # v4 only. The ADR 041 analyzer-migration overlap ended with the v3 decommission
+  # on 2026-08-02. Add the next generation's name here to re-enter parity duty.
   search_parity_domains = [var.elastic_v4_name]
   # One line per domain per stat. p95 may be sparse at low q/s — the Average
   # lines are the fallback comparison per the ADR 029 re-attempt amendment;
@@ -745,7 +735,7 @@ resource "aws_cloudwatch_dashboard" "search_parity" {
 # Escalation if the measured hot-set exceeds RAM is m6g.xlarge.search (16 GB),
 # decided on the number. Resize is safe (FGAC-off removed the P036 clobber).
 #
-# The overlap TERMINATED 2026-08-03, as this block required. v3 was decommissioned
+# The overlap TERMINATED 2026-08-02, as this block required. v3 was decommissioned
 # over two applies once the P079 retention gate was met - module.opensearch_v3,
 # eb_opensearch_v3, gha_v3_loader + policy + output, the v3 alarm and the
 # elastic_v3_* / v3_searchable_documents_floor vars are all gone. This is now the
