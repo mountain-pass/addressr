@@ -81,6 +81,15 @@ const releaseWatch = readFileSync(
   'utf8',
 );
 
+// push-and-watch.sh carried the SAME three defects and the same fifth one, and
+// until 2026-08-05 had no test coverage at all — the script that actually
+// mis-fired in anger was the unpinned one. Pinned here rather than in a new file
+// so the two watchers' invariants stay adjacent and cannot drift apart.
+const pushWatch = readFileSync(
+  fileURLToPath(new URL('../../../scripts/push-and-watch.sh', import.meta.url)),
+  'utf8',
+);
+
 const DEPLOY_GATE =
   "        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')";
 
@@ -261,6 +270,46 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
       'the failure-word allow-list must not come back: cancelled and timed_out passed through it',
     );
 
+    // 2b. The default-deny scan is only meaningful once the run has FINISHED.
+    //     `gh run watch`'s exit status is deliberately non-fatal, so a transient
+    //     that ends it early drops straight into the scan — which then reads
+    //     every still-pending job as a failure and reports a GREEN run as red.
+    //     Run 30973114823 (2026-08-05), P085's fifth defect. Pin the
+    //     precondition, never a weakening of the scan.
+    //
+    //     Defining the helper is not the property; CALLING it before the scan
+    //     is. This mirrors the note at the WATCH_STATUS assertion above —
+    //     capturing a status is not acting on it.
+    assert.match(
+      releaseWatch,
+      /--json status,conclusion/,
+      'release-watch.sh must poll the run status before scanning jobs',
+    );
+    assert.match(
+      releaseWatch,
+      /^wait_for_completion \|\| exit 1$/m,
+      'release-watch.sh must ACT on the completion check, not merely define it (a commented-out call must not satisfy this)',
+    );
+    const waitIndex = releaseWatch.search(/^wait_for_completion \|\| exit 1$/m);
+    const scanIndex = releaseWatch.indexOf('JOBS_TSV=');
+    assert.ok(
+      waitIndex > -1 && scanIndex > -1 && waitIndex < scanIndex,
+      'completion must be asserted BEFORE the job scan, not after it',
+    );
+
+    // 2c. The run's own conclusion is a verdict the scan never read. A run
+    //     concluding non-success while every job reads success/skipped passed
+    //     this script until 2026-08-05.
+    // Pin the EXIT, not just the condition — the same lesson this file already
+    // records for the empty-scan branch. A run concluding `failure` while every
+    // job reads success/skipped would otherwise report "completed successfully"
+    // with the whole suite green, which is the P085 false-green class exactly.
+    assert.match(
+      releaseWatch,
+      /RUN_CONCLUSION[\s\S]{0,300}?!= "success"[\s\S]{0,400}?exit 1/,
+      'release-watch.sh must EXIT non-zero on a non-success run conclusion, not merely test for it',
+    );
+
     // 3. An empty scan must not read as success. This check runs AFTER npm
     //    publish and the prod deploy, so silence is the worst possible pass.
     // Pin the EXIT, not just the message. Printing "UNKNOWN" and then falling
@@ -313,6 +362,70 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     assert.ok(
       adr001.includes('push-tier'),
       'ADR-001 must record the deploy/** axis as push-tier governance',
+    );
+  });
+});
+
+describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
+  it('scans jobs only after the run has completed, and acts on the check', () => {
+    assert.match(pushWatch, /--json status,conclusion/, 'must poll the run status');
+    assert.match(
+      pushWatch,
+      /^wait_for_completion \|\| exit 1$/m,
+      'must ACT on the completion check, not merely define it (a commented-out call must not satisfy this)',
+    );
+    const waitIndex = pushWatch.search(/^wait_for_completion \|\| exit 1$/m);
+    const scanIndex = pushWatch.indexOf('JOBS_TSV=');
+    assert.ok(
+      waitIndex > -1 && scanIndex > -1 && waitIndex < scanIndex,
+      'completion must be asserted BEFORE the job scan',
+    );
+  });
+
+  it('keeps the default-deny job scan and fails on a non-success run conclusion', () => {
+    // The default-deny predicate IS the P085 remediation. The 2026-08-05 false
+    // red was a missing precondition, not a scan that was too strict — so this
+    // asserts the scan has not been softened to tolerate `pending`.
+    assert.match(
+      pushWatch,
+      /\$1 == "success" \|\| \$1 == "skipped" \{ next \}/,
+      'must treat any non-success, non-skipped conclusion as failure',
+    );
+    assert.doesNotMatch(
+      pushWatch,
+      /\$1 == "pending" \{ next \}/,
+      'the scan must NOT be weakened to let pending jobs pass',
+    );
+    // Pin the EXIT, not just the condition — the same lesson this file already
+    // records for the empty-scan branch. A run concluding `failure` while every
+    // job reads success/skipped would otherwise report "completed successfully"
+    // with the whole suite green, which is the P085 false-green class exactly.
+    assert.match(
+      pushWatch,
+      /RUN_CONCLUSION[\s\S]{0,300}?!= "success"[\s\S]{0,400}?exit 1/,
+      'push-and-watch.sh must EXIT non-zero on a non-success run conclusion, not merely test for it',
+    );
+  });
+
+  it('treats an empty job scan as UNKNOWN and exits, never as success', () => {
+    // release-watch.sh has carried this pin; push-and-watch.sh never has, so
+    // R023's "empty scan is UNKNOWN, not success" control was re-armable here
+    // for free. Pin the exit, not the message.
+    assert.match(
+      pushWatch,
+      /Push pipeline status UNKNOWN[\s\S]{0,400}?exit 1/,
+      'the empty-job-list branch must exit non-zero, not just print',
+    );
+  });
+
+  it('does not fail a green run when gh run watch exits non-zero on a transient', () => {
+    // The other half of the fifth defect: a transient makes `gh run watch` exit
+    // non-zero AND drops into the scan. Fixing the scan alone still left the
+    // WATCH_STATUS branch reporting failure on a run that concluded success.
+    assert.match(
+      pushWatch,
+      /WATCH_STATUS:-0[\s\S]{0,400}?RUN_CONCLUSION" = "success"/,
+      'a non-zero watch status must defer to a success run conclusion, not override it',
     );
   });
 });

@@ -67,6 +67,41 @@ echo ""
 # is a real signal, but the job scan below is the authoritative check, so do not
 # exit on it alone.
 gh run watch "$RUN_ID" --exit-status && WATCH_STATUS=0 || WATCH_STATUS=$?
+# `gh run watch` is not guaranteed to have blocked to completion — a transient
+# can make it return early, and its exit status is deliberately non-fatal above.
+# The job scan below is default-deny, so it reads every unfinished job as a
+# failure: scanning an in-progress run reports a GREEN run as red. That happened
+# on run 30973114823 (2026-08-05), P085's fifth defect. Assert completion first.
+# Do NOT weaken the scan to tolerate `pending` — the default-deny IS the P085
+# remediation; the missing precondition is the bug.
+#
+# Also capture the run-level `conclusion`. It is a verdict the job scan has never
+# read, and it strictly dominates the watcher's exit code as a second opinion:
+# a run whose own conclusion is `failure` while every job reads success/skipped
+# passed this script until now.
+#
+# Deadline: 30m is ~10x the observed build time (~3 min, two matrix legs in parallel).
+wait_for_completion() {
+  local deadline=$(( SECONDS + 30 * 60 ))
+  local json
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    json=$(gh run view "$RUN_ID" --json status,conclusion 2>/dev/null) || json=""
+    RUN_STATUS=$(printf '%s' "$json" | jq -r '.status // ""' 2>/dev/null)
+    RUN_CONCLUSION=$(printf '%s' "$json" | jq -r '.conclusion // ""' 2>/dev/null)
+    [ "$RUN_STATUS" = "completed" ] && return 0
+    command sleep 10
+  done
+  echo ""
+  # Inconclusive, not failed: the scan learned nothing about the run. Same
+  # epistemic state as the empty-job-list branch below, so the same exit.
+  echo "Push pipeline status UNKNOWN — run did not reach 'completed' within 30m (last status: ${RUN_STATUS:-unknown})."
+  echo "Not scanning an unfinished run — check $RUN_URL"
+  return 1
+}
+RUN_STATUS=""
+RUN_CONCLUSION=""
+wait_for_completion || exit 1
+
 
 # ── 4. Verify EVERY job, job-agnostically (P085) ───────────────────────────
 # This block replaces three compounding defects that made the script report
@@ -118,13 +153,34 @@ if [ -n "$BAD_JOBS" ]; then
   exit 1
 fi
 
-if [ "${WATCH_STATUS:-0}" -ne 0 ]; then
+# The run's own conclusion is the verdict; check it before anything else. A run
+# concluding non-success while every job reads success/skipped passed until now.
+if [ -n "$RUN_CONCLUSION" ] && [ "$RUN_CONCLUSION" != "success" ]; then
   echo ""
   echo "Push pipeline failed — $RUN_URL"
-  echo "gh run watch exited ${WATCH_STATUS} but every job scanned as success or skipped."
-  echo "Treating the run as failed: the watcher saw something the job scan did not."
+  echo "Run conclusion is '$RUN_CONCLUSION' even though every job scanned as success or skipped."
   show_failure_guidance "$RUN_ID" "$RUN_URL"
   exit 1
+fi
+
+if [ "${WATCH_STATUS:-0}" -ne 0 ]; then
+  if [ "$RUN_CONCLUSION" = "success" ]; then
+    # P085 fifth defect: a transient that ends `gh run watch` early exits non-zero
+    # AND drops into the scan. The precondition fixed the scan half; this is the
+    # other half. The watcher's exit code was a proxy for the run's verdict and we
+    # now have the verdict itself, so a clean scan plus a `success` conclusion
+    # outranks it. Warn — do not fail a green run.
+    echo ""
+    echo "Note: gh run watch exited ${WATCH_STATUS} (likely a transient), but the run"
+    echo "concluded 'success' and every job scanned clean. Treating the run as green."
+  else
+    echo ""
+    echo "Push pipeline failed — $RUN_URL"
+    echo "gh run watch exited ${WATCH_STATUS} and the run conclusion is unavailable."
+    echo "Treating the run as failed: the watcher saw something the job scan did not."
+    show_failure_guidance "$RUN_ID" "$RUN_URL"
+    exit 1
+  fi
 fi
 
 # ── 5. Report results ──────────────────────────────────────────────────────
