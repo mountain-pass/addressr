@@ -12,9 +12,18 @@
 
 The `wr-architect` PreToolUse gate (`architect-enforce-edit.sh`) is registered in the plugin's `hooks.json` under `"matcher": "Edit|Write"`. It therefore fires on the **tool name**, not on the predicate _"a file under `docs/decisions/` is being modified"_. Any edit routed through Bash — a `node` script, a `perl -pi`, a `sed -i` — modifies governed files with no gate firing at all.
 
-Realised 2026-08-05 during P083 batch six. A node script invoked through Bash rewrote 141 link targets across 47 files, **including 14 ADR bodies** (`docs/decisions/` 013, 019, 024, 025, 026, 027, 028, 029, 030, 032, 034, 036, 038, 039). No gate fired at any point. The gate then blocked the very next `Edit`-tool call against `docs/decisions/029` — which is the only reason the asymmetry was noticed.
+Realised 2026-08-05 during P083 batch six. A node script invoked through Bash rewrote 141 link targets across 47 files, **including 14 ADR bodies**. **These are not R018's figures**, and the two are easy to conflate because they come from the same sitting: R018 counts **174 broken links across 50 files**, which is the defect being repaired; 141 across 47 is the subset the script actually rewrote in that pass. The number that matters to this ticket is neither of those, but the 14 ADR bodies among them (`docs/decisions/` 013, 019, 024, 025, 026, 027, 028, 029, 030, 032, 034, 036, 038, 039). No gate fired at any point. The gate then blocked the very next `Edit`-tool call against `docs/decisions/029` — which is the only reason the asymmetry was noticed.
 
-The same `Edit|Write` scoping applies on the **PostToolUse** side, so `architect-refresh-hash.sh` and `architect-compendium-update-entry.sh` also did not fire for those 141 edits. Stored architect content hashes are consequently stale against the 14 edited ADR bodies. That failure direction is a spurious **block** on the next Edit-tool touch rather than a silently-accepted change, so it fails safe — but it is drift, and it is drift the operator will experience as an unexplained gate refusal.
+The same `Edit|Write` scoping applies on the **PostToolUse** side, so `architect-refresh-hash.sh` and `architect-compendium-update-entry.sh` also did not fire for those 141 edits. Stated here as mechanism only, not as a second harm: per the correction below, the refresh hook staying silent after a Bash-routed edit is the safe direction rather than a defect.
+
+**CORRECTED 2026-08-06 after reading the mechanism.** An earlier version of this paragraph said stored content hashes were left stale against the 14 edited ADR bodies and needed repair. That was wrong on every clause, and the error was assuming a per-file hash store this plugin does not have:
+
+- **There are no per-ADR hashes.** `_substance_hash_path` (`hooks/lib/gate-helpers.sh`) computes **one** sha256 over every `docs/decisions/*.md` concatenated, README excluded, whitespace-normalised. One digest for the whole directory.
+- **It is session-scoped and ephemeral**, at `/tmp/architect-reviewed-<SESSION_ID>.hash`. Nothing durable, nothing in the repo, nothing that survives the session that wrote it. The 2026-08-05 state is unreachable by construction.
+- **Drift is self-healing.** The comparison lives in `hooks/lib/architect-gate.sh`, not in the enforce hook, which contains no hash logic at all. On mismatch it does `rm -f "$MARKER" "$HASH_FILE"` and denies with a re-delegate directive. A stale digest therefore cannot persist: the first Edit-tool touch that sees it clears it and buys exactly one review.
+- **The refresh hook not firing on Bash is the SAFE direction, not the defect.** Had `architect-refresh-hash.sh` fired after those Bash edits it would have re-blessed the digest and erased the only remaining signal that they happened. Its `Edit|Write` scoping is doing the right thing by accident.
+
+So the real consequence is narrower and worth stating precisely: **no architecture review was demanded before 141 edits landed, 14 of them in ADR bodies.** What the drift check buys afterwards is a whole-directory re-review triggered by the next Edit-tool touch, which is weaker than a pre-edit gate on the specific change but is not nothing. The gate firing on the very next `Edit` call against `docs/decisions/029` — read at the time as an asymmetry — was in part this check working.
 
 ### Why this is not an instance of P086
 
@@ -31,8 +40,8 @@ Both are instances of **a governance gate observing a proxy — the tool name, o
 ## Symptoms
 
 - A bulk edit run through Bash modifies files under `docs/decisions/` and no architecture review is demanded.
-- The next `Edit`-tool touch on a governed file may then block with a **decision-drift** message, because the stored content hash was never refreshed for the Bash-routed edits.
-- The decisions compendium (`docs/decisions/README.md`) silently misses entries for ADRs edited that way.
+- The next `Edit`-tool touch on a governed file blocks with a **decision-drift** message. Recorded here as a symptom because that is what the operator sees, but per the correction above it is the drift check working: it detects the Bash-routed edits after the fact and demands one whole-directory re-review.
+- ~~The decisions compendium (`docs/decisions/README.md`) silently misses entries for ADRs edited that way.~~ **Withdrawn 2026-08-06, checked and false.** 41 ADRs on disk, 41 compendium entries, all 14 present. A compendium entry carries title, status, oversight and Related-ADR IDs, not body content, so a link-target rewrite inside an ADR body cannot change one. The compendium hook not firing was a no-op for this batch.
 
 ## Workaround
 
@@ -42,7 +51,7 @@ Consult `wr-architect:agent` voluntarily before any bulk edit that will touch `d
 
 - **Who is affected**: the maintainer, and the integrity of the governance record. No consumer, runtime, build or publish path — ADR bodies govern the deploy and release machinery but do not themselves execute.
 - **Frequency**: every Bash-routed edit of a governed file. Bulk doc edits are a routine pattern in this repo.
-- **Severity**: Minor. Unreviewed changes to governed artefacts enter the record, plus stale hashes and compendium drift. Same impact basis R018 uses for this artefact class.
+- **Severity**: Minor. Unreviewed changes to governed artefacts enter the record. Same impact basis R018 uses for this artefact class. **Corrected 2026-08-06**: this bullet previously read "plus stale hashes and compendium drift", and both clauses are withdrawn by the correction in the Description. Recorded rather than silently deleted because the survival is the finding: the sentence was falsified by an edit two sections above it, in the same sitting, and the sweep that wrote that correction did not reach here. That is R028's claim-scoped-not-locality-scoped shape, realised in a problem ticket, where no invariant scans at all. Caught by the risk scorer on the commit, not by the sweep.
 - **Analytics**: none collected. The originating instance was found by noticing the gate fire _after_ 141 ungated edits, not by any signal.
 
 ## Root Cause Analysis
@@ -55,7 +64,7 @@ The hook contract is expressed in terms of the **tool** that performs an action 
 - [ ] Determine whether a PostToolUse-on-Bash diff check is viable: after any Bash call, diff the working tree and demand review if governed paths changed. Assess the cost of running a diff after every Bash invocation.
 - [ ] Assess the commit-time alternative — a pre-commit check that governed files in the staged set carry a fresh architect marker. Later than detection-time but path-complete, and it cannot be bypassed by choice of tool.
 - [x] **Reported upstream 2026-08-06** as [issue #412](https://github.com/windyroad/agent-plugins/issues/412), separate from #410 per the reasoning above, and carrying the already-wired-Bash-channel finding so the fix shape is concrete rather than open-ended. Both external-comms gates cleared: the leak review passed first time; the voice-tone review **failed** the first draft on eight em-dashes and the banned `Happy to` closer, and passed after a rewrite. **P080 reproduced en route**: `gh issue create --body-file` was denied twice despite valid PASS markers, because the gate sets `DRAFT=""` when no inline body is present, so its key can never match the reviewer's. Filing succeeded only with an inline `--body "$(cat <<'EOF' ... EOF)"` heredoc, which the gate extracts ahead of the `--body` patterns. That is a live reproduction to attach to [#408](https://github.com/windyroad/agent-plugins/issues/408).
-- [ ] Repair the stale architect content hashes for the 14 ADR bodies edited on 2026-08-05, or confirm the next Edit-tool touch self-heals them.
+- [x] **Closed 2026-08-06: there is nothing to repair, and the task rested on a wrong model of the mechanism.** No per-ADR hash store exists anywhere — not in ADR frontmatter, not under `.claude/`, not in the repo. The single directory digest is session-scoped in `/tmp`, and on mismatch the gate deletes the marker and the hash and asks for one re-review, so a stale value cannot persist. Live check: 39 architect markers on disk carry exactly **one** `.hash` file between them, belonging to a session that ended, and the current session has a marker with no hash at all, which takes `architect-gate.sh`'s documented `No hash = old marker format, allow` branch. The compendium was verified complete at 41 of 41. **Second half of the task answered as asked**: the next Edit-tool touch does self-heal, by clearing both files and demanding a fresh review.
 
 ## Dependencies
 
