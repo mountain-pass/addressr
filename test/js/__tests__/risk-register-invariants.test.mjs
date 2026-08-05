@@ -42,8 +42,15 @@ const entries = async (suffixes) =>
 const WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine',
   'ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen',
   'eighteen','nineteen','twenty','twenty-one','twenty-two','twenty-three'];
-const WORD_NUM = (t) =>
-  t === undefined ? NaN : /^\d+$/.test(t) ? Number(t) : WORDS.indexOf(t.toLowerCase());
+// Returns NaN for anything that is not a numeral. Deliberately NOT indexOf's -1:
+// a bare -1 is an integer, so an `isInteger` guard lets a non-numeral through, and
+// a word like "successful" captured by a loose \w+ then compares as a count.
+const WORD_NUM = (t) => {
+  if (t === undefined) return NaN;
+  if (/^\d+$/.test(t)) return Number(t);
+  const i = WORDS.indexOf(t.toLowerCase());
+  return i === -1 ? NaN : i;
+};
 
 // Markdown code spans and blockquotes are STRUCTURAL quotation markers, so an
 // entry can exhibit its own past errors verbatim without a check reading them as
@@ -200,7 +207,19 @@ describe('docs/risks register invariants (R028)', () => {
     const offenders = [];
     for (const f of [...(await entries(ACTIVE)), ...(await entries('.retired.md'))]) {
       const t = await readFile(path.join(RISKS, f), 'utf8');
-      for (const m of t.matchAll(/invariant\s+\d+/gi)) offenders.push(`${f}: "${m[0]}"`);
+      // Widened: the digit form was the narrow case. Ordinal WORDS and the noun
+      // "check" are the same defect — `The twelfth check` goes silently wrong the
+      // moment a check lands ahead of position twelve, which is the argument this
+      // rule is made from. Mechanising it beats disclosing the narrowing.
+      const ORD = 'first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth';
+      const POSITIONAL = new RegExp(`\\b(?:invariant|check)\\s+\\d+\\b|\\b(?:${ORD})\\s+(?:invariant|check)\\b`, 'gi');
+      // Dated Change Log bullets are exempt, per the same rule the fence and the
+      // apply-count check apply: a `- YYYY-MM-DD:` line records what was true then.
+      // "Twelfth check landed" on 2026-08-05 stays true; a body-prose ordinal does not.
+      for (const line of unquoted(t).split('\n')) {
+        if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue;
+        for (const m of line.matchAll(POSITIONAL)) offenders.push(`${f}: "${m[0]}"`);
+      }
     }
     assert.deepEqual(offenders, [], `refer to checks by name, not position:\n  ${offenders.join('\n  ')}`);
   });
@@ -345,6 +364,74 @@ describe('docs/risks register invariants (R028)', () => {
       }
     }
     assert.deepEqual(stale, [], `referring entries not revisited:\n  ${stale.join('\n  ')}`);
+  });
+
+  it('every stated push-tier apply count agrees with R021’s canonical cell', async () => {
+    // The canonical-cell shape, reused. The score-citation check works because
+    // one cell is authoritative and every prose mention is compared against it;
+    // this does the same for the fact that drifted hardest — the push-tier apply
+    // count, which by 2026-08-05 lived in three sections of R020, two of R021,
+    // and P083, one fact across three files. A claim scoped to the register is
+    // reachable by no reading radius, which is what a canonical cell is for.
+    //
+    // Dated bullets are exempt, per the rule R028 states: a `- YYYY-MM-DD:`
+    // Change Log entry records what was true on that date and keeps its
+    // contemporaneous figure. So is anything explicitly scoped with "as at" or
+    // "as of". A bare present-tense count is live and must agree.
+    const r021 = await readFile(
+      path.join(RISKS, (await entries(ACTIVE)).find((f) => f.startsWith('R021'))),
+      'utf8',
+    );
+    const canonical = WORD_NUM(r021.match(/^- \*\*Metrics\*\*:[^\n]*?\b(\w+), all successful/m)?.[1]);
+    assert.ok(Number.isInteger(canonical), 'R021 Monitoring Metrics must state the canonical apply count');
+
+    // The cardinal must BIND to the noun phrase, not merely sit adjacent to it.
+    // A first version required adjacency and "three successful production applies"
+    // backtracked to `\w+ = "successful"`, which WORD_NUM rejects, so the line was
+    // skipped — the check's name was wider than its configured value, which is the
+    // third consecutive newly-landed check here found narrower than its name.
+    // The capture REQUIRES a numeral. Two earlier versions used `\w+` and both
+    // failed the same way from opposite ends: adjacency-only skipped "three
+    // successful production applies" by binding to "successful", and allowing
+    // intervening words then bound to "is" in "Base rate is three successful
+    // production applies". A loose capture in a backtracking engine will find
+    // some word; it just will not be the one that means anything.
+    // Longest-first. Regex alternation is leftmost-first, and WORDS lists
+    // `twenty` before `twenty-one`, so "twenty-one applies" would take `twenty`,
+    // fail on the hyphen, backtrack and capture `one` — a false red, which is the
+    // failure mode that gets a check waived. Latent at an apply count of 4.
+    const NUM = ['\\d+', ...[...WORDS].sort((a, b) => b.length - a.length)].join('|');
+    // Numeral-required capture AND the noun-phrase anchor. Dropping the anchor
+    // made it match "two applies instead of one" in P077, which is about deferral
+    // arithmetic, not this axis. Third iteration on this expression: too narrow,
+    // then too loose, then anchored at both ends.
+    const COUNT = new RegExp(
+      `\\b(${NUM})(?:\\s+\\w+){0,2}\\s+(?:production|successful)\\s+applies\\b` +
+        `|\\bfired on production\\s+(${NUM})\\s+times\\b`,
+      'gi',
+    );
+    const docs = path.resolve(RISKS, '..');
+    const wrong = [];
+    const walk = async (dir) => {
+      for (const e of await readdir(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) await walk(p);
+        else if (e.name.endsWith('.md')) {
+          for (const line of unquoted(await readFile(p, 'utf8')).split('\n')) {
+            if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue; // dated bullet
+            if (/\bas (?:at|of)\b/i.test(line)) continue; // explicitly scoped (case-insensitive: entries open sentences with "As at")
+            for (const m of line.matchAll(COUNT)) {
+              const n = WORD_NUM(m[1] ?? m[2]);
+              if (Number.isInteger(n) && n !== canonical) {
+                wrong.push(`${path.relative(docs, p)}: states ${m[1] ?? m[2]}, canonical is ${canonical}`);
+              }
+            }
+          }
+        }
+      }
+    };
+    await walk(docs);
+    assert.deepEqual(wrong, [], `push-tier apply counts disagree with R021:\n  ${wrong.join('\n  ')}`);
   });
 
   it('every active entry is listed in the Register and every retired one in Retired', async () => {

@@ -14,7 +14,7 @@
 
 Unstaged working-tree changes under `deploy/**` can be swept into a commit, and once pushed, the ADR-040 stage-3 axis fires a whole-root-module production `terraform apply` at push-tier governance with no plan-approval gate.
 
-**Re-scoped 2026-08-04 from the lockfile instance to the `.tf` class.** The original prefill named `deploy/.terraform.lock.hcl` specifically. That instance is discharged by construction — `release.yml:235` excludes the provider lockfile from the deploy pathspec and announces the exclusion with a `::notice::`. The class is not: `deploy/main.tf` and `deploy/vars.tf` have been dirty in the working tree continuously since 2026-08-02 and neither is excluded. P083's triage had listed this entry as a retirement candidate on the strength of the lockfile exclusion, which is exactly the label-over-mechanism error that check caught.
+**Re-scoped 2026-08-04 from the lockfile instance to the `.tf` class.** The original prefill named `deploy/.terraform.lock.hcl` specifically. That instance is discharged by construction — `release.yml:235` excludes the provider lockfile from the deploy pathspec and announces the exclusion with a `::notice::`. The class is not. `deploy/main.tf` and `deploy/vars.tf` sat dirty in the working tree from 2026-08-02 until they were committed on 2026-08-05 (`50f1360`), and neither was ever excluded by the pathspec. That instance is cleared; the class is untouched, because the next unstaged `deploy/**` edit arms the axis in exactly the same way. P083's triage had listed this entry as a retirement candidate on the strength of the lockfile exclusion, which is exactly the label-over-mechanism error that check caught.
 
 The Description is restated here rather than left as the prefill because it is the field the ADR-059 judgement-fallback filter reads — a future scorer matching on the old text would match the discharged instance and miss the live class.
 
@@ -27,7 +27,7 @@ The Description is restated here rather than left as the prefill because it is t
 
 P083's triage listed this entry as a retirement candidate on the grounds that `release.yml` excludes the provider lockfile from the deploy-detection pathspec. That check holds — `release.yml:235` excludes `deploy/.terraform.lock.hcl` by name, with the reasoning written out, and announces the exclusion in the log so it can never be a silent no-deploy.
 
-But retiring on it would have been wrong, and the error is instructive. The entry's TITLE says lockfile; its actual hazard is **unstaged `deploy/**` drift arming a push-tier production apply**. The lockfile was merely the instance that triggered the hint. Excluding one filename discharges one instance and leaves the class untouched — and the class is live right now: `deploy/main.tf` and `deploy/vars.tf` have been modified in the working tree continuously since 2026-08-02, still dirty at the 2026-08-05 review, deliberately held out of every commit, and NEITHER is excluded by that pathspec.
+But retiring on it would have been wrong, and the error is instructive. The entry's TITLE says lockfile; its actual hazard is **unstaged `deploy/**` drift arming a push-tier production apply**. The lockfile was merely the instance that triggered the hint. Excluding one filename discharges one instance and leaves the class untouched — and the class was live throughout that window: `deploy/main.tf` and `deploy/vars.tf` have been modified in the working tree continuously since 2026-08-02, held out of every commit until 2026-08-05, when they were landed deliberately against a plan verified empty, and NEITHER is excluded by that pathspec.
 
 So this is re-scoped rather than retired. The narrow reading would have closed the register's only entry covering a hazard that fired as a scoring input on more than a dozen commits in three days.
 
@@ -62,12 +62,12 @@ Impact × Likelihood _after_ controls.
 
 **Mitigate**, and the honest statement is that the mitigation is incomplete.
 
-The structural half is done and pinned. The remaining exposure is that `deploy/main.tf` and `deploy/vars.tf` are dirty in the working tree with no mechanism preventing a broad stage from committing them — only the maintainer's habit. Two candidate treatments, neither yet chosen:
+The structural half is done and pinned. The exposure this entry was raised on — `deploy/main.tf` and `deploy/vars.tf` dirty in the working tree — is cleared as of 2026-08-05. What remains is the class: the next unstaged `deploy/**` edit with no mechanism preventing a broad stage from committing them — only the maintainer's habit. Two candidate treatments. **Option 1 was taken on 2026-08-05**; option 2 remains open:
 
-1. **Commit or discard the held edits.** They are comment-only tidying held back since 2026-08-02 to ride the next infra change that runs the plan protocol. The longer they sit, the longer the exposure runs for no benefit. This is the cheap one.
+1. **Commit or discard the held edits.** They were comment-only tidying held back since 2026-08-02, and this option was TAKEN on 2026-08-05 and committed at `50f1360` against a plan verified empty on four prior runs, rather than left to ride the next infra change. While they sat, the exposure ran for no benefit — which is the argument that carried, four days in. This was the cheap one, and it is now done — see the Change Log.
 2. **A pre-commit guard** that refuses a commit staging `deploy/**` unless the message carries an explicit infra marker. This makes the discipline mechanical rather than remembered.
 
-Recorded rather than decided, because the choice is the maintainer's and option 1 may simply happen at the next infra change.
+Option 1 is now done — the held edits were landed deliberately against a verified-empty plan rather than left to ride along with the next infra change, which was the outcome this sentence had been hedging toward. Option 2 remains the maintainer's call.
 
 ## Monitoring
 
@@ -92,4 +92,7 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated and **re-scoped** from the provider lockfile to the `deploy/**` working-tree class. P083's triage had listed this as a retirement candidate; checking the claim showed the lockfile exclusion is real but discharges only the instance, while the class remained live in the working tree throughout the session that proposed the retirement. Scored 15 inherent / 5 residual, at the appetite line, with the procedural control explicitly not credited. Curated as part of the P083 register drain.
 
+- 2026-08-05: **Live subject CLEARED.** `deploy/main.tf` and `deploy/vars.tf` were committed (`50f1360`) after four days dirty, and pushed. The class this entry prices is unchanged — the next unstaged `deploy/**` edit arms the axis exactly as before — but the standing instance that had fired this entry's re-assess trigger every session since 2026-08-02 is gone.
+  The exercise was deliberate and is worth recording as evidence rather than as an incident. The diff was comment text plus one `variable` `description` string, attributed line by line rather than asserted; `alarm_description` (a real CloudWatch API field on two resources in the same module) appears zero times in it. Four `terraform plan` runs against committed refs all reported "No changes", and the push's own deploy step then reported the same and applied nothing. Run `31002259787`: detection `success`, `Deploy new version` `success` with an empty plan, stabilise `success`, smoke `success` — no false red on this occasion.
+  Residual stays at **5**. It prices the class, not the instance, and the class is untouched: the axis still has no plan-approval gate, and the explicit-pathspec habit that kept these files out for four days remains a habit rather than a mechanism.
 - 2026-08-05: Cross-references to R020 corrected after the `deploy_only` path was exercised. Both falsifications sat in the same sentence-block — the parenthetical, and then the Siblings clause forty words later — which is the miss-a-sibling-in-the-same-file shape R028's Controls section describes, found by the risk scorer after a phrase grep reported the file clean.

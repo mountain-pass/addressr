@@ -25,7 +25,7 @@ The entry's premise was a conjunction: the `deploy/**` push-tier axis is **armed
 
 Both halves were checked against the GitHub Actions history rather than reasoned about, and they have diverged:
 
-**The axis half is discharged.** The push-tier trigger has now fired on production three times, all successful — the ADR-041 cutover (`33e6c04`), and the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`). Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all three. The mechanism works; it is no longer an untested path.
+**The axis half is discharged.** The push-tier trigger has now fired on production four times, all successful — the ADR-041 cutover (`33e6c04`), the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`), and `50f1360` clearing R022's held drift against an empty plan, which exercised the trigger rather than an apply. Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all four. The mechanism works; it is no longer an untested path.
 
 **The recovery half was not, until 2026-08-05.** Every `workflow_dispatch` run of `release.yml` was inspected on 2026-08-04. Four existed (2026-07-24 through 2026-07-28) and on every one the `Deploy new version`, `Wait for deployment to stabilize` and `Smoke test production` steps concluded **`skipped`** — no dispatch had ever carried `deploy_only=true`, nineteen months after the input was added and eight days after the deferral was lifted.
 
@@ -53,7 +53,7 @@ Impact × Likelihood _before_ controls.
 
 ## Controls
 
-- **The push-tier axis is proven — EVIDENCED, three production applies.** This is the control that changed the score. A working primary path means the recovery path is a fallback rather than the only route, which is what holds impact at 4 instead of 5.
+- **The push-tier axis is proven — EVIDENCED, four production applies: three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing.** This is the control that changed the score, so the qualifier is load-bearing rather than pedantic — an unqualified "four" credits the label where the configured value is three. A working primary path means the recovery path is a fallback rather than the only route, which is what holds impact at 4 instead of 5.
 - **`release-workflow-deploy-only.test.mjs` pins the gating expression — EVIDENCED.** It asserts the boolean is compared unquoted (`inputs.deploy_only == true`, never `== 'true'`), which is the trap that would make the gate silently never fire and take the run **green with the deploy skipped**. It also pins the three-gate occurrence count, the `deploy-paths` step id, its push-event scoping and its fail-closed missing-parent guard. Runs in CI on every push.
 - **NOT a control: the four pre-2026-08-05 dispatches.** They exercised the workflow, not the path. Every one skipped all three deploy steps, so they demonstrate that `deploy_only` was absent rather than that it works. Counting them would be exactly the error this entry exists to name. The two 2026-08-05 dispatches DID run the path and are credited in the Residual section — for the plumbing only, since both ran against an empty plan.
 
@@ -86,7 +86,7 @@ It was as cheap as predicted: a no-op apply against already-deployed code on a g
 
 Remaining, and smaller than what it replaced: the path has never carried a real infrastructure mutation, and the smoke gate flaked once in two runs.
 
-Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path and three successful applies are evidence for keeping it.
+Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path and four successful applies are evidence for keeping it — three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing.
 
 ## Monitoring
 
@@ -113,3 +113,4 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated, **re-scoped, and R025 merged in and retired**. Both halves of the premise were checked against the Actions history rather than assumed. The axis half is DISCHARGED: three successful production applies (`33e6c04`, `96e965c`, `2e557b9`), each verified by reading the `Deploy new version` step's conclusion. The recovery half is NOT: all four `workflow_dispatch` runs skipped every deploy step, so `deploy_only=true` has never been dispatched. Scored 12 inherent / 8 residual, above appetite, with a one-action treatment. Curated as part of the P083 register drain.
 - 2026-08-05: **Treatment PARTIALLY discharged; residual held at 8.** A first draft scored it 8 → 4 and stamped DISCHARGED. The risk scorer withdrew that: both exercises ran against an empty plan, so only the plumbing sub-hazard retired, and the smoke flake contributes to this entry's own Impact-4 recovery delay rather than being purely R015's. Scoring the label ("the path was exercised") over the configured value ("exercised twice on a no-op plan, with a 1-in-2 red on its own verification step") is the same move ADR-001 corrected when a `DeploymentPolicy` named "Rolling" was credited for a partial-fleet blast radius. Exercised twice (runs `30989443618`, `30991052224`) after a `terraform-plan.yml` baseline confirmed an empty change set. Recorded what the exercise did not prove (no real mutation carried) and what it found (a flaky production smoke gate, healthy service, degraded runner egress) rather than reporting a clean pass.
+- 2026-08-05: Cross-references to R021 and R022 re-verified after both moved. The ownership claims are untouched — R021 owns who can start an apply, R022 unreviewed apply content, this entry the recovery path. **The base rate was NOT untouched, and an earlier version of this bullet wrongly said it was**: this entry states the axis base rate in three places and all three moved 3 → 4, which is precisely the sentence-level drift the fence cannot see and the file-level flag was pointing at. Recorded per the review-fence check.
