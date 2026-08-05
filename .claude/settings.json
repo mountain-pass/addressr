@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "allow": ["*", "Bash", "Edit"]
+    "allow": ["Bash", "Edit"]
   },
   "hooks": {
     "UserPromptSubmit": [],
@@ -10,14 +10,15 @@
   },
   "enabledPlugins": {
     "wr-architect@windyroad": true,
-    "wr-risk-scorer@windyroad": true,
-    "wr-voice-tone@windyroad": true,
-    "wr-style-guide@windyroad": true,
-    "wr-jtbd@windyroad": true,
-    "wr-tdd@windyroad": true,
-    "wr-retrospective@windyroad": true,
     "wr-c4@windyroad": true,
-    "wr-wardley@windyroad": true,
-    "wr-itil@windyroad": true
+    "wr-connect@windyroad": true,
+    "wr-itil@windyroad": true,
+    "wr-jtbd@windyroad": true,
+    "wr-retrospective@windyroad": true,
+    "wr-risk-scorer@windyroad": true,
+    "wr-style-guide@windyroad": true,
+    "wr-tdd@windyroad": true,
+    "wr-voice-tone@windyroad": true,
+    "wr-wardley@windyroad": true
   }
 }

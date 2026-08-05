@@ -20,7 +20,6 @@
 //     "source.fixAll.eslint": true
 //   }
 // }
-
 {
   "eslint.alwaysShowStatus": true,
   "editor.codeActionsOnSave": {
@@ -32,5 +31,6 @@
   "cucumberautocomplete.skipDocStringsFormat": true,
   "cucumberautocomplete.syncfeatures": "src/test/**/*.feature",
   "linter_codeclimate.enabled": true,
-  "cSpell.words": ["ADDRESSR", "mountainpass", "waycharter", "waychaser"]
+  "cSpell.words": ["ADDRESSR", "mountainpass", "waycharter", "waychaser"],
+  "github-actions.workflows.pinned.workflows": [".github/workflows/release.yml"]
 }
