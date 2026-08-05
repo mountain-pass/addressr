@@ -45,6 +45,19 @@ const WORDS = ['zero','one','two','three','four','five','six','seven','eight','n
 const WORD_NUM = (t) =>
   t === undefined ? NaN : /^\d+$/.test(t) ? Number(t) : WORDS.indexOf(t.toLowerCase());
 
+// Markdown code spans and blockquotes are STRUCTURAL quotation markers, so an
+// entry can exhibit its own past errors verbatim without a check reading them as
+// live claims. Token-local by design: the marker sits at the claim, so using one
+// to dodge a check is legible on sight.
+// Code-span only. An earlier version also stripped blockquote lines as
+// "structural quotation", which is false for THIS corpus: blockquotes here are
+// admonitions carrying live prescriptive claims — R010's "Band basis. … Do not
+// silently correct Medium to Low", the "Filename retained deliberately" callout
+// on R004, R020 and R023. Exempting them would have let a claim escape by
+// wearing the register's own house style, which is the opposite of the
+// legible-on-sight property the exemption is justified by.
+const unquoted = (text) => text.replace(/`[^`\n]*`/g, '');
+
 const scoreOf = (text, which) =>
   text.match(new RegExp(`^- \\*\\*${which} Score\\*\\*:\\s*(\\d+)`, 'm'))?.[1];
 
@@ -190,6 +203,148 @@ describe('docs/risks register invariants (R028)', () => {
       for (const m of t.matchAll(/invariant\s+\d+/gi)) offenders.push(`${f}: "${m[0]}"`);
     }
     assert.deepEqual(offenders, [], `refer to checks by name, not position:\n  ${offenders.join('\n  ')}`);
+  });
+
+  it('every cited residual figure matches that entry’s own score cell', async () => {
+    // Arithmetic that happens to live in prose, one level out from the appetite
+    // partition. P083's above-appetite enumeration cited "R028 at 6" after R028
+    // moved to 8 — and the partition check stayed correctly green, because the
+    // digit it checks ("Eleven of the 16") was still right while the enumeration
+    // forty characters later was not. Same sentence, one checked clause and one
+    // unchecked one.
+    const scores = new Map();
+    for (const f of await entries(ACTIVE)) {
+      scores.set(f.slice(0, 4), scoreOf(await readFile(path.join(RISKS, f), 'utf8'), 'Residual'));
+    }
+
+    // "R028 at 6", "R003/R008/R009 at 8", "R004 and R027 at 9" — a run of IDs
+    // sharing one figure. The separator accepts a bare "and": without it the run
+    // stopped at the first ID and left the rest of the sentence unchecked.
+    const CITED = /\b(R\d{3}(?:(?:[/,]\s*|\s+and\s+)(?:and\s+)?R\d{3})*)\s+at\s+(\d+)\b/g;
+
+    // An entry must be able to exhibit its own past errors verbatim — that is what
+    // the audit trail is for, and paraphrasing evidence into assertion is the
+    // defect this whole file exists to catch. Markdown's code span and blockquote
+    // are STRUCTURAL quotation markers, not a heuristic, so exempting them keeps
+    // the check exact while letting the register quote a superseded citation.
+    // Backticking a live claim to dodge the check is legible on sight.
+
+    const docs = path.resolve(RISKS, '..');
+    const wrong = [];
+    const walk = async (dir) => {
+      for (const e of await readdir(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) await walk(p);
+        else if (e.name.endsWith('.md')) {
+          const text = unquoted(await readFile(p, 'utf8'));
+          for (const [, ids, figure] of text.matchAll(CITED)) {
+            for (const id of ids.match(/R\d{3}/g)) {
+              const actual = scores.get(id);
+              if (actual !== undefined && actual !== figure) {
+                wrong.push(`${path.relative(docs, p)}: cites ${id} at ${figure}, its cell says ${actual}`);
+              }
+            }
+          }
+        }
+      }
+    };
+    await walk(docs);
+    assert.deepEqual(wrong, [], `stale score citations:\n  ${wrong.join('\n  ')}`);
+  });
+
+  it('a referring document is not older than the entry it describes', async () => {
+    // Mechanises the scope rule R028 records: when an entry's state moves, every
+    // file carrying an inbound reference to it has to be revisited. Three sweeps
+    // in a row missed that by hand — by phrase, then intra-file, then by scoping
+    // the enumeration to the wrong changed-set.
+    //
+    // Commit order rather than the `Last reviewed` field, deliberately: that
+    // field cannot order two edits made on the same day, which is exactly the
+    // case that slipped (R015 was curated the same day R020 moved). Files with
+    // uncommitted edits count as current — you are editing them now — so a batch
+    // that touches an entry and its referrers together passes.
+    const { execFileSync } = await import('node:child_process');
+    const docsRoot = path.resolve(RISKS, '../..');
+    const git = (args) => execFileSync('git', args, { cwd: docsRoot, encoding: 'utf8' }).trim();
+    // Under a shallow clone every `git log -1 --format=%ct -- <path>` returns
+    // empty, touched() falls to 0, every comparison becomes 0 < 0, and the check
+    // passes having done no work. It shipped that way: both jobs running
+    // `test:js` used a bare actions/checkout (fetch-depth: 1). Fail loudly rather
+    // than green-and-inert — a check that cannot run must say so.
+    assert.equal(
+      git(['rev-parse', '--is-shallow-repository']),
+      'false',
+      'shallow clone: this check needs full history (set fetch-depth: 0 on the job running test:js)',
+    );
+
+    // --no-renames is load-bearing. A staged rename prints `R  old -> new`, and
+    // `slice(3)` then yields the literal "old -> new", matching neither path: the
+    // file drops out of `dirty` and falls to a `git log` on a path with no
+    // commits, which returns empty → 0. As referrer it is then older than
+    // everything; as target it fences nobody. This register retires entries by
+    // `git mv` + `git add`, so that is the common case, not an edge one.
+    const dirty = new Set(
+      git(['status', '--porcelain', '--no-renames'])
+        .split('\n')
+        .map((l) => l.slice(3).trim())
+        .filter(Boolean),
+    );
+    const touched = (rel) =>
+      dirty.has(rel) ? Infinity : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
+
+    // ASYMMETRIC, and the asymmetry is the point — an earlier version cut both
+    // axes the same way and lost a bounded, high-value half.
+    //
+    // TARGETS include retired entries. A retired file's timestamp is frozen, so it
+    // flags only active referrers untouched since that retirement — once each, then
+    // permanently green, because the file never moves again. Bounded by
+    // construction. And retirement is the single largest state change an entry
+    // undergoes, so an active entry still describing a retired one as live is
+    // exactly what this check is for; under an active-only scope the `git mv` that
+    // retires an entry is the one change that drops it from the fenced set.
+    //
+    // REFERRERS stay active-only. A retired referrer is permanently older than any
+    // entry that moves after it, so it re-flags forever, and its only available
+    // remedy is a null touch to bump a timestamp on a frozen record. A check whose
+    // remedy is a no-op does not get waived, it gets performed — which converts a
+    // real signal into a ritual. Retired records are kept honest by date-scoping
+    // their claims when written, not by perpetual maintenance.
+    const targets = [...(await entries(ACTIVE)), ...(await entries('.retired.md'))];
+    const active = await entries(ACTIVE);
+    const stale = [];
+    for (const target of targets) {
+      const id = target.slice(0, 4);
+      const targetRel = path.relative(docsRoot, path.join(RISKS, target));
+      const targetAt = touched(targetRel);
+      // A dirty target counts as changing NOW rather than being skipped, so a
+      // clean referrer of a moving entry fails at COMMIT time — the verdict
+      // that would otherwise first land in CI, on the commit arming the check.
+      // All four quadrants still behave: both dirty passes (Infinity < now is
+      // false), both clean is unchanged, and a dirty referrer of a clean
+      // target passes. This retires the `examined > 0` guard, which passed
+      // this batch on the nine entries the batch never touched.
+      const targetTime = targetAt === Infinity ? Date.now() / 1000 : targetAt;
+
+      for (const referrer of active) {
+        if (referrer === target) continue;
+        const rRel = path.relative(docsRoot, path.join(RISKS, referrer));
+        // Exemption is TOKEN-level, not region-level. A first version excluded
+        // the whole `## Change Log` section on the theory that such mentions are
+        // audit-trail prose — but it closed none of the ten stale pairs it was
+        // taken to close (all were body-resident) and it unsaw a real live claim:
+        // R022's only reference to R028 is a present-tense assertion about R028's
+        // Controls section, living in R022's Change Log. A heading sixty lines
+        // away says nothing about whether a given sentence asserts about now.
+        // A backtick sits AT the claim, which is what makes the code-span
+        // analogy hold — and it is why the register's own remedy for a fence
+        // failure (write a verification bullet) does not create blind spots.
+        if (!unquoted(await readFile(path.join(RISKS, referrer), 'utf8')).includes(id)) continue;
+        if (touched(rRel) < targetTime) {
+          stale.push(`${referrer} references ${id} but predates its last change`);
+        }
+      }
+    }
+    assert.deepEqual(stale, [], `referring entries not revisited:\n  ${stale.join('\n  ')}`);
   });
 
   it('every active entry is listed in the Register and every retired one in Retired', async () => {

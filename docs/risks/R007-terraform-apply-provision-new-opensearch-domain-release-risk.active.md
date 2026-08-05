@@ -79,7 +79,7 @@ Compounding it: `deploy/main.tf:772-774` records that ADR-031's read-shadow clas
 
 **Mitigate.** Provision the new domain via the release-tier `deploy_only` dispatch rather than folding it into a release-triggered apply.
 
-That decouples a long-running AWS create from the release pipeline, so a failed create fails a deliberate infrastructure action instead of aborting a release with partial state. It is not a new capability — `deploy_only` exists (ADR-001's 2026-07-26 amendment) and staged applies are demonstrated practice — which is what makes this treatment cheap. Its own unexercised-path caveat is [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md)'s subject: `deploy_only` has been dispatched zero times, so this treatment depends on R020's path being exercised first.
+That decouples a long-running AWS create from the release pipeline, so a failed create fails a deliberate infrastructure action instead of aborting a release with partial state. It is not a new capability — `deploy_only` exists (ADR-001's 2026-07-26 amendment) and staged applies are demonstrated practice — which is what makes this treatment cheap. Its own caveat is [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md)'s subject: `deploy_only` was first dispatched 2026-08-05, against an empty plan, so this treatment would be the first to put a real provision through it.
 
 ## Monitoring
 
@@ -91,7 +91,7 @@ That decouples a long-running AWS create from the release pipeline, so a failed 
 - Criteria: `RISK-POLICY.md`
 - Lifecycle siblings: [R008](R008-search-backend-cutover-release-residual-above-appetite.active.md) and [R009](R009-production-search-backend-major-version-cutover.active.md) (cutover), [R010](R010-warm-standby-decommission-removes-instant-rollback-net.active.md) (decommission). This entry is the provision phase.
 - Deliberately **not** merged with: [R003](R003-terraform-apply-touches-prod-eb-during-search-backend-changes.active.md) (what an apply does, trigger-independent), [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.active.md) (who can start an apply), [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.active.md) (unreviewed apply content).
-- Treatment depends on: [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) — the `deploy_only` path this treatment uses has never been dispatched.
+- Treatment depends on: [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) — the `deploy_only` path this treatment uses was first dispatched 2026-08-05 and has only ever run against a plan that changed nothing, so it is proven for plumbing and unproven for carrying an actual provision.
 - Treatment ADRs: [ADR 029](../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) (two-phase blue/green), [ADR 030](../decisions/030-opensearch-domain-terraform-module.accepted.md) (Terraform-managed domain module), [ADR 031](../decisions/031-read-shadow-for-search-backend-migrations.proposed.md) (read-shadow).
 - Personas affected: [addressr-maintainer](../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md)
 

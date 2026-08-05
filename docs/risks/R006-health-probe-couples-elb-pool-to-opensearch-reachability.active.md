@@ -34,6 +34,10 @@ Impact × Likelihood _before_ controls.
 - **Inherent Score**: 15
 - **Inherent Band**: High
 
+> **Contested 2026-08-05, and not yet resolved.** [R010](R010-warm-standby-decommission-removes-instant-rollback-net.active.md) credits the same `/health`-probing EB health-gated rolling deploy as a **control** — "bounds a bad flip to a degraded subset rather than a fleet-wide outage" — and sits at exactly 5, within appetite. This entry scores the same wire at 10 as an amplifier. **They are describing different directions and are both right about their own** — this entry's Description already concedes that a misconfigured cutover must fail that rolling deploy and trigger `RollbackLaunchOnFailure`, and says the risk is the other direction of the same wire. R010 has since demoted its bullet to listed-not-credited, since its named likelihood carriers never included it.
+
+> The residue that IS contested is narrow and belongs here: a flip to a **reachable-but-slow** backend, where the probe passes intermittently, the deploy completes rather than rolling back, and this entry's overload amplifier then engages. It is priced in the 10. Settling it is a measurement rather than an edit.
+
 ## Controls
 
 **All four are EVIDENCED in source, and this entry is unusual in the register for having no procedural control carrying any of the weight.**
@@ -98,3 +102,4 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-18: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated. **Corrected the scaffolded residual from 8/25 to 10/25, in both directions** by reading `src/es-health.js` and `deploy/main.tf` rather than adopting the hint: the ELB `UnhealthyThreshold` (~50s sustained) and the no-redeploy `HEALTH_ES_PROBE=off` kill switch were both uncounted. The first draft scored likelihood 1 and recorded Treatment Accept; the risk scorer challenged that during review, on the grounds that the 50-second window absorbs transients while two named paths do not self-clear, so likelihood 1 left no headroom and Accept rested on it. Both points held, and the entry now records Mitigate with two controls not yet built. Also corrected P083's triage, which had grouped this entry into the terraform-apply cluster on the word "OpenSearch" — the hazard is a runtime availability coupling and has nothing to do with an apply. Curated as part of the P083 register drain.
+- 2026-08-05: Cross-reference to R004 re-verified after R004 moved in the same sitting. This entry cites R004 as the other above-appetite entry from the drain; R004's residual cell is unchanged, so the citation holds. Recorded per the review-fence check, which flags a referring entry left behind when the entry it describes moves.

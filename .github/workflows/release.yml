@@ -71,6 +71,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # R028 review-fence invariant keys on `git log` commit order. Under
+          # the default fetch-depth: 1 every lookup returns empty, the check
+          # compares 0 < 0 for every pair and passes having done no work.
+          fetch-depth: 0
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
@@ -107,6 +112,11 @@ jobs:
           --health-retries 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          # R028 review-fence invariant keys on `git log` commit order. Under
+          # the default fetch-depth: 1 every lookup returns empty, the check
+          # compares 0 < 0 for every pair and passes having done no work.
+          fetch-depth: 0
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:

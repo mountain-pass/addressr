@@ -31,6 +31,11 @@ Impact × Likelihood _before_ controls.
 
 - **EB health-gated rolling deploy with `RollbackLaunchOnFailure`** — implemented in `deploy/main.tf`. Evidenced: exercised and timed at 6m36s push-to-EB-updated during the ADR-041 rollback drill (commits `43b3309`, `f295bd8`). Note the caveat recorded on R003: `BatchSize = 100 Percentage` cycles the whole fleet, so "Rolling" does not mean a partial-fleet blast radius.
 - **`Wait for deployment to stabilize` then `Smoke test production`** — `.github/workflows/release.yml:397,401`, gated on the same condition as the deploy, so a release cannot report green without production answering.
+
+  **Measured false-red rate: 1 in 2** (2026-08-05, runs `30989443618` and `30991052224`). In the failing run `/api-docs` took 9m18s and `/debug/shadow-config` then returned HTTP ≥400 after ~5 minutes of retries, while production probed directly was healthy on all three endpoints in under 300 ms and Terraform had applied nothing. The runner's egress was degraded; the service was not. Because this control runs **after** npm publish and the prod deploy, a false red reports a release that has in fact shipped as failed — and invites a rollback of a good release.
+
+  This is now the **third** face of one control on this entry: it fails **open** for the shadow-config class (below), it gates correctly in the modal case, and it fails **closed spuriously** at an observed 1-in-2. Fix tracked on P039 beside the parameterisation task: retry/backoff plus discriminating runner-egress failure from service failure, so a red smoke means the service is bad rather than the path to it.
+
 - **Changeset-gated releases** — a publish only happens when a changeset exists, so the coupling cannot fire on an arbitrary merge to master.
 - **P044 swallowed-publish assertion** — `release.yml:307` fails the run when a publish was expected but did not happen, making a broken publish→deploy loop loud rather than silently green.
 
@@ -64,7 +69,7 @@ The residual sits above appetite at 8 and the treatment is P039's smoke-paramete
 - Criteria: `RISK-POLICY.md`
 - Realised-as: [P039](../problems/known-error/039-decouple-saas-deployment-from-npm-publish.md) — Known Error; open for the smoke-parameterisation task, **not** for the coupling itself.
 - Absorbs: [R019](R019-release-ships-fresh-server-lifecycle-code-to-prod-via-coupled-publish.retired.md) (retired 2026-08-05)
-- Adjacent: [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) owns the _reverse_ direction — the publish-free `deploy_only` path, built for this problem and dispatched zero times. R015 owns the coupling; R020 owns the unexercised escape hatch. Deliberately kept separate.
+- Adjacent: [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) owns the _reverse_ direction — the publish-free `deploy_only` path, built for this problem and first dispatched 2026-08-05, against a plan that changed nothing. R015 owns the coupling; R020 owns the escape hatch, exercised 2026-08-05 against an empty plan only. Deliberately kept separate.
 - Treatment ADRs: [ADR 001 amendment 2026-07-26](../decisions/001-risk-gated-release-process.proposed.md) — publish-free `deploy_only` trigger; [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) — the change-type-to-action matrix that preserved `published ⇒ deploy` deliberately.
 - Personas affected: [addressr-maintainer](../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md)
 

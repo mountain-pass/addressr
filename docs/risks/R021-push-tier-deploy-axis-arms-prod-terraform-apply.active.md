@@ -4,7 +4,7 @@
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
-**Last reviewed**: 2026-08-04
+**Last reviewed**: 2026-08-05
 **Next review**: 2027-02-04
 **Curation**: human-curated 2026-08-04 (superseding the auto-scaffolded pending-review state of 2026-07-27)
 
@@ -84,7 +84,7 @@ The operative control is not on this path at all: **keep `deploy/**` out of unre
 
 - Criteria: `RISK-POLICY.md`
 - Treatment ADRs: **ADR-040** (release-pipeline change-type action matrix) created the axis — note it is still `.proposed.md` — undischarged Confirmation items are P076's subject (R026 retired 2026-08-05); **ADR-001** (risk-gated release process) authorised it in its 2026-07-27 amendment, naming the entry point and its push-tier score.
-- Siblings, deliberately NOT consolidated (see P083): **R022** — unstaged `deploy/**` drift reaching this trigger, which is where the live exposure is; **R020** — the manual `deploy_only` recovery path, never exercised; **R003** — what an apply does to EB once running, which fires on all three entry points.
+- Siblings, deliberately NOT consolidated (see P083): **R022** — unstaged `deploy/**` drift reaching this trigger, which is where the live exposure is; **R020** — the manual `deploy_only` recovery path, proven only against a no-op plan; **R003** — what an apply does to EB once running, which fires on all three entry points.
 - Personas affected: `docs/jtbd/addressr-maintainer/`
 
 ## Evidence Log
@@ -96,4 +96,5 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 ## Change Log
 
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
+- 2026-08-05: Siblings clause corrected — it described R020's `deploy_only` path as "never exercised" after that path was exercised on 2026-08-05. Found by the risk scorer, not by the sweep: this entry was an inbound reference living outside the entry that changed.
 - 2026-08-04: Curated. Scored 15 inherent / 5 residual, at the appetite line, Treatment **Accept**. The base rate is three successful production applies (`33e6c04`, `96e965c`, `2e557b9`), each verified by reading the `Deploy new version` step's conclusion — evidence the mechanism works, and a small sample against a Severe impact, so likelihood is not driven below Rare on it. 5 is the floor of the Impact-5 column, so the live question was Likelihood 1 versus 2; the risk scorer corrected a draft paragraph that defended "held at 5 rather than below", a choice the matrix does not offer. Rare rests on the closed accidental-arm routes, not on the base rate — three applies test the mechanism, not a bad plan, so against this hazard the sample is zero. Curated as part of the P083 register drain.

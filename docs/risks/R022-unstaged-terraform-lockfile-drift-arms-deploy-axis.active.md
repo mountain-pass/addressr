@@ -6,7 +6,7 @@
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
-**Last reviewed**: 2026-08-04
+**Last reviewed**: 2026-08-05
 **Next review**: 2027-02-04
 **Curation**: human-curated 2026-08-04 (superseding the auto-scaffolded pending-review state of 2026-07-27)
 
@@ -27,7 +27,7 @@ The Description is restated here rather than left as the prefill because it is t
 
 P083's triage listed this entry as a retirement candidate on the grounds that `release.yml` excludes the provider lockfile from the deploy-detection pathspec. That check holds — `release.yml:235` excludes `deploy/.terraform.lock.hcl` by name, with the reasoning written out, and announces the exclusion in the log so it can never be a silent no-deploy.
 
-But retiring on it would have been wrong, and the error is instructive. The entry's TITLE says lockfile; its actual hazard is **unstaged `deploy/**` drift arming a push-tier production apply**. The lockfile was merely the instance that triggered the hint. Excluding one filename discharges one instance and leaves the class untouched — and the class is live right now: `deploy/main.tf` and `deploy/vars.tf` have been modified in the working tree throughout the 2026-08-02 to 2026-08-04 session, deliberately held out of every commit, and NEITHER is excluded by that pathspec.
+But retiring on it would have been wrong, and the error is instructive. The entry's TITLE says lockfile; its actual hazard is **unstaged `deploy/**` drift arming a push-tier production apply**. The lockfile was merely the instance that triggered the hint. Excluding one filename discharges one instance and leaves the class untouched — and the class is live right now: `deploy/main.tf` and `deploy/vars.tf` have been modified in the working tree continuously since 2026-08-02, still dirty at the 2026-08-05 review, deliberately held out of every commit, and NEITHER is excluded by that pathspec.
 
 So this is re-scoped rather than retired. The narrow reading would have closed the register's only entry covering a hazard that fired as a scoring input on more than a dozen commits in three days.
 
@@ -78,7 +78,7 @@ Recorded rather than decided, because the choice is the maintainer's and option 
 
 - Criteria: `RISK-POLICY.md`
 - Treatment ADRs: **ADR-040** (release-pipeline change-type action matrix) — the decision that created the push-tier axis; **ADR-001** (risk-gated release process) — its 2026-07-26 amendment names the axis and its push-tier score.
-- Siblings: **R021** (the axis's governance level) and **R020** (the manual `deploy_only` recovery path, never exercised) — the same machinery from different angles. **Consolidation was considered and REJECTED 2026-08-04**: these are distinct hazards that happen to share the word "terraform apply". R021 is about _who can start_ an apply, R020 about a _recovery route_ that has never run, and this entry about _unreviewed content_ reaching one. Only R025 turned out to be a genuine duplicate, and it merged into R020. See P083.
+- Siblings: **R021** (the axis's governance level) and **R020** (the manual `deploy_only` recovery path, exercised 2026-08-05 against a no-op plan only) — the same machinery from different angles. **Consolidation was considered and REJECTED 2026-08-04**: these are distinct hazards that happen to share the word "terraform apply". R021 is about _who can start_ an apply, R020 about a _recovery route_ proven only against a no-op plan, and this entry about _unreviewed content_ reaching one. Only R025 turned out to be a genuine duplicate, and it merged into R020. See P083.
 - Personas affected: `docs/jtbd/addressr-maintainer/`
 
 ## Evidence Log
@@ -91,3 +91,5 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated and **re-scoped** from the provider lockfile to the `deploy/**` working-tree class. P083's triage had listed this as a retirement candidate; checking the claim showed the lockfile exclusion is real but discharges only the instance, while the class remained live in the working tree throughout the session that proposed the retirement. Scored 15 inherent / 5 residual, at the appetite line, with the procedural control explicitly not credited. Curated as part of the P083 register drain.
+
+- 2026-08-05: Cross-references to R020 corrected after the `deploy_only` path was exercised. Both falsifications sat in the same sentence-block — the parenthetical, and then the Siblings clause forty words later — which is the miss-a-sibling-in-the-same-file shape R028's Controls section describes, found by the risk scorer after a phrase grep reported the file clean.

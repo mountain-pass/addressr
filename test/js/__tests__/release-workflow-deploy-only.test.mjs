@@ -152,7 +152,22 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     assert.ok(raw.includes('if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then'));
     // fetch-depth: 0 is load-bearing, not incidental. A push can carry several
     // commits; at depth 2 a deploy/** change in any but the last is invisible.
-    assert.ok(raw.includes('          fetch-depth: 0'));
+    // Scoped to the `release` job on purpose. Two test-running jobs gained their
+    // own `fetch-depth: 0` on 2026-08-05 (the R028 review-fence check needs full
+    // history), so a bare substring check now passes on their occurrences and
+    // would stay green if this one were deleted — the pin R021 and R022 both
+    // credit as EVIDENCED, satisfied by two checkouts unrelated to the axis.
+    // Bounded to the NEXT top-level job, not to EOF: a job defined after
+    // `release:` that carried its own `fetch-depth: 0` would otherwise satisfy
+    // this assert on the release job's behalf — the same one-assert-many-
+    // occurrences defect this fix closes, moved from occurrences above to below.
+    const relStart = raw.indexOf('\n  release:');
+    const relEnd = raw.slice(relStart + 1).search(/\n {2}[a-z][\w-]*:\n/);
+    const releaseJob = raw.slice(relStart, relEnd === -1 ? undefined : relStart + 1 + relEnd);
+    assert.ok(
+      releaseJob.includes('          fetch-depth: 0'),
+      'the release job must fetch full history — deploy/** detection diffs against the push parent',
+    );
   });
 
   it('keeps the provider lockfile from arming a push-tier prod apply', () => {
