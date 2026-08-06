@@ -18,6 +18,8 @@ Surfaced while measuring the blast radius of P073, which was itself opened on th
 
 Investigation, remediation and the fix decision are tracked on **P074**, which carries the full measurement and the open tasks. This ticket is reopened so the closure record does not stand as evidence that the defect is resolved.
 
+**Root cause confirmed 2026-08-06 — and it is not the one recorded below.** The "Confirmed Root Cause" section of this ticket (per-field `bool_prefix` summation asymmetry) was real and _was_ fixed by ADR-025; symmetric `ssla` indexing is verified present in the production index and the `bool_prefix` clause now scores the street-level document higher, as designed. The live defect has a **different cause in the sibling `phrase_prefix` clause**: BM25 sums the idf of every term in a per-shard prefix-expansion set, so two documents matching the identical phrase score differently based on which unrelated rare terms happen to share the query's last-token prefix on their own shard. That is the mechanism recorded in **P078**. Full `_explain` evidence, the measured 62.7% violation rate, and the candidate-fix comparison are on **P074**; the mechanism is on **P078**. Read the Root Cause Analysis below as historical.
+
 **Status**: Known Error — REOPENED 2026-07-31
 **Reported**: 2026-04-15
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)

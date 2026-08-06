@@ -61,7 +61,13 @@ IDF is summed over the prefix-expansion set, and that set is constructed per-sha
 
 - [ ] Build a corpus-scale exact-vs-range relevance regression frame (fixture-scale Cucumber cannot reproduce corpus-relative IDF — the P074 lesson, confirmed again here)
 - [ ] Decide between the measured candidate fixes below and re-verify against that frame
-- [ ] Confirm whether the same mechanism contributes to the P073 and P074 surfaces
+- [x] Confirm whether the same mechanism contributes to the P073 and P074 surfaces — **affirmative for P074**, confirmed by `_explain` on `addressr6` 2026-08-06. P073 not re-examined.
+
+### P074 is this mechanism, not a different failure shape (2026-08-06)
+
+The Related section below records P074 as "a different failure shape: the street-level document is not in contention at all". **That is falsified.** On `8 WATERS RD, NEUTRAL BAY NSW 2089` the street-level document loses by 10.65 points, and the entire deficit is this clause: idf sum 44.77 against the sub-unit's 74.66, because the sub-unit's shard expands `2089*` to four terms (three at `n=1`, idf 14.63 each) where the street-level document's shard expands it to two. `bool_prefix` scores the street-level document **higher** on both fields, and `tf` also favours it. The eight sub-units tie at an identical score because they share a shard and therefore an expansion set — that tie is a consequence of the mechanism, not evidence of a separate one.
+
+This materially raises the stakes on the fix decision below: the same mechanism drives a **62.7%** violation rate on the street-level-first property (150-address sample, 2026-08-06), against the ~0.05% exact-vs-range rate recorded above. The `constant_score` candidate measures 2.0% on that property and `max_expansions: 1` measures 0.7%; full table in P074. The Workaround note above — "the measured rate does not warrant a query change" — was written against the exact-vs-range rate alone and no longer reflects the blast radius.
 
 ### Candidate fixes, measured
 
