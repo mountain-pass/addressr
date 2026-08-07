@@ -3,7 +3,7 @@
 **Status**: Open
 **Reported**: 2026-07-31
 **Origin**: internal — surfaced 2026-07-31 while measuring the blast radius of P073.
-**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Almost certain (4). Impact 4 per RISK-POLICY § Impact: paid and free RapidAPI consumers are handed the wrong "best match" on the revenue-generating `/addresses?q=` endpoint. This is the defect issue [#375](https://github.com/tompahoward/addressr/issues/375) reported and that ADR-025 was written to fix. Likelihood 4: measured at 50.3% of a 145-address sample against live production, and deterministic per address.
+**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Almost certain (4). Impact 4 per RISK-POLICY § Impact: paid and free RapidAPI consumers are handed the wrong "best match" on the revenue-generating `/addresses?q=` endpoint. This is the defect issue [#375](https://github.com/mountain-pass/addressr/issues/375) reported and that ADR-025 was written to fix. Likelihood 4: measured at 50.3% of a 145-address sample against live production, and deterministic per address.
 **Effort**: L — a scoring/ranking fix on the search-relevance path, needing a corpus-scale before/after measurement rather than a spot check, and very likely an ADR-025 amendment.
 **WSJF**: 4.0 — (16 × 1.0) / 4
 **JTBD**: JTBD-001
@@ -173,7 +173,15 @@ Blocking prerequisites, per the architecture reviews of 2026-08-06 and 2026-08-0
 11. **An ADR-028 amendment is required, and three pinned tests must be re-pointed rather than deleted.** `test/js/__tests__/address-service.test.mjs:250` (phrase_prefix fields include `sla_range_expanded`) and `:318` (no explicit `tie_breaker`) both break; `:286` (`bool_prefix` must NOT include `sla_range_expanded`) survives and must be retained. ADR-028 Reassessment Criterion 5 fires on the nose — it exists to stop the `tie_breaker=0.0` assertion being deleted, so deletion would make an accepted invariant unattributed.
 12. **Justify the `top_terms_N` rewrite method, not just the value 128.** `top_terms_N` retains per-term scoring at the expanded position — an IDF contribution summed over a **per-shard** expansion set. That is P078's mechanism, re-admitted inside the new clause at the final position. Anchoring dominates it empirically (0/150), but it is not gone. The ADR must say whether a blended-frequency or constant-score span rewrite is available and why this one was chosen. For the value itself, measure invariance across 64/128/512 on **both** properties and find the N at which it breaks, so 128 is justified as headroom between an observed floor and the 1024 ceiling rather than as a magic number.
 13. **Record the `maxClauseCount` availability consequence.** `indices.query.bool.max_clause_count` is cluster configuration; a self-hosted operator running a lowered value gets total request failure, not degraded ranking. This is a new failure class — `phrase_prefix` had an implicit expansion bound — and no gate currently covers it.
-14. **Probe the multi-word-synonym position hazard.** ADR-041 records an accepted pre-existing position collision on shapes like `NORTH EAST`. Anchoring adds an `end=N` window on top of phrase position semantics, so a position-inflating index synonym can push terms **beyond** the window and fail where an unanchored phrase would still match later in the field. Unanchored `phrase_prefix` had no such exposure. Unmeasured.
+14. **Correct GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375) at release, and not before — by rewriting P007's `## Fix Released` section, which is the only mechanical path to the posted prose.** The issue is CLOSED, carrying a 2026-04-16 comment headed "Fix deployed — verified in production". That comment verified one address; the property fails for 62.7%. The reporter has believed this resolved since April, and this ticket has known otherwise since 2026-07-31. Maintainer direction 2026-08-07 is to correct it when the fix ships rather than now.
+
+    `**Origin**: inbound-reported (#375)` was added to [P007](../known-error/007-search-scoring-exact-address-ranked-below-subunits.md) on 2026-08-07 so the ADR-024 lifecycle dispatch fires at the Known Error → Verifying transition rather than depending on memory. **That guarantees a comment fires; it does not guarantee the comment is the correction.** The dispatch generates reporter-facing prose from P007's `## Fix Released` section under a no-invention rule, and has no retract-a-prior-claim branch. Its default output is "the fix shipped, please verify", which landing beneath the April claim without retracting it reads as a second unverified claim from the same account — worse than the current silence. Neither the external-comms nor the voice-tone gate checks factual currency; the SKILL says so itself.
+
+    So the retraction has to be **in** that section. At the transition, **replace** P007's `## Fix Released` (do not append beneath the falsified one, already marked historical on 2026-08-07) with text carrying: the April claim was wrong and why (verified on an instance, not the property); the measured 62.7%; the actual mechanism (per-shard `phrase_prefix` expansion-IDF, not the `bool_prefix` summation the April comment named); and a working link to ADR-025, whose file is now `.accepted.md` — the April comment's link points at `.proposed.md` and is dead.
+
+    P007's `## Fix Strategy` section is also three revisions stale (it still recommends `dis_max`, which ADR-025 rejected) and Step 1 of the dispatch extracts it for known-error tickets. Mark it historical before the transition.
+
+15. **Probe the multi-word-synonym position hazard.** ADR-041 records an accepted pre-existing position collision on shapes like `NORTH EAST`. Anchoring adds an `end=N` window on top of phrase position semantics, so a position-inflating index synonym can push terms **beyond** the window and fail where an unanchored phrase would still match later in the field. Unanchored `phrase_prefix` had no such exposure. Unmeasured.
 
 ## Dependencies
 
@@ -184,6 +192,6 @@ Blocking prerequisites, per the architecture reviews of 2026-08-06 and 2026-08-0
 ## Related
 
 - **ADR-025** — the decision whose Decision Driver 1 this violates, and whose mechanism needs re-examining.
-- **P007** / issue [#375](https://github.com/tompahoward/addressr/issues/375) — the original customer report.
+- **P007** / issue [#375](https://github.com/mountain-pass/addressr/issues/375) — the original customer report.
 - **P073** — surfaced this; its blast-radius measurement is what exposed the 50%.
 - `docs/problems/026-baseline-v2.3.0.md` — the SSLA-14 baseline that passes while the property is half-violated.

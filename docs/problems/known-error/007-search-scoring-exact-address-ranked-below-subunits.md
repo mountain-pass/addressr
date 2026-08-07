@@ -22,13 +22,22 @@ Investigation, remediation and the fix decision are tracked on **P074**, which c
 
 **Status**: Known Error — REOPENED 2026-07-31
 **Reported**: 2026-04-15
+**Origin**: inbound-reported (#375)
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)
+
+> **The reporter has not been told this was reopened.** Issue [#375](https://github.com/mountain-pass/addressr/issues/375) is still CLOSED, carrying a comment headed "Fix deployed — verified in production" dated 2026-04-16. That comment is accurate about what it verified and wrong about what it generalised to: it checked a single address, and the property fails for 62.7% of sub-unit-bearing addresses. This ticket was reopened 2026-07-31 and nothing fired outbound.
+>
+> The reason is mechanical, and it is why the `**Origin**` field above was added on 2026-08-07: the ADR-024 lifecycle-update path keys on `**Origin**: inbound-reported (#NN)`, and this ticket did not carry it. Its sibling [P069](../verifying/069-partial-prefix-search-recall-longer-query-drops-results.md) did, and its reporter got both a mid-course correction and a close notice on issue #365. Same session, same maintainer, opposite outcome, decided entirely by a missing field.
+>
+> Maintainer direction 2026-08-07: **do not correct #375 until the fix actually ships.** The correction is gated on release and is recorded as a Fix Strategy prerequisite on [P074](../open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Note the gate names a condition, not a bound: P074 is Effort L with fifteen prerequisites outstanding, so "at release" is not a date.
+>
+> **Do not run `/wr-itil:update-upstream 007` before the fix ships.** Every automatic path is already closed — the only legal transition off `.known-error.md` is `verifying`, and that halts on an unreleased changeset — but a standalone invocation is not. This ticket carries no `## Upstream Lifecycle Updates` log, so the skill's Step 3 table resolves `(none) + .known-error.md` to a fresh Open → Known Error and would read an April transition as current, posting a progress comment to the reporter under a direction that says not to.
 
 ## Description
 
 When searching for a street address that also has sub-unit variants indexed (shops, flats, units), the exact street-level match scores lower than — and sorts below — every sub-unit variant at the same address.
 
-Reported in GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375).
+Reported in GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375).
 
 **Example:** Query `278 Ross River Rd Aitkenvale QLD 4814` returns:
 
@@ -141,14 +150,20 @@ Apply the same treatment to the `phrase_prefix` clause.
 
 Until the fix is released, API consumers who query a street-level address and want the non-sub-unit result can filter locally: ignore hits where the `sla` contains a `FLAT`/`UNIT`/`SHOP`/`LEVEL` token if the query did not contain one. This is client-side work but unblocks the wrong-"best-match" symptom.
 
-## Fix Released
+## Fix Released — FALSIFIED, historical only
 
-Deployed in v2.2.0 (released 2026-04-16, PR #451). Verified in production 2026-04-17.
+> **Do not source reporter-facing prose from this section.** It records a claim that is false, and the ADR-024 lifecycle dispatch reads `## Fix Released` verbatim under a no-invention rule. Left in place for provenance; the release-time transition must **replace** it with the retraction specified in [P074](../open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) Fix Strategy prerequisite 14, not append beneath it.
 
-Verification: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against the live RapidAPI endpoint — first result is now `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix). Confirmed by user.
+The claim below verified a single address. The property it was taken to establish fails for **62.7%** of sub-unit-bearing addresses, measured against production 2026-08-06. The mechanism it names was real and was fixed; the live defect has a different cause in the sibling `phrase_prefix` clause. See the reopening note at the top of this ticket.
+
+The original text, retained unaltered:
+
+> Deployed in v2.2.0 (released 2026-04-16, PR #451). Verified in production 2026-04-17.
+>
+> Verification: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against the live RapidAPI endpoint — first result is now `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix). Confirmed by user.
 
 ## Related
 
 - [ADR 025 — Symmetric `ssla` indexing for search ranking](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — records the fix decision. Note: the implementation chose **Option B (symmetric `ssla` indexing)** rather than the `dis_max` approach originally recommended in the Fix Strategy section above. See ADR 025 for the full options comparison and rationale (primary driver: engine-agnosticism per ADR 021).
-- GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375) — original report
-- GitHub issue [#365](https://github.com/tompahoward/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; consider investigating together)
+- GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375) — original report
+- GitHub issue [#365](https://github.com/mountain-pass/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; consider investigating together)

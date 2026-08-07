@@ -14,7 +14,7 @@ reassessment-date: 2026-07-16
 
 ## Context and Problem Statement
 
-Problem [P007](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md) (GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375)) documents a ranking bug visible to every RapidAPI consumer: when a user queries a street address that also has sub-unit variants indexed (SHOP, UNIT, FLAT, LEVEL), the exact street-level match ranks **below** every sub-unit at that address. Observed in production: `278 ROSS RIVER RD AITKENVALE QLD 4814` returns `SHOP 1/5/6, 278 ROSS RIVER RD` at the top with scores ~95, and the plain `278 ROSS RIVER RD` at the bottom with score ~70. The API consumer is handed the wrong "best match".
+Problem [P007](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md) (GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375)) documents a ranking bug visible to every RapidAPI consumer: when a user queries a street address that also has sub-unit variants indexed (SHOP, UNIT, FLAT, LEVEL), the exact street-level match ranks **below** every sub-unit at that address. Observed in production: `278 ROSS RIVER RD AITKENVALE QLD 4814` returns `SHOP 1/5/6, 278 ROSS RIVER RD` at the top with scores ~95, and the plain `278 ROSS RIVER RD` at the bottom with score ~70. The API consumer is handed the wrong "best match".
 
 **Root cause** (see P007 Root Cause Analysis): the query builder in `service/address-service.js:searchForAddress` uses OpenSearch `multi_match` with `type: 'bool_prefix'` over fields `['sla', 'ssla']`. `bool_prefix` combines per-field scores by **summation** (most-fields semantics). Indexing populates both `sla` and `ssla` for sub-unit documents (full form and unit-stripped short form respectively) but only `sla` for street-level documents. Sub-unit documents therefore receive roughly double the per-field score contribution.
 
@@ -137,5 +137,5 @@ Re-visit this decision if any of the following occur:
 - [Problem 074 — P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) — measured this ADR's Decision Driver 1 violated at 62.7% while every recorded gate stayed green
 - [ADR 009 — Cucumber BDD testing](009-cucumber-bdd-testing.accepted.md)
 - [Problem 007 — Search scoring exact address ranked below sub-units](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md)
-- GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375) — original report
-- GitHub issue [#365](https://github.com/tompahoward/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; worth revisiting after this fix ships)
+- GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375) — original report
+- GitHub issue [#365](https://github.com/mountain-pass/addressr/issues/365) — partial search returning incorrect results (likely same query-builder code path; worth revisiting after this fix ships)

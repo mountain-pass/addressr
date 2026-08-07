@@ -150,6 +150,6 @@ Not yet decided; recorded so the options are not re-derived.
 - **ADR-025** — the invariant violated; its Decision Driver 1 is the pinned criterion.
 - **ADR-041** — the change that caused it; its Consequences predicted exactly this risk and its Confirmation made the relevance gate mandatory pre-cutover, which is why this was caught.
 - **P069** — the defect ADR-041 fixes. Note P069 itself is **confirmed fixed** on the green domain: `55 Pyrmont Bri` and `55 Harris S` both go from 0 hits to finding the target.
-- **P007** / issue [#375](https://github.com/tompahoward/addressr/issues/375) — the original customer-reported form of this ranking bug.
+- **P007** / issue [#375](https://github.com/mountain-pass/addressr/issues/375) — the original customer-reported form of this ranking bug.
 - `docs/problems/026-baseline-v2.3.0.md` — the SSLA-14 baseline used as the gate.
 - `docs/OPENSEARCH-MIGRATION-PLAYBOOK.md` — gate discipline: nothing proceeds until the prior step verifies.
