@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-07 **P088 captured** — the assistant invented a defect in a correct search-result list and offered it as a finding with proposed scope attached; caught by maintainer correction. Also this session: P074's root cause confirmed as P078's per-shard expansion-IDF mechanism, an anchored-phrase candidate measured at 0/150 street-level-first violations against a 62.7% baseline, and P074 prerequisite 7 downgraded once the six "lost" recall probes proved to be an instrument artefact. (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-07 **P089 captured** — no file-level `max-lines` rule exists, so `service/address-service.js` has reached 1896 lines and `src/waycharter-server.js` 1032, with every other first-party source file at or below 393. Also this session: the `/addresses` query body was extracted to `src/build-search-body.js`, discharging P033 for that surface and unblocking the P074 ranking fix, and nine unicorn rules were scope-disabled in `address-service.js` because P084's debt otherwise blocks every commit touching that file. (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -29,6 +29,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                  | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
 | 4.0  | P065 | RFC-007 carries `stories: []` — no story map, no story, no reason     | Low (4)      | Open          | S      | 2026-07-26 | internal |
+| 4.0  | P089 | No file-length lint rule; two source files past 1000 lines            | Low (4)      | Open          | S      | 2026-08-07 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap       | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P007 | Exact street address ranked below sub-units (REOPENED)                | High (16)    | Known Error   | L      | 2026-04-12 | internal |
 | 4.0  | P074 | P007 street-level-first unfixed for ~50% of sub-unit addresses        | High (16)    | Open          | L      | 2026-07-31 | internal |

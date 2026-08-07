@@ -164,3 +164,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-08-07
 
 > Last reviewed: 2026-08-05 **P087 captured** — the architect gate binds to the Edit/Write tool, so any bulk edit routed through Bash modifies governed files with no review demanded; found after a node script rewrote 141 link targets across 14 ADR bodies ungated and the gate then blocked the very next Edit-tool call. Also this session: P083 batch six drained the risk register to 3 uncurated entries and repaired 174 broken doc links. (lightweight aside via /wr-itil:capture-problem)
+
+> Last reviewed: 2026-08-07 **P088 captured** — the assistant invented a defect in a correct search-result list and offered it as a finding with proposed scope attached; caught by maintainer correction. Also this session: P074's root cause confirmed as P078's per-shard expansion-IDF mechanism, an anchored-phrase candidate measured at 0/150 street-level-first violations against a 62.7% baseline, and P074 prerequisite 7 downgraded once the six "lost" recall probes proved to be an instrument artefact. (lightweight aside via /wr-itil:capture-problem)
