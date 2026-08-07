@@ -83,6 +83,10 @@ Both measured against the 5,991-pair frame and a 361-probe partial-prefix recall
 
 `max_expansions: 1` is rejected — it degrades the exact property ADR-041 exists to deliver for P069.
 
+### `49 CHURCH ST` recurs under an unrelated candidate (2026-08-07)
+
+Cross-reference, not a scope change. The anchored-phrase (`span_first`) candidate now leading on P074 also loses `49 CHURCH ST` — one of the four partial-prefix losses recorded above for `max_expansions: 1`. The two candidates are mechanically unrelated: one truncates the expansion set, the other anchors the phrase to position 0. A probe that fails under both is more likely an **instrument artefact** (the target may not be genuinely prefixed by that probe once analysed) than a candidate-specific regression. Worth resolving when the loss mechanism is diagnosed, since it bears on whether the four losses recorded in the table above are all real. Tracked on P074's Investigation Tasks.
+
 ### Recommendation
 
 Do **not** bundle a fix into the ADR-041 blue/green cutover. The `constant_score` change is a query-shape change that has had no soak, and landing it with the cutover would invalidate the 33.8-hour read-shadow soak that gates it. The finding pre-exists ADR-041 and improves blue as well as green, so it stands on its own merits as follow-up work rather than as a cutover blocker.

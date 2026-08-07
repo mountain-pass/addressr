@@ -85,24 +85,34 @@ The SSLA-14 baseline and the Cucumber P007 scenarios sample addresses where the 
 
 Small states do not exhibit it at all: measured **0%** violations on both OT (5,186 docs) and TAS (375,613 docs). The failure concentrates in dense metro addresses with many sub-units. Any local or fixture-scale reproduction will therefore show a false clean bill of health.
 
-### Candidate fixes, measured 2026-08-06
+### Candidate fixes, measured 2026-08-06 / 2026-08-07
 
 Measured against a fresh 150-address sample drawn randomly from sub-unit-bearing addresses nationally (harness rebuilt this session; the 2026-07-31 sample was not retained). Property under test is ADR-025 Decision Driver 1: querying the street-level address verbatim must return that street-level record at position 1. All candidates are **query-time only — no mapping change, no re-index.**
 
-| Candidate                          | street-level-first violations | partial-prefix recall (per P078's 361-probe ladder) |
-| ---------------------------------- | ----------------------------- | --------------------------------------------------- |
-| baseline (production today)        | 94/150 = **62.7%**            | reference                                           |
-| `max_expansions: 10`               | 87/150 = 58.0%                | not measured                                        |
-| `max_expansions: 5`                | 67/150 = 44.7%                | not measured                                        |
-| `max_expansions: 2`                | 28/150 = 18.7%                | not measured                                        |
-| `max_expansions: 1`                | 1/150 = **0.7%**              | **loses 4 of 361** — rejected by P078               |
-| `constant_score` wrapper, boost 20 | 3/150 = **2.0%**              | **neutral** — 128/361 vs baseline 129               |
+| Candidate                              | street-level-first violations | partial-prefix recall                              |
+| -------------------------------------- | ----------------------------- | -------------------------------------------------- |
+| baseline (production today)            | 94/150 = **62.7%**            | reference — 42/268 on the rebuilt ladder           |
+| `max_expansions: 10`                   | 87/150 = 58.0%                | not measured                                       |
+| `max_expansions: 5`                    | 67/150 = 44.7%                | not measured                                       |
+| `max_expansions: 2`                    | 28/150 = 18.7%                | not measured                                       |
+| `max_expansions: 1`                    | 1/150 = **0.7%**              | 27/268 — **lost 20, gained 5**; rejected           |
+| `constant_score` wrapper, boost 20     | 3/150 = **2.0%**              | 43/268 — lost 10, gained 11 (net +1)               |
+| `ssla` dropped from phrase clause only | 91/150 = 60.7%                | not measured — rejected, barely moves the property |
+| **anchored phrase (`span_first`)**     | **0/150 = 0.0%**              | **45/268 — lost 6, gained 9 (net +3)**             |
 
 The violation rate is monotone in the expansion count, which is itself confirmation of the mechanism.
 
-**`constant_score` (P078 Option B) dominates.** It comes within 2 addresses of `max_expansions: 1` on this property (3 vs 1 of 150) while being recall-neutral where `max_expansions: 1` breaks ADR-041's superset property on the exact mid-typing shape P069 / issue #365 was closed on. It also fixes 8 exact-vs-range flips against `max_expansions: 1`'s 3 (P078's frame), and improves blue as well as green. It removes the idf sum from the clause entirely rather than truncating it, so it addresses the mechanism rather than its symptom.
+**The anchored-phrase candidate supersedes `constant_score` as the leading option** (2026-08-07). It is the only candidate that wins on both properties, and it is also marginally faster: p90 81 ms against baseline 99 ms over 40 queries, because anchoring prunes candidates before scoring.
 
-Caveat on the recall column: the recall numbers are P078's, not re-measured here. A ladder built this session proved an invalid instrument — it counted results falling out of a fixed result window as recall losses, conflating re-ranking with matching. **Rebuilding a valid corpus-scale recall ladder is a prerequisite for landing any of these** (P078 investigation task 1, still open).
+The insight is the maintainer's: `match_phrase_prefix` matches the phrase **anywhere in the field** — only the final _term_ is a prefix. We want "field starts with what was typed". A sub-unit's `sla` and `ssla` both literally contain the parent's full address (`UNIT 1, ⟨8 WATERS RD…⟩`; `ssla` tokenises `1/8 …` to `1@0 8@1 WATERS@2 …`), so under "contains" semantics the discriminator is **absent from the text by construction** and no scoring change is well-posed. Under "starts with" it is present and exact, because both accepted notations put the sub-unit marker at the head of the string. Verified: `8 WATERS RD…` → parent first; `UNIT 1, 8 WATERS RD…` → that unit; `1/8 WATERS RD…` → that unit.
+
+That also explains why the earlier `ssla`-only probe failed. The containment is not specific to `ssla`; it holds for every field and notation, so there is no field to remove.
+
+Implementation notes carried from the measurement:
+
+- The final position must stay a prefix (`span_multi`), or the anchor drops 20 recall probes — the same damage `max_expansions: 1` does — because `span_term` is exact and `14 FALK` stops reaching `FALKLAND`.
+- `span_multi` enumerates matching terms and dies on the 1024-clause cap for short or synonym-expanded finals: `86 NORTH` expands the synonym `N`, and `N*` fails **all shards**. A bounded rewrite (`top_terms_128`) is required. Unlike `max_expansions` this cannot decide parent-vs-child — anchoring does that structurally — so the ADR-025 Driver 4 argument differs, but it still has to be made and tested.
+- `span_first` is Lucene-specific. The objection is **ADR-025 Decision Driver 3**, not ADR-021 (which constrains no query DSL) — see Fix Strategy prerequisite 8. A portable equivalent exists and is stronger than it first appears: an **index-time start-of-field sentinel token** (prepend a marker via char_filter, then query a plain `match_phrase_prefix` for `SENTINEL <query>`) gives identical semantics with zero engine-specific DSL, and works anywhere a literal token can be phrase-matched. It costs a re-index, which is exactly the trade ADR-025 already adjudicated — and it chose the index-shape side. Record it as a Considered Option and as the migration path if not adopted outright. A `sla.raw` keyword-prefix clause is **not** viable: it is exact-string (so `8 waters rd neutral bay` fails), cannot carry the `ssla` slash normalisation, and `sla_range_expanded` has no `.raw` subfield at all.
 
 ### Investigation Tasks
 
@@ -111,16 +121,30 @@ Caveat on the recall column: the recall numbers are P078's, not re-measured here
 - [x] Confirm it is not a regression from ADR-041 — ADR-041 measures 71/145 = 49.0% on the identical sample, marginally better.
 - [x] Check whether smaller corpora reproduce it — they do not; OT and TAS both 0%.
 - [x] Determine why the street-level document is not competitive, using `_explain` on a violating pair — done 2026-08-06; it is P078's per-shard expansion-IDF mechanism, and the street-level document _is_ in contention.
-- [x] Decide the fix — `constant_score` wrapper on the `phrase_prefix` clause (P078 Option B), on the measurements above. Still requires a new ADR plus an ADR-025 amendment before it lands (see Fix Strategy).
-- [ ] Build the corpus-scale partial-prefix recall ladder that gates the change (shared with P078 task 1) and re-verify `constant_score` against it.
+- [x] Decide the fix — superseded 2026-08-07: the anchored-phrase (`span_first`) candidate replaces `constant_score`. Still requires a new ADR plus an ADR-025 amendment before it lands (see Fix Strategy).
+- [x] Build the corpus-scale partial-prefix recall ladder that gates the change (shared with P078 task 1) — **partially discharged 2026-08-07**. A valid 268-probe ladder exists and every candidate is measured against it. Two gaps remain: the harness is not committed (next task), and the probe frame must cut **mid-word** in the 2nd/3rd token to be on-mechanism — a fraction-of-length frame lands on word boundaries and measures 0 losses over 360 probes, a vacuous null. The ladder carries a sensitivity gate asserting it reproduces P078's four recorded `max_expansions: 1` losses; it aborts otherwise.
+- [ ] **Explain the six probes the anchored candidate still loses** — `107 WOL`, `68 WATT`, `72 WATT`, `63 TOW`, `65 TOW`, `79 GLA`, plus `49 CHURCH ST` (one of P078's four known `max_expansions: 1` losses, which recurs here under a mechanically unrelated candidate). Untested hypotheses: (a) the `top_terms_128` bounded rewrite on the final `span_multi` position drops the term that would have matched; (b) the `end=N` anchor window is too tight where a multi-word index synonym inflates positions, pushing terms past the window (the ADR-041 `NORTH EAST` hazard, prerequisite 14); (c) the targets are not genuinely prefixed by the probe once analysed. A fourth hypothesis — that exact `span_term` on non-final positions breaks the anchor where `match_phrase_prefix` tolerated a typo — is **falsified**: `match_phrase_prefix` is already exact for non-final terms (`fuzziness` is commented out at `service/address-service.js:978`), so nothing changed there. **Blocking** — see Fix Strategy prerequisite 7.
+- [ ] Commit the measurement harness (`ladder.py`, `anchored.py`, currently session-scratchpad only, which is not persistent) so the gate is reproducible. The 2026-07-31 sample was already lost this way once — see the note at the top of the candidate-fix section.
 - [ ] Widen the sample and characterise which addresses violate (sub-unit count? locality density? presence of a range?).
 - [ ] Replace the instance-based P007 gates with a **property** assertion: for a street address with sub-units, the street-level record ranks above all of them.
 
 ## Fix Strategy
 
-Wrap the `phrase_prefix` clause in `service/address-service.js:967-984` in a `constant_score` filter, removing its idf contribution so expansion-set composition can no longer influence the score. Intra-clause ranking falls to the `bool_prefix` clause, which is unaffected by the mechanism.
+**Superseded 2026-08-07.** The prior strategy — wrap the `phrase_prefix` clause in a `constant_score` filter — is replaced by the anchored-phrase candidate, which measures 0.0% against `constant_score`'s 2.0% and is net-positive rather than net-neutral on recall.
 
-Blocking prerequisites, per the architecture review of 2026-08-06:
+Replace the `phrase_prefix` clause in `service/address-service.js:967-984` with an anchored phrase clause per field over `sla` and `ssla`, so the clause means "this field **starts with** what was typed" rather than "contains it":
+
+```
+span_first(
+  span_near([ <span_or of span_term per analyzed position>…,
+              <span_or of span_multi/prefix, rewrite top_terms_128, for the FINAL position> ],
+            slop=0, in_order=true),
+  end=<number of analyzed positions>)
+```
+
+The `bool_prefix` clause is left byte-identical, so recall continues to come from it and ADR-025's summation symmetry is untouched. `ssla` is retained in full — it delivers notation tolerance (`14/2 Parkes` and `Unit 14, 2 Parkes` both work), which is an independent wanted feature and not the cause of this defect.
+
+Blocking prerequisites, per the architecture reviews of 2026-08-06 and 2026-08-07:
 
 1. **A new ADR is required.** This is the fourth query-shape change on the revenue endpoint in the ADR-025 → ADR-027 → ADR-028 → ADR-041 lineage; precedent settles the grain. It must argue past ADR-025 Decision Driver 4 ("no tuning parameters"), which is a real obstacle for a `boost: 20` magic number.
 2. **ADR-025 needs an amendment regardless.** Its recorded root cause is incomplete, its Consequences claim resolution of P007 that is falsified at 62.7%, and its Confirmation pins instances rather than the property. Add a reassessment criterion: _the Driver 1 property is measured at corpus scale and found violated, whether or not a user reports it._
@@ -128,6 +152,14 @@ Blocking prerequisites, per the architecture review of 2026-08-06:
 4. **Re-run ADR-028's five endpoint-recall scenarios**; `sla_range_expanded` lives in this clause only, so range-endpoint recall runs entirely through the clause being modified.
 5. **Sequence against P069**, which is in Verification Pending on this same clause with an open "re-check relevance scoring" task. Do not perturb the clause while its verification property is being altered underneath it.
 6. Correct the stale `ADR 026` citations at `service/address-service.js:969-975` (ADR-026 was superseded by ADR-028).
+7. **Explain the six-probe recall loss before the anchored candidate lands.** A net-positive aggregate over a subpopulation that is still silently broken is precisely the failure this ticket exists to record — see "Why this was invisible" above: the gates pinned _instances_ and passed while half the corpus was wrong. Shipping an unexplained loss on the mid-typing path would repeat that against the property P069 / issue #365 was closed on. See the Investigation Task naming the seven probes.
+8. **Argue past ADR-025 Decision Driver 3, not ADR-021.** ADR-021 imposes no constraint on query DSL and none of its criteria fire. The binding conflict is ADR-025's own Decision Outcome, which chose symmetric indexing "driven **primarily** by engine-agnosticism … encoding the ranking fix in data rather than in Lucene-specific DSL", and rejected `dis_max` (Option A) on exactly that ground. This proposal adopts a mechanism **more** Lucene-specific than the one ADR-025 rejected for being Lucene-specific. Arguable, but it must be argued explicitly or the ADR reads as reversing ADR-025 without noticing.
+9. **Carry `sla_range_expanded` into the anchored clause as a third span field.** Correcting an earlier reading here: a query for `105 GAZE RD` failing to match `103-107 GAZE RD` is **not** a defect — ADR-028's key correctness invariant is that mid-range numbers must NOT match, and its Confirmation pins that explicitly. Anchoring is in fact a **better** fit than `phrase_prefix`, because the range aliases are synthesised as complete head-anchored strings (`103 GAZE RD, …` / `107 GAZE RD, …`) that match at position 0 cleanly. The real hazard is omission: if the `phrase_prefix` clause is deleted and the field is not carried over, `sla_range_expanded` leaves the query entirely — `bool_prefix` does not carry it and must not — losing the `225 DRUMMOND ST` / `TRAVEL INN HOTEL, 225-245 DRUMMOND ST` case ADR-028 exists to serve.
+10. **Decide how the per-field spans combine — the default is wrong.** Span queries have no multi-field primitive, so "one per field" means three sibling clauses. Placed in the top-level `bool.should` their scores **sum across fields**, reinstating the P007-shape asymmetry ADR-025 exists to prevent and the in-code prohibition at lines 969-975 forbids. Wrapping the three `span_first` clauses in a `dis_max` with `tie_breaker` at its 0.0 default reproduces today's best_fields-max semantics exactly. Note the tension: ADR-025 rejected Option A partly for introducing `dis_max`/`tie_breaker` — though 0.0 is the degenerate value, not a tuned one, and is already the operative semantic.
+11. **An ADR-028 amendment is required, and three pinned tests must be re-pointed rather than deleted.** `test/js/__tests__/address-service.test.mjs:250` (phrase_prefix fields include `sla_range_expanded`) and `:318` (no explicit `tie_breaker`) both break; `:286` (`bool_prefix` must NOT include `sla_range_expanded`) survives and must be retained. ADR-028 Reassessment Criterion 5 fires on the nose — it exists to stop the `tie_breaker=0.0` assertion being deleted, so deletion would make an accepted invariant unattributed.
+12. **Justify the `top_terms_N` rewrite method, not just the value 128.** `top_terms_N` retains per-term scoring at the expanded position — an IDF contribution summed over a **per-shard** expansion set. That is P078's mechanism, re-admitted inside the new clause at the final position. Anchoring dominates it empirically (0/150), but it is not gone. The ADR must say whether a blended-frequency or constant-score span rewrite is available and why this one was chosen. For the value itself, measure invariance across 64/128/512 on **both** properties and find the N at which it breaks, so 128 is justified as headroom between an observed floor and the 1024 ceiling rather than as a magic number.
+13. **Record the `maxClauseCount` availability consequence.** `indices.query.bool.max_clause_count` is cluster configuration; a self-hosted operator running a lowered value gets total request failure, not degraded ranking. This is a new failure class — `phrase_prefix` had an implicit expansion bound — and no gate currently covers it.
+14. **Probe the multi-word-synonym position hazard.** ADR-041 records an accepted pre-existing position collision on shapes like `NORTH EAST`. Anchoring adds an `end=N` window on top of phrase position semantics, so a position-inflating index synonym can push terms **beyond** the window and fail where an unanchored phrase would still match later in the field. Unanchored `phrase_prefix` had no such exposure. Unmeasured.
 
 ## Dependencies
 
