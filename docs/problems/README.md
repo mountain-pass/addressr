@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-05 **P087 captured** — the architect gate binds to the Edit/Write tool, so any bulk edit routed through Bash modifies governed files with no review demanded; found after a node script rewrote 141 link targets across 14 ADR bodies ungated and the gate then blocked the very next Edit-tool call. Also this session: P083 batch six drained the risk register to 3 uncurated entries and repaired 174 broken doc links. (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-07 **P088 captured** — the assistant invented a defect in a correct search-result list and offered it as a finding with proposed scope attached; caught by maintainer correction. Also this session: P074's root cause confirmed as P078's per-shard expansion-IDF mechanism, an anchored-phrase candidate measured at 0/150 street-level-first violations against a 62.7% baseline, and P074 prerequisite 7 downgraded once the six "lost" recall probes proved to be an instrument artefact. (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -23,6 +23,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P085 | `push:watch` reports success on a red master (3 selector defects)     | High (12)    | Open          | S      | 2026-08-03 | internal |
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
+| 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
