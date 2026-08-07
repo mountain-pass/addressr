@@ -56,6 +56,7 @@ The compendium is generated, but generation is not the whole story here: the sta
 - [ ] Add an invariant asserting every `ADR-NNN` token in a Related line resolves to a file
 - [ ] Consider banning ordinal cross-references ("the fifth bullet") in `docs/decisions/`, matching the existing ban in the register test
 - [ ] Mutation-prove each: revert the in-force count to 37, re-insert `ADR-074`, and confirm both fail
+- [ ] Extend the check to **absolute** links, which nothing validates today. `doc-links-resolve.test.mjs` resolves relative paths only, so `https://github.com/...` URLs have never been checked. On 2026-08-07 this surfaced nine dead links across four files plus one in `CHANGELOG.md`, all pointing at `tompahoward/addressr` — an org/repo that does not resolve at all (`gh repo view` returns "Could not resolve to a Repository"). They had been accumulating undetected, and one of them was in the repo's most-read file. The convention itself is settled per maintainer direction 2026-08-07: **relative for documents in this repo, absolute for GitHub issues** (GitHub resolves relative links against the file's location and cannot reach `/issues/`, so an issue link has no relative form). A check could assert that shape as well as reachability — an absolute `github.com/<owner>/<repo>/blob|tree` link pointing at _this_ repo is a convention violation, since it should be relative.
 
 ## Dependencies
 

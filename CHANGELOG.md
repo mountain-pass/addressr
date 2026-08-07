@@ -584,7 +584,7 @@ true` and `credentialsSet: true`. The endpoint did exactly what P035
 
   **Consumer-visible impact**: the first result of `/addresses?q=<street-address>` changes for queries whose address has indexed sub-units. BM25 `score` numeric values in API responses also shift across most queries because every document now populates the `ssla` field. **This is expected and not a breaking contract change** — absolute score thresholds are not part of the API contract and may need re-baselining. The first result is still the best match by score. API shape is unchanged: `ssla` was already an optional field on the address schema, it is simply populated on more records.
 
-  Fixes https://github.com/tompahoward/addressr/issues/375. Closes P007.
+  Fixes [#375](https://github.com/mountain-pass/addressr/issues/375). Closes P007.
 
 ## 2.1.5
 

@@ -181,6 +181,10 @@ Blocking prerequisites, per the architecture reviews of 2026-08-06 and 2026-08-0
 
     P007's `## Fix Strategy` section is also three revisions stale (it still recommends `dis_max`, which ADR-025 rejected) and Step 1 of the dispatch extracts it for known-error tickets. Mark it historical before the transition.
 
+    **`CHANGELOG.md` carries the same false claim, on a more-read surface.** The 2.2.0 entry ends with a sentence claiming it fixes issue 375 and closes P007. Per architecture review 2026-08-07, do **not** edit that entry: a changelog entry is dated testimony about what a release claimed, and rewriting it would erase the evidence that 2.2.0 made the claim — which is a fact this ticket needs to stay legible. Issue the retraction as a **new forward entry** on the release that ships the fix, as an erratum. Derive it from the same text as the P007 `## Fix Released` replacement above so the two surfaces cannot drift.
+
+    Note the urgency moved slightly on 2026-08-07: that entry's link was dead (`tompahoward/addressr` does not resolve) and was corrected to `mountain-pass`. A reader following it now lands on the CLOSED issue and its "verified in production" comment, where before they landed nowhere. The correction is net-right, but it made the false claim more reachable rather than less.
+
 15. **Probe the multi-word-synonym position hazard.** ADR-041 records an accepted pre-existing position collision on shapes like `NORTH EAST`. Anchoring adds an `end=N` window on top of phrase position semantics, so a position-inflating index synonym can push terms **beyond** the window and fail where an unanchored phrase would still match later in the field. Unanchored `phrase_prefix` had no such exposure. Unmeasured.
 
 ## Dependencies
