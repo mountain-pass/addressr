@@ -10,11 +10,17 @@
      not the others is the observed failure mode — it happened on 2026-08-07
      when ADR-042 landed.
 
-     Also NOT scoped away by "only the counts": the hook-derived Related lines
-     can carry phantom `ADR-NNN` tokens mis-derived from problem-ticket
-     references. A stray `ADR-074` (from P074) sat on ADR-029's Related line
-     until 2026-08-07. If you spot one, fix it. Nothing checks that an
-     `ADR-NNN` token in a Related line resolves to a file. -->
+     Related-line phantom tokens, count drift, and Status/Oversight badges are
+     now MECHANICALLY CHECKED by test/js/__tests__/decisions-invariants.test.mjs,
+     which runs in pre-commit. You no longer need to sweep for them by hand; a
+     red there tells you which one moved. What still needs a human is the
+     count-correction procedure above, because the test tells you the numbers
+     disagree, not which one is right.
+
+     Third sub-class, same shape: each entry's `**Status:**` / `**Oversight:**`
+     badge mirrors the ADR's frontmatter, and a status transition that edits one
+     and not the other leaves the badge lying. ADR-042 was briefly promoted to
+     `accepted` and reverted within the hour on 2026-08-07. Now checked. -->
 
 Compact rendered index of every ADR's chosen option, confirmation criteria, and relationship graph. **Authoritative substance lives in the per-ADR body** (`<NNN>-<slug>.<status>.md`); this compendium is a derived view for routine `wr-architect:agent` compliance review.
 
@@ -128,7 +134,7 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-025 — Symmetric `ssla` Indexing for Search Ranking
 
 **Status:** accepted | **Oversight:** confirmed
-**Decides:** Always populate the `ssla` index field — setting it equal to `sla` for addresses with no sub-unit — so the `multi_match bool_prefix` summation stops privileging sub-unit documents and the exact street-level match ranks first. Chosen over a `dis_max` query rewrite because encoding the fix in data rather than Lucene-specific DSL keeps it portable under ADR 021's multi-backend plan, needs no tuning parameters, and preserves the slash-form (`1/19 MURRAY RD`) affordance. Ships as a `minor` bump; ADR-042 contests only the engine-agnosticism weighting and is unratified, so nothing here is displaced.
+**Decides:** Always populate the `ssla` index field — setting it equal to `sla` for addresses with no sub-unit — so the `multi_match bool_prefix` summation stops privileging sub-unit documents. **The outcome claim that the exact street-level match then ranks first is FALSIFIED — measured at 62.7% violation 2026-08-07 (P074); the chosen mechanism works but is not sufficient, because the sibling `phrase_prefix` clause decides it.** Chosen over a `dis_max` query rewrite because encoding the fix in data rather than Lucene-specific DSL keeps it portable under ADR 021's multi-backend plan, needs no tuning parameters, and preserves the slash-form (`1/19 MURRAY RD`) affordance. Ships as a `minor` bump; ADR-042 contests only the engine-agnosticism weighting, is ratified 2026-08-07, and is `status: proposed` pending production verification — symmetric `ssla` remains the shipped mechanism.
 **Confirmation:** Unit test asserts `mapAddressDetails` sets `ssla === sla` for street-level and a distinct short form for sub-units; un-skipped Cucumber scenario `P007 Exact street address ranks first over sub-unit variants` pins `GAOT_717321355` first for `19 MURRAY RD, CHRISTMAS ISLAND`; manual probes confirm sub-unit and slash-form matching still resolve; post-deploy smoke on RapidAPI returns plain `278 ROSS RIVER RD` as top hit
 **Related:** ADR-002, ADR-009, ADR-021, ADR-042
 
@@ -232,8 +238,8 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-042 — Anchored span phrase clause for street-level-first ranking
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Replace the `/addresses` search body's `match_phrase_prefix` clause with a per-field anchored `span_first(span_near(..., slop=0, in_order=true))`, so the clause means "this field starts with what was typed" rather than "contains it anywhere" — the sub-unit/parent discriminator is absent by construction under "contains" semantics, so no scoring fix was well-posed. It was the only candidate to eliminate street-level-first violations outright (0/150 against a 62.7% baseline) while improving partial-prefix recall, needing no re-index, and fixing P078's exact-vs-range inversion as a side effect. Deliberately accepts increased Lucene lock-in over ADR-025's engine-agnosticism rationale, per maintainer direction; the portable sentinel-token variant is the recorded migration path.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Replace the `/addresses` search body's `match_phrase_prefix` clause with a per-field anchored `span_first(span_near(..., slop=0, in_order=true))`, so each clause means "this field starts with what was typed" — under "contains" semantics a sub-unit's `sla`/`ssla` necessarily contains the parent's whole token sequence, so no scoring fix is well-posed. Chosen as the only candidate to eliminate street-level-first violations outright (0/150 against a 62.7% baseline) while improving partial-prefix recall, needing no re-index, and fixing P078's exact-vs-range inversion as a side effect; it deliberately accepts increased Lucene lock-in against ADR-025's engine-agnosticism rationale per maintainer direction, with the portable sentinel-token variant recorded as the migration path.
 **Confirmation:** Corpus-scale street-level-first property gate on a randomly redrawn sample; corpus-scale mid-token partial-prefix recall gate with a P078 sensitivity check; explicit statement that fixture-scale Cucumber discharges neither and is non-regression only; `top_terms_N` invariance across 64/128/512 plus its breaking N; `maxClauseCount` regression probe on the `86 NORTH` shape; all five ADR-028 endpoint-recall scenarios plus the mid-range false-positive re-run; ADR-027's 14-query v2.3.0 baseline re-run post-deploy; latency non-regression at p50/p90 against 46.5/81 ms; `src/build-search-body.js` remains the single query-body source for both service and ADR-041 integration test.
 **Related:** ADR-021, ADR-025, ADR-027, ADR-028, ADR-029, ADR-041
 
@@ -249,7 +255,7 @@ _4 ADRs. These were tried and superseded, rejected, or deprecated. Read them as 
 
 ### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
 
-**Status:** superseded | **Oversight:** rejected-pending-supersede (resolved by ADR-039)
+**Status:** superseded
 **Decides:** Ship the self-hosted container on `node:22-alpine` with dumb-init as PID 1, running as the non-root `node` user with addressr installed globally via npm and published to Docker Hub as `mountainpass/addressr` — chosen for small image size, correct signal/zombie handling, and easy distribution. Superseded 2026-07-26 by ADR-039, which moves the runtime to a multi-stage distroless build; the "no Docker-build CI" gap it recorded as Open is closed by the Docker Image workflow ADR-039 adds.
 **Confirmation:** `Dockerfile` at project root with `ARG BASE_IMAGE=node:22-alpine` and `CMD "addressr-server-2"`; Docker Hub image `mountainpass/addressr`; `package.json` has `build:docker` and `start:server:docker` scripts
 **Related:** ADR-039

@@ -7,16 +7,20 @@ accepted-date: 2026-04-17
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
-reassessment-date: 2026-07-16
+reassessment-date: 2026-11-07
 ---
 
 # ADR 025: Symmetric `ssla` Indexing for Search Ranking
+
+> **Oversight provenance.** `oversight-date: 2026-07-18` predates the amendments dated 2026-08-07 in this file — the falsified Consequences bullet, the root-cause annotation, the added reassessment criterion, and the ADR-042 cross-reference. What the maintainer ratified is the **decision**: Option B, symmetric `ssla` population. The 2026-08-07 edits correct factual claims the decision made about its own outcome; they do not change the decision, so no new ratification is owed. Recorded explicitly per the resolution R024 required for this shape, rather than left implicit.
 
 ## Context and Problem Statement
 
 Problem [P007](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md) (GitHub issue [#375](https://github.com/mountain-pass/addressr/issues/375)) documents a ranking bug visible to every RapidAPI consumer: when a user queries a street address that also has sub-unit variants indexed (SHOP, UNIT, FLAT, LEVEL), the exact street-level match ranks **below** every sub-unit at that address. Observed in production: `278 ROSS RIVER RD AITKENVALE QLD 4814` returns `SHOP 1/5/6, 278 ROSS RIVER RD` at the top with scores ~95, and the plain `278 ROSS RIVER RD` at the bottom with score ~70. The API consumer is handed the wrong "best match".
 
-**Root cause** (see P007 Root Cause Analysis): the query builder in `service/address-service.js:searchForAddress` uses OpenSearch `multi_match` with `type: 'bool_prefix'` over fields `['sla', 'ssla']`. `bool_prefix` combines per-field scores by **summation** (most-fields semantics). Indexing populates both `sla` and `ssla` for sub-unit documents (full form and unit-stripped short form respectively) but only `sla` for street-level documents. Sub-unit documents therefore receive roughly double the per-field score contribution.
+**Root cause** — as understood in April 2026, and **incomplete**. Annotated 2026-08-07: the summation asymmetry described below was real and this ADR did fix it, but it is not the cause of the live defect. That is per-shard `phrase_prefix` expansion IDF, recorded in [P078](../problems/open/078-phrase-prefix-scores-depend-on-shard-local-expansion-set.md) and confirmed by `_explain` on production. The text below is retained as the record of what was understood at decision time.
+
+(see P007 Root Cause Analysis): the query builder in `service/address-service.js:searchForAddress` uses OpenSearch `multi_match` with `type: 'bool_prefix'` over fields `['sla', 'ssla']`. `bool_prefix` combines per-field scores by **summation** (most-fields semantics). Indexing populates both `sla` and `ssla` for sub-unit documents (full form and unit-stripped short form respectively) but only `sla` for street-level documents. Sub-unit documents therefore receive roughly double the per-field score contribution.
 
 We need to restore correct ranking without regressing the existing `ssla` affordance (queries like `1/19 MURRAY RD` match `UNIT 1, 19 MURRAY RD` by hitting the `ssla` short form).
 
@@ -97,7 +101,7 @@ Option A remains a clean fallback if Option B ever regresses — e.g., if a subs
 
 ### Good
 
-- Exact street-level matches rank first for no-sub-unit queries — resolves P007 / issue #375.
+- ~~Exact street-level matches rank first for no-sub-unit queries — resolves P007 / issue #375.~~ **FALSIFIED 2026-08-07.** Measured against production: **62.7%** of a random national sample of sub-unit-bearing addresses still return a sub-unit first ([P074](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md)). The mechanism this ADR chose is present and working — the `bool_prefix` clause does score the street-level document higher — but it is not sufficient, because the sibling `phrase_prefix` clause decides the outcome. Issue #375 remains closed on this claim and is scheduled for correction when the fix ships; see P074 Fix Strategy prerequisite 14.
 - Scoring correctness is encoded in data, not DSL. The fix is portable to any BM25/Lucene-family backend under ADR 021.
 - Query builder simplifies conceptually (no per-field asymmetry to reason about).
 - Slash-form sub-unit matches preserved.
@@ -125,15 +129,15 @@ Re-visit this decision if any of the following occur:
 - ADR 021's multi-backend abstraction ships and a non-Lucene backend is adopted whose scoring does not sum per-field across `multi_match`. In that case, Option B's correctness property may not transfer; switch to Option A (`dis_max`-equivalent) or Option C (single-field) as appropriate to the new backend.
 - The query in `searchForAddress` is changed away from `multi_match type: 'bool_prefix'`. The summation behaviour this ADR relies on must be preserved or the decision re-evaluated.
 - A user reports a regression in sub-unit or slash-form matching.
-- **The street-level-first property is measured at corpus scale and found violated, whether or not a user reports it.** Added 2026-08-07. The three criteria above did not fire on the defect this ADR was written to fix: [P074 P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) measured **62.7%** of a random national sample violating Decision Driver 1, while every recorded gate stayed green, because the gates pin sampled _instances_ rather than the _property_. Fixture-scale corpora cannot detect it: OT (5,186 docs) and a full TAS load (375,613 docs) both measure 0%.
+- **The street-level-first property is measured at corpus scale and found violated, whether or not a user reports it.** Added 2026-08-07. The `reassessment-date` above is set to the ADR-042 production-verification milestone rather than a rolling quarter, because that is when this ADR's outcome can next be honestly re-evaluated. The three criteria above did not fire on the defect this ADR was written to fix: [P074 P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) measured **62.7%** of a random national sample violating Decision Driver 1, while every recorded gate stayed green, because the gates pin sampled _instances_ rather than the _property_. Fixture-scale corpora cannot detect it: OT (5,186 docs) and a full TAS load (375,613 docs) both measure 0%.
 
-**Note on the Decision Outcome's engine-agnosticism rationale.** [ADR-042 Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) partially overrides it, deliberately and with the trade recorded. That ADR is `proposed` and `human-oversight: unconfirmed`, so nothing here is displaced until it is ratified. The mechanism this ADR chose — symmetric `ssla` population — is retained unchanged and remains load-bearing for slash-form notation tolerance; what ADR-042 contests is only the driver's weighting against a Lucene-specific query shape.
+**Note on the Decision Outcome's engine-agnosticism rationale.** [ADR-042 Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) partially overrides it, deliberately and with the trade recorded. **Ratified 2026-08-07** (`human-oversight: confirmed`), so the override stands as recorded direction for the next query-shape change. It is `status: proposed` only because the fix has not yet been verified in production — the two axes are orthogonal, and a ratified `proposed` decision is in force for new implementations. What is _not_ yet true is that the code does it: `buildAddressSearchBody` still emits `phrase_prefix`, and symmetric `ssla` population remains the shipped mechanism and remains load-bearing for slash-form notation tolerance. What ADR-042 contests is only this ADR's weighting of the engine-agnosticism driver against a Lucene-specific query shape. The portable alternative was costed and rejected on the record as its Considered Option 6.
 
 ## Related
 
 - [ADR 002 — OpenSearch as search engine](002-opensearch-as-search-engine.accepted.md)
 - [ADR 021 — Retain OpenSearch with future multi-backend support](021-retain-opensearch-plan-multi-backend.proposed.md)
-- [ADR 042 — Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) — partially overrides this ADR's engine-agnosticism rationale; `proposed` and unratified, so not yet in force. See the note under Reassessment Criteria.
+- [ADR 042 — Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) — partially overrides this ADR's engine-agnosticism rationale. Ratified 2026-08-07; `status: proposed` until production-verified. See the note under Reassessment Criteria.
 - [Problem 074 — P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) — measured this ADR's Decision Driver 1 violated at 62.7% while every recorded gate stayed green
 - [ADR 009 — Cucumber BDD testing](009-cucumber-bdd-testing.accepted.md)
 - [Problem 007 — Search scoring exact address ranked below sub-units](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md)

@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-07
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-07
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
@@ -10,7 +11,11 @@ reassessment-date: 2026-11-07
 
 # Anchored span phrase clause for street-level-first ranking
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context.
+>
+> **Human-ratified 2026-08-07** — the maintainer reviewed the substance and approved it, so `human-oversight: confirmed`. **`status` remains `proposed` until the fix is verified in production**, per DECISION-MANAGEMENT.md: `accepted` asserts demonstrated production use, and nothing anchored has shipped. The two axes are orthogonal; a ratified `proposed` decision is in force as recorded direction for the next query-shape change. ADR-041 is the in-family precedent — ratified 2026-07-29 while `proposed`, promoted only on 2026-08-02 once its cutover landed.
+>
+> An earlier edit on 2026-08-07 briefly promoted this to `accepted` on the strength of the approval alone. That conflated substance ratification with production validation and was reverted the same hour.
 
 ## Context and Problem Statement
 
@@ -97,7 +102,9 @@ All three notations verified: `8 WATERS RD…` returns the parent first; `UNIT 1
 6. **All five ADR-028 endpoint-recall scenarios** plus the mid-range false-positive scenario re-run.
 7. **ADR-027's 14-query v2.3.0 baseline** re-run post-deploy.
 8. **Latency non-regression** at p50/p90 against the measured 46.5 / 81 ms.
-9. The query-body single-source assertion landed 2026-08-07 (`src/build-search-body.js`, released in 3.0.7) must remain: both the service and the ADR-041 integration test build from it.
+9. Query-body single source: both the service and the ADR-041 integration test build from `src/build-search-body.js`. **Holding as of 2026-08-07 (3.0.7); standing invariant, re-checked at each query-shape change** — never dischargeable, since a "must remain" obligation can only hold at a point in time.
+
+Criteria 1 and 2 are **not** discharged by the harness landing in 3.0.7. What shipped is the instrument, not a measurement of a deployed change, and the reproduction cited replays a frozen frame the code itself labels non-discharging.
 
 ## Pros and Cons of the Options
 

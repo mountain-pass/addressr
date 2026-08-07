@@ -78,9 +78,9 @@ export const INDEX = process.env.ADDRESSR_PROBE_INDEX || 'addressr';
  *
  * `baseline` is the shipped body verbatim. The others are the candidates
  * ADR-042 compares. `anchored` is CANDIDATE-SPECIFIC to ADR-042's chosen
- * option and is disposable if the ratification drain lands a different one;
- * `baseline` and the rest are candidate-agnostic and are what a reviewer needs
- * in order to ratify at all.
+ * option and is disposable if that ADR is superseded or its chosen option
+ * changes before it ships; `baseline` and the rest are candidate-agnostic and
+ * survive any outcome.
  */
 export function bodyFor({
   query,

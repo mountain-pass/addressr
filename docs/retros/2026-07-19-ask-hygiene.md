@@ -84,9 +84,9 @@ Session scope: `/wr-itil:work-problems` AFK iteration working P049 (wr-retrospec
 
 Session scope: `/wr-itil:work-problems` AFK iteration working P025 (GitHub Actions Node 20 runtime deprecation) — I13 fix-time RFC-005 auto-created via capture-rfc --fix-time; five action pins bumped to verified Node 24 builds; ADR-007 Confirmation loosened; P025 Open → Verification Pending (folded fix commit 866cfbf).
 
-| Call # | Header                                  | Classification | Citation                                                                                                                                                                                         |
-| ------ | --------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| —      | (no AskUserQuestion calls this session) | —              | Gap: AFK iteration; fix wholly framework-mediated (I13/ADR-073 auto-create, ADR-042 within-appetite commits, P063 false-positive marker per option-3 shape); no direction-setting decision arose |
+| Call # | Header                                  | Classification | Citation                                                                                                                                                                                                                   |
+| ------ | --------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| —      | (no AskUserQuestion calls this session) | —              | Gap: AFK iteration; fix wholly framework-mediated (I13/ADR-073 auto-create, **wr-risk-scorer ADR-042 Rule 1** within-appetite commits, P063 false-positive marker per option-3 shape); no direction-setting decision arose |
 
 **Lazy count: 0**
 **Direction count: 0**

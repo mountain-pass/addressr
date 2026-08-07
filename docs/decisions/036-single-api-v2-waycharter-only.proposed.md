@@ -12,7 +12,9 @@ supersedes: [003-dual-api-v1-swagger-v2-hateoas]
 
 # ADR 036: Single-API architecture — v2 WayCharter only, v1 Swagger dropped
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context (user AskUserQuestion decision + wr-architect:agent options analysis + wr-jtbd:agent review); human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain. **Supersedes [ADR 003](003-dual-api-v1-swagger-v2-hateoas.superseded.md).**
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context (user AskUserQuestion decision + wr-architect:agent options analysis + wr-jtbd:agent review); human-oversight was unconfirmed at capture.
+>
+> **Human-ratified 2026-07-18** at the /wr-architect:review-decisions drain, which set `human-oversight: confirmed` / `oversight-date: 2026-07-18`. The sentence above describes the state at capture and is retained as provenance, not as a description of the current marker state. Corrected 2026-08-07: it had asserted the unconfirmed state in the present tense for three weeks after ratification, because the drain promotes the frontmatter without rewriting the capture banner. `test/js/__tests__/decisions-invariants.test.mjs` now fails on that shape. **Supersedes [ADR 003](003-dual-api-v1-swagger-v2-hateoas.superseded.md).**
 
 ## Context and Problem Statement
 

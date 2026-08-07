@@ -45,9 +45,9 @@ const argument = (name, fallback) => {
   return index === -1 ? fallback : process.argv[index + 1];
 };
 
-// Defaults to baseline deliberately. ADR-042 is human-oversight: unconfirmed,
-// and defaulting a reviewer's first run to the option awaiting ratification is
-// a normalisation nudge. Name the candidate explicitly to measure it.
+// Defaults to baseline deliberately: baseline is what production actually runs
+// until the fix ships, so a reviewer's first run should measure the live system
+// rather than a candidate. Name the candidate explicitly to measure it.
 const variant = argument('variant', 'baseline');
 const targetCount = Number(argument('targets', '90'));
 
