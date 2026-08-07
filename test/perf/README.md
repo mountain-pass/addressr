@@ -1,4 +1,16 @@
-# Primary-path invariant harness (ADR-031 / ADR-033)
+# Measurement apparatus: relevance gates and primary-path invariants
+
+Two unrelated families live here. Both exist so a claim is reproducible rather
+than a number in a document.
+
+- **Relevance gates** (ADR-042) — `street-level-first-probe.mjs`,
+  `partial-prefix-recall-ladder.mjs`, `relevance-lib.mjs`. See the section at
+  the end of this file.
+- **Primary-path invariants** (ADR-031 / ADR-033) — `read-shadow-invariant-ab.mjs`,
+  `sigv4-signing-bench.mjs`, plus the terminal `exact-vs-range-margin-probe.mjs`.
+  Documented immediately below.
+
+## Primary-path invariant harness (ADR-031 / ADR-033)
 
 Measures the synchronous cost read-shadow adds to `/addresses`, against ADR-031's
 **≤ 1 ms p95** primary-path invariant. Discharged the invariant on 2026-07-31 at
@@ -88,3 +100,85 @@ reason rather than hanging on a dead tunnel. Its results are frozen in
 Do not make the blue arm optional to get it running again. A green-only run
 emits output shaped like a result while being no evidence at all, which is the
 same trap the invariant harness above warns about.
+
+## Relevance gates (ADR-042)
+
+`street-level-first-probe.mjs` and `partial-prefix-recall-ladder.mjs` are the two
+corpus-scale gates [ADR-042](../../docs/decisions/042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md)
+pins in its Confirmation. They exist because the property they measure is
+invisible at every smaller scale.
+
+```bash
+# Both require an explicit target. There is deliberately no production default.
+export ADDRESSR_PROBE_HOST=search-xxxx.ap-southeast-2.es.amazonaws.com
+
+# Gate 1 — street-level-first. Draws a fresh sample, asserts, exits non-zero.
+node test/perf/street-level-first-probe.mjs --variant anchored --n 150
+
+# Gate 2 — partial-prefix recall. Aborts unless the sensitivity gate passes.
+node test/perf/partial-prefix-recall-ladder.mjs --variant anchored   # name the candidate
+
+# Reproduce the 2026-08-06 measurement exactly. NON-DISCHARGING by design.
+node test/perf/street-level-first-probe.mjs --variant baseline --frame test/perf/sample.json
+```
+
+### Fixture scale cannot discharge either gate
+
+Quoting ADR-042 Confirmation criterion 3, because the next reviewer will be
+standing here: fixture-scale Cucumber **cannot** discharge these gates and is
+retained as non-regression only. The street-level-first property measured **0%**
+violations on the OT fixture (5,186 docs) and on a full TAS load (375,613 docs)
+while production measured **62.7%**. Cucumber runs against OT. A green Cucumber
+run is not evidence about this property, and reading it as one is how the defect
+survived two closures.
+
+### The two instrument defects already baked out
+
+Both were found the hard way on 2026-08-06/07. Reintroduce either and the gate
+reports a confident number that means nothing.
+
+- **The recall ladder measures at page level, not match level.** `hits.total` is
+  identical across every candidate, because the `bool_prefix` clause matches
+  regardless and the candidates only move score. A matching-level ladder reports
+  zero effect for everything.
+- **Its probes cut mid-word.** The effect only appears when the final token is a
+  genuine partial with no exact term for the expansion to select. Cutting at a
+  fraction of address length lands on word boundaries and measured 0 losses over
+  360 probes, a vacuous null, while the same instrument reproduced the known
+  losses every time.
+
+The ladder carries a sensitivity gate that aborts unless it reproduces the four
+losses P078 recorded for `max_expansions: 1`. Same discipline as the terminal
+probe above: nothing below a failed gate is evidence.
+
+### The sample is a record, not a frame
+
+`sample.json` is the terminal record of the 2026-08-06 run: 150 street-level
+addresses that also have sub-units, the frame behind the 62.7% baseline and the
+0/150 anchored figure in ADR-042.
+
+It is **not** the gate's input. The probe redraws per run, because ADR-042
+Confirmation 1 says a frozen sample degenerates into the instance-pinning that
+hid this defect for months. `--frame` reproduces a past measurement and labels
+its own output non-discharging.
+
+### Constraints
+
+- **No production default.** `ADDRESSR_PROBE_HOST` is required with no fallback.
+  A run that silently hits prod is the same class of defect as the green-only arm
+  warned about above.
+- **Credentials never on argv.** They resolve through `defaultProvider()`, the
+  chain production uses under ADR-033. `assertNoCredsInArgv` refuses to run
+  otherwise. This is enforced rather than documented because on 2026-08-07 a
+  curl-based draft passed the secret key as an argument and a transport failure
+  stringified the whole command into a session transcript, exposing a live key.
+- **Least privilege.** The gates need `es:ESHttpGet` / `es:ESHttpPost` for
+  `_search` and `_analyze` only. Admin credentials are not required, following
+  the scoping precedent in ADR-034.
+- **The baseline body is imported, never restated.** Every candidate is a delta
+  on `src/build-search-body.js`. A hand-copied body is exactly what let the
+  ADR-041 gate stay green while production diverged; this instrument must not
+  become the next copy.
+- **Do not run concurrently with a k6 baseline or an ADR-031 soak.** A full
+  property run is roughly 150 addresses per variant; the ladder is ~268 probes
+  per variant. Measurement runs punch holes in a running soak, as recorded above.

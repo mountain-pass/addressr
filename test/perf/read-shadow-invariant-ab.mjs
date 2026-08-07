@@ -24,7 +24,9 @@ async function once(q) {
 }
 
 function pct(sorted, p) {
-  return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
+  return sorted[
+    Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))
+  ];
 }
 
 for (let i = 0; i < WARM; i += 1) await once(QUERIES[i % QUERIES.length]);
@@ -38,10 +40,13 @@ for (let i = 0; i < N; i += 1) {
 }
 samples.sort((a, b) => a - b);
 const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
-console.log(JSON.stringify({
-  n: samples.length, bad,
-  mean: +mean.toFixed(4),
-  p50: +pct(samples, 50).toFixed(4),
-  p95: +pct(samples, 95).toFixed(4),
-  p99: +pct(samples, 99).toFixed(4),
-}));
+console.log(
+  JSON.stringify({
+    n: samples.length,
+    bad,
+    mean: +mean.toFixed(4),
+    p50: +pct(samples, 50).toFixed(4),
+    p95: +pct(samples, 95).toFixed(4),
+    p99: +pct(samples, 99).toFixed(4),
+  }),
+);

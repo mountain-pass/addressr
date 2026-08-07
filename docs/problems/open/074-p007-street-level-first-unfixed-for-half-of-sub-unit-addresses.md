@@ -138,7 +138,7 @@ Two hypotheses are **falsified**:
 
 What remains worth doing is narrower: make the ladder's target designation meaningful for short probes (assert the street _name_ survives rather than one locality's instance of it), or restrict the ladder to probe lengths where a unique target genuinely exists. Until then the six-probe figure should not be read as a recall cost.
 
-- [ ] Commit the measurement harness (`ladder.py`, `anchored.py`, currently session-scratchpad only, which is not persistent) so the gate is reproducible. The 2026-07-31 sample was already lost this way once — see the note at the top of the candidate-fix section.
+- [x] Commit the measurement harness so the gate is reproducible — done 2026-08-07. Landed as `test/perf/relevance-lib.mjs`, `test/perf/street-level-first-probe.mjs` and `test/perf/partial-prefix-recall-ladder.mjs`, with `test/perf/sample.json` as the terminal record of the 2026-08-06 run. **Ported from Python to Node before committing**, on the architect's finding that a Python version would have to restate the query body and would therefore be the third hand-copy of it — the same defect fixed in 3.0.7 that morning. Every candidate is now a delta on `src/build-search-body.js`. Reproduction verified after the port: baseline 94/150 = 62.7%, anchored 0/150, ladder 268 probes net +3 with the sensitivity gate passing, all byte-identical to the scratchpad figures.
 - [ ] Widen the sample and characterise which addresses violate (sub-unit count? locality density? presence of a range?).
 - [ ] Replace the instance-based P007 gates with a **property** assertion: for a street address with sub-units, the street-level record ranks above all of them.
 

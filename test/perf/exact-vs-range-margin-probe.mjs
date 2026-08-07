@@ -54,13 +54,22 @@ const short = (sla) => {
   return m ? `${m[1]} ${m[2]}` : sla;
 };
 async function hits(port, q) {
-  const r = await fetch(`http://localhost:${port}/addresses?q=${encodeURIComponent(q)}`);
-  return r.ok ? (await r.json()).map((h) => ({ sla: h.sla, score: h.score })) : null;
+  const r = await fetch(
+    `http://localhost:${port}/addresses?q=${encodeURIComponent(q)}`,
+  );
+  return r.ok
+    ? (await r.json()).map((h) => ({ sla: h.sla, score: h.score }))
+    : null;
 }
 function margin(list, exact, range) {
-  const e = list.find((h) => h.sla === exact), r = list.find((h) => h.sla === range);
+  const e = list.find((h) => h.sla === exact),
+    r = list.find((h) => h.sla === range);
   if (!e || !r) return { m: null, exactAbsent: !e, rangeAbsent: !r };
-  return { m: ((e.score - r.score) / r.score) * 100, exactAbsent: false, rangeAbsent: false };
+  return {
+    m: ((e.score - r.score) / r.score) * 100,
+    exactAbsent: false,
+    rangeAbsent: false,
+  };
 }
 async function assess(fullExact, fullRange) {
   const q = short(fullExact);
@@ -78,47 +87,103 @@ async function assess(fullExact, fullRange) {
   const [b, g] = await Promise.all([hits(6061, q), hits(6060, q)]);
   if (!b || !g) return { verdict: 'query-error' };
   const bm = margin(b, fullExact, fullRange);
-  if (bm.m === null) return { verdict: bm.exactAbsent ? 'blue-exact-absent' : 'blue-range-absent' };
+  if (bm.m === null)
+    return {
+      verdict: bm.exactAbsent ? 'blue-exact-absent' : 'blue-range-absent',
+    };
   if (bm.m <= 0) return { verdict: 'blue-range-first', blueMargin: bm.m };
   const gm = margin(g, fullExact, fullRange);
   // green losing the exact doc entirely is STRICTLY WORSE than a range-first
   // flip, so it is a failure verdict, not a pass.
-  if (gm.exactAbsent) return { verdict: 'green-exact-absent', q, blueMargin: bm.m };
-  if (gm.m === null) return { verdict: 'green-range-absent', q, blueMargin: bm.m };
+  if (gm.exactAbsent)
+    return { verdict: 'green-exact-absent', q, blueMargin: bm.m };
+  if (gm.m === null)
+    return { verdict: 'green-range-absent', q, blueMargin: bm.m };
   return {
     verdict: gm.m <= 0 ? 'FLIP-green-range-first' : 'ok',
-    q, blueMargin: bm.m, greenMargin: gm.m, swing: gm.m - bm.m,
+    q,
+    blueMargin: bm.m,
+    greenMargin: gm.m,
+    swing: gm.m - bm.m,
   };
 }
 
 const k = await assess(KNOWN.full, KNOWN.range);
 console.log(`SENSITIVITY GATE — ${short(KNOWN.full)}`);
-console.log(`  blue ${k.blueMargin?.toFixed(1)}%  green ${k.greenMargin?.toFixed(1)}%  swing ${k.swing?.toFixed(1)}  verdict ${k.verdict}`);
+console.log(
+  `  blue ${k.blueMargin?.toFixed(1)}%  green ${k.greenMargin?.toFixed(1)}%  swing ${k.swing?.toFixed(1)}  verdict ${k.verdict}`,
+);
 if (k.verdict !== 'FLIP-green-range-first') {
-  console.log('  ABORT: frame cannot reproduce the known flip. Nothing below is evidence.');
+  console.log(
+    '  ABORT: frame cannot reproduce the known flip. Nothing below is evidence.',
+  );
   process.exit(1);
 }
 
-const frame = JSON.parse(fs.readFileSync(new URL('./exact-vs-range-frame.json', import.meta.url)));
-const buckets = {}, inBand = [], flips = [];
+const frame = JSON.parse(
+  fs.readFileSync(new URL('./exact-vs-range-frame.json', import.meta.url)),
+);
+const buckets = {},
+  inBand = [],
+  flips = [];
 let read = 0;
 for (const { probe, range } of frame) {
   if (inBand.length >= 60) break;
   read += 1;
   const r = await assess(probe.includes(',') ? probe : `${probe}`, range);
   buckets[r.verdict] = (buckets[r.verdict] || 0) + 1;
-  if (r.blueMargin === undefined || r.blueMargin <= BAND[0] || r.blueMargin > BAND[1]) continue;
-  if (!['ok', 'FLIP-green-range-first', 'green-exact-absent', 'green-range-absent'].includes(r.verdict)) continue;
+  if (
+    r.blueMargin === undefined ||
+    r.blueMargin <= BAND[0] ||
+    r.blueMargin > BAND[1]
+  )
+    continue;
+  if (
+    ![
+      'ok',
+      'FLIP-green-range-first',
+      'green-exact-absent',
+      'green-range-absent',
+    ].includes(r.verdict)
+  )
+    continue;
   inBand.push(r);
   if (r.verdict !== 'ok') flips.push(r);
 }
 const swings = inBand.filter((x) => x.swing !== undefined).map((x) => x.swing);
-const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))] ?? null;
-console.log(JSON.stringify({
-  frame_size: frame.length, probes_read: read,
-  verdict_buckets: buckets,
-  in_band_pairs: inBand.length, band_pct: BAND,
-  blue_margin_spread: { min: q(inBand.map((x) => x.blueMargin), 0)?.toFixed(1), median: q(inBand.map((x) => x.blueMargin), 0.5)?.toFixed(1), max: q(inBand.map((x) => x.blueMargin), 1)?.toFixed(1) },
-  green_swing: { min: q(swings, 0)?.toFixed(1), median: q(swings, 0.5)?.toFixed(1), max: q(swings, 1)?.toFixed(1) },
-  failures: flips.length, failure_detail: flips.slice(0, 5),
-}, null, 1));
+const q = (a, p) =>
+  a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))] ?? null;
+console.log(
+  JSON.stringify(
+    {
+      frame_size: frame.length,
+      probes_read: read,
+      verdict_buckets: buckets,
+      in_band_pairs: inBand.length,
+      band_pct: BAND,
+      blue_margin_spread: {
+        min: q(
+          inBand.map((x) => x.blueMargin),
+          0,
+        )?.toFixed(1),
+        median: q(
+          inBand.map((x) => x.blueMargin),
+          0.5,
+        )?.toFixed(1),
+        max: q(
+          inBand.map((x) => x.blueMargin),
+          1,
+        )?.toFixed(1),
+      },
+      green_swing: {
+        min: q(swings, 0)?.toFixed(1),
+        median: q(swings, 0.5)?.toFixed(1),
+        max: q(swings, 1)?.toFixed(1),
+      },
+      failures: flips.length,
+      failure_detail: flips.slice(0, 5),
+    },
+    null,
+    1,
+  ),
+);

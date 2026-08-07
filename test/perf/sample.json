@@ -1,0 +1,602 @@
+[
+  {
+    "sla": "75 SHORTLAND ESP, NEWCASTLE NSW 2300",
+    "id": "/addresses/GANSW718867583"
+  },
+  {
+    "sla": "18-20 COURALLIE AV, HOMEBUSH WEST NSW 2140",
+    "id": "/addresses/GANSW717138653"
+  },
+  {
+    "sla": "8 ALICE ST, KEDRON QLD 4031",
+    "id": "/addresses/GAQLD155435903"
+  },
+  {
+    "sla": "74 FORREST PDE, BAKEWELL NT 0832",
+    "id": "/addresses/GANT_703855807"
+  },
+  {
+    "sla": "12 SAINT MARTINS TCE, BUDERIM QLD 4556",
+    "id": "/addresses/GAQLD162479480"
+  },
+  {
+    "sla": "81 BARKLY ST, MORNINGTON VIC 3931",
+    "id": "/addresses/GAVIC421368565"
+  },
+  {
+    "sla": "5 HERBERT ST, ST KILDA VIC 3182",
+    "id": "/addresses/GAVIC421515013"
+  },
+  {
+    "sla": "64 LUCINDA PDE, LUTANA TAS 7009",
+    "id": "/addresses/GATAS702481078"
+  },
+  {
+    "sla": "46 ROUS RD, GOONELLABAH NSW 2480",
+    "id": "/addresses/GANSW704841300"
+  },
+  {
+    "sla": "16-22 ANDERSON AV, LIVERPOOL NSW 2170",
+    "id": "/addresses/GANSW719951933"
+  },
+  {
+    "sla": "12 FAIRWAY CL, MANLY VALE NSW 2093",
+    "id": "/addresses/GANSW707555438"
+  },
+  {
+    "sla": "116 GLOSSOP ST, ST MARYS NSW 2760",
+    "id": "/addresses/GANSW712864491"
+  },
+  {
+    "sla": "109-111 ALISON RD, RANDWICK NSW 2031",
+    "id": "/addresses/GANSW705769157"
+  },
+  {
+    "sla": "8 BRISBANE ST, HARRIS PARK NSW 2150",
+    "id": "/addresses/GANSW711097854"
+  },
+  {
+    "sla": "11 OCEAN AV, NEWPORT NSW 2106",
+    "id": "/addresses/GANSW705507909"
+  },
+  {
+    "sla": "117 OLD PITTWATER RD, BROOKVALE NSW 2100",
+    "id": "/addresses/GANSW704237667"
+  },
+  {
+    "sla": "7 CRESCENT ST, WATERLOO NSW 2017",
+    "id": "/addresses/GANSW717209987"
+  },
+  {
+    "sla": "131 DONNISON ST, GOSFORD NSW 2250",
+    "id": "/addresses/GANSW704846317"
+  },
+  {
+    "sla": "42 BUCHAN AV, SINGLETON NSW 2330",
+    "id": "/addresses/GANSW705888722"
+  },
+  {
+    "sla": "455A CAPTAIN COOK DR, WOOLOOWARE NSW 2230",
+    "id": "/addresses/GANSW721651323"
+  },
+  {
+    "sla": "100 DIBBS ST, ADAMSTOWN NSW 2289",
+    "id": "/addresses/GANSW703879518"
+  },
+  {
+    "sla": "355-359 KENT ST, SYDNEY NSW 2000",
+    "id": "/addresses/GANSW716925653"
+  },
+  {
+    "sla": "128 MEREDITH ST, BANKSTOWN NSW 2200",
+    "id": "/addresses/GANSW704013620"
+  },
+  {
+    "sla": "20 VASEY ST, AVENELL HEIGHTS QLD 4670",
+    "id": "/addresses/GAQLD161462333"
+  },
+  {
+    "sla": "399 WOOLCOCK ST, GARBUTT QLD 4814",
+    "id": "/addresses/GAQLD160887008"
+  },
+  {
+    "sla": "16 JACARANDA CL, COOYA BEACH QLD 4873",
+    "id": "/addresses/GAQLD156483156"
+  },
+  {
+    "sla": "50 CARL ST, WOOLLOONGABBA QLD 4102",
+    "id": "/addresses/GAQLD156076687"
+  },
+  {
+    "sla": "6 TENCH CT, GOLDEN GROVE SA 5125",
+    "id": "/addresses/GASA_422046034"
+  },
+  {
+    "sla": "287-295 UNLEY RD, MALVERN SA 5061",
+    "id": "/addresses/GASA_425453974"
+  },
+  {
+    "sla": "44 DONALD ST, FOOTSCRAY VIC 3011",
+    "id": "/addresses/GAVIC420171718"
+  },
+  {
+    "sla": "1286 HIGH ST, MALVERN VIC 3144",
+    "id": "/addresses/GAVIC422095431"
+  },
+  {
+    "sla": "408 LONSDALE ST, MELBOURNE VIC 3000",
+    "id": "/addresses/GAVIC424756811"
+  },
+  {
+    "sla": "71 GREY ST, TRARALGON VIC 3844",
+    "id": "/addresses/GAVIC423217655"
+  },
+  {
+    "sla": "108 DENHAM ST, HAWTHORN VIC 3122",
+    "id": "/addresses/GAVIC719083642"
+  },
+  {
+    "sla": "71 GEELONG RD, TORQUAY VIC 3228",
+    "id": "/addresses/GAVIC423216401"
+  },
+  {
+    "sla": "6 GLANCE COVE, HORROCKS WA 6535",
+    "id": "/addresses/GAWA_162566903"
+  },
+  {
+    "sla": "8 SHOUT RDGE, LINDFIELD NSW 2070",
+    "id": "/addresses/GANSW718779568"
+  },
+  {
+    "sla": "71 PIONEER ST, SEVEN HILLS NSW 2147",
+    "id": "/addresses/GANSW705912327"
+  },
+  {
+    "sla": "324-326 PRINCES HWY, CARSS PARK NSW 2221",
+    "id": "/addresses/GANSW716558998"
+  },
+  {
+    "sla": "19 GADIGAL AV, ZETLAND NSW 2017",
+    "id": "/addresses/GANSW717373425"
+  },
+  {
+    "sla": "53 DONALD RD, KARABAR NSW 2620",
+    "id": "/addresses/GANSW706467680"
+  },
+  {
+    "sla": "2 HUDSON ST, HURSTVILLE NSW 2220",
+    "id": "/addresses/GANSW720853901"
+  },
+  {
+    "sla": "124 PEROUSE RD, RANDWICK NSW 2031",
+    "id": "/addresses/GANSW705799540"
+  },
+  {
+    "sla": "46-48 CHUTER AV, RAMSGATE BEACH NSW 2217",
+    "id": "/addresses/GANSW716526586"
+  },
+  {
+    "sla": "1 GRAMPIAN ST, YASS NSW 2582",
+    "id": "/addresses/GANSW712639489"
+  },
+  {
+    "sla": "3A OCEAN ST, PENSHURST NSW 2222",
+    "id": "/addresses/GANSW711564149"
+  },
+  {
+    "sla": "128-130 FRANCES ST, LIDCOMBE NSW 2141",
+    "id": "/addresses/GANSW709557255"
+  },
+  {
+    "sla": "532-536 ANZAC PDE, KINGSFORD NSW 2032",
+    "id": "/addresses/GANSW710459414"
+  },
+  {
+    "sla": "228 MOORE PARK RD, PADDINGTON NSW 2021",
+    "id": "/addresses/GANSW705620638"
+  },
+  {
+    "sla": "46 OLD SOUTH HEAD RD, VAUCLUSE NSW 2030",
+    "id": "/addresses/GANSW706176736"
+  },
+  {
+    "sla": "13-29 NICHOLS ST, SURRY HILLS NSW 2010",
+    "id": "/addresses/GANSW706008110"
+  },
+  {
+    "sla": "8 GRANDSTAND PDE, ZETLAND NSW 2017",
+    "id": "/addresses/GANSW716479887"
+  },
+  {
+    "sla": "18-20 PROSPECT PL, BERRINBA QLD 4117",
+    "id": "/addresses/GAQLD162859687"
+  },
+  {
+    "sla": "119 LEICHHARDT ST, SPRING HILL QLD 4000",
+    "id": "/addresses/GAQLD155830245"
+  },
+  {
+    "sla": "20 GIPPS ST, FORTITUDE VALLEY QLD 4006",
+    "id": "/addresses/GAQLD162993932"
+  },
+  {
+    "sla": "87B FULHAM RD, GULLIVER QLD 4812",
+    "id": "/addresses/GAQLD720694479"
+  },
+  {
+    "sla": "12 JOY ST, ASCOT PARK SA 5043",
+    "id": "/addresses/GASA_720723740"
+  },
+  {
+    "sla": "8-10 RICHARD ST, MANSFIELD PARK SA 5012",
+    "id": "/addresses/GASA_424530476"
+  },
+  {
+    "sla": "27 GRIFFITHS ST, HENLEY BEACH SA 5022",
+    "id": "/addresses/GASA_423865931"
+  },
+  {
+    "sla": "11-17 DALY ST, SOUTH YARRA VIC 3141",
+    "id": "/addresses/GAVIC424418595"
+  },
+  {
+    "sla": "16 STATION ST, CAULFIELD NORTH VIC 3161",
+    "id": "/addresses/GAVIC722014489"
+  },
+  {
+    "sla": "7 MAURINE CT, RINGWOOD NORTH VIC 3134",
+    "id": "/addresses/GAVIC412200955"
+  },
+  {
+    "sla": "77 HARLINGTON ST, CLAYTON VIC 3168",
+    "id": "/addresses/GAVIC420119764"
+  },
+  {
+    "sla": "9 BETTS CT, SWAN HILL VIC 3585",
+    "id": "/addresses/GAVIC424042762"
+  },
+  {
+    "sla": "1 DAVID ST, KNOXFIELD VIC 3180",
+    "id": "/addresses/GAVIC422087039"
+  },
+  {
+    "sla": "222-238 KOROROIT CREEK RD, WILLIAMSTOWN NORTH VIC 3016",
+    "id": "/addresses/GAVIC424241020"
+  },
+  {
+    "sla": "6 JUNCTION ST, RINGWOOD VIC 3134",
+    "id": "/addresses/GAVIC422097498"
+  },
+  {
+    "sla": "150 BRUNSWICK ST, FITZROY VIC 3065",
+    "id": "/addresses/GAVIC424907820"
+  },
+  {
+    "sla": "895 ALBANY HWY, EAST VICTORIA PARK WA 6101",
+    "id": "/addresses/GAWA_146672232"
+  },
+  {
+    "sla": "226 GERTRUDE ST, NORTH GOSFORD NSW 2250",
+    "id": "/addresses/GANSW709855757"
+  },
+  {
+    "sla": "20 NANCARROW AV, MEADOWBANK NSW 2114",
+    "id": "/addresses/GANSW718592381"
+  },
+  {
+    "sla": "58-60 PARRAMATTA ST, CRONULLA NSW 2230",
+    "id": "/addresses/GANSW704525232"
+  },
+  {
+    "sla": "20 CHAUCER ST, BERESFIELD NSW 2322",
+    "id": "/addresses/GANSW704096803"
+  },
+  {
+    "sla": "13 GENERAL BRIDGES CR, DACEYVILLE NSW 2032",
+    "id": "/addresses/GANSW706549372"
+  },
+  {
+    "sla": "1 BATTY ST, BALMAIN NSW 2041",
+    "id": "/addresses/GANSW717839172"
+  },
+  {
+    "sla": "142 LINDEN ST, SUTHERLAND NSW 2232",
+    "id": "/addresses/GANSW706007434"
+  },
+  {
+    "sla": "9 VICTORIA ST, ROSEVILLE NSW 2069",
+    "id": "/addresses/GANSW705858305"
+  },
+  {
+    "sla": "122 CONSTITUTION RD, DULWICH HILL NSW 2203",
+    "id": "/addresses/GANSW704624168"
+  },
+  {
+    "sla": "38 DAVID AV, MITCHELL PARK SA 5043",
+    "id": "/addresses/GASA_422042966"
+  },
+  {
+    "sla": "172 WAKEFIELD ST, ADELAIDE SA 5000",
+    "id": "/addresses/GASA_423616554"
+  },
+  {
+    "sla": "29-31 ALDRIDGE TCE, MARLESTON SA 5033",
+    "id": "/addresses/GASA_424412736"
+  },
+  {
+    "sla": "146 RIDGE ST, NORTHGATE QLD 4013",
+    "id": "/addresses/GAQLD156952875"
+  },
+  {
+    "sla": "42 LUXFORD RD, MOUNT DRUITT NSW 2770",
+    "id": "/addresses/GANSW705427833"
+  },
+  {
+    "sla": "44 BEREMBEE RD, BOURKELANDS NSW 2650",
+    "id": "/addresses/GANSW717154787"
+  },
+  {
+    "sla": "1-9 TARA ST, SYLVANIA NSW 2224",
+    "id": "/addresses/GANSW707625073"
+  },
+  {
+    "sla": "3 LANGDON AV, WANNIASSA ACT 2903",
+    "id": "/addresses/GAACT714931474"
+  },
+  {
+    "sla": "69-71 JOHN ST, LIDCOMBE NSW 2141",
+    "id": "/addresses/GANSW717745685"
+  },
+  {
+    "sla": "803-815 KING GEORGES RD, SOUTH HURSTVILLE NSW 2221",
+    "id": "/addresses/GANSW705920471"
+  },
+  {
+    "sla": "3 LUTTRELL ST, HOBARTVILLE NSW 2753",
+    "id": "/addresses/GANSW704966910"
+  },
+  {
+    "sla": "49-51 MELVIN ST, BEVERLY HILLS NSW 2209",
+    "id": "/addresses/GANSW711462822"
+  },
+  {
+    "sla": "79-91 MACPHERSON ST, WARRIEWOOD NSW 2102",
+    "id": "/addresses/GANSW718379781"
+  },
+  {
+    "sla": "498 ANZAC PDE, KINGSFORD NSW 2032",
+    "id": "/addresses/GANSW705111380"
+  },
+  {
+    "sla": "BIG 4 PARK BEACH HOL PARK, 1 OCEAN PDE, COFFS HARBOUR NSW 2450",
+    "id": "/addresses/GANSW712160516"
+  },
+  {
+    "sla": "5 YORK ST, SYDNEY NSW 2000",
+    "id": "/addresses/GANSW706023291"
+  },
+  {
+    "sla": "8 CINTRA RD, BOWEN HILLS QLD 4006",
+    "id": "/addresses/GAQLD162464351"
+  },
+  {
+    "sla": "39 OLD COACH RD, UPPER COOMERA QLD 4209",
+    "id": "/addresses/GAQLD155920635"
+  },
+  {
+    "sla": "29 GHOSTGUM GR, UPPER COOMERA QLD 4209",
+    "id": "/addresses/GAQLD155915403"
+  },
+  {
+    "sla": "4A HANSFORD RD, COOMBABAH QLD 4216",
+    "id": "/addresses/GAQLD156460491"
+  },
+  {
+    "sla": "ROSEHILL APARTMENTS, 3 RANDWICK RD, EMERALD QLD 4720",
+    "id": "/addresses/GAQLD719270675"
+  },
+  {
+    "sla": "18 DODEMAIDES RD, TRAFALGAR VIC 3824",
+    "id": "/addresses/GAVIC420686490"
+  },
+  {
+    "sla": "1 BERRY AV, EDITHVALE VIC 3196",
+    "id": "/addresses/GAVIC420227545"
+  },
+  {
+    "sla": "30 SWALLOW GR, TRARALGON VIC 3844",
+    "id": "/addresses/GAVIC422115549"
+  },
+  {
+    "sla": "23 TOORAK RD, BRIGHT VIC 3741",
+    "id": "/addresses/GAVIC420971197"
+  },
+  {
+    "sla": "98 MCNAMARA AV, AIRPORT WEST VIC 3042",
+    "id": "/addresses/GAVIC421660300"
+  },
+  {
+    "sla": "52-62 MURRAY ST, WONTHAGGI VIC 3995",
+    "id": "/addresses/GAVIC424421752"
+  },
+  {
+    "sla": "33 WRECKYN ST, NORTH MELBOURNE VIC 3051",
+    "id": "/addresses/GAVIC413019746"
+  },
+  {
+    "sla": "9-11 LONGHURST WAY, QUEENS PARK WA 6107",
+    "id": "/addresses/GAWA_162697199"
+  },
+  {
+    "sla": "FERRY RESERVE HOLIDAY PK, 13 RIVERSIDE CR, BRUNSWICK HEADS NSW 2483",
+    "id": "/addresses/GANSW720078824"
+  },
+  {
+    "sla": "23 GEORGE ST, NORTH STRATHFIELD NSW 2137",
+    "id": "/addresses/GANSW705584682"
+  },
+  {
+    "sla": "170 NELSON ST, ANNANDALE NSW 2038",
+    "id": "/addresses/GANSW703918454"
+  },
+  {
+    "sla": "60 PASSEFIELD ST, LIVERPOOL NSW 2170",
+    "id": "/addresses/GANSW716883267"
+  },
+  {
+    "sla": "64 FULLAGAR RD, WENTWORTHVILLE NSW 2145",
+    "id": "/addresses/GANSW718139966"
+  },
+  {
+    "sla": "33 SUNDRIDGE ST, TARINGA QLD 4068",
+    "id": "/addresses/GAQLD157198958"
+  },
+  {
+    "sla": "181 MOUNTJOY TCE, MANLY QLD 4179",
+    "id": "/addresses/GAQLD155521657"
+  },
+  {
+    "sla": "2763 GOLD COAST HWY, BROADBEACH QLD 4218",
+    "id": "/addresses/GAQLD155067887"
+  },
+  {
+    "sla": "5 BALLS LANE, MYSTERTON QLD 4812",
+    "id": "/addresses/GAQLD155625010"
+  },
+  {
+    "sla": "6 CHARLES ST, BERSERKER QLD 4701",
+    "id": "/addresses/GAQLD719196276"
+  },
+  {
+    "sla": "8 MARGARET ST, BRISBANE CITY QLD 4000",
+    "id": "/addresses/GAQLD720502055"
+  },
+  {
+    "sla": "145 CHAPEL RD, BANKSTOWN NSW 2200",
+    "id": "/addresses/GANSW718557159"
+  },
+  {
+    "sla": "55 SMITH ST, CHARLESTOWN NSW 2290",
+    "id": "/addresses/GANSW717224773"
+  },
+  {
+    "sla": "6 JOUBERT ST, HUNTERS HILL NSW 2110",
+    "id": "/addresses/GANSW704989692"
+  },
+  {
+    "sla": "71-73 RAILWAY PDE, WILEY PARK NSW 2195",
+    "id": "/addresses/GANSW716060645"
+  },
+  {
+    "sla": "21-37 WAITARA AV, WAITARA NSW 2077",
+    "id": "/addresses/GANSW719166656"
+  },
+  {
+    "sla": "1 CARRAMATTA CT, PORT LINCOLN SA 5606",
+    "id": "/addresses/GASA_424600339"
+  },
+  {
+    "sla": "15 CAPEVIEW CR, HACKHAM SA 5163",
+    "id": "/addresses/GASA_720315593"
+  },
+  {
+    "sla": "52A HENRY ST, STEPNEY SA 5069",
+    "id": "/addresses/GASA_416709058"
+  },
+  {
+    "sla": "6-8 ROBERT AV, BROADVIEW SA 5083",
+    "id": "/addresses/GASA_424415854"
+  },
+  {
+    "sla": "53 BISHOPS PL, KENSINGTON SA 5068",
+    "id": "/addresses/GASA_422038052"
+  },
+  {
+    "sla": "34 GRAHAM ST, SUNSHINE VIC 3020",
+    "id": "/addresses/GAVIC421445101"
+  },
+  {
+    "sla": "20 PURSER AV, CASTLE HILL NSW 2154",
+    "id": "/addresses/GANSW704362533"
+  },
+  {
+    "sla": "23 CURLEWIS ST, BONDI BEACH NSW 2026",
+    "id": "/addresses/GANSW718289348"
+  },
+  {
+    "sla": "3 WINSTON AV, STUART PARK NT 0820",
+    "id": "/addresses/GANT_703861350"
+  },
+  {
+    "sla": "38 MULQUINEY CR, HIGHTON VIC 3216",
+    "id": "/addresses/GAVIC419655356"
+  },
+  {
+    "sla": "94 POWELL ST, OCEAN GROVE VIC 3226",
+    "id": "/addresses/GAVIC421478398"
+  },
+  {
+    "sla": "101 THERRY ST, MELBOURNE VIC 3000",
+    "id": "/addresses/GAVIC720599723"
+  },
+  {
+    "sla": "217 ALBION ST, BRUNSWICK VIC 3056",
+    "id": "/addresses/GAVIC420396781"
+  },
+  {
+    "sla": "183 KERR ST, FITZROY VIC 3065",
+    "id": "/addresses/GAVIC424420549"
+  },
+  {
+    "sla": "4 MARINA QUAY DR, ERSKINE WA 6210",
+    "id": "/addresses/GAWA_162410658"
+  },
+  {
+    "sla": "18-22 ARCHIPELAGO ST, PACIFIC PINES QLD 4211",
+    "id": "/addresses/GAQLD425182186"
+  },
+  {
+    "sla": "22 NITAWILL ST, EVERTON PARK QLD 4053",
+    "id": "/addresses/GAQLD156029792"
+  },
+  {
+    "sla": "CARLYLE GARDENS, 60 NORTH BECK DR, CONDON QLD 4815",
+    "id": "/addresses/GAQLD162054173"
+  },
+  {
+    "sla": "4 NORTHCLIFFE TCE, SURFERS PARADISE QLD 4217",
+    "id": "/addresses/GAQLD162996320"
+  },
+  {
+    "sla": "97-99 HASTINGS PDE, NORTH BONDI NSW 2026",
+    "id": "/addresses/GANSW716320340"
+  },
+  {
+    "sla": "108 GIBSON AV, PADSTOW NSW 2211",
+    "id": "/addresses/GANSW707547442"
+  },
+  {
+    "sla": "71 KALIMNA DR, KLEINTON QLD 4352",
+    "id": "/addresses/GAQLD425590298"
+  },
+  {
+    "sla": "171 FRANKLIN ST, GEORGE TOWN TAS 7253",
+    "id": "/addresses/GATAS717235890"
+  },
+  {
+    "sla": "54-56 WALDEN ST, NEWSTEAD TAS 7250",
+    "id": "/addresses/GATAS717739379"
+  },
+  {
+    "sla": "24 CONFECTIONERS WAY, ROSEBERY NSW 2018",
+    "id": "/addresses/GANSW720458915"
+  },
+  {
+    "sla": "5 MEREWETHER ST, NEWCASTLE NSW 2300",
+    "id": "/addresses/GANSW721144398"
+  },
+  {
+    "sla": "8 LOVERIDGE ST, ALEXANDRIA NSW 2015",
+    "id": "/addresses/GANSW710341043"
+  }
+]
