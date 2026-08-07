@@ -83,6 +83,19 @@ Both measured against the 5,991-pair frame and a 361-probe partial-prefix recall
 
 `max_expansions: 1` is rejected — it degrades the exact property ADR-041 exists to deliver for P069.
 
+### The anchored-phrase candidate fixes the named exact-vs-range flip (2026-08-07)
+
+Measured against production `addressr6`. Query `108 GAZE RD, CHRISTMAS ISLAND OT 6798` — the flip this ticket's sensitivity gate is built on:
+
+|                 | rank of exact `108 GAZE RD…` | rank of range `96-108 GAZE RD…` |
+| --------------- | ---------------------------- | ------------------------------- |
+| baseline        | 2                            | **1**                           |
+| anchored phrase | **1**                        | 2                               |
+
+No special handling for ranges was added. `96-108 GAZE RD…` simply does not **start with** `108`, so anchoring excludes it from the phrase clause by construction. The same reasoning explains a second observation: for `107 WOL` the baseline returns `105-107 WOLLAMAI ST, FINLEY` on page one while 142 exact `107 WOL*` matches exist; the anchored clause does not return it at all.
+
+This matters for the candidate comparison below. The table scores `constant_score` and `max_expansions` on exact-vs-range because that is this ticket's surface — the anchored candidate, developed on P074's street-level-first surface, appears to address **both** invariants, and for the same structural reason. Full corpus-scale exact-vs-range re-measurement against the 5,991-pair frame is still owed (investigation task 1); this is one pair, not a rate.
+
 ### `49 CHURCH ST` recurs under an unrelated candidate (2026-08-07)
 
 Cross-reference, not a scope change. The anchored-phrase (`span_first`) candidate now leading on P074 also loses `49 CHURCH ST` — one of the four partial-prefix losses recorded above for `max_expansions: 1`. The two candidates are mechanically unrelated: one truncates the expansion set, the other anchors the phrase to position 0. A probe that fails under both is more likely an **instrument artefact** (the target may not be genuinely prefixed by that probe once analysed) than a candidate-specific regression. Worth resolving when the loss mechanism is diagnosed, since it bears on whether the four losses recorded in the table above are all real. Tracked on P074's Investigation Tasks.
