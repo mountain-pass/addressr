@@ -242,43 +242,87 @@ describe('service/address-service.js — sla_range_expanded attachment (ADR 026)
   });
 });
 
-// ADR 028 (query-side wiring for sla_range_expanded) and ADR 027 (bool_prefix
-// fuzziness). These four assertions were source-inspection regexes over
-// service/address-service.js until 2026-08-07 — the P033 anti-pattern. The
-// query body now lives in src/build-search-body.js (clean ESM), so they assert
-// on the built object instead. The invariants are unchanged; only the
-// instrument is. Re-pointed rather than deleted per ADR 028 Reassessment
-// Criterion 5, which fires on deletion or skipping of the tie_breaker pin.
+// ADR 028 (query-side wiring for sla_range_expanded), ADR 027 (bool_prefix
+// fuzziness) and ADR 043 (the keyword-prefix anchor). These were
+// source-inspection regexes over service/address-service.js until 2026-08-07 —
+// the P033 anti-pattern. The query body now lives in src/build-search-body.js
+// (clean ESM), so they assert on the built object instead.
+//
+// ADR 028's pins have now been re-pointed TWICE, both times re-pointed rather
+// than deleted, so its Reassessment Criterion 5 has never fired: first from
+// source regex to built object, then from the phrase_prefix clause to ADR 043's
+// dis_max. The one pin that could NOT move is the old
+// `phrase_prefix fields includes sla_range_expanded` assertion, because ADR 043
+// removes that field from the query entirely. Its successor is the POSITIVE
+// assertion below that the anchor targets exactly sla.raw and ssla.raw — and
+// deliberately NOT a blanket "sla_range_expanded must never reappear", which
+// would pre-block ADR 043 Reassessment Criterion 4, the criterion that exists to
+// re-open precisely that question.
 const clausesFor = (q = '278 ROSS RIVER RD') =>
   buildAddressSearchBody({ searchString: q, page: 1, pageSize: 8 }).query.bool
     .should;
 const byType = (type) =>
   clausesFor().find((c) => c.multi_match?.type === type)?.multi_match;
+const anchorIn = (clauses) => clauses.find((c) => c.dis_max)?.dis_max;
+
+describe('src/build-search-body.js — the keyword-prefix anchor (ADR 043)', () => {
+  it('anchors on exactly sla.raw and ssla.raw, with the query uppercased', () => {
+    const anchor = anchorIn(clausesFor('8 waters rd'));
+    assert.ok(anchor, 'a dis_max anchor clause must exist');
+    assert.deepStrictEqual(anchor.queries, [
+      { prefix: { 'sla.raw': '8 WATERS RD' } },
+      { prefix: { 'ssla.raw': '8 WATERS RD' } },
+    ]);
+  });
+
+  it('the anchor declares no explicit tie_breaker (ADR 028 pin, re-pointed)', () => {
+    // Max across fields, not a sum. NOTE the original rationale for this pin
+    // does not survive the move: absent-field-contributes-0 mattered because
+    // sla_range_expanded was absent on non-range docs, whereas sla.raw and
+    // ssla.raw are populated on EVERY document, so nothing is absent and a
+    // raised tie_breaker could not act as a malus. Do not restore the old
+    // message — it would state a false reason.
+    assert.ok(
+      !('tie_breaker' in anchorIn(clausesFor())),
+      'the dis_max anchor MUST NOT declare tie_breaker. It is load-bearing for ADR 025 Decision Driver 4 (no tuning parameters): any non-zero value is a magic number needing its own justification. See ADR 028 Reassessment Criterion 5 as amended by ADR 043.',
+    );
+  });
+
+  it('omits the anchor until the query advances past the street number', () => {
+    // Selectivity, not length. "1" measured 2651 ms against a 334 ms baseline;
+    // "10" is two characters and still cost +191 ms; "A" was FASTER than
+    // baseline. The predicate is a non-space followed by whitespace, which is
+    // NOT the same as "contains whitespace" — they differ on a leading space.
+    for (const q of ['1', '10', '278', 'A', '  ', ' 8']) {
+      assert.equal(
+        anchorIn(clausesFor(q)),
+        undefined,
+        `must not anchor on ${JSON.stringify(q)}`,
+      );
+    }
+    // The trailing space is where the clause becomes cheap AND useful: it is
+    // the first keystroke at which there is anything to discriminate.
+    for (const q of ['8 ', '8 W', '8 WATERS RD']) {
+      assert.ok(anchorIn(clausesFor(q)), `must anchor on ${q}`);
+    }
+    // Accepted no-op: gated ON, but a leading space prefixes nothing, so the
+    // anchor contributes zero and bool_prefix carries the query. Recorded so a
+    // future reader does not read it as a defect.
+    const leading = anchorIn(clausesFor(' 8 WATERS RD'));
+    assert.deepStrictEqual(leading.queries[0], {
+      prefix: { 'sla.raw': ' 8 WATERS RD' },
+    });
+  });
+});
 
 describe('src/build-search-body.js — searchForAddress query clauses (ADR 027 / ADR 028)', () => {
-  it('phrase_prefix multi_match fields includes sla_range_expanded', () => {
-    const phrase = byType('phrase_prefix');
-    assert.ok(phrase, 'phrase_prefix multi_match clause must exist');
-    assert.ok(
-      phrase.fields.includes('sla_range_expanded'),
-      'phrase_prefix multi_match fields array must include sla_range_expanded per ADR 028',
-    );
-  });
-
-  it('bool_prefix multi_match fields does NOT include sla_range_expanded (protects ADR 025)', () => {
+  it('bool_prefix multi_match fields is exactly [sla, ssla] (protects ADR 025)', () => {
     const bool = byType('bool_prefix');
     assert.ok(bool, 'bool_prefix multi_match clause must exist');
-    assert.ok(
-      !bool.fields.includes('sla_range_expanded'),
+    assert.deepStrictEqual(
+      bool.fields,
+      ['sla', 'ssla'],
       'bool_prefix multi_match MUST NOT reference sla_range_expanded — bool_prefix sums across fields and would reintroduce P007-shape asymmetry (see ADR 025 and ADR 028)',
-    );
-  });
-
-  it('phrase_prefix multi_match must not declare an explicit tie_breaker (must stay at default 0.0)', () => {
-    const phrase = byType('phrase_prefix');
-    assert.ok(
-      !('tie_breaker' in phrase),
-      'phrase_prefix multi_match MUST NOT declare tie_breaker — raising it above 0.0 would let absent sla_range_expanded on non-range docs act as a malus, reintroducing the P007 asymmetry pattern. Any change here must either switch to ADR 028 Option C (symmetric population) first, or re-evaluate ADR 028.',
     );
   });
 

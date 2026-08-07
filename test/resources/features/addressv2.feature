@@ -128,8 +128,12 @@ Feature: Addresses v2
         # doc's sla but phrase "103 GAZE RD" did not match cleanly (sla
         # sequence is "103 107 GAZE RD"). After ADR 028, sla_range_expanded
         # contains exactly two endpoint aliases — alias[0] = "103 GAZE RD, …"
-        # and alias[1] = "107 GAZE RD, …" — so the phrase matches alias[0]
-        # cleanly. The non-range docs at 103 GAZE RD still rank above; this
+        # and alias[1] = "107 GAZE RD, …" — and until ADR 043 the phrase_prefix
+        # clause matched alias[0] cleanly. ADR 043 removed that clause, so no
+        # clause targets sla_range_expanded and recall here is carried solely by
+        # the whitecomma split of `103-107` into [103, 107] in sla — which is
+        # why ADR 043 Confirmation 6 makes this scenario load-bearing.
+        # The non-range docs at 103 GAZE RD still rank above; this
         # scenario asserts recall — that the range doc appears in the list.
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
@@ -146,10 +150,11 @@ Feature: Addresses v2
         # ADR 028 (supersedes ADR 026) — endpoint-only recall. Last endpoint 107
         # is NUMBER_LAST of the 103-107 GAZE RD range record GAOT_717321171.
         # Both endpoints (103 and 107) resolve to the range doc via whitecomma
-        # tokenisation of sla (which splits `103-107` into [103, 107]) and via
-        # sla_range_expanded which under ADR 028 contains exactly those two
-        # endpoint aliases. Mid-range numbers do NOT resolve — see the next
-        # scenario.
+        # tokenisation of sla (which splits `103-107` into [103, 107]). ADR 028
+        # also carried them in sla_range_expanded, but ADR 043 removed the only
+        # clause targeting that field, so the tokenisation is now the whole
+        # mechanism (ADR 043 Confirmation 6). Mid-range numbers do NOT resolve —
+        # see the next scenario.
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
             | q | 107 GAZE RD, CHRISTMAS ISLAND |
@@ -195,7 +200,8 @@ Feature: Addresses v2
     Scenario: P015 Canonical hyphenated range form still ranks first (ADR 028 non-regression)
         # Canonical range query must still work. The range doc has both 103 and
         # 107 as tokens in sla (whitecomma splits on `-`), so bool_prefix AND
-        # matches; and phrase_prefix matches the positional sequence in sla. No
+        # matches; until ADR 043 a phrase_prefix clause also matched the
+        # positional sequence in sla, and that clause is now gone. No
         # other doc in the OT fixture has both 103 AND 107 in its sla, so the
         # range doc is the unique bool_prefix-AND-passing hit. sla_range_expanded
         # contributes zero on this query (no single alias contains both 103
@@ -234,7 +240,9 @@ Feature: Addresses v2
         # Integration test that binds BOTH ADRs together. Query `107 GAZE RD
         # CHRISTMAS ISLAND` where 107 is the LAST endpoint of the 103-107 range:
         # - ADR 028 endpoint recall: range doc GAOT_717321171 must be in the list
-        #   (via alias[1] = "107 GAZE RD, ..." and via the 107 token in sla).
+        #   via the 107 token in sla. ADR 028's alias[1] = "107 GAZE RD, ..." no
+        #   longer contributes — ADR 043 removed the only clause that targeted
+        #   sla_range_expanded.
         # - ADR 027 fuzz exclusion: adjacent 109 GAZE RD (GAOT_717321172) must
         #   NOT be in the list. Under the pre-v2.4.0 AUTO fuzziness, 109 was a
         #   1-edit neighbour of 107 and appeared as noise. Under AUTO:5,8 it

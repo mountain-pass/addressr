@@ -1,6 +1,6 @@
 // @jtbd JTBD-001 (Search and Autocomplete Addresses From Partial Input)
 //
-// Shared apparatus for the two corpus-scale relevance gates ADR-042 pins:
+// Shared apparatus for the two corpus-scale relevance gates ADR-043 pins:
 // street-level-first (ADR-025 Decision Driver 1) and partial-prefix recall
 // (ADR-041's superset property).
 //
@@ -76,31 +76,73 @@ export const INDEX = process.env.ADDRESSR_PROBE_INDEX || 'addressr';
 /**
  * Candidate query shapes, each a delta on the imported production body.
  *
- * `baseline` is the shipped body verbatim. The others are the candidates
- * ADR-042 compares. `anchored` is CANDIDATE-SPECIFIC to ADR-042's chosen
- * option and is disposable if that ADR is superseded or its chosen option
- * changes before it ships; `baseline` and the rest are candidate-agnostic and
- * survive any outcome.
+ * `baseline` is the shipped body verbatim — which, since ADR-043 shipped on
+ * 2026-08-08, IS the keyword-prefix anchor. `legacy` is the body as it stood
+ * before that, and is what the gates measure against.
+ *
+ * ADR-042's `anchored` span variant was deleted when ADR-043 superseded it; its
+ * own docblock pre-committed to exactly that ("disposable if that ADR is
+ * superseded"). The measured comparison it produced is recorded in ADR-043's
+ * Decision Outcome table, which is where a result belongs once the option that
+ * produced it is withdrawn.
  */
-export function bodyFor({
-  query,
-  variant = 'baseline',
-  page = 1,
-  size = PAGE_SIZE,
-  analyzed,
-}) {
+export function bodyFor({ query, variant = 'baseline', page = 1, size = PAGE_SIZE }) {
   const body = buildAddressSearchBody({
     searchString: query,
     page,
     pageSize: size,
   });
-  const should = body.query?.bool?.should;
-  if (!should) return body; // empty query: no clauses to transform
+  if (!body.query?.bool?.should) return body; // empty query: nothing to transform
   if (variant === 'baseline') return body;
 
+  // `keyword-prefix` was the ADR-043 candidate and SHIPPED on 2026-08-08, so it
+  // is now identical to baseline. Kept as an explicit alias rather than deleted
+  // so an older invocation measures what its name says instead of silently
+  // becoming a duplicate baseline arm by accident.
+  if (variant === 'keyword-prefix') return body;
+
+  // `legacy` is the PRE-ADR-043 production body, and it is a load-bearing
+  // fixture: it is the arm recall must not regress FROM, and it is the
+  // configuration in which P078 recorded its four losses. Do not delete it.
+  //
+  // It must STRIP the anchor as well as restore the phrase clause. Rebuilding
+  // only the second half would leave a body carrying both, which is neither arm
+  // — and since every ladder probe is gated on, the anchor would rescue
+  // literal-prefix targets and P078's losses might not reproduce at all.
+  //
+  // Assign back to `body.query.bool.should`, and re-read it below. A rebound
+  // local would leave the body at the shipped shape while the guard still found
+  // the clause — a silent false measurement, the same P033 class this exists to
+  // close.
+  if (variant === 'legacy' || variant.startsWith('max_expansions:')) {
+    body.query.bool.should = body.query.bool.should.filter(
+      (c) => c.multi_match?.type === 'bool_prefix',
+    );
+    body.query.bool.should.push({
+      multi_match: {
+        fields: ['sla', 'ssla', 'sla_range_expanded'],
+        query,
+        type: 'phrase_prefix',
+        lenient: true,
+        auto_generate_synonyms_phrase_query: false,
+        operator: 'AND',
+      },
+    });
+    if (variant === 'legacy') return body;
+  }
+
+  const should = body.query.bool.should;
   const phraseIndex = should.findIndex(
     (c) => c.multi_match?.type === 'phrase_prefix',
   );
+  if (phraseIndex === -1) {
+    throw new Error(
+      `variant "${variant}" rewrites the phrase_prefix clause, which ADR-043 removed ` +
+        'from src/build-search-body.js. Delete the variant or re-point it onto `legacy`: ' +
+        'a -1 index silently rewrites the LAST clause, so the run would measure something ' +
+        'other than what the flag names.',
+    );
+  }
 
   if (variant.startsWith('max_expansions:')) {
     should[phraseIndex].multi_match.max_expansions = Number(
@@ -109,94 +151,14 @@ export function bodyFor({
     return body;
   }
 
-  if (variant.startsWith('constant_score:')) {
-    should[phraseIndex] = {
-      constant_score: {
-        filter: should[phraseIndex],
-        boost: Number(variant.split(':', 2)[1]),
-      },
-    };
-    return body;
-  }
-
-  if (variant === 'anchored') {
-    if (!analyzed) {
-      throw new Error(
-        'the anchored variant needs analyzed positions; call analyzePositions first',
-      );
-    }
-    should.splice(phraseIndex, 1, ...anchoredClauses(analyzed));
-    return body;
-  }
-
   throw new Error(`unknown variant: ${variant}`);
-}
-
-/**
- * span_first(span_near(...)) per field: "this field STARTS WITH what was typed".
- *
- * The final position stays a prefix, or `14 FALK` stops reaching `FALKLAND` and
- * the anchor drops recall probes. `span_multi` enumerates matching terms and
- * dies on the 1024-clause cap for short or synonym-expanded finals (`86 NORTH`
- * expands the synonym `N`, and `N*` fails ALL shards), so the rewrite is
- * bounded. Unlike `max_expansions` that bound cannot decide parent-vs-child —
- * anchoring does that structurally — but ADR-042 Confirmation 4 still requires
- * the invariance sweep before 128 counts as headroom rather than a magic number.
- */
-export function anchoredClauses(analyzedByField, rewrite = 'top_terms_128') {
-  return Object.entries(analyzedByField).map(([field, positions]) => {
-    const last = positions.length - 1;
-    const clauses = positions.map((tokens, index) => {
-      const spans = tokens.map((t) =>
-        index === last
-          ? {
-              span_multi: {
-                match: { prefix: { [field]: { value: t, rewrite } } },
-              },
-            }
-          : { span_term: { [field]: t } },
-      );
-      return spans.length === 1 ? spans[0] : { span_or: { clauses: spans } };
-    });
-    const inner =
-      clauses.length === 1
-        ? clauses[0]
-        : { span_near: { clauses, slop: 0, in_order: true } };
-    return { span_first: { match: inner, end: clauses.length } };
-  });
-}
-
-/** Analyzed token positions per field, for the anchored variant. */
-export async function analyzePositions(
-  client,
-  query,
-  fields = ['sla', 'ssla'],
-) {
-  const out = {};
-  for (const field of fields) {
-    const { body } = await client.indices.analyze({
-      index: INDEX,
-      body: { field, text: query },
-    });
-    // positions are contiguous from 0, so index directly rather than
-    // building a Map and sorting its keys
-    const positions = [];
-    for (const t of body.tokens) {
-      positions[t.position] ??= [];
-      positions[t.position].push(t.token);
-    }
-    out[field] = positions;
-  }
-  return out;
 }
 
 /** Run one query and return the returned `sla` values in rank order. */
 export async function search(client, { query, variant, size = PAGE_SIZE }) {
-  const analyzed =
-    variant === 'anchored' ? await analyzePositions(client, query) : undefined;
   const { body } = await client.search({
     index: INDEX,
-    body: bodyFor({ query, variant, size, analyzed }),
+    body: bodyFor({ query, variant, size }),
   });
   return (body.hits?.hits ?? []).map((h) => ({
     id: h._id,
@@ -207,7 +169,7 @@ export async function search(client, { query, variant, size = PAGE_SIZE }) {
 /**
  * Draw a fresh random sample of street-level addresses that also have sub-units.
  *
- * REDRAWN PER RUN by design. ADR-042 Confirmation 1: "a frozen sample
+ * REDRAWN PER RUN by design. ADR-043 Confirmation 1: "a frozen sample
  * degenerates into the instance-pinning that hid this defect for months." The
  * committed sample.json is the terminal record of the 2026-08-06 run, not the
  * frame — pass it via --frame only to reproduce that specific measurement, and

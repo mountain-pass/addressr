@@ -8,8 +8,9 @@
 // it broke as soon as the mappings moved out of that file. The builders are
 // clean ESM, so assert on the object they actually emit.
 //
-// ADR-041 (P069) requires BOTH analyzers on every field the query clauses
-// target. `search_analyzer` is per-field: miss one and that field keeps
+// ADR-041 (P069) requires BOTH analyzers on every field a query clause
+// targets — plus `sla_range_expanded`, which ADR-043 removed from the query
+// but which keeps both analyzers so Reassessment Criterion 4 can re-open it. `search_analyzer` is per-field: miss one and that field keeps
 // synonym-rewriting the query at search time, so it fails asymmetrically
 // against the fields that do not.
 //
@@ -47,8 +48,18 @@ describe('index body builders — both analyzers on every searched field (ADR-04
     const { buildAddressIndexBody } = await import(MODULE);
     const { properties } = buildAddressIndexBody([]).mappings;
     assert.equal(properties.sla_range_expanded.fields, undefined);
-    assert.ok(properties.sla.fields.raw, 'sla keeps its .raw for sorting');
-    assert.ok(properties.ssla.fields.raw, 'ssla keeps its .raw for sorting');
+  });
+
+  it('declares sla.raw and ssla.raw without ignore_above (ADR-043 Confirmation 12)', async () => {
+    const { buildAddressIndexBody } = await import(MODULE);
+    const { properties } = buildAddressIndexBody([]).mappings;
+    assert.ok(properties.sla.fields?.raw, 'sla must keep its .raw subfield');
+    assert.ok(properties.ssla.fields?.raw, 'ssla must keep its .raw subfield');
+    assert.ok(
+      !('ignore_above' in properties.sla.fields.raw) &&
+        !('ignore_above' in properties.ssla.fields.raw),
+      'sla.raw/ssla.raw must carry no ignore_above — ADR-043 Confirmation 12: a limit would silently strand long SLAs from the keyword-prefix anchor while every other test stayed green',
+    );
   });
 
   it('gives the locality index the same analyzer pipeline (ADR-021)', async () => {

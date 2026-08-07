@@ -2,10 +2,10 @@
 
 **Status**: Open
 **Reported**: 2026-04-28
-**Priority**: 6 (Medium) — Impact: Moderate (3) x Likelihood: Possible (2)
+**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; **34 further source-inspection assertions remain** across four files, so the population that can fire again is enumerated below.
 **Origin**: internal
 **Effort**: M — audit of test/js/**tests** assertions + progressive behavioural-test replacement cadence
-**WSJF**: 3.0 — (6 × 1.0) / 2 — backfilled 2026-07-29 (review)
+**WSJF**: 8.0 — (16 × 1.0) / 2 — re-rated 2026-08-08 on the P091 evidence; was 3.0 (6 × 1.0) / 2, backfilled 2026-07-29 (review)
 
 ## Description
 
@@ -26,6 +26,44 @@ These tests **pin the literal source text**, not the contract. Failure modes:
 4. **Reviewer trap**: the file path `test/js/__tests__/address-service.test.mjs` and the `describe()` titles imply behavioural coverage. A reviewer reading the test name would assume the contract is exercised. It isn't.
 
 This problem was surfaced 2026-04-28 when authoring a User-Agent fix for `service/address-service.js`'s `fetchPackageData` (data.gov.au CKAN WAF compatibility, ADR 029 Phase 1 step 5 blocker). The natural shape — and the shape in line with all other tests in this file — was a source-inspection test asserting `User-Agent: LOADER_USER_AGENT` appears in the source. The user rejected this and explicitly asked for a behavioural test. The user is right; the existing pattern is the bug.
+
+## CONFIRMED INSTANCE — 2026-08-08, and it is this ticket's own worked example
+
+**This ticket predicted a specific defect by name and then that defect happened.** The Description above lists, as an illustration, _"attaches rval.sla_range_expanded using expandRangeAliases — greps the assignment expression"_. Failure mode 2 above reads: _"a behavioural regression that doesn't change the source pattern passes the test even though the contract is broken."_
+
+That is precisely what occurred. See [P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md).
+
+`sla_range_expanded` has been indexed one level too deep — at `_source.structured.sla_range_expanded` rather than the top-level path the mapping declares and every query targeted — since **2026-04-20**, eight days before this ticket was filed. Measured against production 2026-08-08: the field is populated on **0 of 16,905,824** documents, while **349,540** range-form documents should carry it.
+
+Three layers of tests were green throughout:
+
+| instrument                          | what it asserted                                                                    | why it passed                                                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `address-service.test.mjs`          | `/rval\.sla_range_expanded\s*=\s*expandRangeAliases\(/` **against the source text** | The assignment does exist. The source is correct; the _assembly site downstream of it_ is not.                                           |
+| `elasticsearch.test.mjs`            | the mapping **declares** the field                                                  | It does. Declaration is not population.                                                                                                  |
+| ADR-028 Cucumber endpoint scenarios | endpoint recall for `103` / `107 GAZE RD`                                           | Recall is carried by the whitecomma tokenizer split, so they pass identically with the field absent — which is what they had been doing. |
+
+**No test at any level asserted that a range document is retrievable by its alias.** The one assertion that named the feature was the source-inspection regex, and it is structurally incapable of detecting the defect: the code it greps for is present and correct.
+
+The cost was not a wrong number in a test report. It was four months during which [ADR-026](../../decisions/026-range-number-address-expansion.superseded.md) and [ADR-028](../../decisions/028-range-number-endpoint-only.proposed.md) recorded an index-side mechanism as working when it had never executed, [P015](../closed/015-range-number-addresses-not-searchable-by-base-number.md) was closed on it, and [P075](075-adr041-inverts-exact-vs-range-on-one-address.md) attributed a live ranking inversion to an alias that is not in the index.
+
+### The population that can still fire
+
+Enumerated 2026-08-08 — `assert.match()` over implementation source text:
+
+| file                                           | assertions |
+| ---------------------------------------------- | ---------- |
+| `test/js/__tests__/waycharter-server.test.mjs` | 14         |
+| `test/js/__tests__/address-service.test.mjs`   | 7          |
+| `test/js/__tests__/proxy-auth.test.mjs`        | 7          |
+| `test/js/__tests__/graceful-shutdown.test.mjs` | 6          |
+| **total**                                      | **34**     |
+
+Each is a claim of coverage that executes no code. `proxy-auth.test.mjs` is the one to look at first: ADR-024 proxy authentication is a security boundary, and a source-inspection assertion there is a green light over an unexercised auth path.
+
+### What "replace" has to mean
+
+Deleting these tests is not the fix, and neither is rewriting them one-for-one. The replacement must assert the **observable outcome** — for P091 that means indexing a range document and searching for it by its alias, which fails against today's code and is the test that should have existed since April. A behavioural test that stops at "the function returned the right object" would also have missed this, because `mapAddressDetails` **did** return the right object; the loss happened at the assembly site downstream. The invariant worth pinning is end-to-end: _what goes into the index is what the query can find_.
 
 ## Symptoms
 
@@ -63,6 +101,8 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
 - [ ] Add a lint rule or CI check that catches `readFile(.*service/.*\.js.*)` followed by `assert.match` patterns and flags them as source-inspection.
 
 ## Related
+
+- [P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md) — the confirmed instance. This ticket's failure mode 2, on this ticket's own named example, costing four months.
 
 - Surfaced during ADR 029 Phase 1 step 5 fix-forward for the data.gov.au CKAN WAF compatibility (User-Agent header missing on `fetch()`).
 - ADR 014 (governance commits) — tests should be a meaningful gate, not a ceremonial pass.

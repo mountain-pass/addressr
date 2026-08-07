@@ -66,7 +66,7 @@ This is the only option that puts the token a user actually types into the index
 
 **Scope — all of the following, or the fix is asymmetric:**
 
-- `sla`, `ssla` **and** `sla_range_expanded`. `search_analyzer` is per-field; if `sla_range_expanded` is missed, the ADR-028 `phrase_prefix` clause (inherited from the superseded ADR-026) keeps synonym-rewriting at search time and breaks differently from the `bool_prefix` clause.
+- `sla`, `ssla` **and** `sla_range_expanded`. `search_analyzer` is per-field; if a queried field is missed, the clause targeting it (inherited from the superseded ADR-026) keeps synonym-rewriting at search time and breaks differently from the `bool_prefix` clause.
 - `initLocalityIndex`, which carries its own duplicated settings block. Missing it falsifies ADR-021's "same analyzer pipeline as address search" confirmation criterion.
 
 ## Multi-Word Members
@@ -84,7 +84,7 @@ pos=3 'NE'      pos=3 'NORTH'
 pos=4 'DARWIN'  pos=4 'EAST'
 ```
 
-`EAST` collides with `DARWIN`, so the `phrase_prefix` query `North Darwin` falsely matches that address. **The same false positive occurs under the current directional config**, because `NE => NORTH EAST` stacks the multi-token side identically. Measured on OpenSearch 3.5.0: `North Darwin` returns 1 hit against both the equivalent-form index and the directional-form control.
+`EAST` collides with `DARWIN`, so the `phrase_prefix` query `North Darwin` falsely matches that address. **(Amended 2026-08-08: [ADR 043](043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) made this LATENT rather than live — the `phrase_prefix` clause is gone and its keyword-prefix replacement is position-blind, so no production clause consults positions. The index-time collision is unchanged; only its query-side manifestation is dormant.)** **The same false positive occurs under the current directional config**, because `NE => NORTH EAST` stacks the multi-token side identically. Measured on OpenSearch 3.5.0: `North Darwin` returns 1 hit against both the equivalent-form index and the directional-form control.
 
 So the expected test outcome is a **documented pre-existing limitation, not a passing assertion** — tagged the way ADR-027 tags `@known-regression-adr-027`. The test's job is to pin the behaviour so a future analysis change cannot worsen it unnoticed; it is not a claim that multi-word phrase matching is correct. Fixing it is out of scope here and would need `synonym_graph`, which this decision forecloses by removing synonyms from the search analyzer.
 
@@ -149,7 +149,7 @@ Self-hosted operators get a real choice and a fast path. Nobody gets a silent ha
 - The ADR-029 pre-cutover gate green against the new index: the SSLA-14 ranking baseline, full Cucumber `test:nogeo` and `test:geo`, and the k6 pair.
 - `55 Pyrmont Bri` returns `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` and `55 Harris S` returns `55 HARRIS ST, PYRMONT NSW 2009`, both from production.
 - `_analyze` on the new index shows `BRIDGE` and `BDGE` at the same position for the indexed document, and an unrewritten `BRI` for the query.
-- A `phrase_prefix` assertion on a multi-word suffix address (`NORTH EAST`) pinning the position-collision behaviour as a **known limitation**, tagged so it is not mistaken for a passing correctness claim, together with the directional-config control showing the same result.
+- A `phrase_prefix` assertion on a multi-word suffix address (`NORTH EAST`) pinning the position-collision behaviour as a **known limitation** **(amended 2026-08-08 by ADR 043: production no longer ships a `phrase_prefix` clause, so this is retained as an analysis-chain probe rather than a pin on a live production hazard — a green here is not ranking evidence)**, tagged so it is not mistaken for a passing correctness claim, together with the directional-config control showing the same result.
 - ADR-028's mid-range false-positive scenario re-run against the new analysis config and still holding.
 - The integration test runs on **both** CI engine legs (2.19.5 and 3.5.0), in its own script outside `test:js` so it never silently skips inside `pre-commit`; it skips only when the port is unreachable **and** `CI` is unset, and fails when `CI` is set.
 - `initIndex` aborts with a remediation message naming both migration routes when the `_meta` analysis-structure stamp does not match, and does **not** attempt close/putSettings/putMapping.

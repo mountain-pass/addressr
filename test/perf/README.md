@@ -3,7 +3,7 @@
 Two unrelated families live here. Both exist so a claim is reproducible rather
 than a number in a document.
 
-- **Relevance gates** (ADR-042) — `street-level-first-probe.mjs`,
+- **Relevance gates** (ADR-043) — `street-level-first-probe.mjs`,
   `partial-prefix-recall-ladder.mjs`, `relevance-lib.mjs`. See the section at
   the end of this file.
 - **Primary-path invariants** (ADR-031 / ADR-033) — `read-shadow-invariant-ab.mjs`,
@@ -101,10 +101,10 @@ Do not make the blue arm optional to get it running again. A green-only run
 emits output shaped like a result while being no evidence at all, which is the
 same trap the invariant harness above warns about.
 
-## Relevance gates (ADR-042)
+## Relevance gates (ADR-043)
 
 `street-level-first-probe.mjs` and `partial-prefix-recall-ladder.mjs` are the two
-corpus-scale gates [ADR-042](../../docs/decisions/042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md)
+corpus-scale gates [ADR-043](../../docs/decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md)
 pins in its Confirmation. They exist because the property they measure is
 invisible at every smaller scale.
 
@@ -124,7 +124,7 @@ node test/perf/street-level-first-probe.mjs --variant baseline --frame test/perf
 
 ### Fixture scale cannot discharge either gate
 
-Quoting ADR-042 Confirmation criterion 3, because the next reviewer will be
+Quoting ADR-043 Confirmation criterion 3, because the next reviewer will be
 standing here: fixture-scale Cucumber **cannot** discharge these gates and is
 retained as non-regression only. The street-level-first property measured **0%**
 violations on the OT fixture (5,186 docs) and on a full TAS load (375,613 docs)
@@ -155,9 +155,9 @@ probe above: nothing below a failed gate is evidence.
 
 `sample.json` is the terminal record of the 2026-08-06 run: 150 street-level
 addresses that also have sub-units, the frame behind the 62.7% baseline and the
-0/150 anchored figure in ADR-042.
+0/150 anchored figure in ADR-043.
 
-It is **not** the gate's input. The probe redraws per run, because ADR-042
+It is **not** the gate's input. The probe redraws per run, because ADR-043
 Confirmation 1 says a frozen sample degenerates into the instance-pinning that
 hid this defect for months. `--frame` reproduces a past measurement and labels
 its own output non-discharging.

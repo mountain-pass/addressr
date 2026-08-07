@@ -104,8 +104,18 @@ async function search(index, q) {
   return new Set((body.hits?.hits ?? []).map((h) => h._source.sla));
 }
 
-/** Every prefix of `text` from `from` tokens up to the whole string. */
-function prefixes(text, from = 2) {
+/**
+ * Every prefix of `text` from `from` tokens up to the whole string.
+ *
+ * `from` defaults to 1, not 2: ADR-043 gates its keyword-prefix anchor on
+ * "a non-space followed by whitespace", so a two-token floor put every probe on
+ * the gated-ON side and the walk could never cross the discontinuity at all
+ * (ADR-043 Confirmation 13). Raising this back to 2 silently retires that
+ * coverage. The walk still does not emit the trailing-space keystroke at which
+ * the gate flips — tokens are joined — which is why the boundary probe below
+ * exists separately.
+ */
+function prefixes(text, from = 1) {
   const tokens = text.replace(/,/g, '').split(/\s+/);
   const out = [];
   for (let n = from; n <= tokens.length; n += 1) {
@@ -177,11 +187,31 @@ describe(
     });
 
     it('FAILS against the old config — proving the test can detect the defect', async () => {
-      const hits = await search(OLD_INDEX, '55 Pyrmont Bri');
+      // PROBE IS 'Pyrmont Bri', NOT '55 Pyrmont Bri'. Do not "fix" it back.
+      //
+      // ADR-043's anchor is analysis-blind by design: it matches whenever the
+      // typed text is a literal prefix of the stored SLA, regardless of what
+      // the analyzer did. '55 Pyrmont Bri' IS such a prefix, so the anchor
+      // rescues it on the OLD index too and this control silently stops
+      // controlling anything — the exact false-green this whole file exists to
+      // prevent. Dropping the street number makes it a non-prefix, so the
+      // anchor contributes nothing and the probe isolates the analysis defect
+      // it is here to detect: OLD_INDEX rewrites BRIDGE to BDGE at index time
+      // with no search analyzer, so BRI* cannot reach it and operator:AND fails
+      // the doc.
+      const target = '55 PYRMONT BRIDGE RD, PYRMONT NSW 2009';
       assert.equal(
-        hits.has('55 PYRMONT BRIDGE RD, PYRMONT NSW 2009'),
+        (await search(OLD_INDEX, 'Pyrmont Bri')).has(target),
         false,
         'if the old config passes, this test is not measuring what it claims to',
+      );
+      // The matching positive half, on the SAME probe. ADR-041 Confirmation 1
+      // requires failing-against-old and passing-against-new; asserting those
+      // on different queries would leave the passing half on a query the anchor
+      // rescues regardless of analysis.
+      assert.ok(
+        (await search(INDEX, 'Pyrmont Bri')).has(target),
+        'the new config must find the target on the same probe the old config fails',
       );
     });
 
@@ -202,6 +232,19 @@ describe(
       }
     });
 
+    // ADR-043 Confirmation 13. `prefixes()` walks whole tokens and never emits
+    // the trailing-space keystroke at which the anchor fires; this probe IS that
+    // keystroke. Do not "tidy" the '55 ' entry — it is the boundary, not a typo.
+    it('crosses the selectivity gate without losing the target', async () => {
+      const target = '55 PYRMONT BRIDGE RD, PYRMONT NSW 2009';
+      for (const q of ['55', '55 ', '55 P', '55 PY']) {
+        assert.ok(
+          (await search(INDEX, q)).has(target),
+          `"${q}" lost "${target}" across the ADR-043 selectivity boundary`,
+        );
+      }
+    });
+
     it('both spellings work in both directions', async () => {
       for (const [q, expected] of [
         ['55 Pyrmont Bridge Rd', '55 PYRMONT BRIDGE RD, PYRMONT NSW 2009'],
@@ -219,9 +262,14 @@ describe(
 
     // ADR-041 § Multi-Word Members: recorded as a KNOWN LIMITATION, not a
     // correctness claim. Multi-token synonym members stack at one position, so
-    // a phrase query can span the collision. Measured to behave identically
-    // under the old directional config, so this is pre-existing rather than
-    // introduced — the assertion exists to stop it silently getting worse.
+    // a position-consulting clause can span the collision. Measured to behave
+    // identically under the old directional config, so this is pre-existing
+    // rather than introduced.
+    //
+    // ADR-043 made the hazard LATENT: no production clause consults positions
+    // any more — the phrase_prefix clause is gone and the keyword anchor is
+    // position-blind. Retained as an analysis-chain probe, NOT as a pin on a
+    // live production hazard. Do not read a green here as ranking evidence.
     it('known limitation: multi-word members collide positions, in BOTH configs', async () => {
       const isFalsePositive = async (index) =>
         (await search(index, 'North Darwin')).has(

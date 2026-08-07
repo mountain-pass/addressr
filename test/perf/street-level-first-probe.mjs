@@ -1,6 +1,6 @@
 // @jtbd JTBD-001 (Search and Autocomplete Addresses From Partial Input)
 //
-// ADR-042 Confirmation criterion 1 — the street-level-first property gate.
+// ADR-043 Confirmation criterion 1 — the street-level-first property gate.
 //
 // Property under test, from ADR-025 Decision Driver 1: querying a street-level
 // address verbatim, with no sub-unit token, must return that street-level
@@ -21,7 +21,7 @@
 //     [--threshold 0.02] [--frame test/perf/sample.json]
 //
 // --frame reproduces a specific past measurement and its result is
-// NON-DISCHARGING: the gate requires a fresh draw (ADR-042 Confirmation 1).
+// NON-DISCHARGING: the gate requires a fresh draw (ADR-043 Confirmation 1).
 
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
 /* eslint-disable n/no-process-exit, unicorn/no-process-exit --
@@ -91,7 +91,7 @@ const pct = (rate * 100).toFixed(1);
 console.log(
   JSON.stringify(
     {
-      gate: 'street-level-first (ADR-042 Confirmation 1)',
+      gate: 'street-level-first (ADR-043 Confirmation 1)',
       variant,
       frame: framePath
         ? `${framePath} (NON-DISCHARGING: frozen frame)`
@@ -109,7 +109,7 @@ console.log(
 
 if (framePath) {
   console.log(
-    '\nNON-DISCHARGING: a frozen frame reproduces a past measurement. ADR-042 ' +
+    '\nNON-DISCHARGING: a frozen frame reproduces a past measurement. ADR-043 ' +
       'Confirmation 1 requires a fresh draw per run, because a frozen sample ' +
       'degenerates into the instance-pinning that hid this defect for months.',
   );

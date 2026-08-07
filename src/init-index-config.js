@@ -172,10 +172,20 @@ export function analysisStructureStamp(analysis) {
 /**
  * A searchable text field carrying BOTH analyzers.
  *
- * `search_analyzer` is per-field, so every field the query clauses target needs
- * it — including `sla_range_expanded`, or the ADR-028 phrase_prefix clause
- * keeps synonym-rewriting at search time and fails asymmetrically against the
- * bool_prefix clause.
+ * `search_analyzer` is per-field, so every field a query clause targets needs
+ * it, or that field keeps synonym-rewriting the query at search time and fails
+ * asymmetrically against the fields that do not.
+ *
+ * ADR-043: `sla_range_expanded` is no longer one of those fields — the
+ * phrase_prefix clause that carried it is gone and no clause targets it now.
+ * Both analyzers are retained on it deliberately, so ADR-043 Reassessment
+ * Criterion 4 can re-open the field's query-side value against a symmetric
+ * analysis chain rather than a half-migrated one.
+ *
+ * The `raw` keyword subfield carries NO `ignore_above`, and since ADR-043 that
+ * absence is load-bearing: `sla.raw` / `ssla.raw` are what the keyword-prefix
+ * anchor matches on, so a length limit would silently strand long SLAs from it
+ * while every other test stayed green. Pinned in elasticsearch.test.mjs.
  */
 export function analyzedTextField({ raw = false } = {}) {
   return {
@@ -281,7 +291,17 @@ function normalise(value) {
   }
   if (value !== null && typeof value === 'object') {
     const out = {};
-    for (const key of Object.keys(value).toSorted()) {
+    // Ordering here only has to be CONSISTENT, not any particular order:
+    // `isNormalisedEqual` normalises both sides before comparing, so the sort
+    // decides nothing about the verdict. It is safe to state a comparator that
+    // is not the historical default. What matters is that `normalise` feeds
+    // ONLY `isNormalisedEqual` -> `indexConfigMatches`; the `_meta.analysisStamp`
+    // is built separately by `analysisStructureStamp` and never routes through
+    // here, so no sort choice can trigger a false stale-index abort (ADR-041).
+    const sortedKeys = Object.keys(value).toSorted((a, b) =>
+      a.localeCompare(b),
+    );
+    for (const key of sortedKeys) {
       out[key] = normalise(value[key]);
     }
     return out;
@@ -289,7 +309,7 @@ function normalise(value) {
   return String(value);
 }
 
-function normalisedEqual(a, b) {
+function isNormalisedEqual(a, b) {
   return JSON.stringify(normalise(a)) === JSON.stringify(normalise(b));
 }
 
@@ -328,8 +348,8 @@ export function indexConfigMatches(
       return false;
     }
     return (
-      normalisedEqual(desiredAnalysis, storedAnalysis) &&
-      normalisedEqual(desiredMappings, storedMappings)
+      isNormalisedEqual(desiredAnalysis, storedAnalysis) &&
+      isNormalisedEqual(desiredMappings, storedMappings)
     );
   } catch (error_) {
     // never let a comparison bug break the loader — fall back to update path

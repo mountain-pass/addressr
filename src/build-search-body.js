@@ -26,6 +26,24 @@
  * @returns {object} the OpenSearch request body
  */
 export function buildAddressSearchBody({ searchString, page, pageSize }) {
+  // ADR 043's selectivity gate: has the user typed past the street number?
+  //
+  // GATED ON SELECTIVITY, NOT LENGTH. A prefix on a ~16.9M-term keyword
+  // dictionary costs whatever it matches. Measured against production: `1` took
+  // 2651 ms against a 334 ms baseline, `10` is two characters and still cost
+  // +191 ms, while `A` was FASTER than baseline because almost no SLA begins
+  // with a letter. So a character count is the wrong rule.
+  //
+  // The space is itself the selectivity: `prefix: '1'` enumerates 1…, 10…,
+  // 100…, 11…, whereas `prefix: '1 '` reaches only street-number-exactly-1 and
+  // measured within noise of baseline. That is why the predicate is a non-space
+  // followed by whitespace, and NOT merely "contains whitespace" — the two
+  // differ on a leading-space query, and ADR 043 Reassessment Criterion 2
+  // exists to protect this predicate specifically.
+  //
+  // Nothing is lost before the gate opens: the page is 8 rows drawn from
+  // millions either way, so there is no discrimination available to add.
+  const isAnchored = /\S\s/.test(searchString ?? '');
   return {
     // `(page - 1 || 0)` is load-bearing and deliberately not `(page ?? 1) - 1`:
     // for the undefined-page first call `NaN || 0` yields 0. Changing it also
@@ -53,24 +71,51 @@ export function buildAddressSearchBody({ searchString, page, pageSize }) {
                 operator: 'AND',
               },
             },
-            {
-              multi_match: {
-                // ADR 028: sla_range_expanded added HERE ONLY (not in the
-                // bool_prefix clause above). phrase_prefix uses best_fields
-                // max with tie_breaker default 0.0, so an absent field on
-                // non-range docs contributes 0 to the max — no P007-shape
-                // asymmetry. Adding sla_range_expanded to the bool_prefix
-                // fields would reintroduce the summation asymmetry ADR 025
-                // resolved. DO NOT move this field into the clause above.
-                fields: ['sla', 'ssla', 'sla_range_expanded'],
-                query: searchString,
-                // fuzziness: 'AUTO',
-                type: 'phrase_prefix',
-                lenient: true,
-                auto_generate_synonyms_phrase_query: false,
-                operator: 'AND',
-              },
-            },
+            ...(isAnchored
+              ? [
+                  {
+                    // ADR 043: "starts with", not "contains".
+                    //
+                    // This replaced a phrase_prefix clause, which matches a
+                    // phrase ANYWHERE in the field. A sub-unit's sla contains
+                    // its parent's whole token sequence, so under "contains"
+                    // the parent-vs-child discriminator was absent from the
+                    // text by construction and no scoring adjustment was
+                    // well-posed. 60% of sub-unit-bearing addresses returned a
+                    // sub-unit ahead of the address itself.
+                    //
+                    // Two fields because the user may type either notation:
+                    // `14/2 PARKES` matches ssla, `UNIT 14, 2 PARKES` matches
+                    // sla (ADR 025 — either way, It Will Just Work). dis_max
+                    // takes the better of the two rather than summing them,
+                    // which matters because sla === ssla on every address
+                    // WITHOUT a sub-unit: a plain `should` pair would
+                    // double-score exactly those docs, which is the summation
+                    // asymmetry ADR 025 resolved.
+                    //
+                    // No explicit tie_breaker, so this is max and not a blend.
+                    // That pin is ADR 028's, re-pointed here. Its ORIGINAL
+                    // rationale does NOT survive the move: absent-field-
+                    // contributes-0 mattered only while sla_range_expanded was
+                    // absent on non-range docs. sla.raw and ssla.raw are
+                    // populated on every document, so nothing is absent and a
+                    // raised tie_breaker could not act as a malus. The pin
+                    // survives on ADR 025 Driver 4: no tuning parameters.
+                    //
+                    // Uppercased because G-NAF stores SLAs uppercase and .raw
+                    // carries no normalizer. .raw also carries no ignore_above,
+                    // and that absence is load-bearing here — a limit would
+                    // silently strand long SLAs from this clause. Pinned in
+                    // test/js/__tests__/elasticsearch.test.mjs.
+                    dis_max: {
+                      queries: [
+                        { prefix: { 'sla.raw': searchString.toUpperCase() } },
+                        { prefix: { 'ssla.raw': searchString.toUpperCase() } },
+                      ],
+                    },
+                  },
+                ]
+              : []),
           ],
         }),
       },

@@ -1,6 +1,8 @@
 ---
-status: 'proposed'
+status: 'superseded'
 date: 2026-08-07
+superseded-date: 2026-08-07
+superseded-by: [043-keyword-prefix-anchor-for-street-level-first-ranking]
 human-oversight: confirmed
 oversight-date: 2026-08-07
 decision-makers: [Tom Howard]
@@ -10,6 +12,14 @@ reassessment-date: 2026-11-07
 ---
 
 # Anchored span phrase clause for street-level-first ranking
+
+> **SUPERSEDED 2026-08-07 by [ADR-043 Keyword-prefix anchor for street-level-first ranking](043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md), the same day it was ratified and before it shipped. Do not implement from this document.**
+>
+> **The diagnosis below is correct and is carried forward unchanged.** Read the Context section: it is the best statement of why the parent/child discriminator is absent from the text under "contains" semantics and present under "starts with". Nothing in ADR-043 disputes it.
+>
+> What was wrong was the mechanism. `span_first` needs the analysed tokens, because span queries match terms rather than text — verified: `span_term` with raw text returns 0 hits. That means an `_analyze` call before every search, a second sequential round trip on the revenue endpoint, measured at p50 342 ms against a 160 ms baseline. A `prefix` query on the `sla.raw` keyword subfield, which already existed, reaches the same 0.0% violation rate at baseline latency, in one round trip, with no re-index, and portably — so the ADR-025 Driver 3 override recorded below is withdrawn rather than merely superseded.
+>
+> Retained in full because the reasoning has value: the option comparison, the measurements, and the record of a decision ratified and replaced within the hour.
 
 > Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context.
 >

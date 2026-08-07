@@ -83,7 +83,7 @@ Both measured against the 5,991-pair frame and a 361-probe partial-prefix recall
 
 `max_expansions: 1` is rejected — it degrades the exact property ADR-041 exists to deliver for P069.
 
-### The anchored-phrase candidate fixes the named exact-vs-range flip (2026-08-07)
+### The anchored candidates fix the named exact-vs-range flip (2026-08-07)
 
 Measured against production `addressr6`. Query `108 GAZE RD, CHRISTMAS ISLAND OT 6798` — the flip this ticket's sensitivity gate is built on:
 
@@ -92,7 +92,9 @@ Measured against production `addressr6`. Query `108 GAZE RD, CHRISTMAS ISLAND OT
 | baseline        | 2                            | **1**                           |
 | anchored phrase | **1**                        | 2                               |
 
-No special handling for ranges was added. `96-108 GAZE RD…` simply does not **start with** `108`, so anchoring excludes it from the phrase clause by construction. The same reasoning explains a second observation: for `107 WOL` the baseline returns `105-107 WOLLAMAI ST, FINLEY` on page one while 142 exact `107 WOL*` matches exist; the anchored clause does not return it at all.
+Measured under BOTH anchored candidates — `span_first` and the keyword prefix that superseded it in [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) — with identical results: exact #1, range #2. No special handling for ranges was added in either.
+
+Note the keyword-prefix form goes further than `span_first` on this ticket's own mechanism: a `prefix` on a keyword carries no per-term IDF sum over an expansion set, so the per-shard noise recorded here **leaves the clause entirely** rather than surviving at reduced amplitude under `top_terms_128`. `96-108 GAZE RD…` simply does not **start with** `108`, so anchoring excludes it from the phrase clause by construction. The same reasoning explains a second observation: for `107 WOL` the baseline returns `105-107 WOLLAMAI ST, FINLEY` on page one while 142 exact `107 WOL*` matches exist; the anchored clause does not return it at all.
 
 This matters for the candidate comparison below. The table scores `constant_score` and `max_expansions` on exact-vs-range because that is this ticket's surface — the anchored candidate, developed on P074's street-level-first surface, appears to address **both** invariants, and for the same structural reason. Full corpus-scale exact-vs-range re-measurement against the 5,991-pair frame is still owed (investigation task 1); this is one pair, not a rate.
 

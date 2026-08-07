@@ -1,6 +1,6 @@
 // @jtbd JTBD-001 (Search and Autocomplete Addresses From Partial Input)
 //
-// ADR-042 Confirmation criterion 2 — the partial-prefix recall gate.
+// ADR-043 Confirmation criterion 2 — the partial-prefix recall gate.
 //
 // Property under test, from ADR-041's Confirmation: as a user types more of a
 // real address, that address must not fall off the returned page.
@@ -23,8 +23,13 @@
 // SENSITIVITY GATE. Aborts unless it reproduces the four losses P078 recorded
 // for `max_expansions: 1`. Nothing below the gate is evidence if it fails.
 //
+// POLARITY. ADR-043 shipped on 2026-08-08, so `baseline` IS the fix. The arm
+// recall must not regress FROM is `legacy` — the pre-ADR-043 body — and that is
+// what BOTH the sensitivity gate and the main comparison measure against. Point
+// only one of them at `legacy` and the gate compares an uncontrolled pair.
+//
 //   ADDRESSR_PROBE_HOST=search-xxxx.ap-southeast-2.es.amazonaws.com \
-//     node test/perf/partial-prefix-recall-ladder.mjs [--variant anchored] [--targets 90]
+//     node test/perf/partial-prefix-recall-ladder.mjs [--variant baseline] [--targets 90]
 
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
 /* eslint-disable n/no-process-exit, unicorn/no-process-exit --
@@ -45,14 +50,18 @@ const argument = (name, fallback) => {
   return index === -1 ? fallback : process.argv[index + 1];
 };
 
-// Defaults to baseline deliberately: baseline is what production actually runs
-// until the fix ships, so a reviewer's first run should measure the live system
-// rather than a candidate. Name the candidate explicitly to measure it.
+// Defaults to baseline, which since ADR-043 shipped IS the live system — so a
+// reviewer's first run measures what production actually serves, against
+// `legacy`. Name a different variant explicitly to measure a candidate.
 const variant = argument('variant', 'baseline');
 const targetCount = Number(argument('targets', '90'));
 
 // P078's four recorded max_expansions:1 losses. If these do not reproduce, the
-// ladder is not measuring what it claims to.
+// ladder is not measuring what it claims to. Both arms run against `legacy`,
+// because `legacy` IS the configuration P078 recorded them in — running the
+// unclipped arm against the shipped body would let the anchor rescue
+// literal-prefix targets and the gate would fail for a reason that is not a
+// loss of instrument sensitivity.
 const KNOWN = [
   ['14 FALK', '14 FALKLAND CL, WINMALEE NSW 2777'],
   ['49 CHURCH ST', '49 CHURCH ST, DUBBO NSW 2830'],
@@ -76,7 +85,7 @@ const found = async (probe, target, v) => {
 // --- sensitivity gate ---------------------------------------------------
 const gate = await mapLimit(KNOWN, 4, async ([probe, target]) => ({
   probe,
-  base: await found(probe, target, 'baseline'),
+  base: await found(probe, target, 'legacy'),
   clipped: await found(probe, target, 'max_expansions:1'),
 }));
 const gateOk = gate.every((g) => g.base && !g.clipped);
@@ -115,7 +124,7 @@ for (const entry of frame) {
   if (seen.size >= targetCount) break;
 }
 
-const base = await mapLimit(probes, 6, ([p, t]) => found(p, t, 'baseline'));
+const base = await mapLimit(probes, 6, ([p, t]) => found(p, t, 'legacy'));
 const cand = await mapLimit(probes, 6, ([p, t]) => found(p, t, variant));
 
 const results = probes.map(([probe], index) => ({
@@ -130,11 +139,11 @@ const net = gained - lost.length;
 console.log(
   JSON.stringify(
     {
-      gate: 'partial-prefix recall (ADR-042 Confirmation 2)',
+      gate: 'partial-prefix recall (ADR-043 Confirmation 2)',
       variant,
       probes: probes.length,
       targets: seen.size,
-      baselineFound: base.filter(Boolean).length,
+      legacyFound: base.filter(Boolean).length,
       candidateFound: cand.filter(Boolean).length,
       lost: lost.length,
       gained,
