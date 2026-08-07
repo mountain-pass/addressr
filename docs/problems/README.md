@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-07 **P089 captured** — no file-level `max-lines` rule exists, so `service/address-service.js` has reached 1896 lines and `src/waycharter-server.js` 1032, with every other first-party source file at or below 393. Also this session: the `/addresses` query body was extracted to `src/build-search-body.js`, discharging P033 for that surface and unblocking the P074 ranking fix, and nine unicorn rules were scope-disabled in `address-service.js` because P084's debt otherwise blocks every commit touching that file. (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-07 **P090 captured** — the decisions compendium's counts and Related lines are hand-maintained with no test behind them; two defects landed the same day (a stale in-force count, and a phantom `ADR-074` mis-derived from P074) and both were found by risk review rather than any gate. Also this session: ADR-042 recorded the anchored-phrase decision for the P007/P074 ranking fix, ADR-025 gained the corpus-scale reassessment criterion whose absence let the defect survive two closures, and P089 captured the missing file-length lint rule. (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -40,6 +40,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open          | M      | 2026-07-16 | internal |
 | 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
+| 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them   | Medium (6)   | Open          | M      | 2026-08-07 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |

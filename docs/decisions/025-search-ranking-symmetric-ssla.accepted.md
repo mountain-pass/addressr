@@ -125,11 +125,16 @@ Re-visit this decision if any of the following occur:
 - ADR 021's multi-backend abstraction ships and a non-Lucene backend is adopted whose scoring does not sum per-field across `multi_match`. In that case, Option B's correctness property may not transfer; switch to Option A (`dis_max`-equivalent) or Option C (single-field) as appropriate to the new backend.
 - The query in `searchForAddress` is changed away from `multi_match type: 'bool_prefix'`. The summation behaviour this ADR relies on must be preserved or the decision re-evaluated.
 - A user reports a regression in sub-unit or slash-form matching.
+- **The street-level-first property is measured at corpus scale and found violated, whether or not a user reports it.** Added 2026-08-07. The three criteria above did not fire on the defect this ADR was written to fix: [P074 P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) measured **62.7%** of a random national sample violating Decision Driver 1, while every recorded gate stayed green, because the gates pin sampled _instances_ rather than the _property_. Fixture-scale corpora cannot detect it: OT (5,186 docs) and a full TAS load (375,613 docs) both measure 0%.
+
+**Note on the Decision Outcome's engine-agnosticism rationale.** [ADR-042 Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) partially overrides it, deliberately and with the trade recorded. That ADR is `proposed` and `human-oversight: unconfirmed`, so nothing here is displaced until it is ratified. The mechanism this ADR chose — symmetric `ssla` population — is retained unchanged and remains load-bearing for slash-form notation tolerance; what ADR-042 contests is only the driver's weighting against a Lucene-specific query shape.
 
 ## Related
 
 - [ADR 002 — OpenSearch as search engine](002-opensearch-as-search-engine.accepted.md)
 - [ADR 021 — Retain OpenSearch with future multi-backend support](021-retain-opensearch-plan-multi-backend.proposed.md)
+- [ADR 042 — Anchored span phrase clause for street-level-first ranking](042-anchored-span-phrase-clause-for-street-level-first-ranking.proposed.md) — partially overrides this ADR's engine-agnosticism rationale; `proposed` and unratified, so not yet in force. See the note under Reassessment Criteria.
+- [Problem 074 — P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) — measured this ADR's Decision Driver 1 violated at 62.7% while every recorded gate stayed green
 - [ADR 009 — Cucumber BDD testing](009-cucumber-bdd-testing.accepted.md)
 - [Problem 007 — Search scoring exact address ranked below sub-units](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md)
 - GitHub issue [#375](https://github.com/tompahoward/addressr/issues/375) — original report
