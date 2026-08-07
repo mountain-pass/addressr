@@ -1,4 +1,8 @@
-// @jtbd JTBD-203 (Acquire and Refresh the G-NAF Dataset on a Self-Hosted Install)
+// @jtbd JTBD-001 (Search and Autocomplete Addresses From Partial Input)
+//
+// Re-anchored from JTBD-203 (Acquire and Refresh the G-NAF Dataset) 2026-08-07:
+// this asserts a query-side ranking/recall property, not a dataset-acquisition
+// one. JTBD-203 predicted the mis-anchoring in its own body.
 //
 // Integration test for ADR-041 / P069 — the partial-prefix superset property.
 //
@@ -25,6 +29,7 @@ import {
   buildAnalysis,
   mapAuthCodeTableToSynonymList,
 } from '../../src/init-index-config.js';
+import { buildAddressSearchBody } from '../../src/build-search-body.js';
 
 const HOST = process.env.ELASTIC_TEST_HOST || 'http://localhost:9200';
 const INDEX = 'addressr-adr041-integration';
@@ -63,7 +68,10 @@ async function es(method, path, body) {
     headers: { 'Content-Type': 'application/json' },
     ...(body !== undefined && { body: JSON.stringify(body) }),
   });
-  return { status: response.status, body: await response.json().catch(() => ({})) };
+  return {
+    status: response.status,
+    body: await response.json().catch(() => ({})),
+  };
 }
 
 async function createAndLoad(index, body) {
@@ -75,38 +83,24 @@ async function createAndLoad(index, body) {
   await es('POST', `/${index}/_refresh`);
 }
 
-/** The exact query searchForAddress builds (service/address-service.js). */
+/**
+ * The exact query searchForAddress builds — imported, not copied.
+ *
+ * This used to be a hand-maintained duplicate carrying the same claim, and it
+ * was false: the copy had no `from`, no `sort` and no `highlight`. A gate that
+ * asserts ADR-041's superset property against a body production does not send
+ * proves nothing, and would stay green through a query change (P074 Fix
+ * Strategy prerequisite 3, P033). The fixture index is built by
+ * `buildAddressIndexBody`, so the builder's sort on `confidence`, `ssla.raw`
+ * and `sla.raw` resolves here — an unmapped sort field errors the request
+ * rather than being ignored.
+ */
 async function search(index, q) {
-  const { body } = await es('POST', `/${index}/_search`, {
-    size: 20,
-    query: {
-      bool: {
-        should: [
-          {
-            multi_match: {
-              fields: ['sla', 'ssla'],
-              query: q,
-              fuzziness: 'AUTO:5,8',
-              type: 'bool_prefix',
-              lenient: true,
-              auto_generate_synonyms_phrase_query: false,
-              operator: 'AND',
-            },
-          },
-          {
-            multi_match: {
-              fields: ['sla', 'ssla', 'sla_range_expanded'],
-              query: q,
-              type: 'phrase_prefix',
-              lenient: true,
-              auto_generate_synonyms_phrase_query: false,
-              operator: 'AND',
-            },
-          },
-        ],
-      },
-    },
-  });
+  const { body } = await es(
+    'POST',
+    `/${index}/_search`,
+    buildAddressSearchBody({ searchString: q, page: 1, pageSize: 20 }),
+  );
   return new Set((body.hits?.hits ?? []).map((h) => h._source.sla));
 }
 

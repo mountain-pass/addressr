@@ -3,15 +3,20 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildAddressSearchBody } from '../../../src/build-search-body.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// P033 caveat: this file uses source-inspection tests because
-// service/address-service.js is babel-only and cannot be imported by raw
-// Node ESM. A future extraction to clean ESM (per the gnaf-package-fetch.js
-// precedent) would let these become behavioural tests. Until then, source
-// inspection guards the integration shape only — behavioural correctness of
-// imported helpers is covered by their own *.test.mjs files.
+// P033 caveat: the remaining source-inspection tests in this file exist because
+// service/address-service.js is babel-only and cannot be imported by raw Node
+// ESM. Source inspection guards the integration shape only — behavioural
+// correctness of imported helpers is covered by their own *.test.mjs files.
+//
+// Partially discharged 2026-08-07: the searchForAddress query-clause pins
+// (ADR 027 / ADR 028) are now behavioural assertions against
+// src/build-search-body.js, following the extraction-to-clean-ESM path this
+// caveat anticipated. The read-shadow, progress-logging, getAddress and
+// sla_range_expanded-attachment blocks below are still source-inspection.
 
 // ADR 031: searchForAddress must call mirrorRequest after the primary
 // search so v2 OpenSearch caches warm with realistic production query
@@ -237,156 +242,75 @@ describe('service/address-service.js — sla_range_expanded attachment (ADR 026)
   });
 });
 
-// ADR 026: query-side wiring for sla_range_expanded. The new field is added
-// ONLY to the phrase_prefix multi_match clause of searchForAddress. It is
-// deliberately excluded from the bool_prefix clause because bool_prefix sums
-// scores across fields — adding a field populated only on range docs would
-// reintroduce the P007-shape asymmetry that ADR 025 resolved. Additionally,
-// phrase_prefix tie_breaker must remain at the OpenSearch default of 0.0:
-// with best_fields max combination and tie_breaker=0, an absent field
-// contributes 0 to the max and non-range docs are unaffected. This invariant
-// is load-bearing per ADR 026 Consequences > Bad.
-describe('service/address-service.js — searchForAddress query clauses (ADR 026)', () => {
-  it('phrase_prefix multi_match fields includes sla_range_expanded', async () => {
-    const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
-      'utf8',
-    );
-    const functionStart = source.indexOf(
-      'export async function searchForAddress(',
-    );
-    assert.notEqual(functionStart, -1, 'searchForAddress must exist');
-    const nextFunctionIndex = source.indexOf(
-      '\nexport async function ',
-      functionStart + 1,
-    );
-    const functionBody =
-      nextFunctionIndex === -1
-        ? source.slice(functionStart)
-        : source.slice(functionStart, nextFunctionIndex);
+// ADR 028 (query-side wiring for sla_range_expanded) and ADR 027 (bool_prefix
+// fuzziness). These four assertions were source-inspection regexes over
+// service/address-service.js until 2026-08-07 — the P033 anti-pattern. The
+// query body now lives in src/build-search-body.js (clean ESM), so they assert
+// on the built object instead. The invariants are unchanged; only the
+// instrument is. Re-pointed rather than deleted per ADR 028 Reassessment
+// Criterion 5, which fires on deletion or skipping of the tie_breaker pin.
+const clausesFor = (q = '278 ROSS RIVER RD') =>
+  buildAddressSearchBody({ searchString: q, page: 1, pageSize: 8 }).query.bool
+    .should;
+const byType = (type) =>
+  clausesFor().find((c) => c.multi_match?.type === type)?.multi_match;
 
-    // Find the phrase_prefix multi_match and confirm its fields array
-    // contains sla_range_expanded. Use a non-greedy match against the
-    // multi_match block surrounding `type: 'phrase_prefix'`.
-    const phrasePrefixBlock = functionBody.match(
-      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
-    );
-    assert.notEqual(
-      phrasePrefixBlock,
-      null,
-      'phrase_prefix multi_match block must be parseable',
-    );
-    assert.match(
-      phrasePrefixBlock[0],
-      /fields\s*:\s*\[[^\]]*['"]sla_range_expanded['"][^\]]*\]/,
-      'phrase_prefix multi_match fields array must include sla_range_expanded per ADR 026',
+describe('src/build-search-body.js — searchForAddress query clauses (ADR 027 / ADR 028)', () => {
+  it('phrase_prefix multi_match fields includes sla_range_expanded', () => {
+    const phrase = byType('phrase_prefix');
+    assert.ok(phrase, 'phrase_prefix multi_match clause must exist');
+    assert.ok(
+      phrase.fields.includes('sla_range_expanded'),
+      'phrase_prefix multi_match fields array must include sla_range_expanded per ADR 028',
     );
   });
 
-  it('bool_prefix multi_match fields does NOT include sla_range_expanded (protects ADR 025)', async () => {
-    const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
-      'utf8',
-    );
-    const functionStart = source.indexOf(
-      'export async function searchForAddress(',
-    );
-    const nextFunctionIndex = source.indexOf(
-      '\nexport async function ',
-      functionStart + 1,
-    );
-    const functionBody =
-      nextFunctionIndex === -1
-        ? source.slice(functionStart)
-        : source.slice(functionStart, nextFunctionIndex);
-
-    const boolPrefixBlock = functionBody.match(
-      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
-    );
-    assert.notEqual(
-      boolPrefixBlock,
-      null,
-      'bool_prefix multi_match block must be parseable',
-    );
-    assert.doesNotMatch(
-      boolPrefixBlock[0],
-      /sla_range_expanded/,
-      'bool_prefix multi_match MUST NOT reference sla_range_expanded — bool_prefix sums across fields and would reintroduce P007-shape asymmetry (see ADR 025 and ADR 026)',
+  it('bool_prefix multi_match fields does NOT include sla_range_expanded (protects ADR 025)', () => {
+    const bool = byType('bool_prefix');
+    assert.ok(bool, 'bool_prefix multi_match clause must exist');
+    assert.ok(
+      !bool.fields.includes('sla_range_expanded'),
+      'bool_prefix multi_match MUST NOT reference sla_range_expanded — bool_prefix sums across fields and would reintroduce P007-shape asymmetry (see ADR 025 and ADR 028)',
     );
   });
 
-  it('phrase_prefix multi_match must not declare an explicit tie_breaker (must stay at default 0.0)', async () => {
-    const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
-      'utf8',
-    );
-    const functionStart = source.indexOf(
-      'export async function searchForAddress(',
-    );
-    const nextFunctionIndex = source.indexOf(
-      '\nexport async function ',
-      functionStart + 1,
-    );
-    const functionBody =
-      nextFunctionIndex === -1
-        ? source.slice(functionStart)
-        : source.slice(functionStart, nextFunctionIndex);
-
-    const phrasePrefixBlock = functionBody.match(
-      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]phrase_prefix['"][\s\S]*?\}/,
-    );
-    // Strip block and line comments before matching so a prose mention of
-    // tie_breaker in a guardrail comment does not trigger the assertion.
-    // Only a real key declaration `tie_breaker: <value>` should fail.
-    const decommented = phrasePrefixBlock[0]
-      .replaceAll(/\/\*[\s\S]*?\*\//g, '')
-      .replaceAll(/\/\/[^\n]*/g, '');
-    assert.doesNotMatch(
-      decommented,
-      /\btie_breaker\s*:/,
-      'phrase_prefix multi_match MUST NOT declare tie_breaker — raising it above 0.0 would let absent sla_range_expanded on non-range docs act as a malus, reintroducing the P007 asymmetry pattern. Any change here must either switch to ADR 026 Option C (symmetric population) first, or re-evaluate ADR 026.',
+  it('phrase_prefix multi_match must not declare an explicit tie_breaker (must stay at default 0.0)', () => {
+    const phrase = byType('phrase_prefix');
+    assert.ok(
+      !('tie_breaker' in phrase),
+      'phrase_prefix multi_match MUST NOT declare tie_breaker — raising it above 0.0 would let absent sla_range_expanded on non-range docs act as a malus, reintroducing the P007 asymmetry pattern. Any change here must either switch to ADR 028 Option C (symmetric population) first, or re-evaluate ADR 028.',
     );
   });
-});
 
-// ADR 027: `fuzziness: 'AUTO:5,8'` on the bool_prefix clause. The default
-// `AUTO` (= `AUTO:3,6`) allows 1 edit for 3-5 char tokens, which causes
-// adjacent street numbers to fuzzy-match each other (e.g. `138` matches
-// `137`, `135`, `128`, `132`). Tightening to `AUTO:5,8` pushes the
-// "0 edits" boundary up to 4-char tokens inclusive, killing numeric fuzz
-// on 3-4 digit street numbers and postcodes while preserving typo tolerance
-// on 5+ character street/locality names (`Muray` → `Murray` still works).
-describe('service/address-service.js — bool_prefix fuzziness (ADR 027)', () => {
-  it('bool_prefix multi_match declares fuzziness: "AUTO:5,8"', async () => {
-    const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
-      'utf8',
-    );
-    const functionStart = source.indexOf(
-      'export async function searchForAddress(',
-    );
-    assert.notEqual(functionStart, -1, 'searchForAddress must exist');
-    const nextFunctionIndex = source.indexOf(
-      '\nexport async function ',
-      functionStart + 1,
-    );
-    const functionBody =
-      nextFunctionIndex === -1
-        ? source.slice(functionStart)
-        : source.slice(functionStart, nextFunctionIndex);
-
-    const boolPrefixBlock = functionBody.match(
-      /multi_match\s*:\s*\{[\s\S]*?type\s*:\s*['"]bool_prefix['"][\s\S]*?\}/,
-    );
-    assert.notEqual(
-      boolPrefixBlock,
-      null,
-      'bool_prefix multi_match block must be parseable',
-    );
-    assert.match(
-      boolPrefixBlock[0],
-      /fuzziness\s*:\s*['"]AUTO:5,8['"]/,
+  it('bool_prefix multi_match declares fuzziness: "AUTO:5,8"', () => {
+    const bool = byType('bool_prefix');
+    assert.equal(
+      bool.fuzziness,
+      'AUTO:5,8',
       'bool_prefix multi_match fuzziness MUST be "AUTO:5,8" per ADR 027. Do not revert to plain "AUTO" (numeric fuzz reintroduced) or tighten further to "AUTO:6,8" (loses 5-char typo tolerance — see baseline query 8).',
     );
+  });
+
+  it('omits the should clauses entirely when searchString is empty', () => {
+    const body = buildAddressSearchBody({
+      searchString: '',
+      page: 1,
+      pageSize: 8,
+    });
+    assert.ok(
+      !('should' in body.query.bool),
+      'empty query must not build clauses',
+    );
+  });
+
+  it('page-undefined first call starts at from: 0', () => {
+    // `(page - 1 || 0)` is load-bearing: NaN || 0 -> 0. A `(page ?? 1) - 1`
+    // rewrite would yield NaN here and break the first-page call.
+    const body = buildAddressSearchBody({
+      searchString: 'x',
+      page: undefined,
+      pageSize: 8,
+    });
+    assert.equal(body.from, 0);
   });
 });
