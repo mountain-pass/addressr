@@ -63,6 +63,16 @@ Measured against production `addressr6`, 2026-08-07:
 
 `0.0%` is on a sample drawn fresh and never previously measured, which is what ADR-042 Confirmation 1 requires and what this decision inherits.
 
+**Post-implementation confirmation, 2026-08-08 — measured against the shipped code, on freshly redrawn samples.** The table above records the _candidate_ measurements taken before implementation. The three below are separate draws against the shipped code — not restatements — and they are the **relevance** figures the release notes publish. **Latency was not re-measured post-implementation**; the p50/p90 figures the release notes quote come from the 2026-08-07 candidate run in the table above, because the shipped clause is byte-identical to the candidate that produced them.
+
+| gate                  | draw                                               | result                                                  |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| street-level-first    | **150** addresses, redrawn                         | **0 violations (0.0%)**                                 |
+| partial-prefix recall | **182** probes over 60 targets, redrawn            | **net 0** (8 lost, 8 gained); sensitivity gate PASS     |
+| typo tolerance        | **60** mistyped queries, both arms in the same run | 90.0% in page, 85.0% first — identical before and after |
+
+The recall figure differs from the table's `43/268 (net +1)` because it is a different draw at a different size, not because the property moved; both are net non-negative and the ladder's `net < 0` gate is what either would have to breach. Recording both, with their sizes, is the sample-provenance discipline Confirmation 1 exists to enforce — a reader who finds only one number cannot tell which run produced it.
+
 ### The selectivity gate
 
 A `prefix` on a ~16.9M-term keyword dictionary costs whatever it matches. Measured: `"1"` took **2651 ms** against a 334 ms baseline; `"2"` took 1942 ms. `"A"` was _faster_ than baseline, because almost no SLA begins with a letter.
@@ -147,7 +157,7 @@ Inherited from ADR-042 and still binding:
 
 1. **Corpus-scale street-level-first**, on a **randomly redrawn** national sample. A frozen sample degenerates into the instance-pinning that hid this for months. `test/perf/street-level-first-probe.mjs`.
 2. **Corpus-scale partial-prefix recall**, target-in-top-8, mid-word probes, with the sensitivity gate that aborts unless it reproduces P078's four recorded losses. `test/perf/partial-prefix-recall-ladder.mjs`. **Both arms of that gate, and the ladder's baseline arm, run against the `legacy` variant** — the pre-this-decision body — because `legacy` is the configuration P078 recorded those losses in and is the arm recall must not regress _from_. `legacy` is therefore a load-bearing fixture in `test/perf/relevance-lib.mjs` and must not be deleted; point only one of the two call sites at it and the gate compares an uncontrolled pair.
-3. **Fixture-scale Cucumber discharges neither gate** and is retained as non-regression only. This sentence is load-bearing: the property measured 0% on OT and TAS while production measured 62.7%, and reading a green Cucumber run as sufficient is how the defect survived two closures.
+3. **Fixture-scale Cucumber discharges neither gate** and is retained as non-regression only. This sentence is load-bearing: the property measured 0% on OT and TAS while production measured 62.7% on the first draw and 60.0% on a later one — two draws of the same property, which is itself the point, and reading a green Cucumber run as sufficient is how the defect survived two closures.
 4. **ADR-027's 14-query v2.3.0 baseline** re-run post-deploy.
 5. **Query-body single source** — service and ADR-041 integration test both build from `src/build-search-body.js`. Standing invariant, holding as of 3.0.7.
 
