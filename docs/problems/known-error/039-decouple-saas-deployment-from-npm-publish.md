@@ -99,7 +99,7 @@ So the EB instance installs the running artifact **from the public npm registry*
 
 ### Investigation Tasks
 
-- [ ] Follow-on, same control: the `deploy/**` disjunct this ticket's fix introduced deploys the workspace version, which `changeset version` has already bumped when a release PR is open — so a `deploy/**` push while a release is pending deploys a version that is not on npm. Realised in production 2026-08-08, run 31252424980. See [P095](./095-deploy-axis-deploys-the-unpublished-next-version-while-a-release-pr-is-open.md).
+- [ ] Follow-on, same control: the `deploy/**` disjunct this ticket's fix introduced deploys the workspace version, which `changeset version` has already bumped when a release PR is open — so a `deploy/**` push while a release is pending deploys a version that is not on npm. Realised in production 2026-08-08, run 31252424980. See [P095](../verifying/095-deploy-axis-deploys-the-unpublished-next-version-while-a-release-pr-is-open.md).
 
 - [ ] Re-rate Priority and Effort at next /wr-itil:review-problems — evidence now supports a higher Likelihood than the pre-investigation guess of Unlikely (2): 20 realised instances. Effort is shape-dependent (S for Option 4, M–L for 1–3). Header fields deliberately left unchanged so `/wr-itil:review-problems` owns the re-rank and the README ranking stays consistent.
 - [x] Investigate root cause — audit current release.yml / deploy.yml workflows and how changesets drive npm + EB deploys (2026-07-25; see Confirmed mechanism above. There is no `deploy.yml` — the deploy lives inside `release.yml`'s `release` job.)

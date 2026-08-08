@@ -1,6 +1,6 @@
 # Problem 095: The push-tier deploy axis deploys the unpublished NEXT version while a release PR is open
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-08-08
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3). Impact 4: a failed deployment against the live origin plus recoverable Terraform state drift. Not 5 — `RollbackLaunchOnFailure` held and production never stopped serving. Likelihood 3: fires whenever a `deploy/**` push coincides with a pending changeset, which is a normal combination.
 **Origin**: internal — realised in production, run 31252424980
@@ -125,6 +125,19 @@ Recorded as an amendment to ADR-040, which also discharges that decision's now-f
 
   **What it still does not prove**, stated because the hash is a proxy: it detects that the INPUT changed, never that the uploaded artefact was built from that input. The workflow header that used to carry the blindness caveat now says exactly that instead of claiming coverage it does not have.
 
+## Fix Released
+
+**Released**: 2026-08-08 — `09ab4dbc` (`fix(deploy): resolve the deployed version from the registry, not the workspace`) reached production at 13:12 via run `31259020914`, the publish-triggered deploy on the release-PR merge `77fa7c72`. **Not by its own push**: that push's run (`31256089801`) failed at the test stage and the `release` job was skipped, so it deployed nothing. `deploy/**` is not in the published npm package, so a master push is the release vehicle when the deploy runs — here it was the next apply from any entry point that carried the commit. <!-- no-changeset-reference -->
+
+**Second half released**: 2026-08-09 — master push of `3b330147` (`fix(deploy): make terraform content-aware about the deployment bundle`), applied by run `31283258197`. Apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle.
+
+Fix, in two parts, because the ticket named two preconditions the push-tier disjunct never checked:
+
+1. **The version is published.** `deploy/resolve-version.sh` resolves from the registry's `latest` dist-tag on the non-publish paths and fails closed on an error or empty read; the publish path keeps the workspace version, which is correct by construction and avoids a stale CDN read. All four consumers — tfvar, manifest version, dependency pin, zip name — take the one resolved value.
+2. **The bundle matches the version in its name.** `aws_s3_object.elasticapp` carries `source_hash` over the deployment manifest, so a disagreeing bundle produces a plan diff instead of silence. `deploy.sh` rebuilds the bundle directory from empty and fails closed if `zip` fails, closing the operator-machine route where a stale archive would ship under a fresh, correct-looking hash.
+
+**Awaiting user verification** — the thing to watch is the case this ticket was filed for: push a `deploy/**` change while a release PR is open, and confirm the deploy pins the CURRENTLY PUBLISHED version rather than the bumped working-tree one. That combination has not recurred since the fix; both post-fix applies ran with the workspace and registry versions already in agreement, so the discriminating path is covered by tests and not yet by an exercise.
+
 ## Workaround
 
 Do not push a `deploy/**` change while a release PR is open. Merge the release first, or hold the `deploy/**` commit until after.
@@ -145,7 +158,7 @@ Do not push a `deploy/**` change while a release PR is open. Merge the release f
 ## Related
 
 - [P039](../known-error/039-decouple-saas-deployment-from-npm-publish.md) — decoupling SaaS deployment from npm publish. This is a defect in the wiring that ticket's fix delivered, not unfinished work belonging to it: P039's recorded residual on this axis is a **governance-tier** concern (push-tier reaches production), whereas this is **version skew**. Raising the tier would not have prevented it, and gating on pending releases does not change the tier.
-- [P094](094-published-package-with-geo-enabled-is-tested-by-nothing.md) — both are gaps between what CI exercises and what production actually runs.
+- [P094](../known-error/094-published-package-with-geo-enabled-is-tested-by-nothing.md) — both are gaps between what CI exercises and what production actually runs.
 - [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) — authored the three-disjunct deploy gate and the `deploy/**` axis.
 - [ADR-044](../../decisions/044-native-esm-without-a-build-step.proposed.md) — its deferred dead-code deletion was the `deploy/**` push that surfaced this.
 - [ADR-001](../../decisions/001-risk-gated-release-process.proposed.md) — its 2026-07-27 amendment admits the push-tier `deploy/**` entry point; this incident is evidence for the next re-ratification of that amendment.
