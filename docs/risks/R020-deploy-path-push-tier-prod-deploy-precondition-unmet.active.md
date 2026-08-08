@@ -25,7 +25,7 @@ The entry's premise was a conjunction: the `deploy/**` push-tier axis is **armed
 
 Both halves were checked against the GitHub Actions history rather than reasoned about, and they have diverged:
 
-**The axis half is discharged.** The push-tier trigger has now fired on production four times, all successful — the ADR-041 cutover (`33e6c04`), the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`), and `50f1360` clearing R022's held drift against an empty plan, which exercised the trigger rather than an apply. Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all four. The mechanism works; it is no longer an untested path.
+**The axis half is discharged, and is no longer unblemished.** The push-tier trigger has now fired on production five times, four successful — the ADR-041 cutover (`33e6c04`), the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`), and `50f1360` clearing R022's held drift against an empty plan, which exercised the trigger rather than an apply. Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all four. **The fifth, run `31252424980` on 2026-08-08, failed** — it deployed an unpublished version and EB failed on both instances, with `RollbackLaunchOnFailure` holding (P095; R021 re-rated 2026-08-09). The mechanism works and is no longer an untested path; that claim survives the failure, and this entry's Impact 4 depends on it rather than on the path being flawless.
 
 **The recovery half was not, until 2026-08-05.** Every `workflow_dispatch` run of `release.yml` was inspected on 2026-08-04. Four existed (2026-07-24 through 2026-07-28) and on every one the `Deploy new version`, `Wait for deployment to stabilize` and `Smoke test production` steps concluded **`skipped`** — no dispatch had ever carried `deploy_only=true`, nineteen months after the input was added and eight days after the deferral was lifted.
 
@@ -50,10 +50,10 @@ remembered into mechanical. This entry needs it more than most — its two facts
 were restated across three sections each, and correcting one section left the
 others twice.
 
-| Fact                        | Value                                 | Contradicting phrasings                                                                                                     |
-| --------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `deploy_only` recovery path | exercised 2026-08-05, empty plan only | has never been exercised; remains at zero exercises; never been dispatched; is the one still unproven; recovery half is not |
-| push-tier axis applies      | four, one of them an empty plan       | fired on production three times; EVIDENCED, three production applies; three successful applies are evidence                 |
+| Fact                        | Value                                             | Contradicting phrasings                                                                                                                                                                                                               |
+| --------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy_only` recovery path | exercised 2026-08-05, empty plan only             | has never been exercised; remains at zero exercises; never been dispatched; is the one still unproven; recovery half is not                                                                                                           |
+| push-tier axis applies      | five, four successful, one of those an empty plan | fired on production three times; fired on production four times; EVIDENCED, three production applies; EVIDENCED, four production applies; three successful applies are evidence; four successful applies are evidence; all successful |
 
 ## Inherent Risk
 
@@ -66,7 +66,7 @@ Impact × Likelihood _before_ controls.
 
 ## Controls
 
-- **The push-tier axis is proven — EVIDENCED, four production applies: three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing.** This is the control that changed the score, so the qualifier is load-bearing rather than pedantic — an unqualified "four" credits the label where the configured value is three. A working primary path means the recovery path is a fallback rather than the only route, which is what holds impact at 4 instead of 5.
+- **The push-tier axis is proven — EVIDENCED, five production applies: three that applied a reviewed plan, one (`50f1360`) that ran against an empty plan and applied nothing, and one (`31252424980`) that applied and failed.** This is the control that changed the score, so the qualifiers are load-bearing rather than pedantic — an unqualified "five" credits the label where only four applied anything and only three applied a reviewed plan successfully. **The 2026-08-08 failure does not withdraw this control**, and the reason is what the control is credited for: it holds impact at 4 rather than 5 because a working primary path means the recovery path is a fallback rather than the only route. A primary path that failed once, auto-rolled back, and had its cause fixed is still available; it would take the path being unavailable or untrustworthy to push impact to 5.
 - **`release-workflow-deploy-only.test.mjs` pins the gating expression — EVIDENCED.** It asserts the boolean is compared unquoted (`inputs.deploy_only == true`, never `== 'true'`), which is the trap that would make the gate silently never fire and take the run **green with the deploy skipped**. It also pins the three-gate occurrence count, the `deploy-paths` step id, its push-event scoping and its fail-closed missing-parent guard. Runs in CI on every push.
 - **NOT a control: the four pre-2026-08-05 dispatches.** They exercised the workflow, not the path. Every one skipped all three deploy steps, so they demonstrate that `deploy_only` was absent rather than that it works. Counting them would be exactly the error this entry exists to name. The two 2026-08-05 dispatches DID run the path and are credited in the Residual section — for the plumbing only, since both ran against an empty plan.
 
@@ -99,7 +99,7 @@ It was as cheap as predicted: a no-op apply against already-deployed code on a g
 
 Remaining, and smaller than what it replaced: the path has never carried a real infrastructure mutation, and the smoke gate flaked once in two runs.
 
-Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path and four successful applies are evidence for keeping it — three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing.
+Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path, and the evidence for keeping it is the four applies that succeeded — three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing. The fifth apply failed (`31252424980`, 2026-08-08) and does not change this: its cause is fixed, and the argument for keeping the axis was never that it cannot fail, but that the alternative leaves the recovery path as the only route.
 
 ## Monitoring
 
@@ -122,6 +122,12 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27T01:07:31Z: fired in `.risk-reports/2026-07-27T01-07-31-commit.md` (reason: user-stated-precondition)
 
 ## Change Log
+
+- 2026-08-09: **Apply count 4 → 5 across all four sites, in the same commit as R021's re-rate.** R021 moved its canonical `Metrics` cell to five (four successful, one failed) after its Monitoring trigger fired on run `31252424980`. This entry states that count in four places — the axis-half paragraph, the canonical-state table, the load-bearing Control, and the Treatment's not-proposed clause — and all four moved together. Split across commits the review fence would have passed by construction, because it counts uncommitted files as current; that is the failure mode R028 records against itself and the reason for the single-commit rule here.
+
+  **This entry's own score is UNCHANGED at 4 × 2 = 8, and that is a decision rather than an omission.** The Control the failure touches is credited for holding Impact at 4 instead of 5, on the grounds that a working primary path makes `deploy_only` a fallback rather than the only route. A primary path that failed once, auto-rolled back, and had its cause fixed is still available, so the grounds hold. Likelihood is untouched because the failure was on the primary path and says nothing about whether the recovery path completes under a real plan — which remains this entry's unproven half.
+
+  Contradicting phrasings were widened in the canonical-state table rather than replaced, so the four-era wordings are now caught alongside the three-era ones.
 
 - 2026-08-08: Re-verified against R021's same-day change (its Monitoring re-assess trigger fired on run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095). **This entry's citation of R021 still holds**: the failure does not change what R021 is about, only its likelihood, and R021 now says of itself at its own surface that its residual understates until the re-rate lands. No cardinal here is affected.
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.

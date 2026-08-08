@@ -27,7 +27,7 @@ P083's triage placed this in an "apply-axis cluster" with R003, R021 and R025 an
 
 So this is the **provision phase of the migration lifecycle** — the one phase the register had not named. The lifecycle runs R007 (provision) → R008 (ranking regression at cutover) / R009 (concurrency at cutover) → R010 (decommission removes the rollback net).
 
-It also earns separation on treatment, which is the sharper test: the treatment below decouples a long-running create from the release pipeline, and no sibling's treatment delivers that. R003's is the read-shadow soak, R021's is Accept, R022's is commit hygiene.
+It also earns separation on treatment, which is the sharper test: the treatment below decouples a long-running create from the release pipeline, and no sibling's treatment delivers that. R003's is the read-shadow soak, R021's is Mitigate with the option unpicked (Accept until its 2026-08-09 re-rate), R022's is commit hygiene.
 
 ### Provisioning does not touch the live serving path
 
@@ -102,6 +102,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-12T22:36:45Z: fired in `.risk-reports/2026-07-12T22-36-45-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
+
+- 2026-08-09: Re-verified against R021's re-rate and R020's apply-count move to five. **One citation here was FALSIFIED and is corrected in this commit**: the treatment-separation argument read "R021's is Accept", and R021's treatment changed to Mitigate when its residual moved 5 → 10. The argument itself survives — no sibling's treatment decouples a long-running create from the release pipeline, and Mitigate-with-the-option-unpicked decouples nothing — but the sentence asserted a fact that had stopped being true, which is precisely the inbound-reference class R028 records. Found by reading the referrer, not by the dating sweep: a dated bullet alone would have left it standing. The decomposition table's citations of R021/R020/R015 for "the trigger" are untouched, being about ownership rather than score.
 
 - 2026-08-08: Re-verified against R021's same-day change (its Monitoring re-assess trigger fired on run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095). **This entry's citation of R021 still holds**: the failure does not change what R021 is about, only its likelihood, and R021 now says of itself at its own surface that its residual understates until the re-rate lands. No cardinal here is affected.
 - 2026-07-18: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.

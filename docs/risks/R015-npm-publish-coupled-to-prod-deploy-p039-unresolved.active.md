@@ -84,6 +84,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R021's re-rate and R020's apply-count move to five. **Both citations here hold.** This entry cites R020 for the reverse direction of the coupling and restates R020's canonical `deploy_only` value, which did not move — R020's change was the push-tier apply count, a different fact, and R020's own score is unchanged at 8. R021 is not cited by score here. Also confirming a claim made _about_ this entry elsewhere: P095 listed this entry's `npm_package_version` mechanism sentence as an outstanding falsification, and it is not one — it was corrected in the 2026-08-08 bullet below, in the same batch that recorded the fix. That P095 task text was the stale part, and it is corrected there.
+
 - 2026-08-08: Re-verified after the push-tier deploy-axis entry recorded that its Monitoring re-assess trigger fired (run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095) and its reference closure was revisited in the same change. **This entry's citations still hold** — the failure changes that entry's likelihood, not its subject, and it now self-discloses that its residual understates until the re-rate lands. No cardinal here is affected.
 - 2026-07-24: Auto-scaffolded by Phase 2b drain (ADR-056). Pending human curation.
 - 2026-08-05: Curated under P083. Re-titled from "Npm Publish Coupled To Prod Deploy P039 Unresolved" — the old title framed a decided design as an unresolved defect. Scored 16 inherent / 8 residual, above appetite. Absorbed R019. Recorded the hard-coded smoke assertion as a named uncovered residual.

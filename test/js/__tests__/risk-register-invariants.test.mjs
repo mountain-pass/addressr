@@ -438,8 +438,27 @@ describe('docs/risks register invariants (R028)', () => {
       path.join(RISKS, (await entries(ACTIVE)).find((f) => f.startsWith('R021'))),
       'utf8',
     );
-    const canonical = WORD_NUM(r021.match(/^- \*\*Metrics\*\*:[^\n]*?\b(\w+), all successful/m)?.[1]);
-    assert.ok(Number.isInteger(canonical), 'R021 Monitoring Metrics must state the canonical apply count');
+    // WIDENED 2026-08-09, and the reason is the check's own subject matter.
+    // This read `\b(\w+), all successful`, which bound the canonical count to a
+    // phrase asserting every apply had SUCCEEDED. That held for as long as the
+    // base rate did, and on 2026-08-08 it stopped: run 31252424980 was a
+    // push-tier apply that failed. Correcting the Metrics cell to say so made
+    // the extractor find nothing, and the check failed with "must state the
+    // canonical apply count" — against a cell that stated it plainly.
+    //
+    // A check whose extractor encodes a fact the register is supposed to be
+    // free to change is a check that reddens on the truth. So the count is now
+    // carried by an explicit token that means only "this is the canonical
+    // count", and the outcome breakdown is ordinary prose beside it. Same
+    // canonical-cell shape as before; the cell is just no longer entangled with
+    // a claim about outcomes.
+    const canonical = WORD_NUM(
+      r021.match(/^- \*\*Metrics\*\*:[^\n]*?\*\*Canonical count: (\w+)\*\*/m)?.[1],
+    );
+    assert.ok(
+      Number.isInteger(canonical),
+      "R021 Monitoring Metrics must carry the canonical apply count as `**Canonical count: <numeral>**`. Keep the token verbatim: the outcome breakdown beside it is free prose, and deliberately so — the previous extractor read the count out of an 'all successful' phrase and broke the moment an apply failed.",
+    );
 
     // The cardinal must BIND to the noun phrase, not merely sit adjacent to it.
     // A first version required adjacency and "three successful production applies"
