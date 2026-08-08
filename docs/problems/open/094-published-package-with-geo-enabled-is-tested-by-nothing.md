@@ -48,6 +48,19 @@ That is a static property, and it is now pinned — `test/js/__tests__/package-g
 - [ ] Decide where it runs, and cost it honestly: geo indexing is slow and wants ~8GiB.
 - [ ] Wire it, and confirm the index-name fix by checking the nogeo leg still passes when the two run in sequence.
 
+## A second finding, and it may be the more important one
+
+`engines` declares `node >=22`, and the `engine-floor` CI job pins 22.7 as the lowest version the suite runs on. **Cucumber 13 cannot load its own configuration on 22.7.** `@cucumber/cucumber/api` reaches `loadConfiguration` through `lib/configuration/argv_parser.js`, which is CommonJS and `require()`s `@cucumber/gherkin`, which is ESM. That only works from Node 22.12, where `require(esm)` was unflagged; on 22.7 it throws `ERR_REQUIRE_ESM`. Measured against `node:22.7-slim`, not inferred.
+
+`test/js/__tests__/cucumber-profiles.test.mjs` skips itself below 22.12 with that reason at the site, so it is not a blocker. But the underlying question is open and nothing currently answers it: **nothing runs cucumber on 22.7.** `engine-floor` runs `test:js` only, and every Cucumber tier runs on whatever 22.x the runner defaults to. So the declared floor is unverified for the test harness, and possibly for the product.
+
+Two ways to settle it, and they are different sizes:
+
+- If the product itself is fine on 22.7 and only the harness is not, the floor is honest and the note above is enough.
+- If anything in the shipped path also needs `require(esm)`, `engines` is wrong and consumers on 22.0-22.11 get a runtime failure that `postinstall`'s `check-version.js` will not catch, because it only compares against `engines`.
+
+Worth resolving before the next release rather than after: `engines` is published metadata and consumers act on it.
+
 ## Workaround
 
 `test/js/__tests__/package-graph-ships.test.mjs` covers the packaging half — the part of this gap the ESM migration created. The behavioural half is uncovered.

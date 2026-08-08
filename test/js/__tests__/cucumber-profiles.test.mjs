@@ -42,7 +42,25 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { loadConfiguration, loadSources } from '@cucumber/cucumber/api';
+
+// SKIPPED BELOW NODE 22.12, and the reason is cucumber's, not ours.
+// `@cucumber/cucumber/api` reaches `loadConfiguration` through
+// `lib/configuration/argv_parser.js`, which is CommonJS and `require()`s
+// `@cucumber/gherkin`, which is ESM. That only works from Node 22.12, where
+// `require(esm)` was unflagged. On 22.7 — the version the `engine-floor` job
+// pins as the declared floor — it throws ERR_REQUIRE_ESM before any assertion
+// runs.
+//
+// Skipping rather than weakening: the alternative is to assert the config
+// module's export shape instead, which restates the belief that was wrong in
+// the first place and cannot detect it being wrong again. Better to run the
+// real oracle where it can run than a weaker one everywhere.
+//
+// This is worth knowing beyond this file: if cucumber-js 13 cannot load its own
+// configuration on 22.7, the `engines: ">=22"` floor may be wrong. Nothing else
+// tests cucumber on 22.7 — `engine-floor` runs `test:js` only. Recorded on P094.
+const [major, minor] = process.versions.node.split('.').map(Number);
+const REQUIRE_ESM_AVAILABLE = major > 22 || (major === 22 && minor >= 12);
 
 const PROFILES = ['default', 'rest2', 'cli2'];
 
@@ -73,64 +91,75 @@ delete process.env.ADDRESSR_ENABLE_GEO;
 /** Silence cucumber's own logger so a debug line does not land in test output. */
 const logger = { debug() {}, warn() {}, error() {} };
 
-const resolve = async (profile) =>
-  loadConfiguration(
+const resolve = async (profile) => {
+  const { loadConfiguration } = await import('@cucumber/cucumber/api');
+  return loadConfiguration(
     { file: 'cucumber.js', profiles: profile === 'default' ? [] : [profile] },
     { cwd, env, logger },
   );
+};
 
-describe('cucumber profile resolution — cucumber resolving it, not us (ADR-044)', () => {
-  for (const profile of PROFILES) {
-    it(`${profile} resolves to a profile that exists and carries sources`, async () => {
-      // A missing named export throws here rather than silently yielding the
-      // empty built-in — except for `default`, which is the trap: it resolves
-      // successfully to an EMPTY config. So assert the contents, not the call.
-      const { useConfiguration } = await resolve(profile);
-      assert.ok(
-        useConfiguration.paths.length > 0,
-        `${profile} resolved with no feature paths — this is the shape that reports 0 scenarios and exits 0`,
+describe(
+  'cucumber profile resolution — cucumber resolving it, not us (ADR-044)',
+  {
+    skip: REQUIRE_ESM_AVAILABLE
+      ? false
+      : `needs Node >=22.12 for require(esm); running ${process.versions.node}`,
+  },
+  () => {
+    for (const profile of PROFILES) {
+      it(`${profile} resolves to a profile that exists and carries sources`, async () => {
+        // A missing named export throws here rather than silently yielding the
+        // empty built-in — except for `default`, which is the trap: it resolves
+        // successfully to an EMPTY config. So assert the contents, not the call.
+        const { useConfiguration } = await resolve(profile);
+        assert.ok(
+          useConfiguration.paths.length > 0,
+          `${profile} resolved with no feature paths — this is the shape that reports 0 scenarios and exits 0`,
+        );
+        assert.ok(
+          useConfiguration.import.length > 0,
+          `${profile} imports no step definitions; every scenario would be undefined and, under --no-strict, the run would still exit 0`,
+        );
+      });
+
+      it(`${profile} loads step definitions with --import, never --require`, async () => {
+        // `--require` loads through CommonJS. Against native-ESM step definitions
+        // it does not error — it finds nothing, and the run reports zero
+        // scenarios, green. This is the specific regression that would undo the
+        // migration's coverage without reddening anything.
+        const { useConfiguration } = await resolve(profile);
+        assert.deepStrictEqual(
+          useConfiguration.require,
+          [],
+          `${profile} must not use --require: it silently loads nothing from ESM step definitions`,
+        );
+      });
+
+      it(`${profile} selects at least one scenario`, async () => {
+        // The floor. Uses cucumber's own gherkin parse and tag filter — no
+        // OpenSearch, no server, no step execution, just the pickle plan.
+        const { runConfiguration } = await resolve(profile);
+        const { loadSources } = await import('@cucumber/cucumber/api');
+        const { plan } = await loadSources(runConfiguration.sources);
+        assert.ok(
+          plan.length > 0,
+          `${profile} selected no scenarios. Either the tag expression stopped matching (it is built by string concatenation with hand-managed quoting) or the feature glob is wrong. Both report 0 scenarios and exit 0.`,
+        );
+      });
+    }
+
+    it('keeps the three profiles distinct, so one cannot shadow another', async () => {
+      // A copy-paste pointing two profiles at the same tag expression would run
+      // one tier twice and report the other as covered.
+      const tags = await Promise.all(
+        PROFILES.map(async (p) => (await resolve(p)).useConfiguration.tags),
       );
-      assert.ok(
-        useConfiguration.import.length > 0,
-        `${profile} imports no step definitions; every scenario would be undefined and, under --no-strict, the run would still exit 0`,
+      assert.equal(
+        new Set(tags).size,
+        PROFILES.length,
+        `two profiles resolve to the same tag expression: ${tags.join(' | ')}`,
       );
     });
-
-    it(`${profile} loads step definitions with --import, never --require`, async () => {
-      // `--require` loads through CommonJS. Against native-ESM step definitions
-      // it does not error — it finds nothing, and the run reports zero
-      // scenarios, green. This is the specific regression that would undo the
-      // migration's coverage without reddening anything.
-      const { useConfiguration } = await resolve(profile);
-      assert.deepStrictEqual(
-        useConfiguration.require,
-        [],
-        `${profile} must not use --require: it silently loads nothing from ESM step definitions`,
-      );
-    });
-
-    it(`${profile} selects at least one scenario`, async () => {
-      // The floor. Uses cucumber's own gherkin parse and tag filter — no
-      // OpenSearch, no server, no step execution, just the pickle plan.
-      const { runConfiguration } = await resolve(profile);
-      const { plan } = await loadSources(runConfiguration.sources);
-      assert.ok(
-        plan.length > 0,
-        `${profile} selected no scenarios. Either the tag expression stopped matching (it is built by string concatenation with hand-managed quoting) or the feature glob is wrong. Both report 0 scenarios and exit 0.`,
-      );
-    });
-  }
-
-  it('keeps the three profiles distinct, so one cannot shadow another', async () => {
-    // A copy-paste pointing two profiles at the same tag expression would run
-    // one tier twice and report the other as covered.
-    const tags = await Promise.all(
-      PROFILES.map(async (p) => (await resolve(p)).useConfiguration.tags),
-    );
-    assert.equal(
-      new Set(tags).size,
-      PROFILES.length,
-      `two profiles resolve to the same tag expression: ${tags.join(' | ')}`,
-    );
-  });
-});
+  },
+);
