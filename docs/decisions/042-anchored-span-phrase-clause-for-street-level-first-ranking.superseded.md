@@ -13,7 +13,7 @@ reassessment-date: 2026-11-07
 
 # Anchored span phrase clause for street-level-first ranking
 
-> **SUPERSEDED 2026-08-07 by [ADR-043 Keyword-prefix anchor for street-level-first ranking](043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md), the same day it was ratified and before it shipped. Do not implement from this document.**
+> **SUPERSEDED 2026-08-07 by [ADR-043 Keyword-prefix anchor for street-level-first ranking](043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md), the same day it was ratified and before it shipped. Do not implement from this document.**
 >
 > **The diagnosis below is correct and is carried forward unchanged.** Read the Context section: it is the best statement of why the parent/child discriminator is absent from the text under "contains" semantics and present under "starts with". Nothing in ADR-043 disputes it.
 >
@@ -29,7 +29,7 @@ reassessment-date: 2026-11-07
 
 ## Context and Problem Statement
 
-Querying a street address that also has sub-units returns the sub-units instead of the street-level record. Measured 2026-08-06 against production `addressr6`: **94 of 150 (62.7%)** of a random national sample of sub-unit-bearing addresses return a sub-unit first. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported and that [ADR-025 Symmetric ssla Indexing for Search Ranking](025-search-ranking-symmetric-ssla.accepted.md) was written to fix, tracked on [P074 P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
+Querying a street address that also has sub-units returns the sub-units instead of the street-level record. Measured 2026-08-06 against production `addressr6`: **94 of 150 (62.7%)** of a random national sample of sub-unit-bearing addresses return a sub-unit first. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported and that [ADR-025 Symmetric ssla Indexing for Search Ranking](025-search-ranking-symmetric-ssla.accepted.md) was written to fix, tracked on [P074 P007 street-level-first is unfixed for ~50% of addresses with sub-units](../problems/closed/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
 
 ADR-025's mechanism is present and working. `_explain` on `8 WATERS RD, NEUTRAL BAY NSW 2089` shows the `bool_prefix` clause scoring the street-level document **higher** on both fields, exactly as ADR-025 intended. The entire 10.65-point deficit is the sibling `phrase_prefix` clause.
 

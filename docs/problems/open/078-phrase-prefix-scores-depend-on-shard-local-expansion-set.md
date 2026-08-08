@@ -92,7 +92,7 @@ Measured against production `addressr6`. Query `108 GAZE RD, CHRISTMAS ISLAND OT
 | baseline        | 2                            | **1**                           |
 | anchored phrase | **1**                        | 2                               |
 
-Measured under BOTH anchored candidates — `span_first` and the keyword prefix that superseded it in [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) — with identical results: exact #1, range #2. No special handling for ranges was added in either.
+Measured under BOTH anchored candidates — `span_first` and the keyword prefix that superseded it in [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md) — with identical results: exact #1, range #2. No special handling for ranges was added in either.
 
 Note the keyword-prefix form goes further than `span_first` on this ticket's own mechanism: a `prefix` on a keyword carries no per-term IDF sum over an expansion set, so the per-shard noise recorded here **leaves the clause entirely** rather than surviving at reduced amplitude under `top_terms_128`. `96-108 GAZE RD…` simply does not **start with** `108`, so anchoring excludes it from the phrase clause by construction. The same reasoning explains a second observation: for `107 WOL` the baseline returns `105-107 WOLLAMAI ST, FINLEY` on page one while 142 exact `107 WOL*` matches exist; the anchored clause does not return it at all.
 

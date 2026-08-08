@@ -104,7 +104,7 @@ same trap the invariant harness above warns about.
 ## Relevance gates (ADR-043)
 
 `street-level-first-probe.mjs` and `partial-prefix-recall-ladder.mjs` are the two
-corpus-scale gates [ADR-043](../../docs/decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md)
+corpus-scale gates [ADR-043](../../docs/decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md)
 pins in its Confirmation. They exist because the property they measure is
 invisible at every smaller scale.
 

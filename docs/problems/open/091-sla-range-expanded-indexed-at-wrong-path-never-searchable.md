@@ -66,7 +66,7 @@ Three layers of green over a field that does not work. This is tracked as its ow
 
 1. `test/js/__tests__/address-service.test.mjs` asserts `/rval\.sla_range_expanded\s*=\s*expandRangeAliases\(/` **against the source text**. The assignment does exist. The test passes and proves nothing about the indexed document.
 2. `test/js/__tests__/elasticsearch.test.mjs` asserts the **mapping declares** the field. It does. Declaration is not population.
-3. ADR-028's Cucumber endpoint scenarios pass — via the tokenizer split, exactly as [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) analysed. They would pass identically with the field absent, which is what they have been doing.
+3. ADR-028's Cucumber endpoint scenarios pass — via the tokenizer split, exactly as [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md) analysed. They would pass identically with the field absent, which is what they have been doing.
 
 **No test at any level asserted that a range document is retrievable by its alias.** Note that a naive behavioural test would also have missed it: `mapAddressDetails` **does** return the right object. The loss happens after it returns. The invariant that needed pinning is end-to-end — what goes into the index is what the query can find.
 
@@ -119,7 +119,7 @@ So the alias contributes **nothing to recall** where it is the only candidate, a
 - [P033](033-source-inspection-tests-anti-pattern.md) — the test class that let this stay green for four months, and which named this exact example in its Description eight days after the defect landed. Re-rated on this evidence.
 - [ADR-028 — Range-number address expansion, endpoint-only](../../decisions/028-range-number-endpoint-only.proposed.md) — its index-side mechanism has never run.
 - [ADR-026 — Range-number address expansion](../../decisions/026-range-number-address-expansion.superseded.md) — the originator of the field.
-- [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) — corrected 2026-08-08: its `sla_range_expanded` cost is recorded as nil, and the two places that wrongly credited the field with the `108 GAZE RD` fix are corrected.
+- [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md) — corrected 2026-08-08: its `sla_range_expanded` cost is recorded as nil, and the two places that wrongly credited the field with the `108 GAZE RD` fix are corrected.
 - [ADR-029 — OpenSearch blue/green two-phase upgrade](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) — the re-index route.
 - [P075](075-adr041-inverts-exact-vs-range-on-one-address.md) — its stated mechanism is falsified by this ticket.
 - [P015](../closed/015-range-number-addresses-not-searchable-by-base-number.md) — closed on a mechanism that never executed.

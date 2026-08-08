@@ -58,7 +58,7 @@ Nothing further is owed in this repo; the remaining work is upstream. The Workar
 
 ## Recurrence 2026-08-08, with the extractor read directly
 
-Hit again posting the [issue #375](https://github.com/mountain-pass/addressr/issues/375) correction for [P074](../verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Worth recording because the defect was traced to the exact source line rather than inferred from the symptom, and because it cost a full round of misdiagnosis first.
+Hit again posting the [issue #375](https://github.com/mountain-pass/addressr/issues/375) correction for [P074](../closed/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Worth recording because the defect was traced to the exact source line rather than inferred from the symptom, and because it cost a full round of misdiagnosis first.
 
 Two things this instance adds beyond the 2026-08-02 and 2026-08-06 records above, which already establish the cause and the workaround.
 

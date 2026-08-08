@@ -20,7 +20,7 @@ Investigation, remediation and the fix decision are tracked on **P074**, which c
 
 **Root cause confirmed 2026-08-06 — and it is not the one recorded below.** The "Confirmed Root Cause" section of this ticket (per-field `bool_prefix` summation asymmetry) was real and _was_ fixed by ADR-025; symmetric `ssla` indexing is verified present in the production index and the `bool_prefix` clause now scores the street-level document higher, as designed. The live defect has a **different cause in the sibling `phrase_prefix` clause**: BM25 sums the idf of every term in a per-shard prefix-expansion set, so two documents matching the identical phrase score differently based on which unrelated rare terms happen to share the query's last-token prefix on their own shard. That is the mechanism recorded in **P078**. Full `_explain` evidence, the measured 62.7% violation rate, and the candidate-fix comparison are on **P074**; the mechanism is on **P078**. Read the Root Cause Analysis below as historical.
 
-**Status**: Known Error — REOPENED 2026-07-31
+**Status**: Closed
 **Reported**: 2026-04-15
 **Origin**: inbound-reported (#375)
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)
@@ -33,7 +33,17 @@ Investigation, remediation and the fix decision are tracked on **P074**, which c
 >
 > Maintainer direction 2026-08-07 was **do not correct #375 until the fix actually ships.** The condition was satisfied on 2026-08-08 when 3.0.8 released, and the correction was posted the same day. **Both release-gated guards below are therefore spent, and this is the dangerous moment for them**: a guard whose condition is met reads as permission, so the sentences are rewritten rather than left to be re-read as a green light.
 >
-> **The reason the `/wr-itil:update-upstream 007` guard mattered has been removed at its source.** That guard existed because this ticket's `## Fix Released` section carried the falsified April text, and the ADR-024 lifecycle dispatch reads that section verbatim under a no-invention rule. With the release condition met, the dispatch would have sourced a second "verified in production" claim from falsified prose and posted it to the reporter hours after the retraction. The section has now been replaced with the real 3.0.8 record, so the hazard is gone rather than merely fenced. The structural note stands for other tickets: this one carries no `## Upstream Lifecycle Updates` log, so the skill's Step 3 table resolves `(none) + .known-error.md` to a fresh Open → Known Error and would read an April transition as current.
+> **The reason the `/wr-itil:update-upstream 007` guard mattered has been removed at its source.** That guard existed because this ticket's `## Fix Released` section carried the falsified April text, and the ADR-024 lifecycle dispatch reads that section verbatim under a no-invention rule. With the release condition met, the dispatch would have sourced a second "verified in production" claim from falsified prose and posted it to the reporter hours after the retraction. The section has now been replaced with the real 3.0.8 record, so the hazard is gone rather than merely fenced. The structural note stands for other tickets: this one carries no `## Closed 2026-08-08
+
+Closed on two distinct pieces of evidence, and the distinction is the point of this ticket.
+
+**Maintainer acceptance of the reported case.** Verified on the live site and accepted 2026-08-08. Typing the partial `8 WATERS R` returned six street-level `8 WATERS RD` records across different localities with no sub-unit among them; at `8 WATERS RD` the `UNIT 8, 8 WATERS RD, NEUTRAL BAY` record sat below all six.
+
+**The property evidence that acceptance does not carry.** One address is sufficient now, and was not in April, because the property is measured separately: **0 violations of 150** on a freshly redrawn national sample, against **60.0% of a 120-address draw** before the fix. April's closure rested on a single-address check read as property confirmation — which is exactly why this ticket was reopened. Recording both halves is what keeps this closure from being the same record again.
+
+Fixed by [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md), released in 3.0.8. Investigation and the fix decision were carried on [P074](074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Residual CHANGELOG bookkeeping is on [P092](../open/092-changelog-3-0-8-carries-a-second-unretracted-fixes-375-claim.md).
+
+## Upstream Lifecycle Updates`log, so the skill's Step 3 table resolves`(none) + .known-error.md` to a fresh Open → Known Error and would read an April transition as current.
 
 ## Description
 
@@ -156,11 +166,11 @@ Until the fix is released, API consumers who query a street-level address and wa
 
 Released in **3.0.8** on 2026-08-08. The reporter has been told: [issue #375 comment 5223522329](https://github.com/mountain-pass/addressr/issues/375#issuecomment-5223522329) retracts the April claim and records what actually shipped.
 
-The v2.2.0 fix was real but was not the deciding clause. `bool_prefix` summation was fixed and has ranked correctly since; the sibling `match_phrase_prefix` clause was overriding it, and that clause matched a phrase anywhere in a field rather than from the start, so a sub-unit's address contained its parent's whole token sequence and no scoring adjustment to it was well-posed. [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) replaces it with a keyword-prefix anchor on `sla.raw` / `ssla.raw`.
+The v2.2.0 fix was real but was not the deciding clause. `bool_prefix` summation was fixed and has ranked correctly since; the sibling `match_phrase_prefix` clause was overriding it, and that clause matched a phrase anywhere in a field rather than from the start, so a sub-unit's address contained its parent's whole token sequence and no scoring adjustment to it was well-posed. [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md) replaces it with a keyword-prefix anchor on `sla.raw` / `ssla.raw`.
 
 Confirmed on the live public API after deploy, not against the index: `8 WATERS RD, NEUTRAL BAY NSW 2089` returns that address first; `14/2 Parkes St` and `Unit 14, 2 Parkes St` both return the same sub-unit record. Pre-release, the street-level record failed to rank first in **0 of 150** addresses on a freshly drawn national sample, against 60.0% of a 120-address baseline draw.
 
-Awaiting maintainer verification before this ticket closes. Tracked on [P074](../verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
+Awaiting maintainer verification before this ticket closes. Tracked on [P074](074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
 
 ### The April claim, retained for provenance
 
@@ -169,6 +179,17 @@ Superseded by the section above and by the posted retraction. It verified a sing
 > Deployed in v2.2.0 (released 2026-04-16, PR #451). Verified in production 2026-04-17.
 >
 > Verification: query `278 ROSS RIVER RD AITKENVALE QLD 4814` against the live RapidAPI endpoint — first result is now `278 ROSS RIVER RD, AITKENVALE QLD 4814` (no SHOP/UNIT prefix). Confirmed by user.
+
+## Upstream Lifecycle Updates
+
+Written 2026-08-08, **before** the first lifecycle transition since this ticket gained its `**Origin**: inbound-reported (#375)` field. Without it the ADR-024 dispatch's Step 3 table resolves `(none)` + the current suffix to a fresh Open → Known Error and would read an April transition as current, posting a wrong-stage comment to a closed issue.
+
+| date       | transition                         | outbound                                                                                                                                                          |
+| ---------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-16 | Known Error → Closed               | ["Fix deployed — verified in production"](https://github.com/mountain-pass/addressr/issues/375#issuecomment-2802267789) — the claim later falsified               |
+| 2026-07-31 | reopened → Known Error             | none fired; the `**Origin**` field was absent, which is the defect this log exists to stop repeating                                                              |
+| 2026-08-08 | Known Error → Verification Pending | none — state entered on the 3.0.8 release; the file move was deferred and is recorded here rather than backdated                                                  |
+| 2026-08-08 | Verification Pending → Closed      | [comment 5223522329](https://github.com/mountain-pass/addressr/issues/375#issuecomment-5223522329), the retraction and correction, posted ahead of the transition |
 
 ## Related
 

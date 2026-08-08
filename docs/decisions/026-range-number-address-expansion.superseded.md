@@ -211,5 +211,5 @@ Re-visit this decision if any of the following occur:
 - [ADR 002 — OpenSearch as search engine](002-opensearch-as-search-engine.accepted.md)
 - [ADR 009 — Cucumber BDD testing](009-cucumber-bdd-testing.accepted.md)
 - [Problem 015 — Range-number addresses not findable by base number](../problems/closed/015-range-number-addresses-not-searchable-by-base-number.md)
-- [Problem 007 — Search scoring exact address ranked below sub-units](../problems/known-error/007-search-scoring-exact-address-ranked-below-subunits.md) — ranking-asymmetry precedent
+- [Problem 007 — Search scoring exact address ranked below sub-units](../problems/closed/007-search-scoring-exact-address-ranked-below-subunits.md) — ranking-asymmetry precedent
 - GitHub issue [#367](https://github.com/mountain-pass/addressr/issues/367) — original report

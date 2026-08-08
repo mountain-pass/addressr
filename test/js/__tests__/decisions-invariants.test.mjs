@@ -110,19 +110,59 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
   });
 
   it('compendium status/oversight badges agree with the frontmatter they mirror', () => {
+    // FAIL-OPEN DEFECT, found and fixed 2026-08-08. The previous pattern
+    // anchored the oversight capture to end-of-line and excluded `|`, so any
+    // entry carrying a THIRD badge field — `| **Supersedes:** ADR-NNN` or
+    // `| **Superseded by:** …` — did not match, hit a silent `continue`, and
+    // went unchecked. That was 6 of 43 entries: ADR-028, 036, 038, 039, 042,
+    // 043. Five happened to agree; ADR-043 sat at badge `proposed` against
+    // frontmatter `accepted` for the length of a promotion while this test
+    // reported green.
+    //
+    // This file was written as the answer to P090 — hand-maintained governance
+    // facts that nothing checks — and had become an instance of it. Two things
+    // stop that recurring:
+    //
+    //   1. Presence is detected by the HEADING ALONE (`^### ADR-NNN\b`), and
+    //      the badge line is parsed as a separate step. If presence were
+    //      decided by the same regex that parses the badge, `unparsed` could
+    //      never be non-empty and the split below would be decorative. The
+    //      heading match deliberately does not require the em dash, so a
+    //      heading-format change fails closed rather than vanishing.
+    //   2. Both a missing entry and an unparseable one FAIL. All 43 ADRs
+    //      currently have entries, so failing closed costs nothing today and
+    //      catches the next ADR that lands without one.
+    //
+    // Badge values are read by splitting on `|` into `**Key:** value` pairs, so
+    // field count and order are free. `**Decides:**` and `**Related:**` are
+    // separate lines and are deliberately not folded in here.
     const compendium = read('README.md');
     const problems = [];
     for (const f of adrFiles) {
       const id = idOf(f);
-      const entry = new RegExp(
-        String.raw`^### ${id} —[^\n]*\n+\*\*Status:\*\* ([^|\n]+?)(?: \| \*\*Oversight:\*\* ([^\n|]+))?$`,
+      if (!new RegExp(String.raw`^### ${id}\b`, 'm').test(compendium)) {
+        problems.push(`${id}: no compendium entry (ADR-077 makes it the architect's load surface)`);
+        continue;
+      }
+      const badgeLine = new RegExp(
+        String.raw`^### ${id}\b[^\n]*\n+(\*\*Status:\*\*[^\n]*)$`,
         'm',
       ).exec(compendium);
-      if (!entry) continue;
+      if (!badgeLine) {
+        problems.push(`${id}: has an entry but its badge line did not parse — unchecked, which is the fail-open shape this test exists to catch`);
+        continue;
+      }
+      const badge = Object.fromEntries(
+        badgeLine[1]
+          .split('|')
+          .map((part) => /^\*\*([\w -]+):\*\*\s*(.*)$/.exec(part.trim()))
+          .filter(Boolean)
+          .map((m) => [m[1].trim().toLowerCase(), m[2].trim()]),
+      );
       const text = read(f);
       // Leading token only — badges carry annotations like "confirmed (2026-07-27)".
-      const badgeStatus = entry[1].trim().split(/\s+/, 1)[0];
-      const badgeOversight = entry[2]?.trim().split(/\s+/, 1)[0];
+      const badgeStatus = badge.status?.split(/\s+/, 1)[0];
+      const badgeOversight = badge.oversight?.split(/\s+/, 1)[0];
       const fileStatus = frontmatter(text, 'status');
       const fileOversight = frontmatter(text, 'human-oversight');
 

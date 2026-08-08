@@ -1,6 +1,8 @@
 ---
-status: 'proposed'
+status: 'accepted'
 date: 2026-08-07
+accepted-date: 2026-08-08
+first-released: 2026-08-08
 human-oversight: confirmed
 oversight-date: 2026-08-08
 supersedes: [042-anchored-span-phrase-clause-for-street-level-first-ranking]
@@ -18,7 +20,7 @@ reassessment-date: 2026-11-07
 
 ## Context and Problem Statement
 
-Querying a street address that has sub-units returns the sub-units, not the address. Typing `8 WATERS RD, NEUTRAL BAY NSW 2089` against production returns eight UNIT records at that address and never the address itself, which is in the index. Measured on a fresh random national sample of 120 sub-unit-bearing addresses: **60.0% return a sub-unit first**. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported, tracked on [P074](../problems/verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
+Querying a street address that has sub-units returns the sub-units, not the address. Typing `8 WATERS RD, NEUTRAL BAY NSW 2089` against production returns eight UNIT records at that address and never the address itself, which is in the index. Measured on a fresh random national sample of 120 sub-unit-bearing addresses: **60.0% return a sub-unit first**. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported, tracked on [P074](../problems/closed/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
 
 ADR-042 established the correct diagnosis, which this decision adopts unchanged: `match_phrase_prefix` matches a phrase **anywhere** in a field, and a sub-unit's `sla` and `ssla` both contain the parent's complete token sequence. Under "contains" semantics the discriminator between parent and child is **absent from the text by construction**, so no scoring adjustment is well-posed. Under "starts with" it is present and exact.
 
@@ -55,21 +57,25 @@ Chosen: **keyword-prefix anchor**. It achieves ADR-042's semantics at baseline l
 
 Measured against production `addressr6`, 2026-08-07:
 
-|                        | street-level-first               | recall (268 probes) | p50 / p90 wall   | round trips |
-| ---------------------- | -------------------------------- | ------------------- | ---------------- | ----------- |
-| baseline               | **60.0%** wrong (fresh 120-draw) | 42/268              | 160 / 202 ms     | 1           |
-| `span_first` (ADR-042) | 0.0%                             | 45/268 (net +3)     | 342 / 417 ms     | 2           |
-| **keyword prefix**     | **0.0%** (fresh 120-draw)        | 43/268 (net +1)     | **170 / 220 ms** | **1**       |
+|                        | street-level-first               | recall (268 probes) | p50 / p90 wall     | round trips |
+| ---------------------- | -------------------------------- | ------------------- | ------------------ | ----------- |
+| baseline               | **60.0%** wrong (fresh 120-draw) | 42/268              | 160 / 202 ms       | 1           |
+| `span_first` (ADR-042) | 0.0%                             | 45/268 (net +3)     | 342 / 417 ms       | 2           |
+| **keyword prefix**     | **0.0%** (fresh 120-draw)        | 43/268 (net +1)     | **170 / 220 ms** † | **1**       |
 
 `0.0%` is on a sample drawn fresh and never previously measured, which is what ADR-042 Confirmation 1 requires and what this decision inherits.
 
-**Post-implementation confirmation, 2026-08-08 — measured against the shipped code, on freshly redrawn samples.** The table above records the _candidate_ measurements taken before implementation. The three below are separate draws against the shipped code — not restatements — and they are the **relevance** figures the release notes publish. **Latency was not re-measured post-implementation**; the p50/p90 figures the release notes quote come from the 2026-08-07 candidate run in the table above, because the shipped clause is byte-identical to the candidate that produced them.
+† **Superseded 2026-08-08 by the post-deploy measurement** in Confirmation 7 below. These were pre-merge candidate figures, retained because the published 3.0.8 CHANGELOG quotes them. Measured against the shipped clause: **p50 +1 ms, p90 −3 ms**, i.e. no detectable latency cost.
 
-| gate                  | draw                                               | result                                                  |
-| --------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| street-level-first    | **150** addresses, redrawn                         | **0 violations (0.0%)**                                 |
-| partial-prefix recall | **182** probes over 60 targets, redrawn            | **net 0** (8 lost, 8 gained); sensitivity gate PASS     |
-| typo tolerance        | **60** mistyped queries, both arms in the same run | 90.0% in page, 85.0% first — identical before and after |
+**Post-implementation confirmation, 2026-08-08 — measured against the shipped code, on freshly redrawn samples.** The table above records the _candidate_ measurements taken before implementation. The three below are separate draws against the shipped code — not restatements — and they are the **relevance** figures the release notes publish. Latency **has now been re-measured** against the shipped clause and is recorded in the fourth row; the figures the published 3.0.8 CHANGELOG quotes are the pre-merge candidate ones, superseded here.
+
+| gate                                       | draw                                                                                                          | result                                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| street-level-first                         | **150** addresses, redrawn                                                                                    | **0 violations (0.0%)**                                                                  |
+| partial-prefix recall                      | **182** probes over 60 targets, redrawn                                                                       | **net 0** (8 lost, 8 gained); sensitivity gate PASS                                      |
+| typo tolerance                             | **60** mistyped queries, both arms in the same run                                                            | 90.0% in page, 85.0% first — identical before and after                                  |
+| latency (Confirmation 7)                   | **84** samples per arm, 6 replicates over ADR-027's 14 queries, legacy and shipped **interleaved in one run** | legacy p50 167 / p90 244 ms; shipped p50 169 / p90 **241** ms — **p50 +1 ms, p90 −3 ms** |
+| ADR-027 14-query baseline (Confirmation 4) | legacy vs shipped, same run                                                                                   | **10 of 14 top-1 unchanged, 0 regressions**; see below                                   |
 
 The recall figure differs from the table's `43/268 (net +1)` because it is a different draw at a different size, not because the property moved; both are net non-negative and the ladder's `net < 0` gate is what either would have to breach. Recording both, with their sizes, is the sample-provenance discipline Confirmation 1 exists to enforce — a reader who finds only one number cannot tell which run produced it.
 
@@ -97,7 +103,11 @@ Nothing is lost functionally. Before the second token there is no discrimination
 
 ### On JTBD-001's 200 ms target
 
-Named as a driver, so it gets a verdict rather than a mention. **The target is already breached at baseline** — measured p90 202 ms against a documented 200 ms — and this change moves it to 220 ms. This change does not cause the breach and does not fix it; **the +18 ms p90 is accepted**, and the pre-existing breach is a separate matter that this decision does not resolve.
+Named as a driver, so it gets a verdict rather than a mention. **The target is already breached at baseline, and by more than first measured.** Pre-merge the baseline read p90 202 ms against a documented 200 ms, and this change looked like it moved it to 220 ms.
+
+**Corrected 2026-08-08 on the post-deploy measurement** (Confirmation 7, 84 samples per arm, legacy and shipped interleaved in one run): **legacy p90 244 ms, shipped p90 241 ms.** So the pre-existing breach is ~22% rather than ~1%, and **this change does not move p90 at all**. Both halves of the original verdict were wrong in the project's favour: the baseline problem is larger and this decision's contribution to it is nil.
+
+The disposition is unchanged and now rests on better numbers. This decision neither causes nor fixes the breach. No performance-budget ADR governs `/addresses?q=`, so accepting it is a standing position rather than a measured trade-off — **and promotion to `accepted` makes that a live accepted position on the revenue endpoint rather than a proposal's caveat.** Re-affirmed knowingly at promotion; a budget ADR remains the honest next step.
 
 No performance-budget ADR governs `/addresses?q=`. This change moves the endpoint's cost model from analysis-bound to term-dictionary-bound, with the selectivity gate as the only thing holding the tail down, which is exactly when a budget would earn its keep. **Recorded here as knowingly ungoverned risk** rather than left implicit.
 
@@ -106,7 +116,7 @@ No performance-budget ADR governs `/addresses?q=`. This change moves the endpoin
 ### Good
 
 - Street-level-first holds at 0.0% on a freshly drawn national sample, against a 60.0% baseline.
-- Latency within +10 ms p50 / +18 ms p90 of baseline, against `span_first`'s 2.1×. One round trip, not two.
+- **Latency indistinguishable from baseline.** Measured post-deploy 2026-08-08: **p50 +1 ms, p90 −3 ms** (Confirmation 7). The pre-merge estimate of +10 / +18 ms, which the published CHANGELOG quotes, was conservative. Against `span_first`'s 2.1×, and one round trip rather than two.
 - No re-index, no mapping change, no blue/green cutover.
 - **P078's per-shard expansion-IDF mechanism leaves this clause entirely** rather than surviving at reduced amplitude as it does under `top_terms_128`. A prefix on a keyword carries no per-term IDF sum over an expansion set.
 - No `span_multi`, so no `maxClauseCount` shard-failure mode — ADR-042 introduced one, where a lowered cluster setting turned a ranking question into total request failure.
@@ -183,21 +193,34 @@ New to this decision:
 
 13. **The selectivity boundary is crossed by the ADR-041 instrument.** Before this decision `test/integration/search-analysis.test.mjs` built prefixes from two tokens up, so every probe contained whitespace and every probe was gated **on** — the instrument structurally could not cross the one discontinuity this change introduces, leaving Reassessment Criterion 6 undischargeable by its own nominated gate. Two changes ship with this decision: `prefixes()` defaults to **one** token so the walk starts on the gated-**off** side, and an explicit boundary probe walks `'55'` → `'55 '` → `'55 P'` → `'55 PY'`. The trailing-space step is the boundary itself and cannot be dropped — the gate turns **on** at `'55 '`, and no token-joined prefix ever produces it.
 
-## Promotion to `accepted`
+### Confirmation 4 in detail, with its frame stated
 
-Held at `proposed` after shipping in 3.0.8, deliberately. DECISION-MANAGEMENT.md's Proposed → Accepted criteria want more than "implemented in production": a **positive track record**, with timeframe and success criteria defined, plus validation of successful production use. Criterion 1 is discharged; a track record is elapsed time and this shipped hours ago.
+**The frame is legacy-vs-shipped in one run, NOT the recorded v2.3.0 baseline**, and that distinction matters: measured against the April document, three of the four changes below had already drifted before this decision, through ADR-027, ADR-028, ADR-041 and a reindex. The in-run legacy arm is the better instrument. **The v2.3.0 baseline document should be re-captured at 3.0.8**, or Confirmation 4 amended to name the in-run comparator, otherwise the next change inherits a stale reference. Comparison was **top-1 only**.
 
-Separately, and this is my reasoning rather than the standard's: [P074](../problems/verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) is holding open for **maintainer** confirmation rather than closing on my own live-API measurement. Promoting this ADR on that same measurement while refusing to close P074 on it would apply two different bars to one body of evidence — a smaller version of the April failure this decision exists to correct. DECISION-MANAGEMENT.md does not itself require maintainer confirmation; do not let this paragraph drift into claiming it does.
+| Q                               | change                                                      | reading                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5 `16 Gaze Rd Christmas Island` | `UNIT 1, 16 GAZE RD` → `16 GAZE RD`                         | **Improvement, and a restoration.** `16 GAZE RD` was top-1 in the April record; legacy has since drifted off it and the shipped clause puts it back. This is ADR-025 Driver 1 delivered.                                                                                                                                                                                                                       |
+| 11 `MURRAY RD CHRISTMAS ISLAND` | `22 MURRAY RD` → `16 MURRAY RD`                             | **Neutral.** Both arms are score-tied (legacy 50.3797 ×4, shipped 17.2927 ×3) and both resolve by the documented `ssla.raw asc` tiebreak. The query carries no street number, so neither answer is more correct.                                                                                                                                                                                               |
+| 12 `3053`                       | `30536 BRAND HWY, WA` → `1 CHARLES ST, CARLTON VIC 3053`    | **Neutral, and a page-level change rather than a reorder** — `30536 BRAND HWY` leaves the top 8 entirely. It is still matched by `bool_prefix`; it is outranked. Whether a bare postcode should return that postcode or a street number beginning `3053` is recorded nowhere as correct, and the ambiguity self-corrects two keystrokes later when the gate opens. Recorded as a change, not claimed as a win. |
+| 14 `Carlton VIC`                | `30 CARLTON ST` → `CARLTON GARDENS NORTH, 1-111 CARLTON ST` | **Neutral on correctness** — both are in Carlton VIC 3053 — but see the class below. Not the tiebreak: digits sort before letters, so a tie would have kept `30 CARLTON ST` on top. The winner scores strictly higher, most likely because `CARLTON` appears three times in it.                                                                                                                                |
 
-**Trigger — all three, not just the first:**
+### The class this surfaced: gated ON, but nothing prefixes
 
-1. P074 closes on maintainer confirmation.
-2. **Confirmation 4 discharged**: ADR-027's 14-query v2.3.0 baseline re-run against 3.0.8. Not yet done.
-3. **Confirmation 7 discharged**: latency re-baselined post-implementation. The figures this decision publishes come from the 2026-08-07 candidate run, as the post-implementation table above says plainly. Promoting on a "positive production track record" while the latency half of the evidence predates the deploy is exactly the gap this ADR refuses to make elsewhere.
+Queries 11, 12 and 14 share a property the decision did not previously characterise. **The typed string prefixes no stored SLA**, so the anchor contributes nothing and the observed change is the _uncompensated removal of `phrase_prefix`_. Verified directly: the `dis_max` alone returns **0 hits** for both `Carlton VIC` and `MURRAY RD CHRISTMAS ISLAND`.
 
-Recorded here and as a task on P074, because a promotion condition living only in memory is P076's class: an ADR criterion prescribed and never implemented.
+This is a large class — street-name-first, locality-only, building-name-first and postcode-only queries — and it is distinct from the gated-off class the selectivity-gate section characterises. **No gate covers it**: the recall ladder cuts mid-word in the 2nd or 3rd token of a full address, so every probe is number-leading. Three observed samples are all non-regressions, which is why this does not block promotion, but three is not a characterisation. Reassessment Criterion 7 below is added for it.
 
-**At promotion this section is replaced** by the production-validation evidence DECISION-MANAGEMENT.md's process step 3 requires, so it does not survive as a stale hold notice on an accepted decision.
+## Production Validation
+
+Promoted to `accepted` on 2026-08-08, the day after release, against the three conditions this ADR defined **before** the evidence arrived. DECISION-MANAGEMENT.md's "positive track record" criterion delegates its own definition — _"define timeframe/success criteria"_ — so the bar here is event-based rather than a clock, which is the repo's standing practice: ADR-041 was promoted on the day of its cutover, and ADR-029 Phase 1 waived a 7-day soak on positive health evidence.
+
+**1. Maintainer confirmation.** Verified on the live site and accepted 2026-08-08. The demonstration was stronger than the reported case: typing the **partial** `8 WATERS R` returned six street-level `8 WATERS RD` records across different localities with no sub-unit among them, and at `8 WATERS RD` the `UNIT 8, 8 WATERS RD, NEUTRAL BAY` record sat below all six. That exercises the anchor's discriminator directly — `UNIT 8, 8 WATERS RD` does not literally prefix `8 WATERS R` — and, being a partial-prefix shape, touches P069's property as well as this decision's.
+
+**2. Confirmation 4 discharged.** ADR-027's 14-query baseline, legacy versus shipped in one run: 10 of 14 top-1 unchanged, 4 changed, **0 regressions**. Frame, scope and the reading of each change are recorded above; two of the four are improvements and two are neutral, one of them a page-level change recorded as such rather than claimed as a win.
+
+**3. Confirmation 7 discharged.** Latency re-measured against the shipped clause: **p50 +1 ms, p90 −3 ms**. The pre-merge estimate was conservative in both directions — the baseline breach of JTBD-001's 200 ms target is larger than recorded (legacy p90 244 ms) and this decision does not contribute to it.
+
+**What acceptance does not cover.** Maintainer acceptance is of the reported case; the property evidence is separate and is what makes one address sufficient now where it was not in April — 0 violations of 150 on a freshly redrawn national sample, against 60.0% of a 120-address draw. Reassessment Criterion 1 is the standing guard, and it fires only when someone deliberately runs `test/perf/street-level-first-probe.mjs`; no cadence is automated. Criterion 7 records a class this promotion did not characterise.
 
 ## Reassessment Criteria
 
@@ -207,3 +230,4 @@ Recorded here and as a task on P074, because a promotion condition living only i
 4. `sla_range_expanded` remains without a query-side carrier — **but see [P091](../problems/open/091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md) before acting on this criterion, which now leads.** The field has never been populated (0 of 16,905,824 documents; it is written to `_source.structured.sla_range_expanded` while the mapping declares the top level), and measurement says it should be removed rather than repaired: it contributes nothing to endpoint recall — 100/100 gap-case probes found in page without it, 92 of them at rank #1 — and in 66.7% of range addresses at least one endpoint exists as its own address, where the alias would make the range document compete with the real one. An earlier draft of this criterion said removing the field from the query was part of why the `108 GAZE RD` inversion ranks correctly. That was wrong: an empty field contributes nothing to a max. Re-open only if P091 resolves toward keeping the field, and then measure both directions before restoring it.
 5. A backend migration makes the portability argument live rather than theoretical.
 6. Partial-prefix recall regresses on ADR-041's superset property.
+7. **The non-prefixing class is measured and found to regress.** Queries where the typed string prefixes no stored SLA — street-name-first, locality-only, building-name-first, postcode-only — receive nothing from the anchor and are exposed to the bare removal of `phrase_prefix`. Three samples were checked at promotion and none regressed; the class is uncharacterised beyond that, and no gate reaches it because the recall ladder's probes are all number-leading. Extend the ladder with non-number-leading probes, or accept the gap knowingly.
