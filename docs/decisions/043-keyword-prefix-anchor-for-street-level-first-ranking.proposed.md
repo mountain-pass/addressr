@@ -18,7 +18,7 @@ reassessment-date: 2026-11-07
 
 ## Context and Problem Statement
 
-Querying a street address that has sub-units returns the sub-units, not the address. Typing `8 WATERS RD, NEUTRAL BAY NSW 2089` against production returns eight UNIT records at that address and never the address itself, which is in the index. Measured on a fresh random national sample of 120 sub-unit-bearing addresses: **60.0% return a sub-unit first**. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported, tracked on [P074](../problems/open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
+Querying a street address that has sub-units returns the sub-units, not the address. Typing `8 WATERS RD, NEUTRAL BAY NSW 2089` against production returns eight UNIT records at that address and never the address itself, which is in the index. Measured on a fresh random national sample of 120 sub-unit-bearing addresses: **60.0% return a sub-unit first**. This is the defect [issue #375](https://github.com/mountain-pass/addressr/issues/375) reported, tracked on [P074](../problems/verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
 
 ADR-042 established the correct diagnosis, which this decision adopts unchanged: `match_phrase_prefix` matches a phrase **anywhere** in a field, and a sub-unit's `sla` and `ssla` both contain the parent's complete token sequence. Under "contains" semantics the discriminator between parent and child is **absent from the text by construction**, so no scoring adjustment is well-posed. Under "starts with" it is present and exact.
 
@@ -182,6 +182,22 @@ New to this decision:
 12. **`sla.raw` / `ssla.raw` carry no `ignore_above`.** Currently true and previously unremarked, now load-bearing: adding one would silently strand long SLAs from the anchor while leaving every test green.
 
 13. **The selectivity boundary is crossed by the ADR-041 instrument.** Before this decision `test/integration/search-analysis.test.mjs` built prefixes from two tokens up, so every probe contained whitespace and every probe was gated **on** — the instrument structurally could not cross the one discontinuity this change introduces, leaving Reassessment Criterion 6 undischargeable by its own nominated gate. Two changes ship with this decision: `prefixes()` defaults to **one** token so the walk starts on the gated-**off** side, and an explicit boundary probe walks `'55'` → `'55 '` → `'55 P'` → `'55 PY'`. The trailing-space step is the boundary itself and cannot be dropped — the gate turns **on** at `'55 '`, and no token-joined prefix ever produces it.
+
+## Promotion to `accepted`
+
+Held at `proposed` after shipping in 3.0.8, deliberately. DECISION-MANAGEMENT.md's Proposed → Accepted criteria want more than "implemented in production": a **positive track record**, with timeframe and success criteria defined, plus validation of successful production use. Criterion 1 is discharged; a track record is elapsed time and this shipped hours ago.
+
+Separately, and this is my reasoning rather than the standard's: [P074](../problems/verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) is holding open for **maintainer** confirmation rather than closing on my own live-API measurement. Promoting this ADR on that same measurement while refusing to close P074 on it would apply two different bars to one body of evidence — a smaller version of the April failure this decision exists to correct. DECISION-MANAGEMENT.md does not itself require maintainer confirmation; do not let this paragraph drift into claiming it does.
+
+**Trigger — all three, not just the first:**
+
+1. P074 closes on maintainer confirmation.
+2. **Confirmation 4 discharged**: ADR-027's 14-query v2.3.0 baseline re-run against 3.0.8. Not yet done.
+3. **Confirmation 7 discharged**: latency re-baselined post-implementation. The figures this decision publishes come from the 2026-08-07 candidate run, as the post-implementation table above says plainly. Promoting on a "positive production track record" while the latency half of the evidence predates the deploy is exactly the gap this ADR refuses to make elsewhere.
+
+Recorded here and as a task on P074, because a promotion condition living only in memory is P076's class: an ADR criterion prescribed and never implemented.
+
+**At promotion this section is replaced** by the production-validation evidence DECISION-MANAGEMENT.md's process step 3 requires, so it does not survive as a stale hold notice on an accepted decision.
 
 ## Reassessment Criteria
 

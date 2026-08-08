@@ -25,13 +25,15 @@ Investigation, remediation and the fix decision are tracked on **P074**, which c
 **Origin**: inbound-reported (#375)
 **Priority**: 16 (High) — Impact: Significant (4) x Likelihood: Likely (4)
 
-> **The reporter has not been told this was reopened.** Issue [#375](https://github.com/mountain-pass/addressr/issues/375) is still CLOSED, carrying a comment headed "Fix deployed — verified in production" dated 2026-04-16. That comment is accurate about what it verified and wrong about what it generalised to: it checked a single address, and the property fails for 62.7% of sub-unit-bearing addresses. This ticket was reopened 2026-07-31 and nothing fired outbound.
+> **DISCHARGED 2026-08-08. The reporter has been told.** [Comment 5223522329](https://github.com/mountain-pass/addressr/issues/375#issuecomment-5223522329) on issue [#375](https://github.com/mountain-pass/addressr/issues/375) retracts the April claim, names the real cause, and records what shipped in 3.0.8. The note below is retained because its diagnosis of _why_ nothing fired outbound is still live for other tickets.
+>
+> The original state: issue #375 was CLOSED, carrying a comment headed "Fix deployed — verified in production" dated 2026-04-16. That comment was accurate about what it verified and wrong about what it generalised to: it checked a single address, and the property failed for 62.7% of sub-unit-bearing addresses. This ticket was reopened 2026-07-31 and nothing fired outbound.
 >
 > The reason is mechanical, and it is why the `**Origin**` field above was added on 2026-08-07: the ADR-024 lifecycle-update path keys on `**Origin**: inbound-reported (#NN)`, and this ticket did not carry it. Its sibling [P069](../verifying/069-partial-prefix-search-recall-longer-query-drops-results.md) did, and its reporter got both a mid-course correction and a close notice on issue #365. Same session, same maintainer, opposite outcome, decided entirely by a missing field.
 >
-> Maintainer direction 2026-08-07: **do not correct #375 until the fix actually ships.** The correction is gated on release and is recorded as a Fix Strategy prerequisite on [P074](../open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Note the gate names a condition, not a bound: P074 is Effort L with prerequisites still outstanding, so "at release" is not a date. Stated as a condition rather than a count deliberately — a count goes stale on every discharge, and three were discharged on 2026-08-07 alone.
+> Maintainer direction 2026-08-07 was **do not correct #375 until the fix actually ships.** The condition was satisfied on 2026-08-08 when 3.0.8 released, and the correction was posted the same day. **Both release-gated guards below are therefore spent, and this is the dangerous moment for them**: a guard whose condition is met reads as permission, so the sentences are rewritten rather than left to be re-read as a green light.
 >
-> **Do not run `/wr-itil:update-upstream 007` before the fix ships.** Every automatic path is already closed — the only legal transition off `.known-error.md` is `verifying`, and that halts on an unreleased changeset — but a standalone invocation is not. This ticket carries no `## Upstream Lifecycle Updates` log, so the skill's Step 3 table resolves `(none) + .known-error.md` to a fresh Open → Known Error and would read an April transition as current, posting a progress comment to the reporter under a direction that says not to.
+> **The reason the `/wr-itil:update-upstream 007` guard mattered has been removed at its source.** That guard existed because this ticket's `## Fix Released` section carried the falsified April text, and the ADR-024 lifecycle dispatch reads that section verbatim under a no-invention rule. With the release condition met, the dispatch would have sourced a second "verified in production" claim from falsified prose and posted it to the reporter hours after the retraction. The section has now been replaced with the real 3.0.8 record, so the hazard is gone rather than merely fenced. The structural note stands for other tickets: this one carries no `## Upstream Lifecycle Updates` log, so the skill's Step 3 table resolves `(none) + .known-error.md` to a fresh Open → Known Error and would read an April transition as current.
 
 ## Description
 
@@ -150,13 +152,19 @@ Apply the same treatment to the `phrase_prefix` clause.
 
 Until the fix is released, API consumers who query a street-level address and want the non-sub-unit result can filter locally: ignore hits where the `sla` contains a `FLAT`/`UNIT`/`SHOP`/`LEVEL` token if the query did not contain one. This is client-side work but unblocks the wrong-"best-match" symptom.
 
-## Fix Released — FALSIFIED, historical only
+## Fix Released
 
-> **Do not source reporter-facing prose from this section.** It records a claim that is false, and the ADR-024 lifecycle dispatch reads `## Fix Released` verbatim under a no-invention rule. Left in place for provenance; the release-time transition must **replace** it with the retraction specified in [P074](../open/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md) Fix Strategy prerequisite 14, not append beneath it.
+Released in **3.0.8** on 2026-08-08. The reporter has been told: [issue #375 comment 5223522329](https://github.com/mountain-pass/addressr/issues/375#issuecomment-5223522329) retracts the April claim and records what actually shipped.
 
-The claim below verified a single address. The property it was taken to establish fails for **62.7%** of sub-unit-bearing addresses, measured against production 2026-08-06. The mechanism it names was real and was fixed; the live defect has a different cause in the sibling `phrase_prefix` clause. See the reopening note at the top of this ticket.
+The v2.2.0 fix was real but was not the deciding clause. `bool_prefix` summation was fixed and has ranked correctly since; the sibling `match_phrase_prefix` clause was overriding it, and that clause matched a phrase anywhere in a field rather than from the start, so a sub-unit's address contained its parent's whole token sequence and no scoring adjustment to it was well-posed. [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) replaces it with a keyword-prefix anchor on `sla.raw` / `ssla.raw`.
 
-The original text, retained unaltered:
+Confirmed on the live public API after deploy, not against the index: `8 WATERS RD, NEUTRAL BAY NSW 2089` returns that address first; `14/2 Parkes St` and `Unit 14, 2 Parkes St` both return the same sub-unit record. Pre-release, the street-level record failed to rank first in **0 of 150** addresses on a freshly drawn national sample, against 60.0% of a 120-address baseline draw.
+
+Awaiting maintainer verification before this ticket closes. Tracked on [P074](../verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md).
+
+### The April claim, retained for provenance
+
+Superseded by the section above and by the posted retraction. It verified a single address; the property it was taken to establish failed for 62.7% of sub-unit-bearing addresses when re-measured on 2026-08-06.
 
 > Deployed in v2.2.0 (released 2026-04-16, PR #451). Verified in production 2026-04-17.
 >

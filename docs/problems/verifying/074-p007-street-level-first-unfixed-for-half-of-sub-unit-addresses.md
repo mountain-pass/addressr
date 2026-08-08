@@ -1,6 +1,6 @@
 # Problem 074: P007 street-level-first is unfixed for ~50% of addresses with sub-units
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-07-31
 **Origin**: internal — surfaced 2026-07-31 while measuring the blast radius of P073.
 **Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Almost certain (4). Impact 4 per RISK-POLICY § Impact: paid and free RapidAPI consumers are handed the wrong "best match" on the revenue-generating `/addresses?q=` endpoint. This is the defect issue [#375](https://github.com/mountain-pass/addressr/issues/375) reported and that ADR-025 was written to fix. Likelihood 4: measured at 50.3% of a 145-address sample against live production, and deterministic per address.
@@ -205,7 +205,7 @@ The keyword-prefix anchor from [ADR-043 — Keyword-prefix anchor for street-lev
 | the reported case, `8 WATERS RD, NEUTRAL BAY NSW 2089`            | the street-level record is now **#1**; previously it was absent from all 8 rows             |
 | slash-notation tolerance, `14/2 PARKES ST`                        | unchanged — `UNIT 14, 2 PARKES ST, KIRRIBILLI NSW 2061` at #1 under both old and new bodies |
 
-The recall ladder's sensitivity gate passing is what makes the net-0 figure evidence rather than a number: it aborts unless it first reproduces the four losses [P078](078-phrase-prefix-scores-depend-on-shard-local-expansion-set.md) recorded for `max_expansions: 1`. The 8 losses are the already-tracked named probes, not a new population.
+The recall ladder's sensitivity gate passing is what makes the net-0 figure evidence rather than a number: it aborts unless it first reproduces the four losses [P078](../open/078-phrase-prefix-scores-depend-on-shard-local-expansion-set.md) recorded for `max_expansions: 1`. The 8 losses are the already-tracked named probes, not a new population.
 
 **What the fix costs, all recorded in ADR-043 rather than discovered later:**
 
@@ -213,7 +213,34 @@ The recall ladder's sensitivity gate passing is what makes the net-0 figure evid
 - The clause is analysis-blind, so it degrades to target-in-page rather than top-1 for synonym and punctuation variants. `bool_prefix` carries those.
 - Being analysis-blind also means it _rescues_ any query that literally prefixes the stored SLA, regardless of what the analyzer did — which cost ADR-041's old-config control its sensitivity. That probe moved from `55 Pyrmont Bri` to `Pyrmont Bri`, which is not a literal prefix, so the anchor contributes nothing and the analysis defect is isolated again.
 
-Not yet closed: this ticket stays open until the fix is released and verified on the live endpoint.
+Not yet closed. That criterion — released and verified on the live endpoint — was satisfied on 2026-08-08 and is superseded by the closure rule in `## Fix Released` below: the remaining gate is **maintainer** confirmation, not my own live-endpoint measurement.
+
+## Fix Released
+
+Released in **3.0.8** on 2026-08-08. Awaiting user verification.
+
+`/addresses?q=` now anchors on the start of the address using the existing `sla.raw` / `ssla.raw` keyword subfields, per [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md). Commits `34e84c7` (the fix) and `6e3ab74` (changeset package name, which blocked the first release attempt).
+
+**Confirmed on the live public API**, through the consumer path rather than against the index — the step the April v2.2.0 closure skipped, and the reason this ticket was re-opened as P074 in the first place. `https://backend.addressr.io/health` reports `3.0.8`:
+
+| query                                   | first result                                            |
+| --------------------------------------- | ------------------------------------------------------- |
+| `8 WATERS RD, NEUTRAL BAY NSW 2089`     | `8 WATERS RD, NEUTRAL BAY NSW 2089` — the reported case |
+| `108 GAZE RD, CHRISTMAS ISLAND OT 6798` | `108 GAZE RD, …` ahead of `96-108 GAZE RD, …` (P075)    |
+| `14/2 Parkes St`                        | `UNIT 14, 2 PARKES ST, KIRRIBILLI NSW 2061`             |
+| `Unit 14, 2 Parkes St`                  | same record — both notations hold (ADR-025)             |
+
+Pre-release measurement against the production index, each on a separately drawn sample: street-level-first **0 of 150** against a 60.0%-of-120 baseline; partial-prefix recall net 0 across 182 probes over 60 targets with the sensitivity gate passing; 60 mistyped queries unchanged at 90% in page / 85% first.
+
+**Fix Strategy prerequisite 14 is PARTIALLY discharged — one of three obligations, not all.**
+
+- [x] **Reporter-facing correction posted.** [Comment 5223522329](https://github.com/mountain-pass/addressr/issues/375#issuecomment-5223522329) retracts the April "verified in production" claim and names the fixture-scale-versus-production gap as the reason it survived.
+- [x] **P007's `## Fix Released` replaced**, not appended to. It carried the falsified April text, and the ADR-024 lifecycle dispatch reads that section verbatim under a no-invention rule — with the release condition now met, leaving it would have let a second false "verified" claim reach the reporter hours after the retraction.
+- [ ] **CHANGELOG erratum — OUTSTANDING, and its window has closed.** Prerequisite 14 specifies a forward entry on the release that ships the fix, derived from the same text so the surfaces cannot drift. 3.0.8 shipped without it and its entry ends "Fixes issue #375", so **the corpus now carries two unretracted claims to have fixed #375** (2.2.0 and 3.0.8) rather than one. A CHANGELOG entry cannot be edited after publication, so this needs a home on the next release. Do not mark prerequisite 14 closed until it has one.
+
+**This ticket does not close on the above.** Per **wr-itil ADR-022** (not this repo's ADR-022, which is Locality postcode from address details) it closes when the maintainer confirms the fix in production, not when it deploys and not on my own measurements. That distinction is the whole reason this ticket exists: the April closure was also a real measurement, correctly performed, on one address.
+
+- [ ] **On close, promote [ADR-043](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.proposed.md) to `accepted` — but only with its other two conditions discharged too**, which that ADR names and this ticket must not lose: **Confirmation 4** (ADR-027's 14-query v2.3.0 baseline re-run against 3.0.8, not yet done) and **Confirmation 7** (latency re-baselined post-implementation; the published p50/p90 are pre-deploy candidate figures). It is held at `proposed` deliberately — DECISION-MANAGEMENT.md requires a positive production track record, which is the same evidence question this ticket is holding open, and promoting on self-measurement while refusing to close on self-measurement would apply two bars to one body of evidence.
 
 ## Dependencies
 

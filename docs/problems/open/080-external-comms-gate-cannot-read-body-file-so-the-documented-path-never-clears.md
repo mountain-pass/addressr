@@ -2,9 +2,9 @@
 
 **Status**: Open — upstream-blocked (@windyroad/wr-risk-scorer), [#408](https://github.com/windyroad/agent-plugins/issues/408)
 **Reported**: 2026-08-02
-**Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Almost certain (3) — derived at capture; developer-time only, but deterministic whenever the `--body-file` form is used
+**Priority**: 8 (Medium) — Impact: Minor (2) × Likelihood: Almost certain (4). **Re-rated 2026-08-08 on recurrence.** Likelihood 3 to 4: no longer an estimate that it fires whenever the form is used. It recurred, and the extractor read confirms the deny is unconditional for the file forms, so every use fails by construction. Impact stays 2 (developer time), but the cost per instance is higher than captured, because the deny message points at the marker while the fault is in body extraction
 **Origin**: internal
-**Effort**: S — derived at capture: the fix is either a body-file read in the gate's Bash branch, or a corrected directive in the deny message
+**Effort**: S — add the file-based forms to the extractor pattern list in `external-comms-gate.sh`, or correct the deny message to name the unsupported form. The `Write`/`Edit` branch already reads files, so the machinery exists
 **JTBD**: JTBD-001
 **Persona**: web-app-developer
 
@@ -55,6 +55,18 @@ The gate extracts its draft from command text rather than from the tool's resolv
 - [x] **Reported upstream** as [issue #408](https://github.com/windyroad/agent-plugins/issues/408) on 2026-08-03 per the P077 precedent, with a PR offered on whichever option they prefer.
 
 Nothing further is owed in this repo; the remaining work is upstream. The Workaround section above was corrected in the same pass — the heredoc form is what to reach for, not the single-quoted one it previously recommended.
+
+## Recurrence 2026-08-08, with the extractor read directly
+
+Hit again posting the [issue #375](https://github.com/mountain-pass/addressr/issues/375) correction for [P074](../verifying/074-p007-street-level-first-unfixed-for-half-of-sub-unit-addresses.md). Worth recording because the defect was traced to the exact source line rather than inferred from the symptom, and because it cost a full round of misdiagnosis first.
+
+Two things this instance adds beyond the 2026-08-02 and 2026-08-06 records above, which already establish the cause and the workaround.
+
+**The full pattern list, enumerated.** The extractor matches an ordered list and takes the first hit: a quoted heredoc, `--body 'TEXT'`, `--body "TEXT"`, `--field name='TEXT'`, `--field name="TEXT"`, `-m 'TEXT'`, `--message "TEXT"`. **`-F` is absent as well as `--body-file`** — the short form is not covered either, which the earlier records do not say. Identical in `wr-risk-scorer/0.13.3` and `wr-voice-tone/0.7.1`; their key libraries are byte-identical, so both gates fail the same way.
+
+**How much the misleading deny message costs when you do not already know.** Before reading the extractor I re-ran both reviewers, checked evaluator ids against their `.conf` files, diffed the two plugins' key libraries, and inspected the session marker directory — while both markers sat on disk under the correct key (`…-risk-reviewed-a8dec0b0…` and `…-voice-tone-reviewed-a8dec0b0…`, matching the file's computed key exactly). Every one of those checks passed, which is what makes the message so expensive: it points at the marker, the marker is fine, and the fault is one layer earlier in extraction. That argues for the _smaller_ of the two fix options offered upstream in [#408](https://github.com/windyroad/agent-plugins/issues/408) — a deny message naming the unsupported form would have cost minutes rather than a diagnostic session.
+
+**A second gate fired while writing this section**, which is [P086](086-text-matched-gates-commands-slip-past-documentation-trips-them.md) exactly: composing this ticket through a Bash heredoc tripped the external-comms gate, because the prose _describes_ an outbound-comment command and the extractor matches on text rather than intent. Documenting the defect was blocked by a sibling of the defect. Landed via the `Edit` tool instead.
 
 ## Dependencies
 
