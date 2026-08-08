@@ -25,7 +25,8 @@ with no caller and undeclared dependencies is a note about an idea, not an
 implementation, and this file is the better place for the idea. The design
 sketch above is preserved.
 
-`deploy/create-deployment-archive.js` fails the same test and is deliberately
-NOT removed here: any change under `deploy/` arms the push-tier production
-terraform apply, so it goes in its own commit where that apply is the deliberate
-act the trigger exists to serve rather than a rider on unrelated work.
+`deploy/create-deployment-archive.js` failed the same test and was removed in
+its own commit on 2026-08-08, for exactly the reason it was held back: any
+change under `deploy/` arms the push-tier production terraform apply. It went
+alone, and a baseline `terraform-plan` dispatch against master returned an empty
+change set first, so the apply it armed had nothing to apply.

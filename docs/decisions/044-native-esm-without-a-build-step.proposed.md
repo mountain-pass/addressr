@@ -51,7 +51,7 @@ Measured rather than assumed, and each step verified before the next:
 
 `client/elasticsearch.js` uses the named `{ Client }` import, matching `src/read-shadow.js`, which was already proven under raw Node ESM.
 
-**`deploy/create-deployment-archive.js` fails the same dead-code test and is deliberately NOT in this change.** Any path under `deploy/` other than the terraform lockfile sets `steps.deploy-paths.outputs.changed=true`, which runs `npm run deploy:prod` — a whole-root-module apply against live Elastic Beanstalk, the OpenSearch domain and the Cloudflare worker, with no plan-approval gate on the push tier. Deleting it here would arm that apply as a rider on a module-system change. It goes in its own commit, where the apply is the deliberate act that trigger exists to serve.
+**`deploy/create-deployment-archive.js` fails the same dead-code test and is deliberately NOT in this change.** Any path under `deploy/` other than the terraform lockfile sets `steps.deploy-paths.outputs.changed=true`, which runs `npm run deploy:prod` — a whole-root-module apply against live Elastic Beanstalk, the OpenSearch domain and the Cloudflare worker, with no plan-approval gate on the push tier. Deleting it here would arm that apply as a rider on a module-system change. It went in its own commit on 2026-08-08, where the apply is the deliberate act that trigger exists to serve. A baseline `terraform-plan` dispatch against master returned an empty change set (`plan-summary.json` = `[]`, 0 resources) before that commit was pushed, so the apply it armed had nothing to apply.
 
 ## Consequences
 
