@@ -42,6 +42,81 @@ export function shutdownTimeoutMs(environment = process.env) {
 }
 
 /**
+ * Build a server-handle lifecycle: track the listening server, drain it, and
+ * force it down at the deadline.
+ *
+ * The handle lives here rather than in `waycharter-server.js`, with the two
+ * functions that act on it, and that move is what lets a unit test exercise the
+ * drain at all (P033): `waycharter-server.js` transitively imports
+ * `service/address-service` through a babel-only bare specifier and cannot be
+ * loaded by raw Node ESM, so while these functions lived there the only
+ * available instrument was regex-matching their source text.
+ *
+ * A FACTORY over a module-level `let` for two reasons, both of them practical.
+ * A test gets a genuinely independent handle by calling this again, instead of
+ * defeating the module cache with a query-string import. And the singleton
+ * below becomes a `const` initialised once, so nothing assigns to module scope
+ * from inside a function — the shape `unicorn/no-top-level-assignment-in-function`
+ * is pointing at (P084).
+ *
+ * @returns {{trackServer: <T>(server: T) => T, stopServer: () => Promise<void>, forceCloseConnections: () => void}}
+ */
+export function createServerLifecycle() {
+  let tracked;
+
+  return {
+    /**
+     * Record the server the shutdown path acts on, and return it.
+     *
+     * Returns its argument so the caller keeps using the handle it just made.
+     * Replacing a previous server is deliberate and is what a restart does.
+     * Draining a stale handle would NOT hang — a closed server fires its
+     * `close()` callback with ERR_SERVER_NOT_RUNNING, so the drain would
+     * resolve immediately while the live server kept serving and then took the
+     * SIGKILL. That is worse than hanging, because a hang is visible.
+     */
+    trackServer(server) {
+      tracked = server;
+      return server;
+    },
+
+    /**
+     * Stop accepting connections and drain the ones in flight.
+     *
+     * Resolves when every connection has ended, and NEVER rejects: an
+     * `ERR_SERVER_NOT_RUNNING` callback is a no-op, not a shutdown failure, and
+     * the caller at `test/js/world.js` discards the return value — an unhandled
+     * rejection there fails teardown. Exit codes are `installShutdownHandlers`'
+     * business, not this function's.
+     */
+    stopServer() {
+      if (tracked === undefined) {
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        tracked.close(() => resolve());
+        // Idle keep-alive sockets hold close() open indefinitely — a reverse
+        // proxy upstream pool would otherwise consume the whole drain budget
+        // doing nothing. After close(), so nothing new lands in the gap.
+        tracked.closeIdleConnections();
+      });
+    },
+
+    /** The deadline path: whatever is still connected when the budget expires. */
+    forceCloseConnections() {
+      if (tracked !== undefined) {
+        tracked.closeAllConnections();
+      }
+    },
+  };
+}
+
+// The process-wide instance. `server2.js` and `test/js/world.js` import these
+// through `waycharter-server.js`, which re-exports them.
+export const { trackServer, stopServer, forceCloseConnections } =
+  createServerLifecycle();
+
+/**
  * Register the shutdown handlers.
  *
  * @param {object} options
@@ -56,17 +131,17 @@ export function installShutdownHandlers({
   signals = ['SIGTERM', 'SIGINT'],
   proc = process,
 } = {}) {
-  let draining = false;
+  let isDraining = false;
 
   const onSignal = (signal) => {
-    if (draining) {
+    if (isDraining) {
       // A second signal is an operator who has stopped waiting.
       logger('%s received while draining, exiting now', signal);
       force();
       proc.exit(1);
       return;
     }
-    draining = true;
+    isDraining = true;
     logger(
       '%s received, draining in-flight requests (up to %dms)',
       signal,
@@ -79,6 +154,15 @@ export function installShutdownHandlers({
       proc.exit(1);
     }, timeoutMs);
 
+    // The two-argument `.then(onFulfilled, onRejected)` is load-bearing, not a
+    // style slip: it keeps the success and failure paths DISJOINT BY
+    // CONSTRUCTION. `.then(f).catch(r)` would also route a throw from the
+    // success handler into r; `await` would need a nested try/catch to keep
+    // them apart. Both are more machinery for the same guarantee this gets for
+    // free. (Not claiming a live bug — `proc.exit(0)` below is synchronous in
+    // production, so nothing downstream of it throws today. The point is that
+    // the property holds without depending on that.) P084.
+    // eslint-disable-next-line unicorn/prefer-await, unicorn/prefer-then-catch -- see above
     Promise.resolve(stop()).then(
       () => {
         clearTimeout(deadline);

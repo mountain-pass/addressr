@@ -1,5 +1,4 @@
 //const logWhy = require('why-is-node-running');
-import chai from 'chai';
 // import chaiIterator from 'chai-iterator';
 import {
   //   AfterAll, Before,
@@ -22,7 +21,17 @@ const fsp = fs.promises;
 
 const logger = debug('test');
 
-globalThis.expect = chai.expect;
+// The driver the step definitions run against, chosen by profile in BeforeAll
+// and read by the world constructor below. Module-scoped rather than a property
+// on the global object: it has exactly one reader and it is in this file. The
+// global existed because the profile switch and the world constructor are
+// different scopes, which a module-level binding already solves.
+//
+// A field on a `const` holder rather than a bare `let`, for the same reason
+// `createServerLifecycle()` closes over its handle: assigning a module-level
+// binding from inside a function is the shape `unicorn/no-top-level-assignment-in-function`
+// objects to, and the object form sidesteps it without a suppression.
+const active = { driver: undefined };
 
 const TEST_PROFILE = process.env.TEST_PROFILE || 'default';
 
@@ -40,15 +49,15 @@ BeforeAll({ timeout: 240_000 }, async function () {
   logger('BEFORE ALL');
   switch (TEST_PROFILE) {
     case 'rest2': {
-      globalThis.driver = new AddressrRest2Driver(await startRest2Server());
+      active.driver = new AddressrRest2Driver(await startRest2Server());
       break;
     }
     case 'cli2': {
-      globalThis.driver = new AddressrRest2Driver(await startExternalServer());
+      active.driver = new AddressrRest2Driver(await startExternalServer());
       break;
     }
     case 'default': {
-      globalThis.driver = new AddressrRest2EmbeddedDriver();
+      active.driver = new AddressrRest2EmbeddedDriver();
       break;
     }
     default: {
@@ -64,7 +73,13 @@ BeforeAll({ timeout: 240_000 }, async function () {
 });
 
 AfterAll({ timeout: 30_000 }, async function () {
-  stopRest2Server();
+  // AWAITED deliberately. Unawaited, this returns a promise nobody holds, so
+  // teardown reports success whether the drain completed or did nothing at all
+  // — which made this tier unable to distinguish a working stopServer() from
+  // one that resolves instantly on an untracked handle (P033). Awaiting means a
+  // drain that never finishes fails here, against the 30s budget, instead of
+  // passing quietly.
+  await stopRest2Server();
   //delete global.esClient;
   if (this.logStream) {
     this.logStream.destroy();
@@ -75,7 +90,7 @@ function world({ attach, parameters }) {
   logger('IN WORLD');
   this.attach = attach;
   this.parameters = parameters;
-  this.driver = globalThis.driver;
+  this.driver = active.driver;
 }
 
 setWorldConstructor(world);

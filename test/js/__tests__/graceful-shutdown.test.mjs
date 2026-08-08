@@ -9,14 +9,14 @@ import { fileURLToPath } from 'node:url';
 import {
   shutdownTimeoutMs,
   installShutdownHandlers,
+  createServerLifecycle,
+  trackServer,
+  stopServer,
+  forceCloseConnections,
 } from '../../../src/graceful-shutdown.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const server2Path = path.resolve(__dirname, '../../../src/server2.js');
-const waycharterServerPath = path.resolve(
-  __dirname,
-  '../../../src/waycharter-server.js',
-);
 
 // P067: nothing wired the existing stopServer() to a process signal, so any
 // termination dropped in-flight requests. ADR-039's tini init made the container
@@ -135,7 +135,11 @@ describe('installShutdownHandlers (P067)', () => {
     });
     proc.raise('SIGTERM');
     await new Promise((resolve) => setTimeout(resolve, 50));
-    assert.equal(forced, 0, 'the deadline timer must be cleared on a clean drain');
+    assert.equal(
+      forced,
+      0,
+      'the deadline timer must be cleared on a clean drain',
+    );
     assert.deepEqual(proc.exits, [0]);
   });
 
@@ -157,7 +161,11 @@ describe('installShutdownHandlers (P067)', () => {
     await tick();
     assert.equal(stopped, 1, 'stop() must not be invoked twice');
     assert.equal(forced, 1);
-    assert.deepEqual(proc.exits, [1], 'an impatient operator gets an immediate exit');
+    assert.deepEqual(
+      proc.exits,
+      [1],
+      'an impatient operator gets an immediate exit',
+    );
   });
 
   it('exits 1, force-closing, when stop() rejects', async () => {
@@ -188,7 +196,11 @@ describe('installShutdownHandlers (P067)', () => {
         }),
       /ADDRESSR_SHUTDOWN_TIMEOUT_MS/,
     );
-    assert.equal(proc.handlers.size, 0, 'no handler is installed on a bad config');
+    assert.equal(
+      proc.handlers.size,
+      0,
+      'no handler is installed on a bad config',
+    );
   });
 });
 
@@ -223,40 +235,142 @@ describe('server entry point wiring (src/server2.js)', () => {
   });
 });
 
-describe('stopServer / forceCloseConnections (src/waycharter-server.js)', () => {
-  async function functionBody(name) {
-    const source = await readFile(waycharterServerPath, 'utf8');
-    const startIndex = source.indexOf(`export function ${name}(`);
-    assert.notEqual(startIndex, -1, `${name} must exist`);
-    return source.slice(startIndex, startIndex + 600);
-  }
+// Behavioural cover for the server-handle lifecycle, replacing four
+// source-inspection regexes over `src/waycharter-server.js` (P033).
+//
+// Those regexes read the FUNCTION BODY as text — that it contains
+// `Promise.resolve()`, contains `server.close((` , contains
+// `closeIdleConnections()`, and does not contain `reject`. Each is a claim
+// about a shutdown path that decides whether an in-flight request is answered
+// or dropped, and not one of them ran it.
+//
+// The `doesNotMatch(/reject/)` one is the sharpest example of why text is the
+// wrong instrument: it fails on a variable named `rejectedCount`, and it passes
+// on a promise that rejects through a helper. It is checking a spelling.
+/** Minimal net.Server shape recording which teardown calls it received. */
+const fakeServer = ({ closeCallbackError } = {}) => ({
+  calls: [],
+  close(callback) {
+    this.calls.push('close');
+    queueMicrotask(() => callback(closeCallbackError));
+  },
+  closeIdleConnections() {
+    this.calls.push('closeIdle');
+  },
+  closeAllConnections() {
+    this.calls.push('closeAll');
+  },
+});
 
-  it('stopServer resolves rather than rejects, so test teardown cannot unhandled-reject', async () => {
-    const body = await functionBody('stopServer');
-    assert.match(
-      body,
-      /return\s+Promise\.resolve\(\)/,
-      'no server: resolve immediately',
-    );
-    assert.match(
-      body,
-      /server\.close\(\s*\(\s*\)\s*=>\s*resolve\(\)\s*\)/,
-      'the close callback resolves, discarding ERR_SERVER_NOT_RUNNING',
-    );
-    assert.doesNotMatch(body, /reject/, 'stopServer must never reject');
+describe('server-handle lifecycle — executed, not grepped (P033)', () => {
+  it('resolves immediately when no server was ever tracked', async () => {
+    const { stopServer } = createServerLifecycle();
+    await stopServer();
   });
 
-  it('stopServer closes idle keep-alive connections so the drain can finish', async () => {
-    const body = await functionBody('stopServer');
-    assert.match(
-      body,
-      /server\.closeIdleConnections\(\)/,
-      'idle keep-alive upstream sockets would otherwise hold server.close() open for the full budget',
+  it('RESOLVES when close() reports ERR_SERVER_NOT_RUNNING, and does not reject', async () => {
+    // The behavioural form of the old `doesNotMatch(body, /reject/)`. That
+    // regex asserted the word was absent from the source; this asserts the
+    // promise settles fulfilled when close() hands back an error — which is
+    // the actual contract, since test/js/world.js discards the return value
+    // and an unhandled rejection there fails teardown.
+    const { stopServer, trackServer } = createServerLifecycle();
+    trackServer(
+      fakeServer({ closeCallbackError: new Error('ERR_SERVER_NOT_RUNNING') }),
+    );
+    await stopServer();
+  });
+
+  it('closes idle keep-alive sockets, or the drain budget is spent on nothing', async () => {
+    const { stopServer, trackServer } = createServerLifecycle();
+    const server = trackServer(fakeServer());
+    await stopServer();
+    assert.ok(
+      server.calls.includes('closeIdle'),
+      'an upstream reverse-proxy pool holds close() open for the full budget otherwise',
     );
   });
 
-  it('forceCloseConnections tears down whatever is left at the deadline', async () => {
-    const body = await functionBody('forceCloseConnections');
-    assert.match(body, /server\.closeAllConnections\(\)/);
+  it('requests the close BEFORE closing idle sockets, not after', async () => {
+    // Order the old regex could not see: closeIdleConnections() before
+    // close() would let a new connection land in the gap.
+    const { stopServer, trackServer } = createServerLifecycle();
+    const server = trackServer(fakeServer());
+    await stopServer();
+    assert.deepStrictEqual(server.calls, ['close', 'closeIdle']);
+  });
+
+  it('force-close tears down everything still connected at the deadline', async () => {
+    const { forceCloseConnections, trackServer } = createServerLifecycle();
+    const server = trackServer(fakeServer());
+    forceCloseConnections();
+    assert.deepStrictEqual(server.calls, ['closeAll']);
+  });
+
+  it('force-close is a no-op when no server was tracked, rather than throwing', async () => {
+    // installShutdownHandlers calls force() on the deadline path regardless.
+    // A throw here would replace a clean exit(1) with an uncaught exception.
+    const { forceCloseConnections } = createServerLifecycle();
+    forceCloseConnections();
+  });
+
+  it('tracks the most recent server, so a restart does not drain the dead one', async () => {
+    const { stopServer, trackServer } = createServerLifecycle();
+    const first = trackServer(fakeServer());
+    const second = trackServer(fakeServer());
+    await stopServer();
+    assert.deepStrictEqual(
+      first.calls,
+      [],
+      'the replaced handle is not touched',
+    );
+    assert.deepStrictEqual(second.calls, ['close', 'closeIdle']);
+  });
+});
+
+// The seven cases above each build a FRESH lifecycle, which is what makes them
+// independent — and is also why, on their own, they prove nothing about the
+// instance production runs. `server2.js` hands `installShutdownHandlers` the
+// singleton's functions, and `startRest2Server` calls the singleton's
+// `trackServer`. If those three ever stopped referring to one closure, every
+// test above would still pass.
+//
+// The failure mode is why this matters more than it looks. `stopServer()` on an
+// untracked handle returns `Promise.resolve()` — so a broken wiring does not
+// throw and does not hang. It drains nothing, instantly, and exits 0. The
+// Cucumber tiers cannot see it either: `test/js/world.js` awaits the drain but
+// asserts nothing about it, and a no-op drain completes faster than a real one.
+//
+// So this case executes the singleton itself.
+describe('the process-wide lifecycle singleton (what production actually runs)', () => {
+  it('drains the server handed to the exported trackServer', async () => {
+    const server = {
+      calls: [],
+      close(callback) {
+        this.calls.push('close');
+        queueMicrotask(() => callback());
+      },
+      closeIdleConnections() {
+        this.calls.push('closeIdle');
+      },
+      closeAllConnections() {
+        this.calls.push('closeAll');
+      },
+    };
+    assert.equal(
+      trackServer(server),
+      server,
+      'trackServer returns its argument so startRest2Server can keep the handle',
+    );
+
+    await stopServer();
+    assert.deepStrictEqual(
+      server.calls,
+      ['close', 'closeIdle'],
+      'the exported stopServer must act on the handle the exported trackServer was given — if these are separate closures the drain silently no-ops',
+    );
+
+    forceCloseConnections();
+    assert.deepStrictEqual(server.calls, ['close', 'closeIdle', 'closeAll']);
   });
 });

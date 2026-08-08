@@ -545,10 +545,10 @@ function buildOpenApiSpec(apiVersion) {
 
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
+import { trackServer } from './graceful-shutdown';
+
 var error = debug('error');
 error.log = console.error.bind(console);
-
-let server;
 
 const PAGE_SIZE = process.env.PAGE_SIZE || 8;
 
@@ -993,8 +993,7 @@ export function startRest2Server() {
   validateProxyAuthConfig();
   validateReadShadowConfig();
   const app = buildRest2App();
-  // eslint-disable-next-line unicorn/no-top-level-assignment-in-function -- pre-existing, untouched by this change: the module-level handle stopServer()/forceCloseConnections() close over (P067). No unit cover to catch a mistake — the gap P033 exists to close. Tracked on P084.
-  server = createServer(app);
+  const server = trackServer(createServer(app));
   return new Promise((resolve) => {
     server.listen(serverPort, function () {
       logger(
@@ -1007,25 +1006,8 @@ export function startRest2Server() {
   });
 }
 
-// Resolves when every connection has ended, and never rejects: an
-// ERR_SERVER_NOT_RUNNING callback is a no-op, not a shutdown failure, and the
-// caller at test/js/world.js discards the return value. Exit codes are the
-// shutdown handler's business (P067).
-export function stopServer() {
-  if (server === undefined) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    server.close(() => resolve());
-    // Idle keep-alive sockets hold close() open indefinitely — a reverse proxy
-    // upstream pool would otherwise consume the whole drain budget doing nothing.
-    server.closeIdleConnections();
-  });
-}
-
-// The deadline path: whatever is still connected when the drain budget expires.
-export function forceCloseConnections() {
-  if (server !== undefined) {
-    server.closeAllConnections();
-  }
-}
+// Both live in ./graceful-shutdown.js with the handle they act on, so a unit
+// test can execute them — this module cannot be imported by raw Node ESM
+// (P033). Re-exported here because server2.js and test/js/world.js import them
+// from this path.
+export { stopServer, forceCloseConnections } from './graceful-shutdown';
