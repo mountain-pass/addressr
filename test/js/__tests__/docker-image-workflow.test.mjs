@@ -58,14 +58,31 @@ const lineOf = (needle) => {
 };
 
 // Extract one top-level trigger's `paths:` list from the `on:` block.
-// Deliberately NOT a YAML parse — see the sibling
-// release-workflow-deploy-only.test.mjs header for why a second interpreter is
-// a downgrade here, and js-yaml is only transitively present via
-// @changesets/cli. But a hand-rolled slicer is a WEAKER interpreter than a
-// parser, so this one asserts its own preconditions: exactly one opener at the
+//
+// STILL a hand-rolled slicer, but the reason has changed and the old one is
+// withdrawn (P033, 2026-08-08). This previously cited the sibling
+// release-workflow-deploy-only.test.mjs header "for why a second interpreter is
+// a downgrade here", and claimed js-yaml was "only transitively present via
+// @changesets/cli". Both are false: `js-yaml` is a DECLARED devDependency, and
+// that sibling header has been rescinded — it now parses, along with
+// terraform-plan-workflow.test.mjs and loader-workflow.test.mjs.
+//
+// What keeps this one text-based is narrower and is scheduled, not principled:
+// this file guards the ADR-040 stage-3 double-publish property via the
+// push/pull_request filter asymmetry, and stage 3 is still open (several
+// unticked Confirmation criteria). Converting the instrument that guards a
+// property while that property is still landing is the wrong order. Convert it
+// once stage 3 is ticked — tracked on P033.
+//
+// Meanwhile the slicer stays honest about being a WEAKER interpreter than a
+// parser, so it asserts its own preconditions: exactly one opener at the
 // expected indent, and a non-empty result. Otherwise a reorder or a reformat
 // yields an empty list and every `does not contain` assertion below passes
-// vacuously — the silent-green class this whole file exists to catch.
+// vacuously — the silent-green class this whole file exists to catch. Note the
+// sibling's own reorder defect, measured when it converted: its `on:` slice was
+// bounded by `indexOf('\n  pull_request:')`, so swapping the two trigger blocks
+// — no behaviour change — made it read the wrong list. The preconditions below
+// are what stop the same thing happening here.
 //
 // Comment lines are stripped, not just ignored: both filters carry prose that
 // NAMES the files the other one filters on, so a raw line scan would find
