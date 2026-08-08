@@ -21,11 +21,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import yaml from 'js-yaml';
+// js-yaml 5 dropped the default export and reorganised the public API
+// around flat named exports, so this is `{ load }` rather than `yaml`.
+// It also defaults to the YAML 1.2 CORE schema, under which a bare `on:`
+// key stays the string "on" instead of resolving to boolean true — the
+// `?? parsed[true]` fallbacks below are now belt-and-braces rather than
+// load-bearing, and are kept so this file still parses a 1.1-schema
+// document correctly if the schema default ever moves again.
+import { load } from 'js-yaml';
 
 const PATH = '.github/workflows/terraform-plan.yml';
 const raw = readFileSync(PATH, 'utf8');
-const wf = yaml.load(raw);
+const wf = load(raw);
 
 // `on:` parses as boolean true in YAML 1.1 — the same coercion trap release.yml
 // documents. Read it by either key rather than assuming which one lands.
@@ -92,9 +99,7 @@ describe('terraform-plan.yml', () => {
     // The design rests on the plan running under identical inputs to the apply.
     // A plan under different inputs answers a different question. Read out of
     // release.yml at test time so a future TF_VAR_ addition fails here.
-    const release = yaml.load(
-      readFileSync('.github/workflows/release.yml', 'utf8'),
-    );
+    const release = load(readFileSync('.github/workflows/release.yml', 'utf8'));
     const deployStep = release.jobs.release.steps.find((s) =>
       /Deploy new version/i.test(s.name ?? ''),
     );
@@ -127,7 +132,9 @@ describe('terraform-plan.yml', () => {
     // AND precede the plan step. Pinned so it cannot be dropped later as
     // redundant.
     const names = steps().map((x) => String(x.name ?? ''));
-    const guard = names.findIndex((n) => /Refuse to run against a ref/i.test(n));
+    const guard = names.findIndex((n) =>
+      /Refuse to run against a ref/i.test(n),
+    );
     const plan = names.findIndex((n) => /Terraform plan/i.test(n));
     assert.ok(guard > -1, 'the fail-closed ref guard must exist');
     assert.ok(plan > -1);
@@ -144,7 +151,10 @@ describe('terraform-plan.yml', () => {
       .split('\n')
       .filter((l) => !/^\s*#/.test(l))
       .join('\n');
-    assert.ok(!/terraform\s+apply/.test(code), 'plan workflow must never apply');
+    assert.ok(
+      !/terraform\s+apply/.test(code),
+      'plan workflow must never apply',
+    );
     assert.ok(!/deploy:prod/.test(code), 'must not invoke the applying script');
     assert.ok(
       !/deploy_only/.test(code),

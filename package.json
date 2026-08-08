@@ -197,7 +197,7 @@
     "genversion": "^3.0.0",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^5.2.3",
     "license-checker": "^25.0.1",
     "light-my-request": "^6.6.0",
     "lint-staged": "^17.3.0",

@@ -68,7 +68,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+// js-yaml 5 dropped the default export and reorganised the public API
+// around flat named exports, so this is `{ load }` rather than `yaml`.
+// It also defaults to the YAML 1.2 CORE schema, under which a bare `on:`
+// key stays the string "on" instead of resolving to boolean true — the
+// `?? parsed[true]` fallbacks below are now belt-and-braces rather than
+// load-bearing, and are kept so this file still parses a 1.1-schema
+// document correctly if the schema default ever moves again.
+import { load } from 'js-yaml';
 
 const read = (relative) =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
@@ -76,12 +83,19 @@ const read = (relative) =>
 /**
  * Parse a workflow.
  *
- * The `?? parsed[true]` is not defensive padding: YAML 1.1 resolves a bare `on:`
- * key to the boolean `true`, so the trigger block lands under a boolean key
- * rather than the string 'on'. Both sibling workflow tests carry the same guard.
+ * The `?? parsed[true]` WAS load-bearing and is now a fallback, and the change
+ * is worth recording rather than silently deleting. Under YAML 1.1 — js-yaml 4's
+ * default schema — a bare `on:` key resolves to the boolean `true`, so the
+ * trigger block landed under a boolean key rather than the string 'on'. js-yaml
+ * 5 defaults to the YAML 1.2 CORE schema, where `on` stays a string, so
+ * `parsed.on` now hits and `parsed[true]` is undefined. Verified after the
+ * upgrade rather than assumed.
+ *
+ * Kept because it costs nothing and the schema default has now moved once. Both
+ * sibling workflow tests carry the same guard, for the same reason.
  */
 const workflow = (relative) => {
-  const parsed = yaml.load(read(relative));
+  const parsed = load(read(relative));
   return { ...parsed, on: parsed.on ?? parsed[true] };
 };
 

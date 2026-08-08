@@ -33,10 +33,20 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import yaml from 'js-yaml';
+// js-yaml 5 dropped the default export and reorganised the public API
+// around flat named exports, so this is a named import rather than `yaml`.
+// Aliased to `parseYaml` because this file already has its own `load` helper
+// that reads a workflow BY FILENAME; importing the parser as `load` shadowed it
+// into self-recursion.
+// It also defaults to the YAML 1.2 CORE schema, under which a bare `on:`
+// key stays the string "on" instead of resolving to boolean true — the
+// `?? parsed[true]` fallbacks below are now belt-and-braces rather than
+// load-bearing, and are kept so this file still parses a 1.1-schema
+// document correctly if the schema default ever moves again.
+import { load as parseYaml } from 'js-yaml';
 
 const WF = '.github/workflows';
-const load = (f) => yaml.load(readFileSync(`${WF}/${f}`, 'utf8'));
+const load = (f) => parseYaml(readFileSync(`${WF}/${f}`, 'utf8'));
 
 // The CALLING job, not jobs[0]. populate-search-domain.yml has a `resolve-states`
 // job ahead of the caller, so indexing the first job silently checks the wrong
@@ -55,7 +65,9 @@ const triggers = (wf) => wf.on ?? wf[true];
 
 const CALLEE = 'reusable-update.yml';
 const callee = load(CALLEE);
-const stateCrons = readdirSync(WF).filter((f) => /^update-[a-z]+\.yml$/.test(f));
+const stateCrons = readdirSync(WF).filter((f) =>
+  /^update-[a-z]+\.yml$/.test(f),
+);
 const explicitCallers = stateCrons; // populate-search-domain uses `secrets: inherit`
 
 describe('loader workflow contract', () => {
@@ -72,7 +84,9 @@ describe('loader workflow contract', () => {
     // The load-bearing one. GitHub fails the run when a caller passes an
     // undeclared secret, so the two sides must move together — which is exactly
     // what the v3 decommission had to do across twelve files.
-    const declared = new Set(Object.keys(callee.on?.workflow_call?.secrets ?? {}));
+    const declared = new Set(
+      Object.keys(callee.on?.workflow_call?.secrets ?? {}),
+    );
     assert.ok(declared.size > 0, 'callee must declare its secrets explicitly');
 
     for (const f of explicitCallers) {
@@ -134,7 +148,9 @@ describe('loader workflow contract', () => {
     // default under workflow_call AND under workflow_dispatch, and
     // populate-search-domain carries a third plus an options enum.
     const raw = readFileSync(`${WF}/${CALLEE}`, 'utf8');
-    const arms = new Set([...raw.matchAll(/\$TARGET"?\s*=\s*"(v\d+)"/g)].map((m) => m[1]));
+    const arms = new Set(
+      [...raw.matchAll(/\$TARGET"?\s*=\s*"(v\d+)"/g)].map((m) => m[1]),
+    );
     assert.ok(arms.size > 0, 'could not parse any resolver arms');
 
     const t = triggers(callee);
