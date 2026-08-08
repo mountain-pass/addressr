@@ -599,8 +599,12 @@ export function buildRest2App() {
   // 204, registered before proxyAuthMiddleware.
   // Response shape and gating extracted to src/cors-preflight.js so they can be
   // executed by a test rather than regex-matched here (P033). The REGISTRATION
-  // ORDER below — ahead of proxyAuthMiddleware — is the part that cannot move,
-  // and it keeps its guard in test/js/__tests__/proxy-auth.test.mjs.
+  // ORDER below — ahead of proxyAuthMiddleware — is the part that cannot move.
+  // Its primary guard is test/js/__tests__/waycharter-server.test.mjs, which
+  // asserts it by behaviour: an unauthenticated OPTIONS here is 204 while an
+  // unauthenticated GET on the same path is 401. proxy-auth.test.mjs keeps the
+  // complementary half — that no data-carrying method is short-circuited ahead
+  // of the middleware — and that half is still source inspection (P033).
   if (isPreflightEnabled()) {
     app.options(/.*/, buildPreflightHandler());
   }
