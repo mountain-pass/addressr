@@ -65,6 +65,36 @@ Each is a claim of coverage that executes no code. `proxy-auth.test.mjs` is the 
 
 Deleting these tests is not the fix, and neither is rewriting them one-for-one. The replacement must assert the **observable outcome** — for P091 that means indexing a range document and searching for it by its alias, which fails against today's code and is the test that should have existed since April. A behavioural test that stops at "the function returned the right object" would also have missed this, because `mapAddressDetails` **did** return the right object; the loss happened at the assembly site downstream. The invariant worth pinning is end-to-end: _what goes into the index is what the query can find_.
 
+## First conversion landed 2026-08-08 — the `sla_range_expanded` block
+
+Three of the assertions this ticket names by example are now behavioural. `attachRangeAliases` and `buildIndexedDocument` are extracted to `src/build-indexed-document.js` as clean ESM and covered by 11 executing assertions in `test/js/__tests__/build-indexed-document.test.mjs`. The `assert.match` count in `address-service.test.mjs` drops 7 → 5.
+
+The extraction follows the path this repo already uses to escape the babel-only constraint that forced source-inspection in the first place: `src/build-search-body.js`, `src/init-index-config.js`, `service/gnaf-package-fetch.js` and `utils/stream-down.js` were all moved out for the same reason.
+
+**Two findings from doing it, both of which sharpen this ticket's thesis.**
+
+**1. The assertion was watching the wrong site.** The regex greps `mapAddressDetails` for `rval.sla_range_expanded = expandRangeAliases(`. It matched for four months while the field reached 0 of 16.9M documents ([P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md)), because the code it matches is **correct**. The defect is seventy lines away at the document-assembly site, which had no test of any kind. A test named after a feature was covering the half that worked, and its name is what made the other half look covered.
+
+That is a sharper claim than the ticket's original framing. The risk is not only that a source regex can pass while behaviour is broken; it is that **naming a test after a feature transfers apparent coverage to every part of that feature**, including parts nothing touches.
+
+**2. A dead function with an unexecutable defect.** `setAddresses` carried `const { sla, ssla, ...structurted } = row` — misspelled throughout — and `confidence: structurted.structurted.confidence`, which reads `.confidence` off `undefined`. It would throw a TypeError on first call. It never has: its only caller was the Cucumber step `Given('an address database with:')`, and no feature file uses that step. Both are deleted.
+
+Worth noting what was NOT done and why. Routing the dead function through the shared assembly would have fixed the spelling of a crash rather than the crash — the step's input is externally-supplied JSON with no nested `structured` key, so `structured.structured.confidence` throws exactly as the misspelling does. Fixing it silently would have converted a loud dead path into a quiet apparently-live one, which is this ticket's failure mode in a different costume.
+
+**Deliberately not done: the field's placement.** `buildIndexedDocument` reproduces today's shape byte-for-byte, and the new test **characterises** the defect rather than asserting a fix — it pins that `sla_range_expanded` currently lands under `structured`, names P091 as the owner, and does not say where it should go. P091's leading option on measurement is removal, not relocation, so asserting a target here would pre-empt a decision that ticket is holding open. Hoisting would also drop a field from `GET /addresses/{id}` and change the ETag on 349,540 range documents.
+
+### Remaining population
+
+| file                                    | `assert.match` over source | note                                                                                                                                                       |
+| --------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release-workflow-deploy-only.test.mjs` | 24                         | asserts over a GitHub Actions YAML, which cannot be executed in a unit test. Parsing it as YAML rather than regex is the improvement here, not conversion. |
+| `waycharter-server.test.mjs`            | 14                         | the largest genuine conversion target                                                                                                                      |
+| `graceful-shutdown.test.mjs`            | 7                          |                                                                                                                                                            |
+| `address-service.test.mjs`              | 5                          | was 7                                                                                                                                                      |
+| `proxy-auth.test.mjs`                   | 2                          | mostly behavioural already; only the OPTIONS-scoping guard reads source                                                                                    |
+
+Earlier notes on this ticket put `proxy-auth.test.mjs` at 7 and implied a security-boundary risk. That was a bad count from grepping `assert.match` without separating behavioural matches from source matches — the file imports and executes the middleware for every auth assertion. Corrected here.
+
 ## Symptoms
 
 - Tests pass when the implementation is structurally similar but behaviourally broken.

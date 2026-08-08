@@ -10,7 +10,6 @@ import {
   dropIndex,
   loadGnaf,
   mapAddressDetails,
-  setAddresses,
 } from '../../service/address-service';
 
 var logger = debug('test');
@@ -192,11 +191,6 @@ Given('an empty address database', async function () {
   return clearAddresses();
 });
 
-Given('an address database with:', async function (documentString) {
-  delete globalThis.gnafLoaded;
-  return setAddresses(JSON.parse(documentString));
-});
-
 Then(
   'the returned address list will contain:',
   async function (documentString) {
@@ -210,6 +204,15 @@ Then(
 //const TWENTY_MINUTES = 60 * 60 * 1000;
 const ONE_HOUR = 60 * 60 * 1000;
 
+/* eslint-disable unicorn/prefer-early-return, unicorn/no-global-object-property-assignment --
+   Pre-existing, and surfaced here only because deleting the dead
+   `an address database with:` step brought this region into lint-staged's view.
+   `globalThis.gnafLoaded` is deliberate cross-scenario state: Cucumber gives
+   each scenario a fresh `this` world, so the once-per-run G-NAF load has to
+   hang off the global or every scenario re-loads. Rewriting that is a
+   behavioural change to the fixture lifecycle for no benefit to this commit.
+   Scoped to these two rules over this block only; tracked as lint debt on
+   P084. */
 Given(
   'an address database is loaded from gnaf',
   { timeout: ONE_HOUR },
@@ -225,6 +228,7 @@ Given('an address database is not loaded from gnaf', async function () {
   globalThis.gnafLoaded = undefined;
   await dropIndex();
 });
+/* eslint-enable unicorn/prefer-early-return, unicorn/no-global-object-property-assignment */
 
 Then(
   'the returned address list will contain many addresses',

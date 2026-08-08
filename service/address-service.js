@@ -25,6 +25,10 @@
 /* eslint-disable unicorn/no-computed-property-existence-check */
 /* eslint-disable unicorn/no-break-in-nested-loop */
 import debug from 'debug';
+import {
+  attachRangeAliases,
+  buildIndexedDocument,
+} from '../src/build-indexed-document.js';
 import directoryExists from 'directory-exists';
 import fs from 'node:fs';
 import LinkHeader from 'http-link-header';
@@ -40,7 +44,6 @@ import {
 } from '../client/elasticsearch';
 import download from '../utils/stream-down';
 import { setLinkOptions } from './set-link-options';
-import { expandRangeAliases } from './range-expansion';
 import { fetchPackageData, selectGnafResource } from './gnaf-package-fetch';
 import { buildSynonyms } from '../src/init-index-config.js';
 import { buildAddressSearchBody } from '../src/build-search-body.js';
@@ -77,36 +80,6 @@ export async function dropIndex() {
 
 export async function clearAddresses() {
   await initIndex(globalThis.esClient, true);
-}
-
-export async function setAddresses(addr) {
-  await clearAddresses();
-
-  const indexingBody = [];
-  for (const row of addr) {
-    indexingBody.push({
-      index: {
-        _index: ES_INDEX_NAME,
-        _id: row.links.self.href,
-      },
-    });
-    const { sla, ssla, ...structurted } = row;
-    indexingBody.push({
-      sla,
-      ssla,
-      structurted,
-      confidence: structurted.structurted.confidence,
-    });
-  }
-
-  if (indexingBody.length > 0) {
-    await sendIndexRequest(indexingBody);
-  }
-  //  addresses = addr;
-  // empty index
-  // then index the provided addresses
-
-  //logger(await searchForAddress('657 The Entrance Road')); //'2/25 TOTTERDE'; // 'UNT 2, BELCONNEN';);
 }
 
 // fetchPackageData and the GNAF_PACKAGE_URL constant moved to
@@ -775,25 +748,11 @@ export function mapAddressDetails(d, context, index, count) {
     rval.smla = mapToShortMla(rval.structured);
     rval.ssla = mapToSla(rval.smla);
   }
-  // ADR 026: asymmetric population of sla_range_expanded — one expanded
-  // alias per in-range number for range-numbered records up to SPAN_CAP.
-  // Non-range docs leave the field absent. expandRangeAliases returns []
-  // for span>cap or invalid inputs; in that case we keep the field absent
-  // rather than storing an empty array so OpenSearch _source stays clean.
-  if (rval.structured.number?.last?.number !== undefined) {
-    const s = rval.structured;
-    const streetType = s.street.type ? ` ${s.street.type.name}` : '';
-    const streetSuffix = s.street.suffix ? ` ${s.street.suffix.name}` : '';
-    rval.sla_range_expanded = expandRangeAliases(
-      Number(s.number.number),
-      Number(s.number.last.number),
-      `${s.street.name}${streetType}${streetSuffix}`,
-      `${s.locality.name} ${s.state.abbreviation} ${s.postcode}`,
-    );
-    if (rval.sla_range_expanded.length === 0) {
-      delete rval.sla_range_expanded;
-    }
-  }
+  // ADR 026 / ADR 028: endpoint aliases for range-numbered addresses.
+  // Extracted to src/build-indexed-document.js so it can be executed by a test
+  // rather than regex-matched in this file's source (P033) — this file is
+  // babel-only and cannot be imported by raw Node ESM.
+  attachRangeAliases(rval);
 
   if (count) {
     if (index % Math.ceil(count / 100) === 0) {
@@ -848,20 +807,15 @@ async function loadAddressDetails(
           );
           items.push(item);
           actualCount += 1;
-          indexingBody.push({
-            index: {
-              _index: ES_INDEX_NAME,
-              _id: `/addresses/${item.pid}`,
+          indexingBody.push(
+            {
+              index: {
+                _index: ES_INDEX_NAME,
+                _id: `/addresses/${item.pid}`,
+              },
             },
-          });
-          const { sla, ssla, ...structured } = item;
-          indexingBody.push({
-            sla,
-            ssla,
-            structured,
-            confidence: structured.structured.confidence,
-            locality_pid: row.LOCALITY_PID,
-          });
+            buildIndexedDocument({ item, localityPid: row.LOCALITY_PID }),
+          );
         }
 
         if (indexingBody.length > 0) {
