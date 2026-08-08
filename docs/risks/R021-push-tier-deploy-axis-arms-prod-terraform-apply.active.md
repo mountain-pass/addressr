@@ -114,6 +114,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 for the same-batch fence behaviour that forced its re-rate into one commit, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
+
+  Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.
+
 - 2026-08-09: **RE-RATED. Likelihood 1 → 2, residual 5 → 10, above appetite; Treatment Accept → Mitigate.** This discharges the re-rate the 2026-08-08 bullet below deferred and P095 tracked as an open task. The trigger that fired was this entry's own: run `31252424980`, a push-tier apply that deployed an unpublished version. Rare is not available against an observed one-in-five, and the reason is sharper than the ratio: Rare rested on an **enumeration of closed accidental-arm routes**, and the event arrived through a route that enumeration did not contain. The P095 fix closes that route and is credited, but a control closing the fifth route cannot restore a claim that rested on there being no sixth.
 
   **What moved in this batch, since the fence scores dating rather than survival.** The canonical `Metrics` cell (four → five, and no longer "all successful"), the Base rate section and its heading, the Residual Likelihood/Score/Band/appetite lines, the settled 1-versus-2 paragraph, and Treatment. The apply count is mirrored in R020 in four places and those moved in the same commit, because the review fence counts uncommitted files as current and would pass a split batch by construction — the failure mode R028 records against itself.

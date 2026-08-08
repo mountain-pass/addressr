@@ -94,6 +94,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 for the register-decay discipline (do not restate the same verification three times), and widening a check's timestamp source touches no claim about drift or about this entry's subject.
+
+  Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.
+
 - 2026-08-09: Re-verified against R021's re-rate (likelihood off Rare, residual 5 → 10 and above appetite, Treatment Accept → Mitigate) and R020's apply-count move to five. **This entry's citation of R021 still holds, and holds structurally**: the claim is a _distinction_ — R021 is about who can start an apply, this entry about what an apply does once running — and a distinction is not reachable by a re-score any more than it was by a base rate. Worth stating that the re-rate makes the distinction _more_ load-bearing, not less: R021 crossing the appetite line is an argument about that path's governance, and this entry's hazard fires identically on all three entry points regardless of what R021's treatment becomes. No cardinal here is affected.
 
 - 2026-08-08: Re-verified against R021's same-day change (its Monitoring re-assess trigger fired on run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095). **This entry's citation of R021 still holds**: the failure does not change what R021 is about, only its likelihood, and R021 now says of itself at its own surface that its residual understates until the re-rate lands. No cardinal here is affected.

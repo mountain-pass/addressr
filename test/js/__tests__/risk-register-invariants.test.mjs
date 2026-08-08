@@ -362,10 +362,61 @@ describe('docs/risks register invariants (R028)', () => {
     // written and the check refused to see it.
     const touched = (rel) =>
       dirty.has(rel) ? Infinity : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
+    // WIDENED TO COMMITTED HISTORY 2026-08-09, taking the upgrade path the
+    // `ponytail:` note above named: "widen to a log-walk if a stale pair ever
+    // survives a sitting boundary." One did, and it turned trunk red.
+    //
+    // `git log -1` returns the last commit that touched the file AT ALL, so a
+    // committed verification bullet dates as a move. The dirty-case exemption
+    // made the cascade converge within a sitting; across a commit boundary
+    // nothing did, and the reason is that the remedy IS a Change Log edit. The
+    // R021 re-rate batch demonstrated it end to end: the batch committed, R009
+    // and R027 flagged, bullets were written, and committing THOSE flagged
+    // R007, R008 and R028 — entries already in the batch. The reference graph
+    // has cycles through R028, which every entry cites, so remedy-by-bullet is
+    // not merely expensive, it does not terminate. Measured, not predicted.
+    //
+    // So the body comparison that already existed for dirty files is now
+    // applied to history: walk the commits that touched the file, newest first,
+    // and take the first one that changed anything OUTSIDE the Change Log. A
+    // file whose only recent commits are verification bullets keeps the date of
+    // its last real move, and its referrers stay green.
+    const BODY_WALK = 40;
+    const show = (ref) => {
+      try {
+        return execFileSync('git', ['show', ref], { cwd: docsRoot, encoding: 'utf8' });
+      } catch {
+        return null; // created in this commit, or otherwise absent
+      }
+    };
+    const bodyMovedAt = (rel) => {
+      const log = git(['log', `-${BODY_WALK}`, '--format=%H %ct', '--', rel])
+        .split('\n')
+        .filter(Boolean)
+        .map((l) => l.split(' '));
+      for (const [sha, ts] of log) {
+        const older = show(`${sha}~1:${rel}`);
+        // Absent parent means the file was created here, which is a real move.
+        // Every git failure inside the walk returns a NEWER date, so it biases
+        // toward flagging rather than toward silence.
+        if (older === null || body(show(`${sha}:${rel}`) ?? '') !== body(older)) {
+          return Number(ts);
+        }
+      }
+      // Nothing but Change Log edits within the window. Date at the oldest
+      // commit examined — nearer the truth than the newest, though STILL NEWER
+      // than it: a real body move beyond the window is older than everything in
+      // it. So window exhaustion fails toward a FALSE RED on a quiet referrer of
+      // a chatty target, never toward silence. That direction is the acceptable
+      // one, and the remedy terminates in one hop: the referrer axis counts any
+      // touch, so a single verification bullet discharges it and, post-widening,
+      // does not propagate. Unreachable today at single-digit per-file depth.
+      // `log.length === 0` cannot happen for a tracked file — an untracked one
+      // is caught by `dirty` and dated Infinity before reaching here.
+      return log.length ? Number(log[log.length - 1][1]) : 0;
+    };
     const movedAt = (rel) =>
-      dirty.has(rel) && !logOnly(rel)
-        ? Infinity
-        : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
+      dirty.has(rel) && !logOnly(rel) ? Infinity : bodyMovedAt(rel);
 
     // ASYMMETRIC, and the asymmetry is the point — an earlier version cut both
     // axes the same way and lost a bounded, high-value half.

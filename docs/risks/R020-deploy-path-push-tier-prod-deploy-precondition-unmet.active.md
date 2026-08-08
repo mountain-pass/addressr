@@ -123,6 +123,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 for the claim-scoped-sweep discipline behind its canonical-state table, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
+
+  Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.
+
 - 2026-08-09: **Apply count 4 → 5 across all four sites, in the same commit as R021's re-rate.** R021 moved its canonical `Metrics` cell to five (four successful, one failed) after its Monitoring trigger fired on run `31252424980`. This entry states that count in four places — the axis-half paragraph, the canonical-state table, the load-bearing Control, and the Treatment's not-proposed clause — and all four moved together. Split across commits the review fence would have passed by construction, because it counts uncommitted files as current; that is the failure mode R028 records against itself and the reason for the single-commit rule here.
 
   **This entry's own score is UNCHANGED at 4 × 2 = 8, and that is a decision rather than an omission.** The Control the failure touches is credited for holding Impact at 4 instead of 5, on the grounds that a working primary path makes `deploy_only` a fallback rather than the only route. A primary path that failed once, auto-rolled back, and had its cause fixed is still available, so the grounds hold. Likelihood is untouched because the failure was on the primary path and says nothing about whether the recovery path completes under a real plan — which remains this entry's unproven half.

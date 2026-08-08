@@ -88,6 +88,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry borrows R028 for the decay observation, as its own 2026-08-09 bullet records, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
+
+  Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.
+
 - 2026-08-09: Re-verified against R028's change in the R021 re-rate batch (its drift record extended, and its Controls bullet updated with the apply-count check's new extraction narrowing). **This entry's citation of R028 still holds.** The reference is a single clause borrowing R028 for the _decay_ observation — that restating the same verification three times is itself register decay — and nothing in R028's change touches it. Worth recording that this entry was pulled in one hop out: R028's edit was a body change rather than Change-Log-only, so the fence widened to its referrers. That is the bounded-closure behaviour R028 itself documents, terminating here.
 
 - 2026-08-08: Re-verified after the push-tier deploy-axis entry recorded that its Monitoring re-assess trigger fired (run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095) and its reference closure was revisited in the same change. **This entry's citations still hold** — the failure changes that entry's likelihood, not its subject, and it now self-discloses that its residual understates until the re-rate lands. No cardinal here is affected.

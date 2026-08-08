@@ -103,6 +103,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 only through the shared review-fence discipline, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
+
+  Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.
+
 - 2026-08-09: Re-verified against R021's re-rate and R020's apply-count move to five. **One citation here was FALSIFIED and is corrected in this commit**: the treatment-separation argument read "R021's is Accept", and R021's treatment changed to Mitigate when its residual moved 5 → 10. The argument itself survives — no sibling's treatment decouples a long-running create from the release pipeline, and Mitigate-with-the-option-unpicked decouples nothing — but the sentence asserted a fact that had stopped being true, which is precisely the inbound-reference class R028 records. Found by reading the referrer, not by the dating sweep: a dated bullet alone would have left it standing. The decomposition table's citations of R021/R020/R015 for "the trigger" are untouched, being about ownership rather than score.
 
 - 2026-08-08: Re-verified against R021's same-day change (its Monitoring re-assess trigger fired on run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095). **This entry's citation of R021 still holds**: the failure does not change what R021 is about, only its likelihood, and R021 now says of itself at its own surface that its residual understates until the re-rate lands. No cardinal here is affected.
