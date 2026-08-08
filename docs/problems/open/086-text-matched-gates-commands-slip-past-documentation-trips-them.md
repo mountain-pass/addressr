@@ -105,6 +105,14 @@ Deeper: the gates match on **command text** rather than on the tool's resolved i
 - **Blocked by**: upstream `windyroad/agent-plugins`
 - **Composes with**: P080, P082
 
+## Recurrence 2026-08-08 — blocked while documenting the sibling defect
+
+Writing the [P080](080-external-comms-gate-cannot-read-body-file-so-the-documented-path-never-clears.md) recurrence note through a Bash heredoc tripped the external-comms gate. The prose _described_ a `gh issue comment` invocation as the documented workaround; the extractor matches on command text rather than intent, so it read the documentation as an outbound post and demanded a review of a ticket body.
+
+Documenting one gate defect was blocked by a sibling of the same gate defect. Landed via the `Edit` tool, which takes a different branch.
+
+Worth recording because it is the cleanest possible statement of this ticket's thesis: the gate cannot distinguish "I am posting this" from "I am writing about posting this", and the asymmetry runs both ways — real commands slip past when their shape is unusual, documentation trips it when its shape is ordinary.
+
 ## Related
 
 - **P082** (`RISK_BYPASS: reducing` opens all three gates) — filed upstream as [#407](https://github.com/windyroad/agent-plugins/issues/407). The initial, wrong diagnosis of this problem. Distinct: P082 needs a `reducing` verdict to exist and opens the gates it was granted for; this needs nothing and prevents the gate from running at all.

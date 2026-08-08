@@ -40,6 +40,18 @@ Invoke large skills only when needed (on-demand load, not per-session). No adopt
 - Surfaced by `docs/retros/2026-07-19-context-analysis.md` (Top-N offenders + P097 breach row).
 - **Reported upstream**: https://github.com/windyroad/agent-plugins/issues/367 (2026-07-18)
 
+## Un-park trigger fired 2026-08-08 — the cost is no longer only context
+
+This ticket is parked as "per-invocation context cost on the calling agent; **no defect**". That characterisation is now falsified.
+
+In the 2026-08-08 session, two `wr-itil` skills loaded into the main agent arrived **compaction-truncated mid-body**, each carrying a literal `[... skill content truncated for compaction; use Read on the skill path if you need the full text]` marker: `capture-problem` and `manage-problem`. The agent then operated on a partial contract — it could not see the steps below the truncation point without a second deliberate Read it had no signal to perform.
+
+Measured the same day via `wr-retrospective-list-plugin-attribution`: **`wr-itil` skills total 1,008,146 bytes — 76.3% of all skill prose across ten installed plugins, and larger than this repo's entire `docs/decisions/` corpus (607,746 bytes).** The next-largest plugin is `wr-retrospective` at 118,136, an order of magnitude smaller.
+
+**Why this is a correctness risk rather than a budget one.** A skill body that truncates does not fail loudly. The agent reads what arrived and proceeds, and the steps it never saw are indistinguishable from steps that do not exist. In this session the truncation was visible because the marker happened to land in rendered output; there is no guarantee of that.
+
+Recommend un-parking and re-rating: Impact 2 → 3 (a governed workflow silently executing a partial contract), Likelihood 2 → 4 (deterministic for the largest skills once session context is loaded).
+
 ## Parked
 
 - **Reason**: upstream-blocked — the fix (REFERENCE.md split of the oversized SKILL.md bodies per ADR-054 / ADR-038) lives in `@windyroad/itil`, synced from windyroad/agent-plugins `packages/itil/`; this repo is an adopter with no local `packages/` tree and no adopter-side trim possible (the SKILL.md bodies ship in the plugin cache). Evidence re-verified live at park time 2026-07-20: installed wr-itil 0.59.1 `skills/work-problems/SKILL.md` = 245,245 bytes (exact match to the 2026-07-18 analyze-context measurement), `skills/manage-problem/SKILL.md` = 145,718 bytes. Root cause confirmed and on-demand-load workaround documented, so Known Error entry criteria were met at park time. Filed upstream 2026-07-18 as windyroad/agent-plugins#367 (OPEN, 0 comments, unacknowledged as of 2026-07-20 — no park-status comment posted; the filing already communicated the confirmed root cause, and posting a redundant update is the P060 already-communicated-at-filing defect).
