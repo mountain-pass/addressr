@@ -2,7 +2,7 @@
 
 **Status**: Open
 **Reported**: 2026-04-28
-**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; **34 further source-inspection assertions remain** across four files, so the population that can fire again is enumerated below.
+**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; a population of further source-inspection assertions remains, enumerated in the Remaining population table below — **34 across four files at the time of this re-rating**, since reduced by the conversions recorded under Resolution. The rating is set against the re-rating-date figure and is not re-derived on every conversion; see that table for the live count.
 **Origin**: internal
 **Effort**: M — audit of test/js/**tests** assertions + progressive behavioural-test replacement cadence
 **WSJF**: 8.0 — (16 × 1.0) / 2 — re-rated 2026-08-08 on the P091 evidence; was 3.0 (6 × 1.0) / 2, backfilled 2026-07-29 (review)
@@ -49,17 +49,11 @@ The cost was not a wrong number in a test report. It was four months during whic
 
 ### The population that can still fire
 
-Enumerated 2026-08-08 — `assert.match()` over implementation source text:
+Each of these is a claim of coverage that executes no code. **The live count lives in exactly one place — the Remaining population table below** — and this section deliberately does not restate it. Two tables of the same fact is how this ticket came to say 7 and 14 for the same file twenty lines apart; the unit of a correction is the claim, not the locality.
 
-| file                                           | assertions |
-| ---------------------------------------------- | ---------- |
-| `test/js/__tests__/waycharter-server.test.mjs` | 14         |
-| `test/js/__tests__/address-service.test.mjs`   | 7          |
-| `test/js/__tests__/proxy-auth.test.mjs`        | 7          |
-| `test/js/__tests__/graceful-shutdown.test.mjs` | 6          |
-| **total**                                      | **34**     |
+The count at re-rating time, 2026-08-08, was **34 across four files**, which is what the Likelihood-4 rating was set against. That figure is a historical anchor for the rating, not a current measurement. One of its rows was wrong when written: `proxy-auth.test.mjs` was counted at 7 by grepping `assert.match` without separating behavioural matches from source matches — the true figure is 2, and the retraction is recorded below.
 
-Each is a claim of coverage that executes no code. `proxy-auth.test.mjs` is the one to look at first: ADR-024 proxy authentication is a security boundary, and a source-inspection assertion there is a green light over an unexercised auth path.
+`proxy-auth.test.mjs` is still the one to look at first regardless of its size: ADR-024 proxy authentication is a security boundary, and a source-inspection assertion there is a green light over an unexercised auth path.
 
 ### What "replace" has to mean
 
@@ -83,15 +77,32 @@ Worth noting what was NOT done and why. Routing the dead function through the sh
 
 **Deliberately not done: the field's placement.** `buildIndexedDocument` reproduces today's shape byte-for-byte, and the new test **characterises** the defect rather than asserting a fix — it pins that `sla_range_expanded` currently lands under `structured`, names P091 as the owner, and does not say where it should go. P091's leading option on measurement is removal, not relocation, so asserting a target here would pre-empt a decision that ticket is holding open. Hoisting would also drop a field from `GET /addresses/{id}` and change the ETag on 349,540 range documents.
 
+### Second conversion landed 2026-08-08 — the CORS preflight response
+
+Six more regexes converted. `src/cors-preflight.js` carries the gating and the response shape; `test/js/__tests__/cors-preflight.test.mjs` covers them with ten executing assertions across eight cases. `waycharter-server.test.mjs` drops 14 → 7.
+
+The retired regexes asserted that `src/waycharter-server.js` _contains_ `'Access-Control-Max-Age'`, contains `86400`, contains `status(204)`. Each would keep passing if the handler appended to the wrong response object, read the wrong environment variable, or emitted its headers after `end()`.
+
+**Two properties are now pinned that no regex could distinguish**, and both are the kind of thing that reaches a browser:
+
+- **`append` versus `set`.** The shipped code appends, so an upstream value survives. `set` would silently replace it. Both spellings contain the header name, so every regex matched either.
+- **Header emission before `end()`.** Headers appended after the response ends never reach the client. A regex sees all three statements and cannot see their order.
+
+**What deliberately stayed a regex.** The registration _order_ — `app.options` mounted ahead of `proxyAuthMiddleware`, so a preflight is answered before authentication — is a fact about `buildRest2App`'s statement order, not about the handler. `buildRest2App` cannot be imported by raw Node ESM: it transitively pulls `service/address-service` through a babel-only bare specifier. Source inspection is the honest instrument until that import is resolved, and the block now says so rather than implying the whole area is covered.
+
+Live behaviour is separately covered by `test/resources/features/cors-preflight.feature` (5 scenarios, real HTTP through the auth chain). Verified rather than assumed: `cucumber-js -p default --dry-run --tags 'not(@not-nodejs) and not(@geo) and @not-rest2'` selects exactly those 5, and `@not-rest2` is unique to that file — so the 37-scenario default-profile run cited for this change did exercise the rewired handler end-to-end. Worth noting for this ticket's history: that file's absence was once asserted in a comment here as though it existed, leaving the text-matching guard as the only cover for the ADR-037 runtime behaviour.
+
+**One assertion was written and then removed, and it belongs in this ticket's record because it is this ticket's own thesis.** The first draft exported `PREFLIGHT_METHOD = 'OPTIONS'` from `src/cors-preflight.js` and asserted it under the name _"answers only OPTIONS — a wider method would be an auth bypass"_. But `waycharter-server.js` registers via the literal `app.options` and never consumed the constant, so the assertion compared a literal to itself: it would have stayed green through the exact widening its name claimed to prevent. That is a source-inspection failure in a costume this ticket had not yet catalogued — not a regex, but an executing assertion over a value nothing wires to the system. Executing is necessary, not sufficient; the assertion has to be on a path the production code takes. The removal is recorded in a comment at the site so the next person does not re-add it.
+
 ### Remaining population
 
-| file                                    | `assert.match` over source | note                                                                                                                                                       |
-| --------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `release-workflow-deploy-only.test.mjs` | 24                         | asserts over a GitHub Actions YAML, which cannot be executed in a unit test. Parsing it as YAML rather than regex is the improvement here, not conversion. |
-| `waycharter-server.test.mjs`            | 14                         | the largest genuine conversion target                                                                                                                      |
-| `graceful-shutdown.test.mjs`            | 7                          |                                                                                                                                                            |
-| `address-service.test.mjs`              | 5                          | was 7                                                                                                                                                      |
-| `proxy-auth.test.mjs`                   | 2                          | mostly behavioural already; only the OPTIONS-scoping guard reads source                                                                                    |
+| file                                    | `assert.match` over source | note                                                                                                                                                                              |
+| --------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release-workflow-deploy-only.test.mjs` | 24                         | asserts over a GitHub Actions YAML, which cannot be executed in a unit test. Parsing it as YAML rather than regex is the improvement here, not conversion.                        |
+| `waycharter-server.test.mjs`            | 7                          | was 14; the CORS preflight half converted 2026-08-08. What remains is the `buildRest2App` registration-order invariant, which is blocked on the babel-only import, not on effort. |
+| `graceful-shutdown.test.mjs`            | 7                          |                                                                                                                                                                                   |
+| `address-service.test.mjs`              | 5                          | was 7                                                                                                                                                                             |
+| `proxy-auth.test.mjs`                   | 2                          | mostly behavioural already; only the OPTIONS-scoping guard reads source                                                                                                           |
 
 Earlier notes on this ticket put `proxy-auth.test.mjs` at 7 and implied a security-boundary risk. That was a bad count from grepping `assert.match` without separating behavioural matches from source matches — the file imports and executes the middleware for every auth assertion. Corrected here.
 

@@ -33,6 +33,20 @@ Two things make it less alarming than the number suggests, and one makes it wors
 | 15    | `unicorn/no-top-level-assignment-in-function` | no           |
 | 12    | `unicorn/consistent-boolean-name`             | no           |
 
+### Suppressions granted against this debt
+
+Sites where a violation was deliberately silenced rather than fixed, so the sweep has an exact list rather than a rediscovery exercise. Each carries an inline `-- <reason>` at the site; `grep -rn 'eslint-disable' src/ service/` is the authoritative enumeration.
+
+| Site                                 | Rule                                           | Why not fixed                                                                                                                                 | Granted    |
+| ------------------------------------ | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `src/waycharter-server.js` (2 sites) | `unicorn/no-useless-else`                      | the `else` carries the If-None-Match branch of the address-collection cache; collapsing it rewrites live control flow                         | 2026-08-08 |
+| `src/waycharter-server.js`           | `unicorn/consistent-conditional-object-spread` | the site is the `/health` response body; restructuring it changes a shipped response shape                                                    | 2026-08-08 |
+| `src/waycharter-server.js`           | `unicorn/no-top-level-assignment-in-function`  | the module-level `server` handle that `stopServer()` and `forceCloseConnections()` close over — graceful-shutdown lifecycle, P067's territory | 2026-08-08 |
+
+All four surfaced only because extracting the CORS preflight (P033) staged the file for `lint-staged`; none is in a region that change touches. The common reason for deferring rather than fixing: each is a behavioural rewrite of live server code, and `src/waycharter-server.js` has no unit-level cover to catch a mistake — which is precisely the gap P033 exists to close. Fixing them is cheap **after** that ticket lands cover, and reckless before.
+
+Deliberately **four site-scoped `eslint-disable-next-line` comments, not one region disable.** The first draft opened a `/* eslint-disable */` before `buildRest2App` and closed it at end-of-file — 477 lines covering four violations, which would have silently absorbed any future violation of those three rules anywhere in the server, including the pre-auth registration region, with no CI lint to notice. It also makes the debt uncountable: per-site comments give this ticket an exact `grep -c`.
+
 ## Workaround
 
 Applied at the migration commit, as the risk gate's remediation R1: `unicorn/no-this-outside-of-class` and `unicorn/name-replacements` are set to `warn` in `eslint.config.js`, with a comment saying why and that they should be raised as the sweep lands. That takes the blocking count from 593 errors to 379 and removes the forward-blocking property, while keeping the signal visible.

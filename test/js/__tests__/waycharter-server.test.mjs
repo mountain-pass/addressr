@@ -67,7 +67,24 @@ describe('root / cache-control directive (P018 parked — long-lived by design)'
 // only way to cover both the CORS-on and CORS-off cases. Keep these
 // source-inspection checks — they catch a reorder at author time, cheaply —
 // but do not read them as runtime evidence.
-describe('CORS preflight caching — OPTIONS handler (P023 / ADR-037)', () => {
+// CORS preflight — the RESPONSE assertions moved, they were not deleted (P033).
+// Six source regexes over `src/waycharter-server.js` became nine executing
+// assertions in `test/js/__tests__/cors-preflight.test.mjs`, against
+// `src/cors-preflight.js`. Those regexes asserted the source CONTAINS
+// 'Access-Control-Max-Age', contains 86400, contains status(204) — all of which
+// would keep passing if the handler appended to the wrong response, read the
+// wrong env var, or emitted its headers after ending. Two properties no regex
+// could see are now pinned: that it APPENDS rather than sets, and that headers
+// are emitted before `end()`.
+//
+// What stays here is the one property that genuinely lives in this file: the
+// handler must be REGISTERED ahead of proxyAuthMiddleware, so a preflight is
+// answered before authentication. That is a fact about `buildRest2App`'s
+// statement order, not about the handler, and `buildRest2App` cannot be
+// imported by raw Node ESM — it transitively pulls `service/address-service`
+// through a babel-only bare specifier. Source inspection is the honest
+// instrument for it until that import is resolved.
+describe('CORS preflight ordering (P023 / ADR-037) — the part that cannot move', () => {
   async function buildAppBody() {
     const source = await readFile(serverPath, 'utf8');
     const startIndex = source.indexOf('export function buildRest2App');
@@ -75,57 +92,6 @@ describe('CORS preflight caching — OPTIONS handler (P023 / ADR-037)', () => {
     const endIndex = source.indexOf('\nexport ', startIndex + 1);
     return source.slice(startIndex, endIndex === -1 ? source.length : endIndex);
   }
-
-  it('registers an app.options preflight handler', async () => {
-    assert.match(
-      await buildAppBody(),
-      /app\.options\(/,
-      'buildRest2App must register an app.options preflight handler',
-    );
-  });
-
-  // Risk remediation R1 (STOP 6/25 → within appetite): the preflight-cache
-  // handler (and its OPTIONS-before-proxyAuth exemption) must be inert unless
-  // the operator has opted into CORS. Gate the app.options registration behind
-  // the SAME ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN presence check the sibling
-  // CORS response headers use — Access-Control-Max-Age is meaningless without
-  // Access-Control-Allow-Origin. Behavioural inert-when-unset coverage is in
-  // cors-preflight.feature; this pins the gating in source.
-  it('gates the app.options handler behind ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN (R1)', async () => {
-    assert.match(
-      await buildAppBody(),
-      /ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN\s*!==\s*undefined\s*\)\s*\{\s*app\.options\(/,
-      'app.options must be registered only inside an ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined guard',
-    );
-  });
-
-  it('emits Access-Control-Max-Age from ADDRESSR_ACCESS_CONTROL_MAX_AGE (default 86400)', async () => {
-    const body = await buildAppBody();
-    assert.match(body, /['"]Access-Control-Max-Age['"]/i);
-    assert.match(
-      body,
-      /ADDRESSR_ACCESS_CONTROL_MAX_AGE\s*\|\|\s*['"]86400['"]/,
-      'Max-Age must default to 86400 when the env var is unset',
-    );
-  });
-
-  it('emits Access-Control-Allow-Methods from ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS (default GET,OPTIONS)', async () => {
-    const body = await buildAppBody();
-    assert.match(body, /['"]Access-Control-Allow-Methods['"]/i);
-    assert.match(
-      body,
-      /ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS\s*\|\|\s*['"]GET,OPTIONS['"]/,
-      'Allow-Methods must default to GET,OPTIONS when the env var is unset',
-    );
-  });
-
-  it('responds 204 to the preflight', async () => {
-    assert.match(
-      await buildAppBody(),
-      /\.status\(204\)|\.sendStatus\(204\)/,
-      'preflight handler must respond 204',
-    );
-  });
 
   it('registers the OPTIONS handler BEFORE proxyAuthMiddleware (ADR-037 ordering invariant)', async () => {
     const body = await buildAppBody();

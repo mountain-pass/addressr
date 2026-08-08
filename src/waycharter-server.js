@@ -1,4 +1,5 @@
 //import connect from 'connect';
+import { isPreflightEnabled, buildPreflightHandler } from './cors-preflight.js';
 import debug from 'debug';
 import express from 'express';
 import { createServer } from 'node:http';
@@ -596,18 +597,12 @@ export function buildRest2App() {
   // not exist (preflight reverts to prior behaviour). When CORS IS enabled the
   // fix applies as approved: Max-Age 86400 + Allow-Methods GET,OPTIONS defaults,
   // 204, registered before proxyAuthMiddleware.
-  if (process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN !== undefined) {
-    app.options(/.*/, (_request, response) => {
-      response.append(
-        'Access-Control-Max-Age',
-        process.env.ADDRESSR_ACCESS_CONTROL_MAX_AGE || '86400',
-      );
-      response.append(
-        'Access-Control-Allow-Methods',
-        process.env.ADDRESSR_ACCESS_CONTROL_ALLOW_METHODS || 'GET,OPTIONS',
-      );
-      response.status(204).end();
-    });
+  // Response shape and gating extracted to src/cors-preflight.js so they can be
+  // executed by a test rather than regex-matched here (P033). The REGISTRATION
+  // ORDER below — ahead of proxyAuthMiddleware — is the part that cannot move,
+  // and it keeps its guard in test/js/__tests__/proxy-auth.test.mjs.
+  if (isPreflightEnabled()) {
+    app.options(/.*/, buildPreflightHandler());
   }
 
   app.use(proxyAuthMiddleware());
@@ -684,6 +679,7 @@ export function buildRest2App() {
             'cache-control': `public, max-age=${ONE_WEEK}`,
           },
         };
+        // eslint-disable-next-line unicorn/no-useless-else -- pre-existing, untouched by this change: the else carries the If-None-Match branch; collapsing it rewrites live cache control flow. No unit cover to catch a mistake — the gap P033 exists to close. Tracked on P084.
       } else {
         // If-None-Match
         return {
@@ -774,6 +770,7 @@ export function buildRest2App() {
             'cache-control': `public, max-age=${ONE_WEEK}`,
           },
         };
+        // eslint-disable-next-line unicorn/no-useless-else -- pre-existing, untouched by this change: the else carries the If-None-Match branch; collapsing it rewrites live cache control flow. No unit cover to catch a mistake — the gap P033 exists to close. Tracked on P084.
       } else {
         return {
           body: [],
@@ -922,6 +919,7 @@ export function buildRest2App() {
           status: esHealth.ok ? 'healthy' : 'unhealthy',
           version: version,
           timestamp: new Date().toISOString(),
+          // eslint-disable-next-line unicorn/consistent-conditional-object-spread -- pre-existing, untouched by this change: this is the /health response body; restructuring it changes a shipped response shape. No unit cover to catch a mistake — the gap P033 exists to close. Tracked on P084.
           ...(esHealth.ok ? {} : { reason: esHealth.reason }),
         },
         headers: {
@@ -995,6 +993,7 @@ export function startRest2Server() {
   validateProxyAuthConfig();
   validateReadShadowConfig();
   const app = buildRest2App();
+  // eslint-disable-next-line unicorn/no-top-level-assignment-in-function -- pre-existing, untouched by this change: the module-level handle stopServer()/forceCloseConnections() close over (P067). No unit cover to catch a mistake — the gap P033 exists to close. Tracked on P084.
   server = createServer(app);
   return new Promise((resolve) => {
     server.listen(serverPort, function () {
