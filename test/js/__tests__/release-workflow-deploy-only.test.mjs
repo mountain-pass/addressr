@@ -393,6 +393,36 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('forwards every env var it declares INTO the devcontainer (P095)', () => {
+    // A devcontainers/ci step needs each variable declared TWICE: once in the
+    // step's `env:` to put it on the runner, and once by bare name in
+    // `with: env:` so the action forwards it into the container. deploy.sh runs
+    // inside that container, so a variable with only the first declaration is
+    // silently invisible to it.
+    //
+    // This is not hypothetical. ADDRESSR_DEPLOY_JUST_PUBLISHED — the signal that
+    // tells deploy.sh a publish just happened on this run, so it should ship the
+    // workspace version rather than reading the registry — shipped with only the
+    // step declaration. The publish path would have silently taken the registry
+    // read the design explicitly rejects, and every existing test passed: the
+    // resolver's own test sets the variable directly, so it proves the mechanism
+    // and says nothing about the wiring.
+    const deploy = stepNamed('Deploy new version');
+    const forwarded = new Set(
+      String(deploy.with?.env ?? '')
+        .split('\n')
+        .map((l) => l.trim().split('=')[0])
+        .filter(Boolean),
+    );
+    const declared = Object.keys(deploy.env ?? {});
+    const notForwarded = declared.filter((name) => !forwarded.has(name)).sort();
+    assert.deepStrictEqual(
+      notForwarded,
+      [],
+      `declared in the step's env: but never forwarded into the devcontainer, so deploy.sh cannot see them: ${notForwarded.join(', ')}`,
+    );
+  });
+
   it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {
     // ADR-040's Confirmation: release.yml must contain no deploy/**
     // path-detection step unless ADR-001 carries an amendment naming that entry

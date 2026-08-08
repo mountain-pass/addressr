@@ -37,9 +37,15 @@
 # so Terraform diffs only the key/source strings and a rebuilt deployment zip
 # produces no diff. This verifies infra CONFIG only and is structurally blind to
 # the deployed bundle's contents — a green plan does not mean the artifact is
-# right. Separately, the S3 key embeds `elasticapp_version`, so dispatching when
-# package.json differs from the deployed version shows EB churn that is an
-# artifact of when you dispatched, not of your change.
+# the one you think it is. THAT CAVEAT IS STILL LIVE; it is P095's open task on
+# whether the S3 object should carry an etag/source_hash.
+#
+# A DIFFERENT caveat that used to sit here is RETIRED as of 2026-08-08 (P095 /
+# ADR-040 amendment): dispatching while package.json differed from the deployed
+# version used to show EB churn that was an artefact of WHEN you dispatched
+# rather than of your change. deploy.sh now resolves the version the same way on
+# the plan path and the apply path, so that artefact is gone. Do not read the
+# retirement as applying to the blindness caveat above it.
 name: Terraform Plan (read-only)
 
 on:

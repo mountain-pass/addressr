@@ -48,7 +48,15 @@ That is a static property, and it is now pinned — `test/js/__tests__/package-g
 - [ ] Decide where it runs, and cost it honestly: geo indexing is slow and wants ~8GiB.
 - [ ] Wire it, and confirm the index-name fix by checking the nogeo leg still passes when the two run in sequence.
 
-## A second finding, and it may be the more important one
+## The engines question — SETTLED 2026-08-08, the floor is honest
+
+Measured, not inferred. `npm pack` → `npm i -g` inside `node:22.7-slim` → `import()` of the installed package's `src/waycharter-server.js`: **resolves cleanly**, returning `buildRest2App, forceCloseConnections, startRest2Server, stopServer`. The whole shipped graph — the OpenSearch client, waycharter, express — loads on 22.7.
+
+So `engines: ">=22"` is accurate for the shipped path, and a consumer on 22.0-22.11 is not exposed. What needs 22.12 is the **test harness only**: `@cucumber/cucumber`'s CJS `argv_parser.js` `require()`s ESM `@cucumber/gherkin`. Cucumber is a devDependency and is not in `files`, so it reaches no consumer.
+
+The original finding stands as written below, minus its open question. Nothing still runs cucumber on 22.7 — that remains true, and remains why `cucumber-profiles.test.mjs` self-skips there — but the consequence that mattered (a wrong `engines` shipping to consumers) is disproved.
+
+## The original finding
 
 `engines` declares `node >=22`, and the `engine-floor` CI job pins 22.7 as the lowest version the suite runs on. **Cucumber 13 cannot load its own configuration on 22.7.** `@cucumber/cucumber/api` reaches `loadConfiguration` through `lib/configuration/argv_parser.js`, which is CommonJS and `require()`s `@cucumber/gherkin`, which is ESM. That only works from Node 22.12, where `require(esm)` was unflagged; on 22.7 it throws `ERR_REQUIRE_ESM`. Measured against `node:22.7-slim`, not inferred.
 

@@ -2,21 +2,33 @@
 
 cd "$(dirname "$0")" || exit 1
 
+# P095: resolve the version ONCE, here, and use it at every site below.
+#
+# All four consumers must agree or the deploy lies about itself: the tfvar
+# drives main.tf's S3 `key` AND the EB application-version label, the manifest
+# pins what EB installs, and the zip filename is what main.tf's `source` reads.
+# Resolve only some of them and terraform labels the environment v3.1.0 while
+# the bundle inside installs 3.0.8 — and `aws_s3_object.elasticapp` carries no
+# `etag`/`source_hash`, so `terraform plan` cannot see it. That silent identity
+# lie would be worse than the loud failure P095 records. See resolve-version.sh
+# for the publish-path/registry-path split.
+deploy_version=$(./resolve-version.sh) || exit 1
+
 tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
 trap "rm -f $tmpfile" 0 2 3 15
 
 cat > "$tmpfile" <<- EOM
 elasticapp         = "mountainpass-addressr"
-elasticapp_version = "${npm_package_version:?required}"
+elasticapp_version = "${deploy_version}"
 EOM
 
 mkdir -p deployment
 cat > "deployment/package.json" <<- EOM
 {
     "name": "${npm_package_name:?required}-deployment",
-    "version": "${npm_package_version}",
+    "version": "${deploy_version}",
     "dependencies": {
-        "${npm_package_name:?required}": "${npm_package_version:?required}"
+        "${npm_package_name:?required}": "${deploy_version}"
     },
     "scripts": {
         "start": "addressr-server-2"
@@ -27,7 +39,7 @@ EOM
 { 
     cd deployment || exit
     # npm i --production --ignore-scripts
-    zip -9 -r ../mountainpass-addressr-deployment-"${npm_package_version:?required}".zip .
+    zip -9 -r ../mountainpass-addressr-deployment-"${deploy_version}".zip .
     cd ..
 
 }

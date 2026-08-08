@@ -274,3 +274,26 @@ These are edits to `human-oversight: confirmed` artefacts, which this AFK run ha
 - **JTBD-400 is CONTRADICTED on disk** (escalated from "stale" by the 2026-07-27 stage-3 amendment, point 9). Through stage 2 its Desired Outcome was merely incomplete; stage 3 is the commit that makes it false, on all three clauses — "the dispatch remains operator-initiated by design", "the compensating control is that it is the one gated path", and the variant-4b deferral itself. It must be amended to record the lift and the reasoning replacing the "manual path exercised" precondition. Mirrored onto P039, which authored the contradicted outcome, and onto P055
 - **JTBD-400 `screens:` omits** `package.json`, `Dockerfile`, `.github/workflows/docker-image.yml`, `.dockerignore.tmpl`, and the new `docs/DOCKER-IMAGE-CHANGELOG.md` — all central to this change, and one of which already annotates itself `@jtbd JTBD-400`
 - **JTBD-202 does not exist.** P055 already requests `JTBD-202: Operate and troubleshoot a self-hosted Addressr container`. The tag contract belongs in it — which tag to pin, what `:latest` promises, when a pinned tag can and cannot change, and how an operator learns an image changed. P055's own `JTBD: JTBD-200` header re-points at it once it exists. Until then, `docs/DOCKER-IMAGE-CHANGELOG.md` is a consumer-facing surface no documented job owns
+
+## Amendment 2026-08-08 — the deployed version is the registry's, not the workspace's (P095)
+
+**The reassessment criterion "the `deploy/**` axis fires an unintended production deploy" has FIRED, and this amendment discharges it.** Run 31252424980 deployed a version that was not published, and Elastic Beanstalk failed on both instances. The answer is **no, the axis should not require the dispatch after all** — it is made safe one layer down, at version resolution, which leaves the change-type matrix intact.
+
+**What was never written down.** No decision recorded where `elasticapp_version` came from. It was `$npm_package_version` — the version in the job's working tree — and that was safe only by accident of ordering. `changesets/action` runs `changeset version` in that tree to author the release PR, so on a `deploy/**` push with a release pending the workspace has already moved to an unpublished version and the deploy takes it.
+
+**The three disjuncts were never equivalent.** `published == 'true'` and `deploy_only == true` both guarantee workspace-version equals registry-version. `steps.deploy-paths.outputs.changed == 'true'` says nothing about the version at all. That asymmetry is the defect; the matrix is not.
+
+**Decision.** `deploy/resolve-version.sh` resolves the version once, and `deploy/deploy.sh` uses it at all four sites that must agree — the `elasticapp_version` tfvar (which drives the S3 key _and_ the EB application-version label), the deployment manifest's own `version`, the dependency pin EB installs, and the zip filename `main.tf`'s `source` reads. Resolving fewer than all four would label the environment one version while the bundle installs another, and `aws_s3_object.elasticapp` carries no `etag` or `source_hash`, so `terraform plan` cannot see that disagreement. The silent identity lie would be worse than the loud failure being fixed.
+
+Two paths, deliberately split:
+
+- **Just published on this run** (`ADDRESSR_DEPLOY_JUST_PUBLISHED=1`, set by `release.yml` only when `steps.changesets.outputs.published == 'true'`) — use the workspace version. It _is_ the version just published, correct by construction with no race. A registry read here could return the previous version, because `npm view` is a CDN-served read of the `latest` dist-tag and `npm publish` returning does not guarantee an edge read reflects it. That would deploy the wrong version green and silent.
+- **Otherwise** (`deploy/**` push, `deploy_only` dispatch) — `npm view <pkg> version`. Whatever the registry serves is the only thing EB can actually install.
+
+Omitting the signal falls back to the registry, so a caller that forgets it fails in the safe direction. Resolution fails closed: an empty or failed read aborts the deploy rather than writing a manifest pinning an unusable version. `deploy.sh` is `#!/bin/sh` with no `set -e`, so this is explicit rather than inherited from `${var:?}`.
+
+**Consequence worth recording:** this also retires `terraform-plan.yml`'s documented caveat that dispatching while `package.json` differs from the deployed version shows EB churn which is an artefact of timing rather than of the change. Plan and apply now resolve the same way.
+
+**Confirmation:** `test/js/__tests__/deploy-version-resolution.test.mjs` runs the resolver against a stub registry and runs `deploy.sh` against stub `terraform`/`zip` to read what it actually wrote. Mutation-proved: reverting either the tfvar or the zip filename to the workspace version fails the four-site assertion.
+
+**Gate untouched.** The three disjuncts and the occurrence count of 3 are unchanged, so this amendment does not disturb the existing Confirmation criteria.

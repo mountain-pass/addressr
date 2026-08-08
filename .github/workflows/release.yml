@@ -370,7 +370,23 @@ jobs:
       - name: Deploy new version
         if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
         uses: devcontainers/ci@v0.3
+        # P095: tell deploy.sh that a publish just happened on THIS run, so it
+        # ships the workspace version rather than reading the registry.
+        #
+        # On this path the workspace version IS the version changesets just
+        # published — correct by construction, no race. A registry read here
+        # could return the PREVIOUS version, because `npm view` is a CDN-served
+        # read of the `latest` dist-tag and `npm publish` returning does not
+        # guarantee an edge read reflects it yet. That would deploy the wrong
+        # version green and silent, which is worse than the loud failure P095
+        # records.
+        #
+        # Only this disjunct gets the signal. `deploy_only` and the `deploy/**`
+        # push both resolve from the registry, which is what makes the
+        # deployment manifest satisfiable — that is the P095 fix. Omitting the
+        # signal falls back to the registry, so forgetting it fails safe.
         env:
+          ADDRESSR_DEPLOY_JUST_PUBLISHED: ${{ steps.changesets.outputs.published == 'true' && '1' || '0' }}
           # ADR 029/033/034: v1 basic-auth creds (TF_VAR_elastic_host/username/
           # password) and the v2 master-user creds (TF_VAR_elastic_v2_username/
           # password) were removed 2026-07-11 — FGAC is off (SigV4), the EB app
@@ -394,6 +410,7 @@ jobs:
           runCmd: |
             npm run deploy:prod
           env: |
+            ADDRESSR_DEPLOY_JUST_PUBLISHED
             TF_IN_AUTOMATION=1
             TF_VAR_elasticapp=mountainpass-addressr
             TF_VAR_aws_secret_key

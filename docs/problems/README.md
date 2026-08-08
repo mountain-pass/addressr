@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-08 **P095 opened** — the push-tier deploy axis deploys the unpublished NEXT version while a release PR is open; realised in production (run 31252424980), EB rolled back, production never stopped serving.
+> Last reviewed: 2026-08-08 **P095 known error** — the deploy now resolves its version from the registry rather than the job workspace; ADR-040 amended and its fired reassessment criterion discharged.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,7 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                       | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
-| 12.0 | P095 | Deploy axis deploys the unpublished NEXT version while a release PR is open | High (12)    | Open          | S      | 2026-08-08 | internal |
+| 24.0 | P095 | Deploy axis deploys the unpublished NEXT version while a release PR is open | High (12)    | Known Error   | S      | 2026-08-08 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable              | High (20)    | Open          | S      | 2026-08-08 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only          | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value          | Medium (9)   | Open          | S      | 2026-07-26 | internal |
