@@ -102,6 +102,7 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-08: Re-verified against R021's same-day change (its Monitoring re-assess trigger fired on run `31252424980`, a push-tier apply that failed by deploying an unpublished version; mechanism fixed, re-rate tracked on P095). **This entry's citation of R021 still holds**: the failure does not change what R021 is about, only its likelihood, and R021 now says of itself at its own surface that its residual understates until the re-rate lands. No cardinal here is affected.
 - 2026-07-27: Auto-scaffolded by the Phase 2b drain (ADR-056, plugin-scoped). Pending human curation.
 - 2026-08-04: Curated and **re-scoped** from the provider lockfile to the `deploy/**` working-tree class. P083's triage had listed this as a retirement candidate; checking the claim showed the lockfile exclusion is real but discharges only the instance, while the class remained live in the working tree throughout the session that proposed the retirement. Scored 15 inherent / 5 residual, at the appetite line, with the procedural control explicitly not credited. Curated as part of the P083 register drain.
 
