@@ -92,6 +92,8 @@
     "dotest:cli2:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT TEST_PROFILE=cli2 cucumber-js -p cli2 -- --harmony_async_iteration",
     "test:mcp:smoke": "node --test test/mcp/smoke.test.mjs",
     "test:precommit": "node --test test/precommit/*.test.mjs",
+    "// pretest:js": "src/waycharter-server.js imports ../version.js, which genversion generates and .gitignore excludes. Before the P033 conversion no test:js case imported that module, so the unit tier happened to run without it; it now does, and a clean checkout has no version.js. This is a prerequisite of the tier, not of one test.",
+    "pretest:js": "npm run genversion",
     "test:js": "node --test test/js/__tests__/*.test.mjs",
     "test:integration:search": "node --test test/integration/*.test.mjs",
     "test:nodejs:QLD:nogeo": "PORT=$npm_package_config_localport ES_INDEX_NAME=test COVERED_STATES=QLD DEBUG=error,api,express:*,test,es TEST_PROFILE=default cucumber-js -p default -- --harmony_async_iteration",
