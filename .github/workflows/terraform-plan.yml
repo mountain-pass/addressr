@@ -33,12 +33,22 @@
 # short-lived branch — release.yml's auto-apply is gated on `master` both by its
 # push trigger and by a job-level ref check, so it will not fire.
 #
-# WHAT IT CANNOT TELL YOU. `aws_s3_object.elasticapp` has no `etag`/`source_hash`,
-# so Terraform diffs only the key/source strings and a rebuilt deployment zip
-# produces no diff. This verifies infra CONFIG only and is structurally blind to
-# the deployed bundle's contents — a green plan does not mean the artifact is
-# the one you think it is. THAT CAVEAT IS STILL LIVE; it is P095's open task on
-# whether the S3 object should carry an etag/source_hash.
+# WHAT IT CAN AND CANNOT TELL YOU — NARROWED 2026-08-09, do not read the old
+# form. The caveat here used to say `aws_s3_object.elasticapp` had no
+# `etag`/`source_hash`, so Terraform diffed only the key/source strings and this
+# workflow was structurally blind to the bundle's contents. That was P095's open
+# task and it is now closed: the object carries a `source_hash` over the
+# deployment manifest, so a manifest that disagrees with the version in its own
+# name produces a plan diff.
+#
+# What that buys, precisely: the plan now detects that the bundle's INPUT
+# changed. What it still does not prove is that the uploaded artefact was built
+# from that input — the hash is over `deployment/package.json`, not over the zip,
+# because the zip carries mtimes and hashing it would diff on every run. So a
+# green plan means the manifest is the one this ref would generate; it does not
+# certify the archive's bytes. `deploy.sh` closes the practical gap by rebuilding
+# the bundle directory from empty and failing closed if `zip` fails, rather than
+# by anything Terraform can see.
 #
 # A DIFFERENT caveat that used to sit here is RETIRED as of 2026-08-08 (P095 /
 # ADR-040 amendment): dispatching while package.json differed from the deployed

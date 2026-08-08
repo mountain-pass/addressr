@@ -123,6 +123,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — the maintainer chose to harden the axis's per-disjunct preconditions rather than add a plan-approval gate or accept above appetite, and the second precondition (`source_hash` over the deployment bundle's manifest) landed with it. **This entry's citation holds**: this entry cites R021 for the axis's governance level and for the apply count, and none of that is reached by a treatment choice. Recorded because R021's Treatment and Controls both took body edits, so the fence correctly required its referrers in the same commit.
+
+  Worth noting rather than leaving implicit: **R021's residual did not move.** It stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan. A reader arriving here from this entry should not infer that the hardening closed the gap — it strengthened the Controls section and left the score alone.
+
 - 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 for the claim-scoped-sweep discipline behind its canonical-state table, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
 
   Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.

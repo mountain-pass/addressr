@@ -112,6 +112,8 @@ Still deliberately **not** treated by a general prose checker. That reasoning st
 
 ## Change Log
 
+- 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — preconditions hardened rather than a plan gate added or the residual accepted — and the `source_hash` control that landed with it. **This entry's citation holds**: the R021 references here are the canonical apply-count cell and dated records of this batch's own drift, none of which a treatment choice reaches. **R021's residual did not move**: it stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan.
+
 - 2026-08-09: **The review fence was widened to committed history, and the reason is that its remedy has no fixed point.** The R021 re-rate batch turned trunk red on this check. R008 and R022 took Change-Log-only edits; committed, `git log -1` dated those as moves and flagged R009 and R027. Writing the prescribed verification bullets in those two, and committing them, flagged R007, R008 and this entry — all already inside the batch.
 
   **That is the difference between expensive and non-terminating, and this entry had recorded only the first.** The 2026-08-05 bullet on the bounded closure said ten of sixteen entries, one iteration deep, "and it terminated — which is what bounded means in practice". It terminated because every file was dirty in one sitting, and the dirty-case exemption made the remedy free. Across a commit boundary the exemption does not apply, the remedy is itself a Change Log edit, and the reference graph is **cyclic through this entry**, which nearly every entry cites. There is no ordering of bullets that converges. The bound was a property of the sitting, not of the closure.

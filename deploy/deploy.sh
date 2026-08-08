@@ -8,8 +8,10 @@ cd "$(dirname "$0")" || exit 1
 # drives main.tf's S3 `key` AND the EB application-version label, the manifest
 # pins what EB installs, and the zip filename is what main.tf's `source` reads.
 # Resolve only some of them and terraform labels the environment v3.1.0 while
-# the bundle inside installs 3.0.8 — and `aws_s3_object.elasticapp` carries no
-# `etag`/`source_hash`, so `terraform plan` cannot see it. That silent identity
+# the bundle inside installs 3.0.8. `aws_s3_object.elasticapp` now carries a
+# `source_hash` over the manifest (added 2026-08-09), so terraform CAN see a
+# bundle disagreeing with its own name — but that is a backstop, not a licence
+# to resolve the version more than once here. That silent identity
 # lie would be worse than the loud failure P095 records. See resolve-version.sh
 # for the publish-path/registry-path split.
 deploy_version=$(./resolve-version.sh) || exit 1
@@ -22,6 +24,19 @@ elasticapp         = "mountainpass-addressr"
 elasticapp_version = "${deploy_version}"
 EOM
 
+# Rebuild the bundle directory from empty, every time.
+#
+# `mkdir -p` alone left whatever was already in here, and `zip` UPDATES an
+# existing archive rather than replacing it — it adds and refreshes entries and
+# leaves orphaned ones behind. On CI neither matters: the runner checks out
+# fresh and both paths are gitignored. On an operator machine running the same
+# `npm run deploy:prod` that reaches production, stale contents ride along into
+# the bundle, and `aws_s3_object.elasticapp`'s `source_hash` cannot see them,
+# because it hashes the manifest that goes IN rather than the archive that comes
+# out. That is the one route where content-awareness makes things worse instead
+# of better: a fresh, correct-looking hash over stale bytes.
+rm -rf deployment
+rm -f "mountainpass-addressr-deployment-${deploy_version}.zip"
 mkdir -p deployment
 cat > "deployment/package.json" <<- EOM
 {
@@ -36,12 +51,16 @@ cat > "deployment/package.json" <<- EOM
 }
 EOM
 
-{ 
-    cd deployment || exit
+{
+    cd deployment || exit 1
     # npm i --production --ignore-scripts
-    zip -9 -r ../mountainpass-addressr-deployment-"${deploy_version}".zip .
-    cd ..
-
+    # `|| exit 1` is load-bearing: this script is #!/bin/sh with no `set -e`, so
+    # an unchecked zip failure let terraform proceed and upload whatever was at
+    # that path — previously nothing (fail-closed on the missing `source`), but
+    # with a stale archive present it would upload stale bytes under a fresh
+    # source_hash. Fail here instead.
+    zip -9 -r ../mountainpass-addressr-deployment-"${deploy_version}".zip . || exit 1
+    cd .. || exit 1
 }
 
 # ADR 032 / P042: bundle the Cloudflare Worker (esbuild) before any terraform

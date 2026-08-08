@@ -10,6 +10,46 @@ resource "aws_s3_object" "elasticapp" {
   bucket = aws_s3_bucket.elasticapp.id
   key    = "${var.elasticapp}-deployment-${var.elasticapp_version}.zip"
   source = "${var.elasticapp}-deployment-${var.elasticapp_version}.zip"
+
+  # P095 / R021: make terraform CONTENT-AWARE, not just name-aware.
+  #
+  # Without this, the key is the only thing terraform compares. A bundle whose
+  # contents disagree with the version in its own name produces NO plan diff, so
+  # the deploy can label the environment one version while installing another
+  # and `terraform plan` shows nothing. That silent identity lie is worse than
+  # the loud failure P095 records, and it was the second of two preconditions
+  # the push-tier deploy axis never checked. The first — that the version being
+  # deployed is actually published — is handled in deploy/resolve-version.sh.
+  #
+  # HASHES THE MANIFEST, NOT THE ZIP, and that is the load-bearing choice.
+  # deploy.sh builds the bundle from exactly one file, deployment/package.json,
+  # whose content is a pure function of the package name and the resolved
+  # version. The zip WRAPPING it is not: it carries file mtimes, so its bytes
+  # differ on every run even when the manifest is byte-identical. Hashing the
+  # zip would therefore produce a diff on every single apply — a perpetual
+  # false positive, which is the fastest way to get a real diff ignored.
+  #
+  # `source_hash` rather than `etag`: terraform compares `etag` against the
+  # object's actual S3 ETag, so any value that is not the MD5 of the uploaded
+  # zip diffs forever. `source_hash` is compared against state instead, which is
+  # what makes hashing the input rather than the artefact possible at all.
+  #
+  # IN-PLACE, NOT A REPLACEMENT — established against the pinned provider rather
+  # than assumed. In hashicorp/aws v5.21.0 (deploy/.terraform.lock.hcl),
+  # internal/service/s3/object.go declares `source_hash` as
+  # `{Type: schema.TypeString, Optional: true}` with no ForceNew; only `bucket`
+  # and `key` force replacement. `resourceObjectCustomizeDiff` marks `version_id`
+  # and `etag` newly computed when it changes. So adding this to a resource
+  # already in state updates it in place and cannot cascade into
+  # `aws_elastic_beanstalk_application_version`, whose `key` IS ForceNew.
+  #
+  # Worth keeping because the reasoning is not reconstructible from the plan: a
+  # replacement here would make the object's id unknown, force the application
+  # version, and the provider would then refuse to delete one that is in use.
+  # `version_label` could still not move — it resolves from
+  # `var.elasticapp_version`, which is config — so the failure mode would be a
+  # red apply with production untouched, not a fleet bounce.
+  source_hash = filemd5("${path.module}/deployment/package.json")
 }
 
 resource "aws_elastic_beanstalk_application_version" "elasticapp" {

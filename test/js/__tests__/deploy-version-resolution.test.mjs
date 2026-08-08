@@ -20,10 +20,16 @@
 // main.tf's S3 `key` and the EB application-version label; the manifest pins
 // what EB installs; the zip filename is what main.tf's `source` reads. Resolve
 // only some of them and terraform labels the environment v3.1.0 while the
-// bundle installs 3.0.8 — and `aws_s3_object.elasticapp` declares no `etag`
-// and no `source_hash`, so `terraform plan` cannot see the disagreement. That
-// silent identity lie is worse than the loud failure P095 records, and a
-// grep-based test cannot make this assertion at all.
+// bundle installs 3.0.8. That silent identity lie is worse than the loud
+// failure P095 records, and a grep-based test cannot make this assertion at all.
+//
+// UNTIL 2026-08-09 terraform could not see the disagreement either:
+// `aws_s3_object.elasticapp` declared no `etag` and no `source_hash`, so the
+// key was the only thing compared. It now carries a `source_hash` over the
+// manifest, so a bundle whose contents disagree with the version in its name
+// produces a plan diff. The four-site agreement asserted here is still the
+// primary guard — the hash detects that the INPUT changed, never that the
+// artefact was built from that input — but it is no longer the only one.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -135,10 +141,11 @@ describe('deploy version resolution (P095)', () => {
 });
 
 describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
-  // The four consumers must agree or the deploy lies about itself, and
-  // terraform cannot detect it: aws_s3_object.elasticapp has no etag and no
-  // source_hash, so a bundle whose contents disagree with its key produces no
-  // plan diff. This runs deploy.sh far enough to write its artefacts, with a
+  // The four consumers must agree or the deploy lies about itself. Terraform is
+  // content-aware as of 2026-08-09 (aws_s3_object.elasticapp carries a
+  // source_hash over the manifest), so a bundle disagreeing with its key now
+  // produces a plan diff — but that is a backstop, not this assertion's job:
+  // the hash proves the input changed, not that all four sites agree. This runs deploy.sh far enough to write its artefacts, with a
   // stub npm and a stub terraform, and reads what it produced.
   // deploy.sh traps EXIT to delete its .auto.tfvars, so it cannot be read
   // afterwards. The stub `terraform` is the correct observation point: it runs
@@ -161,11 +168,25 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
       'terraform',
       `cat ./*.auto.tfvars > "${capture}/tfvars" 2>/dev/null; exit 0`,
     );
-    write('zip', `printf '%s\\n' "$*" > "${capture}/zipargs"; exit 0`);
+    // The stub runs with cwd = deployment/, because deploy.sh cds in before
+    // zipping. So `ls -A` here is literally the bundle's contents at the moment
+    // it would be archived — the only point where that set is observable.
+    write(
+      'zip',
+      `printf '%s\\n' "$*" > "${capture}/zipargs"; ls -A > "${capture}/zipcontents"; exit 0`,
+    );
 
     execFileSync('sh', [
       '-c',
       `cp -R "${path.join(repoRoot, 'deploy')}" "${work}/deploy"`,
+    ]);
+    // Seed a stale artefact into the bundle directory. deploy.sh must clear it:
+    // `zip` UPDATES an existing archive rather than replacing it, and the
+    // source_hash is over the manifest going in, not the archive coming out, so
+    // anything surviving here would ship invisibly under a correct-looking hash.
+    execFileSync('sh', [
+      '-c',
+      `mkdir -p "${work}/deploy/deployment" && echo stale > "${work}/deploy/deployment/LEFTOVER"`,
     ]);
     try {
       execFileSync('sh', [path.join(work, 'deploy', 'deploy.sh'), 'plan'], {
@@ -224,5 +245,31 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
       "the zip filename is what main.tf's `source` reads",
     );
     assert.doesNotMatch(zipArgs, workspaceRe);
+  });
+
+  it('bundles EXACTLY the manifest, which is what makes the source_hash honest', () => {
+    // aws_s3_object.elasticapp hashes deploy/deployment/package.json, not the
+    // zip — the zip carries mtimes and would diff on every run. That proxy is
+    // only sound while the manifest IS the bundle. Add a Procfile, an
+    // .ebextensions/ fragment or an .npmrc and content-awareness silently stops
+    // covering them, while main.tf goes on claiming it does, in prose, at the
+    // point of use.
+    //
+    // Also proves the rebuild-from-empty: LEFTOVER is seeded into the bundle
+    // directory before the run, and zip UPDATES an archive rather than
+    // replacing it, so without `rm -rf deployment` it would ship under a fresh,
+    // correct-looking hash.
+    const { capture } = runDeployScript();
+    const contents = readFileSync(path.join(capture, 'zipcontents'), 'utf8')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .sort();
+
+    assert.deepStrictEqual(
+      contents,
+      ['package.json'],
+      `the deployment bundle must contain exactly package.json — source_hash is over that file alone, so anything else here ships uncovered. Found: ${contents.join(', ')}`,
+    );
   });
 });

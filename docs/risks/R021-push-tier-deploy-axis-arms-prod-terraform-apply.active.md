@@ -56,6 +56,7 @@ Impact × Likelihood _before_ controls.
 - **Provider-lockfile exclusion, announced — EVIDENCED.** `deploy/.terraform.lock.hcl` is excluded by name, and the exclusion emits a `::notice::` pointing at the release-tier dispatch, so it can never be a silent no-deploy. This removes the highest-frequency incidental trigger.
 - **Pinned in CI — EVIDENCED.** `test/js/__tests__/release-workflow-deploy-only.test.mjs` asserts the step id the gate reads, its `push`-event scoping, the fail-closed guard, `fetch-depth: 0`, and the three-gate occurrence count. It also pins the boolean comparison unquoted, which is the trap that would make a gate silently never fire and take the run **green with the deploy skipped**.
 - **Deployed version resolves from the registry, not the working tree — EVIDENCED, added 2026-08-08.** `deploy/resolve-version.sh` reads the published `latest` dist-tag rather than `npm_package_version`, and `deploy/deploy.sh` applies the resolved value at all four consumers (tfvar, manifest version, dependency pin, zip name). `test/js/__tests__/deploy-version-resolution.test.mjs` runs the resolver against a stub registry and asserts all four agree, including the fail-closed paths. This closes the route that fired on run `31252424980`. Credited for that route only — see the Residual note on why it does not restore Rare.
+- **Deployment bundle is content-addressed — EVIDENCED, added 2026-08-09.** `aws_s3_object.elasticapp` carries `source_hash = filemd5(deployment/package.json)`, so a bundle whose contents disagree with the version in its own key produces a plan diff rather than silence. Hashes the manifest rather than the zip deliberately: the zip carries mtimes and would diff on every apply, and a perpetual false positive is the fastest way to get a real diff ignored. `deploy.sh` rebuilds the bundle directory from empty and fails closed if `zip` fails, closing the operator-machine route where a stale archive would ship under a fresh, correct-looking hash. Pinned by `deploy-version-resolution.test.mjs`, which asserts the bundle is exactly the manifest — mutation-proved against both a surviving stale file and an added `Procfile`.
 - **The commit-tier risk gate runs first — PARTIALLY credited.** A `deploy/**` commit is scored before it can be pushed. It is real and it fires, but it is one tier below the release-tier review this path skips, and P086 (2026-08-04) showed a governed command wrapped in a shell construct evades the gate entirely. Credited for what it is, not for what the release tier would have given.
 
 ## Residual Risk
@@ -87,7 +88,22 @@ Impact × Likelihood _after_ controls.
 
 **Not proposed: removing the axis.** ADR-040 weighed that and chose the axis; this entry prices the option ADR-040 picked, which is what ISO 31000 § 6.4.3 asks for. The realised failure does not overturn that judgement — it prices it correctly for the first time.
 
-**Awaiting maintainer ratification.** Neither option is the agent's to pick: one supersedes a confirmed decision, and the other is an explicit above-appetite acceptance, which per this project's standing direction is not something an agent may choose on the maintainer's behalf. Until it is picked, this entry sits above appetite with the treatment named rather than applied, and that state is deliberate rather than an oversight.
+**RATIFIED 2026-08-09 — and the maintainer chose a THIRD option, not either of the two above.**
+
+| Option                                    | Effect on residual    | Status      |
+| ----------------------------------------- | --------------------- | ----------- |
+| **Harden the per-disjunct preconditions** | Residual stays **10** | **CHOSEN.** |
+
+The reasoning that selected it is worth keeping, because it corrected the agent's. A plan-approval gate was recommended first and then withdrawn: the realised failure (run `31252424980`) would **not** have been caught by a plan review — the plan was correct and the payload was wrong. Recommending a control aimed at a hazard that has never fired, on the strength of one that did, is the wrong shape. What the event actually evidences is that the push-tier disjunct carried a payload whose precondition nobody had checked for that path.
+
+Two such preconditions are now enforced:
+
+1. **The version being deployed is published.** `deploy/resolve-version.sh` reads the registry on the non-publish paths and fails closed. Landed 2026-08-08.
+2. **The bundle's contents match the version in its name.** `aws_s3_object.elasticapp` carries `source_hash` over the deployment manifest, so a disagreeing bundle produces a plan diff instead of silence. Landed 2026-08-09, with `deploy.sh` rebuilding the bundle directory from empty and failing closed on a `zip` failure, and a test pinning that the bundle is exactly the manifest.
+
+**This does NOT bring the entry within appetite, and saying so is the point of recording it here.** Impact is fixed at 5 because nothing on this path reviews the plan, and the Likelihood-2 argument above is that Rare rested on an enumeration of closed routes which the event proved incomplete. Closing a sixth route inherits that objection exactly as the fifth did. The residual stays **10**. What changed is the strength of the Controls section, not the score.
+
+**Superseded record — the pre-ratification state, kept for audit.** The paragraph below was written between the re-rate and the choice, when no option had been picked. It is retained rather than deleted so the sequence is auditable, and labelled so it cannot be read as live: the treatment IS ratified, above. Neither option is the agent's to pick: one supersedes a confirmed decision, and the other is an explicit above-appetite acceptance, which per this project's standing direction is not something an agent may choose on the maintainer's behalf. Until it is picked, this entry sits above appetite with the treatment named rather than applied, and that state is deliberate rather than an oversight.
 
 The operative control is not on this path at all: **keep `deploy/**` out of unrelated commits**, which is R022's subject and where the exposure was concentrated until that instance was cleared 2026-08-05; the class remains.
 
@@ -113,6 +129,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27T01:18:00Z: fired in `.risk-reports/2026-07-27T01-18-00-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
+
+- 2026-08-09 (second entry today): **Treatment ratified, and it is a third option the table did not offer.** The maintainer rejected both the plan-approval gate and the explicit above-appetite acceptance in favour of hardening the per-disjunct preconditions. The agent had recommended the plan gate and then withdrew it on the maintainer's challenge — the realised failure would not have been caught by a plan review, so proposing one as its treatment aimed a control at a hazard that has never fired. The second precondition landed the same day (`source_hash` over the deployment manifest). **The residual is UNCHANGED at 10 and above appetite**, which the Treatment section now states rather than implies: Impact is fixed at 5, and closing a sixth route inherits the objection that closing the fifth did.
 
 - 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 for the same-batch fence behaviour that forced its re-rate into one commit, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
 

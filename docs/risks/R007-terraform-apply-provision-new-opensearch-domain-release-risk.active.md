@@ -27,7 +27,7 @@ P083's triage placed this in an "apply-axis cluster" with R003, R021 and R025 an
 
 So this is the **provision phase of the migration lifecycle** — the one phase the register had not named. The lifecycle runs R007 (provision) → R008 (ranking regression at cutover) / R009 (concurrency at cutover) → R010 (decommission removes the rollback net).
 
-It also earns separation on treatment, which is the sharper test: the treatment below decouples a long-running create from the release pipeline, and no sibling's treatment delivers that. R003's is the read-shadow soak, R021's is Mitigate with the option unpicked (Accept until its 2026-08-09 re-rate), R022's is commit hygiene.
+It also earns separation on treatment, which is the sharper test: the treatment below decouples a long-running create from the release pipeline, and no sibling's treatment delivers that. R003's is the read-shadow soak, R021's is Mitigate by hardening the axis's per-disjunct preconditions (chosen 2026-08-09; Accept until the re-rate earlier that day), R022's is commit hygiene.
 
 ### Provisioning does not touch the live serving path
 
@@ -102,6 +102,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-12T22:36:45Z: fired in `.risk-reports/2026-07-12T22-36-45-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
+
+- 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — preconditions hardened rather than a plan gate added or the residual accepted — and the `source_hash` control that landed with it. **This entry's citation holds**: the decomposition claim (the trigger belongs to R015/R021/R020, unreviewed apply content to R022, leaving the apply's own content here) is about ownership, not about treatment. **One line here WAS falsified and is corrected in this commit**: the treatment-separation argument described R021's treatment as having its option unpicked, and the maintainer picked one. The argument survives — hardening preconditions decouples nothing from the release pipeline — but the sentence asserted a state that had ended, which is the same inbound-reference class that caught this entry a day earlier. **R021's residual did not move**: it stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan.
 
 - 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry cites R028 only through the shared review-fence discipline, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
 

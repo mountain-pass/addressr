@@ -88,6 +88,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — preconditions hardened rather than a plan gate added or the residual accepted — and the `source_hash` control that landed with it. **This entry's citation holds**: the reference is a dated Change Log verification, and this entry borrows R028 rather than R021 for its live claim — a discipline about not crediting procedural controls, which no treatment choice reaches. **R021's residual did not move**: it stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan.
+
 - 2026-08-09: Re-verified against R028's body change of the same date, which widened the review fence to walk committed history and date an entry at its last change outside its Change Log. **This entry's citation holds** — this entry borrows R028 for the decay observation, as its own 2026-08-09 bullet records, and widening a check's timestamp source touches no claim about drift or about this entry's subject.
 
   Recorded because R028's edit was a genuine body move, so the fence correctly required its referrers to be revisited. Under the widened rule this bullet does **not** make this entry a moved target in turn, which is the whole point of the change: before it, exactly this remedy re-armed the check one hop further out, without a fixed point.

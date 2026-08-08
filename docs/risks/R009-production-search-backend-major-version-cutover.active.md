@@ -86,6 +86,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09 (second entry today): Re-verified against R007's body edit, which corrected its description of R021's treatment after the maintainer chose one. **This entry's citation of R007 holds** — it is a not-consolidated distinction about the provision phase versus the cutover event, which no treatment choice reaches. One hop out, and it terminates here: this bullet edits nothing outside a Change Log, so under the widened fence it does not make this entry a moved target in turn.
+
 - 2026-08-09: Re-verified against R008's 2026-08-09 bullet, which was itself a verification bullet confirming its citation of R028 holds. **This entry's Siblings distinction is untouched** — R008 is the same cutover event seen through the relevance gap rather than the concurrency one, and no Change Log activity in either entry can reach a distinction.
 
   **This bullet is the ritual the fence's exemption exists to prevent, and writing it is what proved the exemption insufficient.** The 2026-08-05 bullet below says the check "no longer treats a Change-Log-only edit as a move". True, but scoped to the DIRTY case, as the code's own comment states, with the stated upgrade path being a log-walk "if a stale pair ever survives a sitting boundary". One did: R008's Change-Log-only edit committed, `git log -1` dated it as a move, and this entry flagged.
