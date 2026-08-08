@@ -44,9 +44,9 @@ That is a static property, and it is now pinned — `test/js/__tests__/package-g
 
 ### Investigation Tasks
 
-- [ ] Fix the two defects in the unwired script before trusting it. `pretest:cli2:geo` and `test:cli2:geo` use `ES_INDEX_NAME=test`, while every other geo leg uses `test-geo` — wiring it in after `test:cli2:nogeo` would load geo data over the nogeo leg's index. And `pretest:cli2:geo` carries no `NODE_OPTIONS`, unlike its packaged-geo sibling `start:loader:packaged:geo`. Immaterial at OT-fixture scale, but it is drift, and it is evidence that an in-no-chain script rots rather than sitting inert.
-- [ ] Decide where it runs, and cost it honestly: geo indexing is slow and wants ~8GiB.
-- [ ] Wire it, and confirm the index-name fix by checking the nogeo leg still passes when the two run in sequence.
+- [x] Fix the two defects in the unwired script before trusting it. `pretest:cli2:geo` and `test:cli2:geo` use `ES_INDEX_NAME=test`, while every other geo leg uses `test-geo` — wiring it in after `test:cli2:nogeo` would load geo data over the nogeo leg's index. And `pretest:cli2:geo` carries no `NODE_OPTIONS`, unlike its packaged-geo sibling `start:loader:packaged:geo`. Immaterial at OT-fixture scale, but it is drift, and it is evidence that an in-no-chain script rots rather than sitting inert.
+- [x] Decide where it runs, and cost it honestly: geo indexing is slow and wants ~8GiB.
+- [x] Wire it, and confirm the index-name fix by checking the nogeo leg still passes when the two run in sequence.
 
 ## The engines question — SETTLED 2026-08-08, the floor is honest
 
@@ -88,14 +88,16 @@ Kept in `build-and-test` rather than a new job: that job already has the OpenSea
 
 Two decision records move as a result:
 
-- [ADR-009](../../decisions/009-cucumber-bdd-testing.accepted.md) records as a _Bad_ consequence that "CI only runs 3 of 10 combinations". This retires part of that — it is now 4.
+- [ADR-009](../../decisions/009-cucumber-bdd-testing.accepted.md) records as a _Bad_ consequence that "CI only runs 3 of 10 combinations". Both halves of that were stale: there are three profiles now, not five, so the space is 6 and CI runs **five of the six**. Corrected in that ADR's 2026-08-09 amendment rather than incremented — the "4" first written here came from adding one to a figure that was already wrong, which is the same not-checking-the-base-number mistake the amendment exists to fix.
 - [ADR-029](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) carries a confirmation criterion requiring "both `test:nogeo` and `test:geo` scopes" to pass. That criterion was assessed when `test:geo` meant one profile; it now means two. Strictly stronger, so the tick still holds, but the referent widened — noted there so a future reader does not over-read it.
 
 **One measurement that had to come first.** My original hand-run of `test:cli2:geo` for the 3.1.0 release was under `--no-strict` (a bare `npm run test:cli2:geo` leaves `NO_STRICT` unset, and cucumber then does not fail on undefined or pending steps), so 34 green did not prove step coverage. Re-run as `NO_STRICT=' ' npm run test:cli2:geo`: still 34 / 217, so the coverage is real. Wiring it without that check would have risked discovering undefined steps as a red master.
 
 ## Workaround
 
-`test/js/__tests__/package-graph-ships.test.mjs` covers the packaging half — the part of this gap the ESM migration created. The behavioural half is uncovered.
+`test/js/__tests__/package-graph-ships.test.mjs` covers the packaging half — the part of this gap the ESM migration created.
+
+**Superseded by the Fix Strategy above as of 2026-08-09**: the behavioural half is now wired into the pre-publish chain. What remains uncovered is narrower and named there — nothing observes the running server's index, because `waitport` is port-only.
 
 ## Impact Assessment
 
