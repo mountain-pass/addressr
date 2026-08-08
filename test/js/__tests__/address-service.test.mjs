@@ -30,7 +30,7 @@ describe('service/address-service.js — read-shadow integration (ADR 031)', () 
     );
     assert.match(
       source,
-      /import\s+\{\s*mirrorRequest\s*\}\s+from\s+['"]\.\.\/src\/read-shadow['"]/,
+      /import\s+\{\s*mirrorRequest\s*\}\s+from\s+['"]\.\.\/src\/read-shadow(\.js)?['"]/,
       'service/address-service.js must import mirrorRequest from ../src/read-shadow (ADR 031)',
     );
   });

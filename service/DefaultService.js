@@ -1,6 +1,6 @@
 import debug from 'debug';
 import LinkHeader from 'http-link-header';
-import { setLinkOptions } from './set-link-options';
+import { setLinkOptions } from './set-link-options.js';
 var logger = debug('api');
 
 /**

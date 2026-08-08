@@ -2,9 +2,12 @@
 //
 // The CORS preflight response, extracted from `src/waycharter-server.js` into
 // clean ESM so a test can execute it rather than regex-match its source (P033).
-// `waycharter-server.js` transitively imports `service/address-service` with a
-// babel-only bare specifier, so raw Node ESM cannot import it and anything left
-// inside it can only be asserted as text.
+//
+// HISTORICAL REASON, NOW LIFTED: `waycharter-server.js` could not be imported
+// by raw Node ESM, so anything left inside it could only be asserted as text.
+// The codebase went native ESM on 2026-08-08 and it imports cleanly now. This
+// module stays because the preflight response is a self-contained thing worth
+// testing directly, and because it sits ahead of authentication.
 //
 // Registration ORDER — the handler must be mounted ahead of
 // `proxyAuthMiddleware` so a preflight is answered before authentication — is

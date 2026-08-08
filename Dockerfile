@@ -65,13 +65,19 @@ WORKDIR /home/nonroot
 # ADDRESSR_SHUTDOWN_TIMEOUT_MS (default 8000ms) so it stays inside the 10s grace deadline.
 #
 # CMD is the resolved script path rather than the addressr-server-2 bin shim: there is no
-# shell and no /usr/bin/env to resolve it. tini appends the CMD args and execs node, so
+# shell and no /usr/bin/env to resolve it. That makes this path PACKAGE-INTERNAL and
+# therefore coupled to the tarball's layout — the one consumer that cannot be insulated
+# by the bin name staying stable. It moved from `lib/bin/` to `bin/` when the Babel build
+# was retired (ADR-044); `.dockerignore.tmpl` is `*` plus the tgz, so this string is the
+# only coupling between the image and the package layout. Pinned in
+# test/js/__tests__/docker-image-workflow.test.mjs so a future layout change fails a test
+# rather than a container start. tini appends the CMD args and execs node, so
 # overriding CMD on the command line works exactly as it did before.
 # The loader is invoked the same way, but needs a writable cwd: GNAF_DIR relocates
 # the G-NAF download, and the CKAN package cache at target/keyv-file.msgpack has no
 # env override, so mount over the whole target directory rather than just GNAF_DIR.
 # The loader therefore cannot run with --read-only, unlike the server.
 #   docker run -v "$PWD/target:/home/nonroot/target" mountainpass/addressr \
-#     /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
+#     /opt/addressr/lib/node_modules/@mountainpass/addressr/bin/addressr-loader.js
 ENTRYPOINT ["/tini", "--", "/nodejs/bin/node"]
-CMD ["/opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-server-2.js"]
+CMD ["/opt/addressr/lib/node_modules/@mountainpass/addressr/bin/addressr-server-2.js"]

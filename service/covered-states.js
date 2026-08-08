@@ -1,7 +1,9 @@
 // COVERED_STATES parsing + G-NAF detail-file state derivation. Extracted
-// from address-service.js (babel-only, not raw-node importable) so the
-// behavioural tests in test/js/__tests__/covered-states.test.mjs can import
-// it directly — same pattern as ./gnaf-package-fetch.js (P033).
+// from address-service.js so the behavioural tests in
+// test/js/__tests__/covered-states.test.mjs can import it directly — same
+// pattern as ./gnaf-package-fetch.js (P033). The original reason, that
+// address-service.js was not raw-node importable, was lifted on 2026-08-08
+// when the codebase went native ESM; the split stays on its own merits.
 //
 // Entries are normalised to uppercase (P034): G-NAF file/state names are
 // uppercase (NSW_ADDRESS_DETAIL_psv.psv), so a lowercase or mixed-case
@@ -44,8 +46,8 @@ export function hasNoCoveredDetailMatch(addressDetailFiles, coveredStates) {
   return (
     coveredStates.length > 0 &&
     addressDetailFiles.length > 0 &&
-    !addressDetailFiles.some((f) =>
-      coveredStates.includes(detailFileState(f).toUpperCase()),
+    addressDetailFiles.every(
+      (f) => !coveredStates.includes(detailFileState(f).toUpperCase()),
     )
   );
 }

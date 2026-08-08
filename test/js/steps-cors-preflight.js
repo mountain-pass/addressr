@@ -3,7 +3,7 @@
 import { expect } from 'chai';
 import { After, Given, Then, When } from '@cucumber/cucumber';
 import { inject } from 'light-my-request';
-import { buildRest2App } from '../../src/waycharter-server';
+import { buildRest2App } from '../../src/waycharter-server.js';
 
 // WHY THESE STEPS BUILD THEIR OWN APP RATHER THAN USING this.driver.
 //

@@ -10,3 +10,22 @@ During the CI run, we want to
 6. upload the release
 7. create the deployable
 8. run terraform to do the deploy
+
+## The prototype scripts are gone (2026-08-08)
+
+`build.js` and `pipeline.mjs` were removed. They were never wired to anything —
+no npm script, no workflow, no reference anywhere in the tree — and neither
+could run: `@dagger.io/dagger` and `env-paths` are in neither dependency list.
+`pipeline.mjs` also ended by invoking `npm run build`, a script ADR-044 retired
+along with the Babel step.
+
+They are removed rather than repaired by the same test that removed
+`utils/writer.js` in that change: code
+with no caller and undeclared dependencies is a note about an idea, not an
+implementation, and this file is the better place for the idea. The design
+sketch above is preserved.
+
+`deploy/create-deployment-archive.js` fails the same test and is deliberately
+NOT removed here: any change under `deploy/` arms the push-tier production
+terraform apply, so it goes in its own commit where that apply is the deliberate
+act the trigger exists to serve rather than a rider on unrelated work.

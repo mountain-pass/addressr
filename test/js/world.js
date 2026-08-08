@@ -9,13 +9,13 @@ import {
 import debug from 'debug';
 import fs from 'node:fs';
 import waitport from 'wait-port';
-import { esConnect } from '../../client/elasticsearch';
-import { AddressrRest2Driver } from './drivers/AddressrRest2Driver';
-import { AddressrRest2EmbeddedDriver } from './drivers/AddressrRest2EmbeddedDriver';
+import { esConnect } from '../../client/elasticsearch.js';
+import { AddressrRest2Driver } from './drivers/AddressrRest2Driver.js';
+import { AddressrRest2EmbeddedDriver } from './drivers/AddressrRest2EmbeddedDriver.js';
 import {
   startRest2Server,
   stopServer as stopRest2Server,
-} from '../../src/waycharter-server';
+} from '../../src/waycharter-server.js';
 
 const fsp = fs.promises;
 

@@ -76,10 +76,9 @@ jobs:
         run: |
           # Same slim-OT-fixture prep as release.yml build-and-test.
           if [ ! -f target/gnaf/*.zip ]; then
-            node -e "
-              require('@babel/register');
-              require('@babel/polyfill');
-              require('./service/address-service').fetchGnafFile().then(f => console.log('Downloaded:', f));
+            node --input-type=module -e "
+              const { fetchGnafFile } = await import('./service/address-service.js');
+              console.log('Downloaded:', await fetchGnafFile());
             "
           fi
           GNAF_ZIP=$(ls target/gnaf/*.zip | head -1)
@@ -96,16 +95,16 @@ jobs:
           COVERED_STATES: OT
           DEBUG: error,api,es
         # ELASTIC_HOST defaults to 127.0.0.1:9200 (the service container).
-        # @babel/register runs the source directly — the same loader invocation the
-        # cucumber pretest hooks use in release.yml (no lib/ build needed).
-        run: node -r @babel/register loader.js
+        # Native ESM since ADR-044: node runs the source directly, same as the
+        # cucumber pretest hooks in release.yml. No build, no loader hook.
+        run: node loader.js
       - name: Start Addressr API server
         env:
           ES_INDEX_NAME: ot
           PORT: '6060'
           DEBUG: error,api,es
         run: |
-          node -r @babel/register src/server2.js &
+          node src/server2.js &
           echo "SERVER_PID=$!" >> "$GITHUB_ENV"
           # Wait for /health (on the ADR 024 no-auth allowlist) to come up.
           for i in $(seq 1 30); do

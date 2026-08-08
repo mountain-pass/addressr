@@ -46,11 +46,12 @@ export function shutdownTimeoutMs(environment = process.env) {
  * force it down at the deadline.
  *
  * The handle lives here rather than in `waycharter-server.js`, with the two
- * functions that act on it, and that move is what lets a unit test exercise the
- * drain at all (P033): `waycharter-server.js` transitively imports
- * `service/address-service` through a babel-only bare specifier and cannot be
- * loaded by raw Node ESM, so while these functions lived there the only
- * available instrument was regex-matching their source text.
+ * functions that act on it. That move is what let a unit test exercise the
+ * drain at all (P033): `waycharter-server.js` could not be loaded by raw Node
+ * ESM, so while these functions lived there the only available instrument was
+ * regex-matching their source text. That constraint was lifted on 2026-08-08
+ * when the codebase went native ESM. The split stays because the drain belongs
+ * next to the signal handlers that call it, not next to the route table.
  *
  * A FACTORY over a module-level `let` for two reasons, both of them practical.
  * A test gets a genuinely independent handle by calling this again, instead of

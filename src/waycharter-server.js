@@ -13,12 +13,12 @@ import {
   getPostcode,
   searchForState,
   getState,
-} from '../service/address-service';
-import { version } from '../version';
+} from '../service/address-service.js';
+import { version } from '../version.js';
 import crypto from 'node:crypto';
-import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth';
-import { validateReadShadowConfig, getShadowStatus } from './read-shadow';
-import { checkEsHealthCached, isEsProbeEnabled } from './es-health';
+import { validateProxyAuthConfig, proxyAuthMiddleware } from './proxy-auth.js';
+import { validateReadShadowConfig, getShadowStatus } from './read-shadow.js';
+import { checkEsHealthCached, isEsProbeEnabled } from './es-health.js';
 
 const ONE_DAY = 60 * 60 * 24;
 const ONE_WEEK = ONE_DAY * 7;
@@ -545,7 +545,7 @@ function buildOpenApiSpec(apiVersion) {
 
 var serverPort = process.env.PORT || 8080;
 var logger = debug('api');
-import { trackServer } from './graceful-shutdown';
+import { trackServer } from './graceful-shutdown.js';
 
 var error = debug('error');
 error.log = console.error.bind(console);
@@ -1010,4 +1010,4 @@ export function startRest2Server() {
 // test can execute them — this module cannot be imported by raw Node ESM
 // (P033). Re-exported here because server2.js and test/js/world.js import them
 // from this path.
-export { stopServer, forceCloseConnections } from './graceful-shutdown';
+export { stopServer, forceCloseConnections } from './graceful-shutdown.js';

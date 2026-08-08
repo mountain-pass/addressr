@@ -60,9 +60,15 @@ jobs:
   # WHY 22.7 AND NOT 22.0, which is what `engines` actually declares. The .mjs
   # tests import untranspiled `.js` service modules, and ESM-in-.js only loads
   # from 22.7 where module syntax detection landed. On 22.0 the suite reports 92
-  # failures, all of that one cause and none of them real. Shipped code is
-  # unaffected — babel emits CJS into lib/ — so this is a test-harness floor
-  # above the declared engine floor, not a product bug. 22.7 is the lowest
+  # failures, all of that one cause and none of them real.
+  #
+  # AMENDED 2026-08-08 (ADR-044): the original note said "shipped code is
+  # unaffected — babel emits CJS into lib/". Babel is gone and source ships
+  # directly, so that reason is void. The FLOOR still stands, for a narrower
+  # reason: `"type": "module"` makes every .js unambiguously ESM, so syntax
+  # detection is no longer load-bearing and 22.0 would likely pass — but this
+  # leg exists to cover the experimental-glob range, and lowering it has not
+  # been measured. 22.7 is the lowest
   # version that can run the suite at all, and it still sits inside the
   # experimental-glob range this leg exists to cover.
   #
@@ -130,8 +136,6 @@ jobs:
             npm-
       - name: Install dependencies
         run: npm ci
-      - name: Build
-        run: npm run build
       - name: Cache G-NAF zip
         uses: actions/cache@v6
         id: gnaf-cache
@@ -142,13 +146,12 @@ jobs:
             gnaf-zip-
       - name: Prepare OT test fixture
         run: |
-          # Download G-NAF if not cached
-          npm run build
+          # Download G-NAF if not cached. Native ESM since ADR-044 — no build,
+          # no @babel/register hook; the source is what runs.
           if [ ! -f target/gnaf/*.zip ]; then
-            node -e "
-              require('@babel/register');
-              require('@babel/polyfill');
-              require('./service/address-service').fetchGnafFile().then(f => console.log('Downloaded:', f));
+            node --input-type=module -e "
+              const { fetchGnafFile } = await import('./service/address-service.js');
+              console.log('Downloaded:', await fetchGnafFile());
             "
           fi
           # Extract only OT + Authority Code files into a slim fixture

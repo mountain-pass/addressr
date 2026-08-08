@@ -180,13 +180,26 @@ describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
     const builds = raw
       .split('\n')
       .filter((l) => l.trim() === 'run: npm run build:docker');
-    assert.equal(builds.length, 1, `expected 1 build step, found ${builds.length}`);
+    assert.equal(
+      builds.length,
+      1,
+      `expected 1 build step, found ${builds.length}`,
+    );
 
-    assert.ok(lineOf('run: npm run build:docker') < lineOf('Container starts and serves /health'));
-    assert.ok(lineOf('Container starts and serves /health') < lineOf('Container stops on SIGTERM'));
+    assert.ok(
+      lineOf('run: npm run build:docker') <
+        lineOf('Container starts and serves /health'),
+    );
+    assert.ok(
+      lineOf('Container starts and serves /health') <
+        lineOf('Container stops on SIGTERM'),
+    );
     // The step name, not `npm run docker:push` — the header comment names the
     // script too, and that mention sits above every step.
-    assert.ok(lineOf('Container stops on SIGTERM') < lineOf('- name: Publish image to GitHub Container Registry'));
+    assert.ok(
+      lineOf('Container stops on SIGTERM') <
+        lineOf('- name: Publish image to GitHub Container Registry'),
+    );
   });
 
   it('resolves DOCKER_PUBLISH_SEMVER once, at job scope', () => {
@@ -211,4 +224,122 @@ describe('docker-image.yml — ADR-040 stage 2 publisher', () => {
     assert.ok(raw.includes('      group: docker-image-${{ github.ref }}'));
     assert.doesNotMatch(raw, /concurrency: \$\{\{ github\.workflow \}\}/);
   });
+});
+
+// The image's CMD is a PACKAGE-INTERNAL path, and nothing pinned it (ADR-044).
+//
+// `.dockerignore.tmpl` is `*` plus the tgz, so the image is built purely from
+// the packed tarball and this one string is the entire coupling between the
+// image and the package's internal layout. When the Babel build was retired and
+// the tarball's layout moved from `lib/bin/` to `bin/`, the CMD kept pointing at
+// the old path. Every existing check stayed green: the cli2 Cucumber profile
+// packs and globally installs the package but exercises the npm channel and
+// never builds the image, and this file's other assertions pin the workflow's
+// publish gates rather than the path. The failure would have been a container
+// that cannot start — no shell, so an immediate module-not-found.
+//
+// The usual insulation does not apply here. Consumers are insulated from a
+// layout change by the `bin` NAMES staying stable, but Distroless has no shell
+// and no /usr/bin/env to resolve a shim, so the Dockerfile must name the
+// resolved script path. It is the one consumer that cannot use the bin name.
+describe("the image's CMD path survives a package layout change (ADR-044)", () => {
+  const dockerfile = readFileSync(
+    fileURLToPath(new URL('../../../Dockerfile', import.meta.url)),
+    'utf8',
+  );
+  const pkg = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../../package.json', import.meta.url)),
+      'utf8',
+    ),
+  );
+
+  /** The part of an absolute in-image path that lies inside the package. */
+  const packageInternal = (absolute) => {
+    const marker = `/node_modules/${pkg.name}/`;
+    const index = absolute.indexOf(marker);
+    assert.notEqual(index, -1, `not a package-internal path: ${absolute}`);
+    return absolute.slice(index + marker.length);
+  };
+
+  const cmd = dockerfile.match(/^CMD \["([^"]+)"\]/m);
+
+  it('names a script the package actually declares as a bin', () => {
+    assert.ok(cmd, 'Dockerfile must declare a CMD');
+    const internal = packageInternal(cmd[1]);
+    assert.ok(
+      Object.values(pkg.bin).includes(internal),
+      `CMD runs "${internal}", which is not a bin entry in package.json. The bin NAMES are stable across layout changes but this path is not — Distroless has no shell to resolve the shim. Declared bins: ${Object.values(pkg.bin).join(', ')}`,
+    );
+  });
+
+  it('names a script the tarball actually ships', () => {
+    // A path can match a bin entry and still be absent from the tarball if
+    // `files` was not updated alongside it.
+    const internal = packageInternal(cmd[1]);
+    const top = `${internal.split('/')[0]}/`;
+    assert.ok(
+      pkg.files.includes(top) || pkg.files.includes(internal),
+      `CMD runs "${internal}" but neither "${top}" nor that file is in package.json "files", so it is not in the tarball the image is built from. files: ${pkg.files.join(', ')}`,
+    );
+  });
+
+  // EVERY file that documents the resolved loader path, not just the Dockerfile.
+  //
+  // The first version of this assertion read the Dockerfile alone, and the same
+  // string was live in two more places: README.md, which ships inside the npm
+  // tarball and is the landing page, and docs/DOCKER-IMAGE-CHANGELOG.md, which
+  // is the file operators are told to watch. Both still carried the pre-ADR-044
+  // `lib/bin/` path after the Dockerfile was fixed, so the documented setup step
+  // would have failed with a module-not-found in a container with no shell to
+  // diagnose it. A pin that covers one copy of a duplicated fact is not a pin.
+  const DOCUMENTING_FILES = [
+    'Dockerfile',
+    'README.md',
+    'docs/DOCKER-IMAGE-CHANGELOG.md',
+  ];
+
+  for (const relative of DOCUMENTING_FILES) {
+    it(`keeps the documented loader invocation current in ${relative}`, () => {
+      const text = readFileSync(
+        fileURLToPath(new URL(`../../../${relative}`, import.meta.url)),
+        'utf8',
+      );
+      // A changelog documents superseded paths ON PURPOSE — its migration table
+      // has to show the old value next to the new one. So a mention in that
+      // file's before-row is content, not drift.
+      //
+      // The exemption is anchored twice, because the obvious form is too wide:
+      // "Before" is an ordinary English word, and exempting any line containing
+      // it in ANY of these files would silently excuse a README sentence like
+      // "Before you run the loader, ... /opt/addressr/.../lib/bin/..." — in the
+      // file that ships inside the tarball. So it applies only to the changelog,
+      // and only to a table row whose first cell IS the label. An unlabelled
+      // second row still fails.
+      const isHistoricalRow = (line) =>
+        relative === 'docs/DOCKER-IMAGE-CHANGELOG.md' &&
+        /^\|\s*Before\s*\|/.test(line);
+      const matches = text
+        .split('\n')
+        .filter((line) => !isHistoricalRow(line))
+        .flatMap((line) => [
+          ...line.matchAll(/(\/opt\/addressr\/\S*addressr-loader\.js)/g),
+        ])
+        .map((m) => m[1]);
+      // Fail on absence rather than passing vacuously: if a file stops
+      // documenting the path this assertion must be re-scoped deliberately, not
+      // silently satisfied by having nothing to check.
+      assert.ok(
+        matches.length > 0,
+        `${relative} no longer documents the loader path. If that is intended, remove it from DOCUMENTING_FILES; otherwise the path was dropped by accident.`,
+      );
+      for (const match of matches) {
+        assert.equal(
+          packageInternal(match),
+          pkg.bin['addressr-loader'],
+          `${relative} documents "${match}", whose package-internal part is not the declared bin. This path is not covered by the stable-bin-name promise — it is resolved, because Distroless has no shell.`,
+        );
+      }
+    });
+  }
 });

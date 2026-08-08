@@ -9,11 +9,13 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
+| 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (20)    | Open          | S      | 2026-08-08 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
+| 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
@@ -31,19 +33,19 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P065 | RFC-007 carries `stories: []` — no story map, no story, no reason     | Low (4)      | Open          | S      | 2026-07-26 | internal |
 | 4.0  | P089 | No file-length lint rule; two source files past 1000 lines            | Low (4)      | Open          | S      | 2026-08-07 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap       | Medium (8)   | Open          | M      | 2026-07-21 | internal |
-| 4.0  | P007 | Exact street address ranked below sub-units (REOPENED)                | High (16)    | Known Error   | L      | 2026-04-12 | internal |
-| 4.0  | P074 | P007 street-level-first unfixed for ~50% of sub-unit addresses        | High (16)    | Open          | L      | 2026-07-31 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented        | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set       | Medium (8)   | Open          | M      | 2026-08-02 | internal |
+| 4.0  | P094 | Published package with geo enabled is tested by nothing               | Medium (8)   | Open          | M      | 2026-08-08 | internal |
 | 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open          | M      | 2026-07-30 | internal |
-| 3.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | Medium (6)   | Open          | M      | 2026-04-28 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open          | M      | 2026-07-16 | internal |
 | 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them   | Medium (6)   | Open          | M      | 2026-08-07 | internal |
+| 3.0  | P092 | CHANGELOG erratum from the P074 changeset                             | Low (3)      | Open          | S      | 2026-08-08 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |
+| 2.0  | P093 | analyze-context Step 0 halts on a repo-relative path                  | Low (4)      | Open          | M      | 2026-08-08 | internal |
 | 1.0  | P046 | wr-architect oversight-marker discipline blocks multi-agent confirms  | Very Low (2) | Open          | M      | 2026-07-08 | internal |
 
 ## Verification Queue

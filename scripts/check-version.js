@@ -1,6 +1,13 @@
 #!/usr/bin/env node
-const { satisfies } = require('semver');
-const { engines } = require('../package');
+import { readFileSync } from 'node:fs';
+import { satisfies } from 'semver';
+
+// Read rather than `import ... with { type: 'json' }`: this file ships to
+// consumers and runs on postinstall, so it must load on the widest range of
+// node this package supports, not just the newest.
+const { engines } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
 
 const version = engines.node;
 if (!satisfies(process.version, version)) {

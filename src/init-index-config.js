@@ -20,11 +20,16 @@ const logError = debug('error');
 // ADR-041 / P069: index analysis config + synonym building.
 //
 // This lives here, in clean ESM, so a behavioural test can build the EXACT
-// settings production uses instead of duplicating them. client/elasticsearch.js
-// and service/address-service.js are both babel-only (they mix require() with
-// import) and cannot be loaded by a raw Node ESM test — the same P033
+// settings production uses instead of duplicating them.
+//
+// HISTORICAL REASON, NOW LIFTED. This was extracted because
+// client/elasticsearch.js and service/address-service.js mixed require() with
+// import and could not be loaded by a raw Node ESM test — the same P033
 // constraint that forced the service/gnaf-package-fetch.js and
-// utils/stream-down.js extractions.
+// utils/stream-down.js extractions. The codebase went native ESM on
+// 2026-08-08 and both files import cleanly now. This module stays because a
+// single source for the index settings is worth having regardless: production
+// and the tests build them from the same code rather than from two copies.
 //
 // The emitted JSON is OpenSearch-shaped on purpose. It is NOT a backend-neutral
 // analyzer DSL: ADR-021 records that no backend abstraction layer exists yet,

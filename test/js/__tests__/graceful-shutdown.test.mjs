@@ -212,7 +212,7 @@ describe('server entry point wiring (src/server2.js)', () => {
     const source = await readFile(server2Path, 'utf8');
     assert.match(
       source,
-      /import\s*\{[^}]*installShutdownHandlers[^}]*\}\s*from\s*'\.\/graceful-shutdown'/,
+      /import\s*\{[^}]*installShutdownHandlers[^}]*\}\s*from\s*'\.\/graceful-shutdown(\.js)?'/,
       'server2.js must import installShutdownHandlers',
     );
     assert.match(

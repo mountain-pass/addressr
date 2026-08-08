@@ -117,7 +117,7 @@ describe('startRest2Server — read-shadow startup validator (ADR 031)', () => {
     const source = await readFile(serverPath, 'utf8');
     assert.match(
       source,
-      /import\s+\{[^}]*validateReadShadowConfig[^}]*\}\s+from\s+['"]\.\/read-shadow['"]/,
+      /import\s+\{[^}]*validateReadShadowConfig[^}]*\}\s+from\s+['"]\.\/read-shadow(\.js)?['"]/,
       'src/waycharter-server.js must import validateReadShadowConfig from ./read-shadow',
     );
   });
@@ -150,7 +150,7 @@ describe('startRest2Server — /debug/shadow-config endpoint (P035)', () => {
     const source = await readFile(serverPath, 'utf8');
     assert.match(
       source,
-      /import\s+\{[^}]*getShadowStatus[^}]*\}\s+from\s+['"]\.\/read-shadow['"]/,
+      /import\s+\{[^}]*getShadowStatus[^}]*\}\s+from\s+['"]\.\/read-shadow(\.js)?['"]/,
       'src/waycharter-server.js must import getShadowStatus from ./read-shadow',
     );
   });

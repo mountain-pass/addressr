@@ -28,7 +28,7 @@ The project needs task orchestration for build, version, and publish steps with 
 
 ## Decision Outcome
 
-**Option 1: Turborepo.** Defines `build`, `ci:version`, `ci:publish` tasks in `turbo.json` with dependency chains. Currently a devDependency.
+**Option 1: Turborepo.** Defines `ci:version` and `ci:publish` tasks in `turbo.json` with dependency chains. Currently a devDependency. (It also defined a `build` task when this was written; that task and the Babel build behind it were removed by [ADR-044](044-native-esm-without-a-build-step.proposed.md) — the source is now the artifact, so there is nothing to order before publish.)
 
 ### Consequences
 
@@ -39,7 +39,7 @@ The project needs task orchestration for build, version, and publish steps with 
 
 ### Confirmation
 
-- `turbo.json` exists with task definitions
+- `turbo.json` defines exactly the tasks that have backing npm scripts — today `ci:version` and `ci:publish` — and no npm script invokes a turbo task absent from it. The previous wording ("exists with task definitions") passed on any non-empty `tasks` object, which is how a `turbo:build` script survived the removal of the `build` task it invoked (ADR-044)
 - `turbo:ci:version` and `turbo:ci:publish` scripts in package.json
 - `release.yml` uses turbo scripts for publishing
 

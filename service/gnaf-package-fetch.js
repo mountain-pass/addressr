@@ -1,10 +1,13 @@
 // @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 //
 // Extracted from service/address-service.js so the loader's data.gov.au CKAN
-// fetch is testable behaviourally. service/address-service.js uses babel-only
-// bare imports that raw Node ESM cannot resolve; this module uses clean ESM
-// with `.js` extensions throughout, so behavioural tests can import it
-// directly. See P033 for the source-inspection anti-pattern this avoids.
+// fetch is testable behaviourally.
+//
+// HISTORICAL REASON, NOW LIFTED: address-service.js used extension-less
+// relative imports that raw Node ESM could not resolve. The codebase went
+// native ESM on 2026-08-08 and it imports cleanly now. This module stays
+// because the CKAN fetch is a network boundary worth isolating. See P033 for
+// the source-inspection anti-pattern this avoids.
 //
 // fetchPackageData accepts `fetch` and `cache` via dependency injection, with
 // defaults to globalThis.fetch and a Keyv-file cache backed by
@@ -105,7 +108,7 @@ const defaultCache = new Keyv({
  * @returns {Promise<{ body: string, headers: Record<string, string> }>}
  */
 export async function fetchPackageData({
-  fetch: fetchFunction = globalThis.fetch,
+  fetch: fetchFunction = fetch,
   cache = defaultCache,
 } = {}) {
   const packageUrl = GNAF_PACKAGE_URL;

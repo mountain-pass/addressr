@@ -1,7 +1,7 @@
 import { waychaser } from '@mountainpass/waychaser';
 import { inject } from 'light-my-request';
-import { buildRest2App } from '../../../src/waycharter-server';
-import { AddressrRest2Driver } from './AddressrRest2Driver';
+import { buildRest2App } from '../../../src/waycharter-server.js';
+import { AddressrRest2Driver } from './AddressrRest2Driver.js';
 
 // Adapt light-my-request's response to the minimal WHATWG-fetch Response shape
 // @mountainpass/waychaser consumes (headers.get, text(), status, ok, url).
@@ -30,7 +30,7 @@ function injectFetch(app) {
       ok: response.statusCode >= 200 && response.statusCode < 300,
       redirected: false,
       type: 'basic',
-      url: requestUrl.toString(),
+      url: requestUrl.href,
       headers: {
         get(name) {
           return headers.get(name.toLowerCase());

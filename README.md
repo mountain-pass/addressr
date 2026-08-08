@@ -209,7 +209,7 @@ cache, so mount one; unlike the server, it cannot run with `--read-only`:
 ```sh
 docker run -v "$PWD/target:/home/nonroot/target" -e ELASTIC_HOST=host.docker.internal \
   ghcr.io/mountain-pass/addressr \
-  /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
+  /opt/addressr/lib/node_modules/@mountainpass/addressr/bin/addressr-loader.js
 ```
 
 There is no shell in the image, so `docker exec ... sh` will not work. Diagnose with `docker logs`,

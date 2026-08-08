@@ -1,6 +1,5 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import babelParser from '@babel/eslint-parser';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import pluginSecurity from 'eslint-plugin-security';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
@@ -35,11 +34,12 @@ export default [
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
-      parser: babelParser,
-      parserOptions: {
-        sourceType: 'module',
-        requireConfigFile: false,
-      },
+      // Default parser (espree). @babel/eslint-parser was needed only because
+      // the source was compiled by Babel; the source is native ESM now, and
+      // `requireConfigFile: false` existed purely to stop that parser hunting
+      // for a .babelrc that no longer exists.
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         ...globals.node,
         Promise: true,
@@ -107,14 +107,16 @@ export default [
       ],
       'max-depth': ['warn', 4],
       'max-params': ['warn', 4],
-      'n/hashbang': [
-        'error',
-        {
-          convertPath: {
-            'bin/**/*.js': [String.raw`^bin/(.+?)\.js$`, 'lib/bin/$1.js'],
-          },
-        },
-      ],
+      // n/hashbang decides "does this file need a shebang?" by checking whether
+      // package.json's `bin` names it. It used to need a convertPath mapping
+      // bin/x.js -> lib/bin/x.js, because `bin` pointed into the Babel build
+      // output. ADR-044 retired that build and `bin` now names these files
+      // directly, so the mapping made both published entry points look
+      // unpublished — and this rule's AUTOFIX REMOVES the shebang, with
+      // lint-staged running `eslint --fix` on every staged *.js. Stripping it
+      // breaks `addressr-server-2`, which is how the EB bundle starts the
+      // server and how the quarterly loader cron invokes the published package.
+      'n/hashbang': 'error',
     },
   },
   {
@@ -128,12 +130,13 @@ export default [
   },
   {
     files: ['scripts/check-version.js'],
-    languageOptions: {
-      parserOptions: {
-        sourceType: 'script',
-      },
-    },
     rules: {
+      // Load-bearing, do not remove: this file SHIPS (it is a package.json
+      // `files` entry) and postinstall runs it through `sh`, but it is not a
+      // `bin` entry — so n/hashbang classifies it as needing no shebang and its
+      // autofix would strip one. The `parserOptions.sourceType: 'script'` that
+      // used to sit alongside this is gone: the file is ESM, and ADR-044's
+      // `"type": "module"` makes that unambiguous.
       'n/hashbang': 'off',
     },
   },

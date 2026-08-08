@@ -1,7 +1,7 @@
 import debug from 'debug';
-import { esConnect } from './client/elasticsearch';
-import { loadGnaf } from './service/address-service';
-import { printVersion } from './service/print-version';
+import { esConnect } from './client/elasticsearch.js';
+import { loadGnaf } from './service/address-service.js';
+import { printVersion } from './service/print-version.js';
 const logger = debug('api');
 const error = debug('error');
 
@@ -10,6 +10,11 @@ if (process.env.DEBUG == undefined) {
 }
 
 const start = process.hrtime();
+/* eslint-disable unicorn/prefer-await -- This is a top-level entry-point chain, not
+   a function body. Converting it to `await` at module top level changes when the
+   process settles and how an unhandled rejection surfaces on a CLI whose exit
+   code is its contract, for no behavioural gain. The `.catch` at the end is the
+   process's error handler. Tracked on P084. */
 esConnect()
   .then(() => {
     return logger('es client connected');
@@ -36,3 +41,4 @@ esConnect()
     error('error loading data', error_);
     throw error_;
   });
+/* eslint-enable unicorn/prefer-await */

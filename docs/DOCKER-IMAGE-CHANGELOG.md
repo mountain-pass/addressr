@@ -15,6 +15,24 @@ rebuild.
 
 ## Unpublished
 
+### Package layout moved: `lib/bin/` → `bin/`
+
+**If you override `CMD` or run the loader with an explicit path, that path has changed.** The
+package no longer ships a transpiled `lib/` directory — it ships its source directly
+([ADR 044](decisions/044-native-esm-without-a-build-step.proposed.md)) — so the `lib/` segment is
+gone from every path inside the installed package:
+
+|        |                                                                                    |
+| ------ | ---------------------------------------------------------------------------------- |
+| Before | `/opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js` |
+| After  | `/opt/addressr/lib/node_modules/@mountainpass/addressr/bin/addressr-loader.js`     |
+
+The first `lib/` is npm's global install prefix and is unchanged; it is the second one that goes.
+
+Nothing else about running the image changes. The default `CMD` is updated in the image itself, so
+`docker run ghcr.io/mountain-pass/addressr` needs no change, and the loader invocation documented
+below is already corrected. Only a command you wrote yourself against the old path is affected.
+
 The next publish carries the **registry move to GHCR** (below) plus the **Distroless runtime** entry
 that follows it. The `Docker Image` CI workflow builds the image, smoke-tests it (starts, answers
 `/health`, runs as the Distroless nonroot uid, stops on `SIGTERM`), and publishes to
@@ -53,7 +71,7 @@ userland from the image's CVE surface. It still runs as a non-root user and stil
 
   ```sh
   docker run -v "$PWD/target:/home/nonroot/target" ghcr.io/mountain-pass/addressr \
-    /opt/addressr/lib/node_modules/@mountainpass/addressr/lib/bin/addressr-loader.js
+    /opt/addressr/lib/node_modules/@mountainpass/addressr/bin/addressr-loader.js
   ```
 
   in place of `docker run mountainpass/addressr addressr-loader`. The loader needs a writable

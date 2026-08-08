@@ -1,5 +1,7 @@
-const waitPort = require('wait-port');
-const elasticsearch = require('@opensearch-project/opensearch');
+import waitPort from 'wait-port';
+// Named import, matching src/read-shadow.js — the form the package's own
+// ESM wrapper exports explicitly, and the one already proven under raw Node ESM.
+import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import debug from 'debug';
 import { buildClientNode } from '../src/client-node-url.js';
 import {
@@ -237,12 +239,13 @@ export async function esConnect(
               node,
               region: ELASTIC_REGION,
             });
-            const esClient = new elasticsearch.Client(esClientOptions);
+            const esClient = new OpenSearchClient(esClientOptions);
             logger(
               `connecting elastic search client on ${eshost}:${esport}...`,
             );
             await esClient.ping();
             logger(`...connected to ${eshost}:${esport}`);
+            // eslint-disable-next-line unicorn/no-global-object-property-assignment -- pre-existing: `globalThis.esClient` is how the OpenSearch client is shared with step definitions and the shutdown path. Rewiring it is a change to how the app shares state, not part of the module-system migration. Tracked on P084.
             globalThis.esClient = esClient;
             return esClient;
           } catch (error_) {

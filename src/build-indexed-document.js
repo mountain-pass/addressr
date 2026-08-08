@@ -3,9 +3,13 @@
 // Two steps of the indexing path, extracted from `service/address-service.js`
 // into clean ESM so behavioural tests can execute them instead of regex-matching
 // their source (P033). Same reason and same shape as `src/build-search-body.js`
-// and `src/init-index-config.js`: the service file is babel-only and cannot be
-// imported by raw Node ESM, so anything left inside it can only be asserted as
-// text.
+// and `src/init-index-config.js`.
+//
+// HISTORICAL REASON, NOW LIFTED: the service file could not be imported by raw
+// Node ESM, so anything left inside it could only be asserted as text. The
+// codebase went native ESM on 2026-08-08 and it imports cleanly now. This
+// module stays because assembly is worth isolating on its own — see the
+// paragraph below on what a test of the assembly site would have caught.
 //
 // WHY THIS PARTICULAR CODE. `sla_range_expanded` was generated correctly and
 // then assembled into the wrong place, so it is populated on 0 of 16.9M

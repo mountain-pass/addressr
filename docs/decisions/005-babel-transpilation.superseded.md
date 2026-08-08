@@ -1,7 +1,7 @@
 ---
 human-oversight: confirmed
 oversight-date: 2026-07-18
-status: accepted
+status: superseded
 date: 2019-01-01
 decision-makers: [Tom Howard]
 consulted: []
@@ -9,6 +9,10 @@ informed: []
 ---
 
 # ADR 005: Babel Transpilation for ES Module Support
+
+> **Superseded by [ADR-044](044-native-esm-without-a-build-step.proposed.md) (Native ESM without a build step), 2026-08-08.**
+>
+> This decision's premise — _"Node.js historically required CommonJS"_ — expired. Its own Reassessment Criterion 1 (_"Node.js 22 is now the minimum version — native ESM is fully supported"_) had already fired, and its Consequences already recorded the debt: _"Babel is unnecessary."_ Babel, `.babelrc`, the `build` script and the `lib/` output are all removed. Retained for historical context.
 
 ## Context and Problem Statement
 

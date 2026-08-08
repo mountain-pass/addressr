@@ -41,10 +41,10 @@ import {
   dropIndex as dropESIndex,
   initLocalityIndex,
   ES_LOCALITY_INDEX_NAME,
-} from '../client/elasticsearch';
-import download from '../utils/stream-down';
-import { setLinkOptions } from './set-link-options';
-import { fetchPackageData, selectGnafResource } from './gnaf-package-fetch';
+} from '../client/elasticsearch.js';
+import download from '../utils/stream-down.js';
+import { setLinkOptions } from './set-link-options.js';
+import { fetchPackageData, selectGnafResource } from './gnaf-package-fetch.js';
 import { buildSynonyms } from '../src/init-index-config.js';
 import { buildAddressSearchBody } from '../src/build-search-body.js';
 import {
@@ -52,10 +52,10 @@ import {
   detailFileState,
   matchesCoveredStatePrefix,
   hasNoCoveredDetailMatch,
-} from './covered-states';
-import { mirrorRequest } from '../src/read-shadow';
+} from './covered-states.js';
+import { mirrorRequest } from '../src/read-shadow.js';
 import crypto from 'node:crypto';
-import { findGnafDirectory } from './gnaf-directory';
+import { findGnafDirectory } from './gnaf-directory.js';
 
 const fsp = fs.promises;
 
@@ -84,7 +84,9 @@ export async function clearAddresses() {
 
 // fetchPackageData and the GNAF_PACKAGE_URL constant moved to
 // ./gnaf-package-fetch.js so the data.gov.au CKAN fetch is testable in
-// raw Node ESM (this file uses babel-only bare imports). See P033 for the
+// raw Node ESM. (That constraint — this file using extension-less imports raw
+// Node ESM could not resolve — was lifted on 2026-08-08 when the codebase went
+// native ESM; the extraction stands on its own.) See P033 for the
 // source-inspection anti-pattern that motivated the extraction. The new
 // module also adds a Mozilla-prefixed compatible-mode User-Agent header
 // required by data.gov.au's CloudFront WAF (without it, fetch returns
@@ -750,8 +752,8 @@ export function mapAddressDetails(d, context, index, count) {
   }
   // ADR 026 / ADR 028: endpoint aliases for range-numbered addresses.
   // Extracted to src/build-indexed-document.js so it can be executed by a test
-  // rather than regex-matched in this file's source (P033) — this file is
-  // babel-only and cannot be imported by raw Node ESM.
+  // rather than regex-matched in this file's source (P033). The reason this
+  // file could not be imported by raw Node ESM was lifted on 2026-08-08.
   attachRangeAliases(rval);
 
   if (count) {
@@ -1180,10 +1182,11 @@ async function getStateName(abbr, file) {
 
 // ADR-041 / P069: mapAuthCodeTableToSynonymList and buildSynonyms moved to
 // src/init-index-config.js (clean ESM) so the equivalent-form rules are emitted
-// directly from {CODE, NAME} records and are testable in raw Node ESM. This
-// file is babel-only, so anything defined here is unreachable from a test.
+// directly from {CODE, NAME} records and are testable in raw Node ESM. When
+// that was written this file could not be imported by a raw Node ESM test at
+// all; the codebase went native ESM on 2026-08-08 and it can be now.
 
-const { readdir } = require('node:fs').promises;
+const { readdir } = fs.promises;
 
 async function getFiles(currentDirectory, baseDirectory) {
   const directory = path.resolve(baseDirectory, currentDirectory);
