@@ -94,6 +94,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
+
+  **This entry's citation holds** — the count moved, not the ownership, and nothing here restates the cardinal. Recorded because R021 and R020 both took body edits at their count sites, so the fence correctly required their referrers in the same commit. Under the widened fence this bullet does not propagate further.
+
 - 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — the maintainer chose to harden the axis's per-disjunct preconditions rather than add a plan-approval gate or accept above appetite, and the second precondition (`source_hash` over the deployment bundle's manifest) landed with it. **This entry's citation holds**: this entry cites R021 as a distinction — who can start an apply, versus what one does once running, and none of that is reached by a treatment choice. Recorded because R021's Treatment and Controls both took body edits, so the fence correctly required its referrers in the same commit.
 
   Worth noting rather than leaving implicit: **R021's residual did not move.** It stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan. A reader arriving here from this entry should not infer that the hardening closed the gap — it strengthened the Controls section and left the score alone.

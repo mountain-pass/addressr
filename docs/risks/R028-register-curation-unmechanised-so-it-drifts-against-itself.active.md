@@ -112,6 +112,10 @@ Still deliberately **not** treated by a general prose checker. That reasoning st
 
 ## Change Log
 
+- 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
+
+  **This entry's citation holds** — the count moved, not the ownership, and nothing here restates the cardinal. Recorded because R021 and R020 both took body edits at their count sites, so the fence correctly required their referrers in the same commit. Under the widened fence this bullet does not propagate further.
+
 - 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — preconditions hardened rather than a plan gate added or the residual accepted — and the `source_hash` control that landed with it. **This entry's citation holds**: the R021 references here are the canonical apply-count cell and dated records of this batch's own drift, none of which a treatment choice reaches. **R021's residual did not move**: it stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan.
 
 - 2026-08-09: **The review fence was widened to committed history, and the reason is that its remedy has no fixed point.** The R021 re-rate batch turned trunk red on this check. R008 and R022 took Change-Log-only edits; committed, `git log -1` dated those as moves and flagged R009 and R027. Writing the prescribed verification bullets in those two, and committing them, flagged R007, R008 and this entry — all already inside the batch.

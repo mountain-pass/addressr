@@ -86,6 +86,10 @@ The rule belongs in the scorer agent rather than `RISK-POLICY.md`: `/wr-risk-sco
 
 ## Change Log
 
+- 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
+
+  **This entry's citation holds** — the count moved, not the ownership, and nothing here restates the cardinal. Recorded because R021 and R020 both took body edits at their count sites, so the fence correctly required their referrers in the same commit. Under the widened fence this bullet does not propagate further.
+
 - 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — preconditions hardened rather than a plan gate added or the residual accepted — and the `source_hash` control that landed with it. **This entry's citation holds**: this entry cites R022 for its title-versus-class rescue and does not depend on R021's treatment; the R021 token here sits in a dated verification bullet. **R021's residual did not move**: it stays at 10 and above appetite, because Impact is fixed at 5 while nothing on that path reviews the plan.
 
 - 2026-08-09: Re-verified against R022's 2026-08-09 bullet, itself a verification confirming its citations of R021 and R020 hold after R021's re-rate. **This entry's citation of R022 is untouched**, and structurally so: it cites R022 for its _title-versus-class_ rescue, a fact about R022's own history that later movement cannot revise. The same reasoning the 2026-08-05 bullet below gives, and it has not weakened.

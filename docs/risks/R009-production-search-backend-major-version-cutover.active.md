@@ -86,6 +86,10 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
+
+  **This entry's citation holds** — the count moved, not the ownership, and nothing here restates the cardinal. Recorded because R021 and R020 both took body edits at their count sites, so the fence correctly required their referrers in the same commit. Under the widened fence this bullet does not propagate further.
+
 - 2026-08-09 (second entry today): Re-verified against R007's body edit, which corrected its description of R021's treatment after the maintainer chose one. **This entry's citation of R007 holds** — it is a not-consolidated distinction about the provision phase versus the cutover event, which no treatment choice reaches. One hop out, and it terminates here: this bullet edits nothing outside a Change Log, so under the widened fence it does not make this entry a moved target in turn.
 
 - 2026-08-09: Re-verified against R008's 2026-08-09 bullet, which was itself a verification bullet confirming its citation of R028 holds. **This entry's Siblings distinction is untouched** — R008 is the same cutover event seen through the relevance gap rather than the concurrency one, and no Change Log activity in either entry can reach a distinction.
