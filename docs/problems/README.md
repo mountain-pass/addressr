@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-08 **P095 known error** — the deploy now resolves its version from the registry rather than the job workspace; ADR-040 amended and its fired reassessment criterion discharged.
+> Last reviewed: 2026-08-09 **P094 known error** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -17,6 +17,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them            | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it           | Medium (8)   | Open          | S      | 2026-08-05 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase                | High (16)    | Open          | M      | 2026-04-28 | internal |
+| 8.0  | P094 | Published package with geo enabled is tested by nothing                     | Medium (8)   | Known Error   | M      | 2026-08-08 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`            | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out                 | Medium (6)   | Open          | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                 | High (12)    | Open          | M      | 2026-08-01 | internal |
@@ -36,7 +37,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap             | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented              | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set             | Medium (8)   | Open          | M      | 2026-08-02 | internal |
-| 4.0  | P094 | Published package with geo enabled is tested by nothing                     | Medium (8)   | Open          | M      | 2026-08-08 | internal |
 | 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits              | Medium (6)   | Open          | M      | 2026-07-30 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check               | Medium (6)   | Open          | M      | 2026-07-16 | internal |
 | 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address              | Medium (9)   | Open          | M      | 2026-07-31 | internal |

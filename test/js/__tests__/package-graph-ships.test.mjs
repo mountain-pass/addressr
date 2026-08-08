@@ -27,15 +27,30 @@
 // the need for a separate does-this-file-exist check: an unresolvable import
 // fails the build.
 //
-// WHAT THIS GUARDS THAT NOTHING ELSE DOES. Production runs the loader with
-// `ADDRESSR_ENABLE_GEO=1` against the PUBLISHED PACKAGE. `test:nodejs:geo` is
-// source-plus-geo; `test:cli2:nogeo` is package-minus-geo. The pair production
-// actually runs is exercised by neither, and `test:cli2:geo` is in no script
-// chain. Wiring that up is real work and is ticketed separately — but the way
-// that gap can actually bite reduces to a module reachable only on the geo
-// branch being absent from the tarball, because geo DATA comes from the G-NAF
-// dataset rather than from package files. That residue is static, and this is
-// it, in milliseconds instead of an 8GiB CI leg.
+// WHAT SURVIVES NOW THAT THE GEO DIAGONAL IS WIRED. This paragraph used to say
+// `test:cli2:geo` was in no script chain, and that this file was the only cover
+// for the packaged-plus-geo pair production actually runs. P094 wired that leg
+// into `test:geo`, and `release.yml` gates publish on it, so the claim is no
+// longer true and the sole-cover justification is gone.
+//
+// Three things it still does that the wired leg does not:
+//
+//   1. It fails in MILLISECONDS and before the fact. The cli2 leg reaches a
+//      missing module only after installing the package globally, loading G-NAF
+//      into OpenSearch and booting a server — so the same defect costs an 8GiB
+//      CI leg to surface, on the far side of the slowest thing in the pipeline.
+//   2. It NAMES THE MISSING MODULE. Through the cli2 leg the same defect
+//      arrives as a step failure or a dead port, and `waitport` cannot say why.
+//   3. It runs WHERE NO CUCUMBER TIER CAN. `test:js` is what the `engine-floor`
+//      job runs on Node 22.7, and it is in the pre-commit hook. Both cucumber
+//      files skip themselves below 22.12 because cucumber's own config loader
+//      cannot load there — so on the declared engine floor this is the only
+//      instrument covering the graph at all.
+//
+// The geo-specific reasoning it rested on still holds and is worth keeping: the
+// way that gap can bite reduces to a module reachable only on the geo branch
+// being absent from the tarball, because geo DATA comes from the G-NAF dataset
+// rather than from package files.
 //
 // Before ADR-044 the property held by accident: `files` listed `lib/` and
 // `babel . -d lib` compiled the whole tree into it, so everything shipped

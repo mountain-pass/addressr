@@ -174,3 +174,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-07 **P090 captured** — the decisions compendium's counts and Related lines are hand-maintained with no test behind them; two defects landed the same day (a stale in-force count, and a phantom `ADR-074` mis-derived from P074) and both were found by risk review rather than any gate. Also this session: ADR-042 recorded the anchored-phrase decision for the P007/P074 ranking fix, ADR-025 gained the corpus-scale reassessment criterion whose absence let the defect survive two closures, and P089 captured the missing file-length lint rule. (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-08 **P095 opened** — the push-tier deploy axis deploys the unpublished NEXT version while a release PR is open; realised in production (run 31252424980), EB rolled back, production never stopped serving.
+
+> Last reviewed: 2026-08-08 **P095 known error** — the deploy now resolves its version from the registry rather than the job workspace; ADR-040 amended and its fired reassessment criterion discharged.

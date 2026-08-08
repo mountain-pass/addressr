@@ -20,7 +20,35 @@ const ELASTIC_REGION = process.env.ELASTIC_REGION || 'ap-southeast-2';
 const logger = debug('api');
 const error = debug('error');
 
-const ES_INDEX_NAME = process.env.ES_INDEX_NAME || 'addressr';
+// FAIL LOUD UNDER TEST, default only in production (P094).
+//
+// The bare `|| 'addressr'` fallback is correct for a real deployment: an
+// operator who sets nothing gets the production index. Under a test profile it
+// is the sharpest edge in the harness — ES_INDEX_NAME is assembled across
+// nearly twenty npm script strings (`start:*`, `pretest:*`, `dotest:*`,
+// `test:*`), and if any of them drops it the server does not error. Deliberately
+// not an exact count: it is a number that rots, and the guard does not depend on
+// it. It silently points at the PRODUCTION
+// index name, and `waitport` in test/js/world.js waits on the TCP port only, so
+// nothing downstream notices. A release now gates on those chains.
+//
+// TEST_PROFILE is set by every cucumber tier and by nothing else, so this
+// discriminates the two cases exactly.
+function resolveIndexName() {
+  const configured = process.env.ES_INDEX_NAME;
+  if (configured) return configured;
+  if (process.env.TEST_PROFILE) {
+    throw new Error(
+      'ES_INDEX_NAME is unset under TEST_PROFILE=' +
+        process.env.TEST_PROFILE +
+        ". Refusing to fall back to the production index name 'addressr'. " +
+        'The packaged test chains set this across several npm scripts; one of them has dropped it.',
+    );
+  }
+  return 'addressr';
+}
+
+const ES_INDEX_NAME = resolveIndexName();
 export const ES_LOCALITY_INDEX_NAME = `${ES_INDEX_NAME}-localities`;
 export const ELASTIC_PORT = Number.parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';

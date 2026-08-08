@@ -1,6 +1,6 @@
 # Problem 094: The configuration production actually runs — published package with geo enabled — is tested by nothing
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-08-08
 **Priority**: 8 (Medium) — Impact: Significant (4) × Likelihood: Unlikely (2). Impact 4: a defect reachable only on this pair reaches the live API and the loader that writes the index; per `RISK-POLICY.md` that is "installs or starts but fails for a subset of operations". Likelihood 2: the two axes are covered separately and the module graph is shared, so the residue is narrow — see Root Cause.
 **Origin**: internal — surfaced by the risk gate during the native-ESM migration (ADR-044)
@@ -30,7 +30,7 @@ Two things kept it invisible.
 
 **The pair was cheap to cover before it wasn't.** Until ADR-044 the published package was the Babel build output, `files` listed `lib/`, and `babel . -d lib` compiled the entire tree into it — so "is the module in the package?" could not be answered wrongly, because everything was. With `files` now an explicit list of source directories, a module reachable only on the geo branch could legitimately be missing.
 
-**And `test:cli2:geo` looks like coverage.** It exists, it is correctly named, and it is complete. A reader scanning `package.json` would reasonably conclude the pair is tested. It is reachable from no chain, which is [P033](033-source-inspection-tests-anti-pattern.md)'s reviewer-trap shape wearing an npm script instead of a test name.
+**And `test:cli2:geo` looks like coverage.** It exists, it is correctly named, and it is complete. A reader scanning `package.json` would reasonably conclude the pair is tested. It is reachable from no chain, which is [P033](../open/033-source-inspection-tests-anti-pattern.md)'s reviewer-trap shape wearing an npm script instead of a test name.
 
 ### The residue is narrower than the table suggests
 
@@ -69,6 +69,30 @@ Two ways to settle it, and they are different sizes:
 
 Worth resolving before the next release rather than after: `engines` is published metadata and consumers act on it.
 
+## Fix Strategy
+
+**Wired 2026-08-09.** `test:geo` now runs `test:nodejs:geo` then `test:cli2:geo`, and `release.yml`'s `build-and-test` already invokes `npm run test:geo` on both OpenSearch matrix legs, with `release` holding on `needs: [build-and-test, engine-floor]`. So the diagonal is a genuine pre-publish gate rather than post-hoc detection — which is what this ticket said was the only shape that closes it.
+
+Both defects in the unwired script are fixed first, and a third that would have made the fix silently useless:
+
+- **Index collision.** The three `cli2:geo` sites move from `test` to `test-geo`. But `start:server2:preinstalled` also **hardcoded** `ES_INDEX_NAME=test`, so fixing only the geo scripts would have left the loader writing `test-geo` while the server read `test`. That hardcode is removed and the script now inherits from its caller; both callers already set the variable, so the nogeo path is unchanged in value. There is no case for a separate `:geo` variant — `ADDRESSR_ENABLE_GEO` is read at exactly one site in the tree, inside the **loader**, so a geo server script would differ from its sibling in zero variables.
+- **Missing heap.** `pretest:cli2:geo` gains the `--max_old_space_size=8196` its packaged-geo sibling already carries.
+
+Kept in `build-and-test` rather than a new job: that job already has the OpenSearch matrix, the G-NAF cache and the OT fixture prep, and a separate job would either duplicate the matrix or drop a leg.
+
+**Verified**: `npm run test:geo` chained — 38 then 34 scenarios, all passing; `npm run test:nogeo` unaffected at 37 / 38 / 33.
+
+### What this gate actually detects, stated because it is thinner than it looks
+
+`@geo` is a **single scenario** across the whole feature set. That one scenario is the only thing distinguishing the geo run from the nogeo run at the assertion level; everything else the geo leg buys comes from the **loader executing its geo branch**, not from test selection. If that scenario is ever tagged out or deleted, the geo legs silently become duplicates of the nogeo legs and this gate stops detecting anything. Worth knowing before trusting it.
+
+Two decision records move as a result:
+
+- [ADR-009](../../decisions/009-cucumber-bdd-testing.accepted.md) records as a _Bad_ consequence that "CI only runs 3 of 10 combinations". This retires part of that — it is now 4.
+- [ADR-029](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) carries a confirmation criterion requiring "both `test:nogeo` and `test:geo` scopes" to pass. That criterion was assessed when `test:geo` meant one profile; it now means two. Strictly stronger, so the tick still holds, but the referent widened — noted there so a future reader does not over-read it.
+
+**One measurement that had to come first.** My original hand-run of `test:cli2:geo` for the 3.1.0 release was under `--no-strict` (a bare `npm run test:cli2:geo` leaves `NO_STRICT` unset, and cucumber then does not fail on undefined or pending steps), so 34 green did not prove step coverage. Re-run as `NO_STRICT=' ' npm run test:cli2:geo`: still 34 / 217, so the coverage is real. Wiring it without that check would have risked discovering undefined steps as a red master.
+
 ## Workaround
 
 `test/js/__tests__/package-graph-ships.test.mjs` covers the packaging half — the part of this gap the ESM migration created. The behavioural half is uncovered.
@@ -82,7 +106,7 @@ Worth resolving before the next release rather than after: `engines` is publishe
 ## Dependencies
 
 - **Blocked by**: (none)
-- **Composes with**: [P033](033-source-inspection-tests-anti-pattern.md) — the in-no-chain script is the same false-coverage shape as a test named after a feature it does not exercise.
+- **Composes with**: [P033](../open/033-source-inspection-tests-anti-pattern.md) — the in-no-chain script is the same false-coverage shape as a test named after a feature it does not exercise.
 
 ## Related
 
