@@ -28,7 +28,7 @@ Make the addressr-loader's `COVERED_STATES` env-var filter case-insensitive and 
 
 ## Scope
 
-Fix in `service/address-service.js` (published in the npm package via the Babel `lib/` build):
+Fix in `service/address-service.js` (published in the npm package directly from source — ADR 044 retired the Babel `lib/` build this line used to name, on 2026-08-08):
 
 1. Normalise entries at parse time in `getCoveredStates()`: `covered.split(',').map((s) => s.trim().toUpperCase())`. Empty `COVERED_STATES` still returns `[]` (no filtering — behaviour preserved).
 2. Uppercase the other side at the three comparison sites (file-prefix match ~line 1349; `COVERED_STATES.includes(state)` membership checks ~lines 1382 and 1445) so the filter is fully case-insensitive regardless of dataset filename casing.

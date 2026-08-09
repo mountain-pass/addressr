@@ -597,7 +597,10 @@ This ADR's outcome is satisfied when:
   (1), unknown-method rejection (1). All run via `npm run test:js` and via
   the pre-commit hook.
 - `service/address-service.js` calls `mirrorRequest` after the `searchForAddress`
-  and `getAddress` primary client calls, without await.
+  primary client call, without await. (Corrected 2026-08-09: this criterion also
+  named `getAddress`. It does not mirror — `mirrorRequest` appears once in the
+  module, inside `searchForAddress`. The criterion asserted a call site that has
+  never existed.)
 - `src/waycharter-server.js` calls `validateReadShadowConfig()` at startup.
   (Amended 2026-07-17 per ADR-036: the v1 `swagger.js` call site is dropped
   with the v1 removal; only the v2 server validates read-shadow config.)

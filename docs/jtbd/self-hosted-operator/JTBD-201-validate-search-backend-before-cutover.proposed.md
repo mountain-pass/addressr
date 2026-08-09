@@ -48,7 +48,7 @@ When the warming capability is enabled in production, I want the consumer-facing
 
 ## Related
 
-- ADR 031 (Read-shadow for search-backend migrations) — the implementation of this job.
+- ADR 031 (Read-shadow for search-backend migrations) — the implementation of this job. **Scope correction 2026-08-09**: ADR 031's Confirmation criterion claimed `mirrorRequest` is called after both the `searchForAddress` AND `getAddress` primary client calls. It is called once, inside `searchForAddress`; `getAddress` has never mirrored. So the RETRIEVE path (`/addresses/{id}`) does not warm, and this job's statement above — "the post-cutover p95 matches the pre-cutover p95 and consumers see no measurable latency change" — is delivered for the search path only. Recorded as an accepted gap rather than silently scoped: the soak gate's coverage criterion is silent about a path this job names, and JTBD-003, bound below as an inviolate latency budget, screens only that unwarmed path.
 - ADR 029 (Two-phase blue/green OpenSearch upgrade) — drives the immediate need; cutover step 7 is gated on this job's soak criterion.
 - JTBD-001 (Search and Autocomplete Addresses) — latency-budget constraint on the primary path.
 - JTBD-003 (Geocode Addresses to Coordinates) — latency-budget constraint on the primary path.

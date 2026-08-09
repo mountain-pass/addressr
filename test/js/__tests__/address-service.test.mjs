@@ -7,16 +7,22 @@ import { buildAddressSearchBody } from '../../../src/build-search-body.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// P033 caveat: the remaining source-inspection tests in this file exist because
-// service/address-service.js is babel-only and cannot be imported by raw Node
-// ESM. Source inspection guards the integration shape only — behavioural
+// P033 caveat: the source-inspection tests remaining in this file were written
+// when `service/address-service.js` could not be imported by raw Node ESM. That
+// constraint is gone — ADR-044 retired Babel on 2026-08-08, the module resolves
+// under raw Node ESM, and `waycharter-server.test.mjs` already imports it
+// transitively through `buildRest2App` — and nothing structural replaced it.
+// Every path they cover reaches OpenSearch only through `globalThis.esClient`, a
+// stubbable global, and `mapAddressDetails` reaches no client at all. What
+// remains is effort, not an obstacle; do not read this caveat as a licence to
+// leave them. Source inspection guards the integration shape only — behavioural
 // correctness of imported helpers is covered by their own *.test.mjs files.
 //
 // Partially discharged 2026-08-07: the searchForAddress query-clause pins
 // (ADR 027 / ADR 028) are now behavioural assertions against
 // src/build-search-body.js, following the extraction-to-clean-ESM path this
-// caveat anticipated. The read-shadow, progress-logging, getAddress and
-// sla_range_expanded-attachment blocks below are still source-inspection.
+// caveat anticipated. The read-shadow, progress-logging and getAddress blocks
+// below are still source-inspection.
 
 // ADR 031: searchForAddress must call mirrorRequest after the primary
 // search so v2 OpenSearch caches warm with realistic production query

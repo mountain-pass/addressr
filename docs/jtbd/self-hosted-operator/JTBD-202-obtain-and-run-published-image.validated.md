@@ -42,5 +42,6 @@ When the project moves where the image is published, I want the move recorded as
 ## Related
 
 - ADR 039 (Distroless Docker runtime) — the image identity and runtime shape this job consumes.
+- ADR 044 (Native ESM without a build step) — added 2026-08-09, because its Bad consequence landed on this job and was recorded nowhere in the corpus. Retiring the `lib/` build moved the package layout, and the Distroless base has no shell, so the image `CMD` is a resolved package-internal path rather than the bin shim — it broke on the move. The risk gate caught it; `cli2` could not, because it exercises the npm channel and never builds the image. This is exactly the third Desired Outcome above ("the data loader and the server are both runnable from the same image"), which as written is satisfiable by a `package.json` edit that silently breaks the image.
 - ADR 040 (Release-pipeline change-type→action matrix) — the docker axis + tag contract; amended to publish to `ghcr.io/mountain-pass/addressr` via `GITHUB_TOKEN`.
 - P055 (Migrate Docker image Alpine→Distroless) — parked the operator tag-contract ownership gap this job now owns.

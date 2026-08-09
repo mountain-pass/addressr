@@ -84,11 +84,22 @@ export default [
       // signal visible without making an 8-major dependency bump into a tax on
       // everyone's next commit. Raise per directory as the sweep lands.
       'unicorn/no-this-outside-of-class': 'warn',
-      // Blocked by ADR 005 (Babel/CJS — requires native ESM)
-      'unicorn/prefer-module': 'off',
+      // ADR 005 (Babel/CJS) named this blocked; that ADR is superseded by ADR 044
+      // and the source is native ESM, so the blocker is dead. Measured 2026-08-09
+      // at `error` across the repo: zero violations. Enabled rather than
+      // re-reasoned — a suppression whose stated blocker died and whose rule is
+      // clean has nothing left holding it.
+      'unicorn/prefer-module': 'error',
       // waycharter ops.find()/ops.filter() are not Array.prototype — false positives
       'unicorn/no-array-callback-reference': 'off',
-      // Blocked by ADR 005 (Babel/CJS — requires native ESM)
+      // NOT the ADR 005 Babel/CJS reason this line used to give — that blocker died
+      // with ADR 044. Off for two remaining promise-chain process entry points,
+      // measured 2026-08-09 and the only violations in the repo: `loader.js:40`
+      // and `src/server2.js:37`, each the terminal `.catch(` of a top-level chain.
+      // Converting them changes process startup, which is an entry-point change
+      // and not a lint fix. Raise when they land. (The neighbouring inline
+      // `unicorn/prefer-await` disables in those two files are a DIFFERENT rule;
+      // this one needed its own reason and now has it.)
       'unicorn/prefer-top-level-await': 'off',
       'promise/always-return': 'warn',
       'promise/catch-or-return': 'warn',

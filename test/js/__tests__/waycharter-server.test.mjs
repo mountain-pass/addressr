@@ -41,10 +41,17 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { inject } from 'light-my-request';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   buildRest2App,
   startRest2Server,
 } from '../../../src/waycharter-server.js';
+import {
+  attachRangeAliases,
+  buildIndexedDocument,
+} from '../../../src/build-indexed-document.js';
+import { load as parseYaml } from 'js-yaml';
 
 const ACAO = 'ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN';
 const AUTH_HEADER = 'ADDRESSR_PROXY_AUTH_HEADER';
@@ -320,31 +327,75 @@ describe('/api-docs Address schema vs what getAddress actually returns (P091)', 
   // response has and the spec does not. That is the P033 shape: a green light over
   // an unexercised claim.
   //
-  // WHAT THIS CLOSES, AND WHAT IT DOES NOT — stated because the first draft of this
-  // comment claimed the expected set was "derived, not typed out" while the next line
-  // typed out seven literals. It is a fourth hand-maintained list joined to the three
-  // that already disagreed.
+  // WHAT THIS CLOSES, AND WHAT IT DOES NOT.
   //
-  // It catches drift of the SPEC against the list: a key dropped, a phantom key added,
-  // a notice stripped. All three mutations it was proved against are spec mutations.
-  // It does NOT catch drift of the CODE against the list — add a key in
-  // `mapAddressDetails` and the response grows one, the spec does not mention it, and
-  // every case here stays green. That is the mechanism that produced the original
-  // defect, so this control is watching the artefact that did not move.
+  // The first version of this guard compared the spec against a hand-typed list
+  // of seven keys, and its comment claimed the list was "derived, not typed out"
+  // while the next line typed it out. That caught drift of the SPEC against the
+  // list and was blind to drift of the CODE against it — which is the direction
+  // the original defect came from.
   //
-  // The derivation is available: `buildIndexedDocument` does
-  // `const { sla, ssla, ...structured } = item`, so
-  // `Object.keys(buildIndexedDocument({ item }).structured)` IS the response key set,
-  // computed by production code. Tracked on P091 rather than done here.
-  const STORED_WRAPPER_KEYS = [
-    'geocoding',
-    'structured',
-    'precedence',
-    'pid',
-    'mla',
-    'smla',
-    'sla_range_expanded',
-  ];
+  // The set is now computed by production code. `buildIndexedDocument` does
+  // `const { sla, ssla, ...structured } = item`, and `getAddress` returns
+  // `{ ..._source.structured, sla }`, so running the real assembly over a mapped
+  // address yields exactly the keys a consumer can receive. Change the destructure
+  // and the expectation moves with it; no list to update.
+  //
+  // STILL NOT CLOSED, and stated so nobody reads this as more than it is: the
+  // FIXTURE is hand-shaped. If `mapAddressDetails` grows a key and the fixture
+  // does not, both sides move together and this stays green. Closing that needs a
+  // fixture built by `mapAddressDetails` itself, which needs a G-NAF row plus
+  // auth-code context. Tracked on P091.
+  //
+  // The fixture carries every optional key on purpose — `smla` (flat addresses
+  // only) and `sla_range_expanded` (range addresses only) never coexist on one
+  // real document, but the SCHEMA describes the endpoint rather than one address,
+  // so the union is what it has to cover.
+  const mappedAddress = () =>
+    attachRangeAliases({
+      pid: 'GAOT_717319770',
+      sla: 'UNIT 1, 96-108 GAZE RD, CHRISTMAS ISLAND OT 6798',
+      ssla: '1/96-108 GAZE RD, CHRISTMAS ISLAND OT 6798',
+      mla: ['UNIT 1', '96-108 GAZE RD', 'CHRISTMAS ISLAND OT 6798'],
+      smla: ['1/96-108 GAZE RD', 'CHRISTMAS ISLAND OT 6798'],
+      geocoding: { level: { code: '7', name: 'BUILDING CENTROID' } },
+      precedence: 'primary',
+      structured: {
+        confidence: 2,
+        number: { number: 96, last: { number: 108 } },
+        street: { name: 'GAZE', type: { name: 'RD' } },
+        locality: { name: 'CHRISTMAS ISLAND' },
+        state: { abbreviation: 'OT' },
+        postcode: '6798',
+      },
+    });
+
+  /** Exactly what `getAddress` can return, computed by the production assembly. */
+  const servableKeys = () => {
+    const document_ = buildIndexedDocument({
+      item: mappedAddress(),
+      localityPid: 'loc-1',
+    });
+    // getAddress: `{ ..._source.structured, sla }`, then `delete json._id`.
+    //
+    // TWO RESIDUES, named rather than implied, because "computed by production
+    // code" is true of only half of this expression.
+    //
+    // 1. The LOADER half is derived — `buildIndexedDocument` runs for real, so
+    //    changing its destructure moves the expectation. The SERVING half is
+    //    not: `[...keys, 'sla']` is a hand-copy of `getAddress`'s response
+    //    construction. If `getAddress` lifts `ssla` back, stops deleting `_id`,
+    //    or spreads anything else, this line does not move and both guards stay
+    //    green — and `getAddress` is the half facing the consumer directly.
+    //    Now closable: `service/address-service.js` imports cleanly (ADR-044).
+    // 2. The `phantom` direction below fails CLOSED with a MISLEADING message.
+    //    Add a key to `mapAddressDetails`, document it correctly in both specs,
+    //    and forget the fixture: the guard reddens saying the spec documents
+    //    something never served, and a maintainer following that message deletes
+    //    a correct spec entry. The whole direction rests on the fixture comment's
+    //    unchecked claim that it carries every optional key on purpose.
+    return new Set([...Object.keys(document_.structured), 'sla']);
+  };
 
   const addressSchema = async () => {
     const response = await inject(buildRest2App(), {
@@ -360,9 +411,7 @@ describe('/api-docs Address schema vs what getAddress actually returns (P091)', 
     // the schema has to cover, because the schema describes the endpoint and not one
     // address.
     const documented = new Set(Object.keys(await addressSchema()));
-    const missing = [...STORED_WRAPPER_KEYS, 'sla'].filter(
-      (k) => !documented.has(k),
-    );
+    const missing = [...servableKeys()].filter((k) => !documented.has(k));
     assert.deepStrictEqual(
       missing,
       [],
@@ -380,12 +429,41 @@ describe('/api-docs Address schema vs what getAddress actually returns (P091)', 
     // field, it is correct on the SEARCH result, and it is wrong here, because the
     // loader lifts `sla`/`ssla` out before building the object this endpoint spreads.
     const documented = Object.keys(await addressSchema());
-    const canBeServed = new Set([...STORED_WRAPPER_KEYS, 'sla']);
+    const canBeServed = servableKeys();
     const phantom = documented.filter((k) => !canBeServed.has(k));
     assert.deepStrictEqual(
       phantom,
       [],
       `documented but never served by this endpoint: ${phantom.join(', ')}`,
+    );
+  });
+
+  it('the SHIPPED Swagger file agrees with the same derived set', async () => {
+    // api/swagger-2.yaml ships in the tarball, is the only spec a self-hosted
+    // operator gets offline, and had no test of any kind until now — which is how
+    // it came to promise an `ssla` this endpoint never returns and name a `geo`
+    // property the API has never served. Two falsehoods in one definition, in a
+    // file a decision record pins in place.
+    //
+    // Checked against the same derived set as the served document, so the two
+    // specs cannot drift apart from each other OR from the response.
+    const swagger = parseYaml(
+      readFileSync(
+        fileURLToPath(new URL('../../../api/swagger-2.yaml', import.meta.url)),
+        'utf8',
+      ),
+    );
+    const documented = new Set(
+      Object.keys(swagger.definitions.Address.properties),
+    );
+    const servable = servableKeys();
+
+    const missing = [...servable].filter((k) => !documented.has(k));
+    const phantom = [...documented].filter((k) => !servable.has(k));
+    assert.deepStrictEqual(
+      { missing, phantom },
+      { missing: [], phantom: [] },
+      'the shipped Swagger Address definition must match what GET /addresses/{id} returns',
     );
   });
 

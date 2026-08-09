@@ -125,7 +125,7 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 
 - `deploy/modules/opensearch/main.tf` has **no `advanced_security_options` block** (FGAC off; AWS defaults it disabled), no `master_user_*`, and `access_policies` scoped to the EB instance role ARN + `arn:aws:iam::869772437473:user/tompahoward` with `es:ESHttp*` — never `"*"`.
 - `client/elasticsearch.js` selects SigV4 vs basic on `ELASTIC_AUTH_MODE`, default basic; unit-tested both branches (TDD).
-- A local `babel-node loader.js` run with `ELASTIC_AUTH_MODE=sigv4` authenticates against the recreated `addressr4` and indexes documents (SigV4 as the operator identity).
+- A local `node loader.js` run with `ELASTIC_AUTH_MODE=sigv4` authenticates against the recreated `addressr4` and indexes documents (SigV4 as the operator identity).
 - Cucumber `test:nogeo` stays green with `ELASTIC_AUTH_MODE` unset (basic-auth default preserved).
 - ~~ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.~~ **DISCHARGED 2026-07-31 at ≤ ~0.1 ms p95, roughly 10× under the gate.**
 

@@ -9,7 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
-| 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (20)    | Open          | S      | 2026-08-08 | internal |
+| 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
@@ -26,6 +26,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
 | 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |
+| 4.5  | P097 | Cucumber leg intermittently starts against an empty index             | Medium (9)   | Open          | M      | 2026-08-09 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
@@ -41,7 +42,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them   | Medium (6)   | Open          | M      | 2026-08-07 | internal |
 | 3.0  | P092 | CHANGELOG erratum from the P074 changeset                             | Low (3)      | Open          | S      | 2026-08-08 | internal |
-| 4.5  | P097 | Cucumber leg intermittently starts against an empty index             | High (9)     | Open          | M      | 2026-08-09 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |

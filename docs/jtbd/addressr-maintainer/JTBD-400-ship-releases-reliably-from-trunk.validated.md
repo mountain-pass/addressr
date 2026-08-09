@@ -77,6 +77,6 @@ the duration of one plan, not a feature branch.
 
 - P011 (closed) — original incident: P009 changeset missing from commit `ef66d39`, next release shipped no version bump.
 - P010, P017 — exemption-tag and rename-only-commit footguns.
-- ADR 014 (governance commits), ADR 029 (zero-outage cutover) — infrastructure-side instances of the same job.
+- ADR 001 (risk-gated release process via `release:watch`), ADR 029 (zero-outage cutover) — infrastructure-side instances of the same job. **Corrected 2026-08-09**: this line read "ADR 014 (governance commits)". ADR 014 is _ESLint 9 Flat Configuration with Security and Quality Plugins_, contains no occurrence of "governance", and is not infrastructure-side. ADR 001 is the governance-tier release decision, is infrastructure-side, and already cross-references this job in its 2026-07-27 amendment — but the original intent is inferred, not recorded, so treat the referent as reconstructed. Same rot class as the superseded-ADR citations swept on this date, except a bare-token grep cannot reach it: the citation number is live, only its subject is wrong.
 - ADR 040 (release pipeline decoupled into npm / docker / deploy axes) — its `deploy/**` push trigger **contradicts** the final Desired Outcome above (operator-initiated, one gated path, P039 variant-4b deferral). Amendment pending an interactive `/wr-jtbd:confirm-jobs-and-personas` run.
 - Deliberately NOT added as screens here: `Dockerfile`, `.dockerignore.tmpl`, `docs/DOCKER-IMAGE-CHANGELOG.md` — routed to the not-yet-existing JTBD-202 per P055, not dropped.

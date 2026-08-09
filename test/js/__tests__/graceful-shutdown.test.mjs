@@ -205,8 +205,13 @@ describe('installShutdownHandlers (P067)', () => {
 });
 
 // Source-inspection for the wiring, per the precedent in this directory:
-// src/server2.js pulls in the babel-only server module and cannot be imported
-// under raw `node --test`.
+// `src/server2.js` is a top-level side-effecting entry — importing it starts a
+// server and connects a search client — so the honest conversion is a
+// child-process one (spawn, assert exit, assert no port binds). That is a
+// different shape and cost from the in-process conversions, and it is the only
+// thing blocking these two. Recorded on P033, whose Remaining-population row says
+// the same. It is NOT an import problem: ADR-044 retired Babel on 2026-08-08 and
+// `src/waycharter-server.js` imports cleanly.
 describe('server entry point wiring (src/server2.js)', () => {
   it('installs the shutdown handlers against stopServer and forceCloseConnections', async () => {
     const source = await readFile(server2Path, 'utf8');

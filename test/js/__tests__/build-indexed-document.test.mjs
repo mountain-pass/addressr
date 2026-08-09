@@ -193,11 +193,23 @@ describe('buildIndexedDocument — what actually reaches the index (P033 / P091)
     // SCOPE, stated because over-claiming in a test NAME is exactly the failure
     // this ticket is about. Order here is inherited from the rest-destructure,
     // so it follows `item`'s own key order — which `mapAddressDetails` decides,
-    // one module upstream, still babel-only and still without behavioural
-    // cover. So this pins PRESERVATION by this function, not the production
-    // order: the fixture emits `pid, sla, ssla, structured` and production
-    // emits `structured, precedence?, pid, mla, smla?, sla_range_expanded`.
-    // The ETag contract is only as pinned as the upstream module, which is not.
+    // one module upstream, and THAT module's key order is uncovered. The
+    // qualifier is load-bearing, and so is its own caveat:
+    // `service/address-service.test.js` executes `mapAddressDetails` for
+    // ADR-025's `ssla` pin, so an unqualified "no behavioural cover" would be
+    // false — but no runner globs `service/*.test.js`, so that file never runs
+    // either. Both claims are narrower than they look; ADR-025 Confirmation 1
+    // rests on the one that never executes.
+    //
+    // So this pins PRESERVATION by this function, not the production order. The
+    // fixture emits `pid, sla, ssla, structured`. Production EMISSION order out
+    // of `mapAddressDetails` is `geocoding?, structured, precedence?, pid, mla,
+    // sla, smla?, ssla, sla_range_expanded?`. That is not the hashed order:
+    // `buildIndexedDocument` below lifts `sla` and `ssla` back out of the
+    // bucket, and `getAddress` spreads `_source.structured` then appends `sla`
+    // LAST — so `ssla` never reaches the GET body and `sla` is the final key in
+    // the JSON the ETag hashes. The ETag contract is only as pinned as the
+    // upstream module's key order, which is not.
     const document = buildIndexedDocument({
       item: attachRangeAliases(mapped({ last: 108 })),
       localityPid: 'loc-1',

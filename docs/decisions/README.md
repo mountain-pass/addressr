@@ -63,6 +63,9 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-014 — ADR 014: ESLint 9 Flat Configuration with Security and Quality Plugins
 
 **Status:** accepted | **Oversight:** confirmed
+**Decides:** Use ESLint 9 flat config (`eslint.config.js`, 16 top-level entries) with security, unicorn, promise, node, import-x, prettier and chai-friendly plugins, enforced at commit time via lint-staged, rather than Biome or the deprecated legacy `.eslintrc.json` format. Amended 2026-08-09: the count is 16 entries (verified by resolving the exported array, not counting by eye) and the Babel parser is gone — removed 2026-08-08 under ADR-044's native-ESM migration, so the default parser applies.
+**Confirmation:** `eslint.config.js` exists in flat config format; lint-staged runs `eslint --fix` on `*.js` and `*.jsx`
+**Related:** ADR-005, ADR-044
 
 ### ADR-015 — ADR 015: dry-aged-deps for Dependency Freshness Checking
 
@@ -102,20 +105,24 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** accepted | **Oversight:** confirmed
 **Chosen:** Chosen option: **"Option 1 — Opt-in env-var pair"**, because it is the only option that satisfies all decision drivers simultaneously:
 
-### ADR-025 — ADR 025: Symmetric `ssla` Indexing for Search Ranking
+### ADR-025 — Symmetric `ssla` Indexing for Search Ranking
 
 **Status:** accepted | **Oversight:** confirmed
-**Confirmation:** Unit test at service/address-service.test.js asserts mapAddressDetails populates ssla === sla for street-level...; Un-skipped Cucumber scenario P007 Exact street address ranks first over sub-unit variants in test/resources/fe...; Manual regression probes: query UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND returns GAOT_717882967 first; query 1/1...; Post-deploy smoke: query 278 ROSS RIVER RD AITKENVALE QLD 4814 against the hosted RapidAPI listing returns 278...
+**Decides:** Always populate `ssla` (equal to `sla` when an address has no sub-unit) so `bool_prefix` summation stops privileging sub-unit documents, chosen over a `dis_max` query rewrite because the correctness property is encoded in data and survives a backend swap under ADR-021. The claimed outcome was later falsified — P074 measured 62.7% of sub-unit-bearing addresses still returning a sub-unit first, since the sibling `phrase_prefix` clause decides ranking; the symmetric mapping is retained for slash-form notation tolerance.
+**Confirmation:** Named unit test at `service/address-service.test.js` is orphaned — no runner globs it, so it has never executed; un-skipped Cucumber scenario `P007 Exact street address ranks first over sub-unit variants` pins street-level-first on the OT fixture; manual probes preserve the slash-form affordance; post-deploy smoke against the hosted RapidAPI listing.
+**Related:** ADR-002, ADR-009, ADR-021, ADR-042, ADR-043
 
 ### ADR-027 — ADR 027: Disable fuzziness on short tokens via `AUTO:5,8`
 
 **Status:** proposed | **Oversight:** confirmed
 **Confirmation:** Unit test in test/js/**tests**/address-service.test.mjs: behavioural assertion that the bool_prefix multi_matc...; Cucumber non-regression: addressv2.feature:95,109 (ADR 025 P007) continues to pass. ADR 028 first-endpoint, la...; New Cucumber scenario — P026 case 3 first result in addressv2.feature: query "138 Whitehorse Rd" against OT ...; New Cucumber scenario — 5-char typo preservation in addressv2.feature: query "19 Muray Rd Christmas Island" ...; New Cucumber scenario — 4-char typo intentional loss (documentation test) in addressv2.feature: query "16 Ga...
 
-### ADR-028 — ADR 028: Range-Number Address Expansion — Endpoint-Only
+### ADR-028 — Range-Number Address Expansion — Endpoint-Only
 
-**Status:** proposed | **Oversight:** confirmed | **Supersedes:** [026-range-number-address-expansion]
-**Confirmation:** Unit test in test/js/**tests**/range-expansion.test.mjs: expandRangeAliases(103, 107, ...) returns exactly ["1...; Unit test (same file): expandRangeAliases(1, 111015, ...) returns 2 elements (outlier-safe; no SPAN_CAP needed...; Unit test in test/js/**tests**/address-service.test.mjs: the sla_range_expanded attachment tests (mapAddressDe...; Cucumber scenario — first-endpoint recall in addressv2.feature: query "103 GAZE RD CHRISTMAS ISLAND" returns...; Cucumber scenario — last-endpoint recall in addressv2.feature: query "107 GAZE RD CHRISTMAS ISLAND" returns ...
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** ADR-026
+**Decides:** Emit exactly two `sla_range_expanded` aliases per range document — the `NUMBER_FIRST` and `NUMBER_LAST` endpoints only — rather than interpolating every number in between, because G-NAF records the endpoints as the property's actual addresses and mid-range interpolation returned false positives (a query for `104` matched the `103-107` doc). Amended 2026-08-08 by ADR-043 (the endpoint-_ranking_ win is withdrawn; recall is carried by the whitecomma tokenizer) and the field itself was deprecated 2026-08-09 after P091 found it indexed at the wrong path on 0 of 16.9M documents; the attachment is retained for consumer/ETag compatibility only.
+**Confirmation:** Field DEPRECATED 2026-08-09 and index-side mechanism has never executed (P091) — attachment now covered by characterisation tests in `build-indexed-document.test.mjs`; `expandRangeAliases(103,107,…)` returns exactly 2 aliases with 104/105/106 absent; `expandRangeAliases(1,111015,…)` returns 2 (no SPAN_CAP); `buildAddressSearchBody` pins ADR-043's clause shape — `bool_prefix` fields exactly `['sla','ssla']`, `dis_max` over `sla.raw`/`ssla.raw`, no explicit `tie_breaker`; Cucumber first/last-endpoint recall (103, 107 → GAOT_717321171), mid-range 106 NOT a false positive, canonical `103-107` still top hit, v1 endpoint recall across nodejs/rest/cli; post-deploy diff against the v2.3.0 14-query baseline.
+**Related:** ADR-006, ADR-021, ADR-025, ADR-026, ADR-027, ADR-043
 
 ### ADR-029 — ADR 029: Two-phase blue/green upgrade off OpenSearch 1.3.20
 
@@ -130,11 +137,12 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 **Chosen:** Chosen option: **Option 4 — create a new `deploy/modules/opensearch/` Terraform module, use it to provision `search-addressr4-…`, leave `search-addressr3-…` unmanaged until decommissioning at the end of ADR 029 Phase 1 soak.**
 **Confirmation:** deploy/modules/opensearch/main.tf, variables.tf, outputs.tf, and versions.tf exist before any production cutov...; deploy/main.tf consumes the module via at least one module "opensearch_..." {} block referencing ./modules/ope...; terraform state list (run against the workspace post-apply) includes module.opensearch_v2.aws_opensearch_domai...; terraform plan shows zero changes to search-addressr3-… throughout Phase 1 (the un-IaC'd domain must remain ...; ELASTIC_HOST in deploy/main.tf is sourced from a module output (module.opensearch_v2.endpoint) once the applic...
 
-### ADR-031 — ADR 031: Read-Shadow for Search-Backend Migrations
+### ADR-031 — Read-Shadow for Search-Backend Migrations
 
 **Status:** proposed | **Oversight:** confirmed
-**Chosen:** Chosen option: **"Option 1 — Read-shadow with fire-and-forget mirroring."**
-**Confirmation:** src/read-shadow.js ships with validateReadShadowConfig and mirrorRequest; test/js/**tests**/read-shadow.test.mjs ships with ~12 unit tests covering; service/address-service.js calls mirrorRequest after the searchForAddress; src/waycharter-server.js calls validateReadShadowConfig() at startup.; Cucumber suite (npm run test:nodejs:nogeo) passes with shadow OFF
+**Decides:** Mirror production `/addresses` reads fire-and-forget to a configurable secondary OpenSearch backend (default-off, gated by `ADDRESSR_SHADOW_HOST`) so a migration target is warmed with the real query distribution before cutover — the only warming strategy that hits the cache entries customers actually query, and reusable across migrations. Cutover is gated on a five-criterion soak (mirror parity, zero failures at document parity, warmth-ratio convergence, ≥24 h spanning a business peak, k6 ≤1.5× a freshly re-derived baseline), with a ≤1 ms primary-path p95 invariant measured at ≤~0.1 ms.
+**Confirmation:** `src/read-shadow.js` exports `validateReadShadowConfig` + `mirrorRequest`; ~12 unit tests in `test/js/__tests__/read-shadow.test.mjs`; `service/address-service.js` mirrors after `searchForAddress`; `src/waycharter-server.js` validates config at startup; Cucumber passes with shadow OFF; manual two-OpenSearch probe shows mirrored queries on the target; pre-cutover k6 target p95 ≤ 1.5× re-derived baseline over a soak meeting the gate; primary-path invariant discharged 2026-07-31 at ≤~0.1 ms; soak-validity 2xx check against the shadow target (SigV4-signed under `AUTH_MODE=sigv4`)
+**Related:** ADR-023, ADR-024, ADR-029, ADR-033, ADR-036, ADR-041
 
 ### ADR-032 — ADR 032: Cloudflare Worker deployed via Terraform (not Wrangler)
 
@@ -142,11 +150,12 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 **Chosen:** Chosen option: **Option 3 — Cloudflare Terraform provider, encapsulated in `deploy/modules/cloudflare-worker/`. Cutover via `terraform import` of the existing dashboard-managed worker into state, then no-op first apply.**
 **Confirmation:** deploy/cloudflare-worker/worker.js, ip-matcher.mjs, and safe-ips.mjs exist and worker.js imports the matcher a...; deploy/modules/cloudflare-worker/main.tf, variables.tf, outputs.tf, and versions.tf exist; root deploy/main.tf...; node --test test/js/**tests**/cloudflare-worker-ip-matcher.test.mjs passes — at minimum, all 37 assertions p...; node --test deploy/cloudflare-worker/worker.test.js passes — at minimum the module loads and a RAPIDAPI_KEY-...; terraform state list (post-apply against the production workspace) includes module.cloudflare_worker.cloudflar...
 
-### ADR-033 — ADR 033: IAM/SigV4 auth for the AWS-managed OpenSearch domain
+### ADR-033 — IAM/SigV4 auth for the AWS-managed OpenSearch domain
 
 **Status:** proposed | **Oversight:** confirmed
-**Chosen:** Chosen option: **Option B**.
-**Confirmation:** deploy/modules/opensearch/main.tf has no advanced_security_options block (FGAC off; AWS defaults it disabled),...; client/elasticsearch.js selects SigV4 vs basic on ELASTIC_AUTH_MODE, default basic; unit-tested both branches ...; A local babel-node loader.js run with ELASTIC_AUTH_MODE=sigv4 authenticates against the recreated addressr4 an...; Cucumber test:nogeo stays green with ELASTIC_AUTH_MODE unset (basic-auth default preserved).; ~~ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.~~ DISCHARGED 2026-07-31...
+**Decides:** Disable FGAC entirely on the AWS-managed OpenSearch domain and authenticate clients with SigV4 against an access policy scoped to two named IAM principals (the EB instance role and the operator's IAM user), because FGAC's `.opendistro_security` internal-user password is the state an AWS-internal channel clobbered twice (P036) — removing the subsystem removes the clobberable credential, and the principal-scoping replaces a wide-open `Principal AWS = "*"`. Self-hosted and local Docker keep basic auth via a default-off `ELASTIC_AUTH_MODE` flag; the P035 silent-index-deletion symptom is explicitly not claimed fixed.
+**Confirmation:** module has no `advanced_security_options` / `master_user_*` and scopes `access_policies` to the two ARNs with `es:ESHttp*`, never `"*"`; `client/elasticsearch.js` selects SigV4 vs basic on `ELASTIC_AUTH_MODE`, default basic, both branches unit-tested; a local `node loader.js` with `ELASTIC_AUTH_MODE=sigv4` authenticates and indexes against the recreated `addressr4`; Cucumber `test:nogeo` stays green with the flag unset; ADR-031 ≤1 ms p95 primary-path invariant re-verified with SigV4 on — DISCHARGED 2026-07-31 at ≤ ~0.1 ms p95; `addressr4` destroyed and recreated under the new security options and scoped policy.
+**Related:** ADR-023, ADR-024, ADR-029, ADR-030, ADR-031
 
 ### ADR-034 — ADR 034: Re-automate the quarterly G-NAF refresh on GitHub Actions via an OIDC-scoped IAM role
 
