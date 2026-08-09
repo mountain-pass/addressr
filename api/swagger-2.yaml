@@ -185,8 +185,15 @@ definitions:
     description: |
       A physical Australian address in structured and unstructured formats.
 
-      If an address has a "flat" component (e.g. UNIT 12, 32 SOME ST...), then it will also have a
-      the `ssla` and `smla` fields, which are shortended versions of `sla` and `mla`. e.g. (12/32 SOME ST...)
+      If an address has a "flat" component (e.g. UNIT 12, 32 SOME ST...), then it will also have an
+      `smla` field, a shortened version of `mla`. e.g. (12/32 SOME ST...)
+
+      Corrected 2026-08-09: this description previously also promised `ssla` on this
+      representation. It is not served here. `ssla` is real, but it belongs to the search
+      result, not the address detail: the loader lifts `sla` and `ssla` out before building
+      the stored object this endpoint spreads, so `ssla` never reaches it. Same class as the
+      `geo` name corrected below - a shipped spec naming something the endpoint does not
+      return.
     required:
       - 'pid'
       - 'structured'
@@ -201,14 +208,38 @@ definitions:
         $ref: '#/definitions/StructuredAddress'
       sla:
         $ref: '#/definitions/SingleLineAddress'
-      ssla:
-        $ref: '#/definitions/SingleLineAddress'
       mla:
         $ref: '#/definitions/MultiLineAddress'
       smla:
         $ref: '#/definitions/MultiLineAddress'
-      geo:
+      geocoding:
+        # Renamed from `geo` on 2026-08-09. The API has never served a `geo` key —
+        # `mapAddressDetails` emits `geocoding`. This file named a property that does
+        # not exist, which is worse than omitting one, and it ships in the tarball.
         $ref: '#/definitions/AddressGeocoding'
+      precedence:
+        type: string
+        description: >-
+          DEPRECATED - do not depend on this field. It carries the source dataset's
+          primary/secondary flag and has never been part of any published spec. It is
+          documented here only so its removal is announced rather than silent.
+          (Swagger 2.0 has no `deprecated` keyword for schema properties, so the
+          signal is carried in this description; the OpenAPI 3 spec served at
+          /api-docs sets `deprecated: true`.)
+      sla_range_expanded:
+        type: array
+        items:
+          type: string
+        description: >-
+          DEPRECATED - do not depend on this field, and do not use it for search.
+          It holds the two endpoint forms of a range address, but it has NEVER been
+          searchable: it was written to a path the index mapping does not cover, so no
+          query has ever matched it. Range addresses are already reachable by either
+          endpoint without it. Scheduled for removal; retained for now only so the
+          response body and ETag of existing range addresses do not change.
+          (Swagger 2.0 has no `deprecated` keyword for schema properties, so the
+          signal is carried in this description; the OpenAPI 3 spec served at
+          /api-docs sets `deprecated: true`.)
   AddressGeocoding:
     type: object
     description: Geocoding information about the address

@@ -60,10 +60,66 @@ function buildOpenApiSpec(apiVersion) {
     },
     Address: {
       type: 'object',
+      // The response is `{ ..._source.structured, sla }` (service/address-service.js
+      // getAddress), so every key of the stored `structured` wrapper is served at the
+      // TOP level here. Until 2026-08-09 this schema listed only `sla` and
+      // `structured`, and the other five were served undocumented. P091 found that
+      // by accident while investigating one of them.
       properties: {
         sla: {
           type: 'string',
           example: 'UNIT 1, 19 MURRAY RD, CHRISTMAS ISLAND OT 6798',
+        },
+        pid: {
+          type: 'string',
+          description:
+            'Persistent identifier, unique to the real-world feature this record represents.',
+          example: 'GAOT_717882967',
+        },
+        mla: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Multi-line form of the address, one element per line.',
+          example: ['UNIT 1', '19 MURRAY RD', 'CHRISTMAS ISLAND OT 6798'],
+        },
+        smla: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Short multi-line form, present only when the address has a flat component. ' +
+            'Note there is no `ssla` here: the short SINGLE-line form belongs to the search ' +
+            'result, not to this representation.',
+          example: ['1/19 MURRAY RD', 'CHRISTMAS ISLAND OT 6798'],
+        },
+        geocoding: {
+          type: 'object',
+          description: 'Geocoding information for the address.',
+        },
+        precedence: {
+          type: 'string',
+          deprecated: true,
+          description:
+            "DEPRECATED — do not depend on this field. It carries the source dataset's " +
+            'primary/secondary flag and has never been part of any published spec. It is ' +
+            'documented here only so its removal is announced rather than silent.',
+        },
+        sla_range_expanded: {
+          type: 'array',
+          items: { type: 'string' },
+          deprecated: true,
+          description:
+            'DEPRECATED — do not depend on this field, and do not use it for search. ' +
+            'It holds the two endpoint forms of a range address (so "103-107 GAZE RD" ' +
+            'carries "103 GAZE RD" and "107 GAZE RD"), but it has NEVER been searchable: ' +
+            'it was written to a path the index mapping does not cover, so no query has ' +
+            'ever matched it. Measured against production, range addresses are already ' +
+            'reachable by either endpoint without it. Scheduled for removal; retained for ' +
+            'now only so the response body and ETag of existing range addresses do not ' +
+            'change. See ADR-028.',
+          example: [
+            '103 GAZE RD, CHRISTMAS ISLAND OT 6798',
+            '107 GAZE RD, CHRISTMAS ISLAND OT 6798',
+          ],
         },
         structured: {
           type: 'object',
@@ -1011,7 +1067,11 @@ export function startRest2Server() {
 }
 
 // Both live in ./graceful-shutdown.js with the handle they act on, so a unit
-// test can execute them — this module cannot be imported by raw Node ESM
-// (P033). Re-exported here because server2.js and test/js/world.js import them
-// from this path.
+// test can execute them. The reason they were moved there — that this module
+// COULD NOT be imported by raw Node ESM (P033) — expired on 2026-08-08 when
+// ADR-044 retired Babel; waycharter-server.test.mjs now imports this module
+// directly. The extraction stands on its own merits and is not being undone,
+// but do not cite the old blocker as a live reason to extract anything else.
+// Re-exported here because server2.js and test/js/world.js import them from
+// this path.
 export { stopServer, forceCloseConnections } from './graceful-shutdown.js';

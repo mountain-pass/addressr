@@ -306,3 +306,105 @@ describe('/debug/shadow-config (P035, ADR-024) — reachable and live', () => {
     assert.equal(response.headers['cache-control'], 'no-cache');
   });
 });
+
+describe('/api-docs Address schema vs what getAddress actually returns (P091)', () => {
+  // THE CONTROL WHOSE ABSENCE LET THIS SHIP. Until 2026-08-09 the Address schema
+  // listed `sla` and `structured` while the endpoint returned seven keys, and the
+  // shipped Swagger file promised an `ssla` it never returns and a `geo` that has
+  // never existed. Three hand-maintained artefacts — the OpenAPI 3 document, the
+  // Swagger 2.0 file, and the response builder — with nothing joining them.
+  //
+  // The sweep that fixed those STILL missed `smla`, and the risk scorer caught it,
+  // because every check available at the time compared the spec against itself.
+  // Parsing the served document and reading its schema cannot detect a key the
+  // response has and the spec does not. That is the P033 shape: a green light over
+  // an unexercised claim.
+  //
+  // WHAT THIS CLOSES, AND WHAT IT DOES NOT — stated because the first draft of this
+  // comment claimed the expected set was "derived, not typed out" while the next line
+  // typed out seven literals. It is a fourth hand-maintained list joined to the three
+  // that already disagreed.
+  //
+  // It catches drift of the SPEC against the list: a key dropped, a phantom key added,
+  // a notice stripped. All three mutations it was proved against are spec mutations.
+  // It does NOT catch drift of the CODE against the list — add a key in
+  // `mapAddressDetails` and the response grows one, the spec does not mention it, and
+  // every case here stays green. That is the mechanism that produced the original
+  // defect, so this control is watching the artefact that did not move.
+  //
+  // The derivation is available: `buildIndexedDocument` does
+  // `const { sla, ssla, ...structured } = item`, so
+  // `Object.keys(buildIndexedDocument({ item }).structured)` IS the response key set,
+  // computed by production code. Tracked on P091 rather than done here.
+  const STORED_WRAPPER_KEYS = [
+    'geocoding',
+    'structured',
+    'precedence',
+    'pid',
+    'mla',
+    'smla',
+    'sla_range_expanded',
+  ];
+
+  const addressSchema = async () => {
+    const response = await inject(buildRest2App(), {
+      method: 'GET',
+      url: '/api-docs',
+    });
+    return JSON.parse(response.body).components.schemas.Address.properties;
+  };
+
+  it('documents every key the response can carry', async () => {
+    // `_source.structured` varies by address — a flat address carries `smla`, a range
+    // address carries `sla_range_expanded`, neither carries both. The union is what
+    // the schema has to cover, because the schema describes the endpoint and not one
+    // address.
+    const documented = new Set(Object.keys(await addressSchema()));
+    const missing = [...STORED_WRAPPER_KEYS, 'sla'].filter(
+      (k) => !documented.has(k),
+    );
+    assert.deepStrictEqual(
+      missing,
+      [],
+      `served but undocumented: ${missing.join(', ')}. getAddress spreads the stored wrapper, so every one of its keys reaches the consumer whether the spec mentions it or not.`,
+    );
+  });
+
+  it('does not document keys the response never carries', async () => {
+    // The `geo` and `ssla` failure, generalised. A spec naming something the endpoint
+    // does not return is worse than one omitting something it does: the omission is
+    // discovered by reading a response, the falsehood is discovered by a consumer
+    // writing code against it.
+    //
+    // `ssla` is the worked example and is deliberately in the guard: it is a real
+    // field, it is correct on the SEARCH result, and it is wrong here, because the
+    // loader lifts `sla`/`ssla` out before building the object this endpoint spreads.
+    const documented = Object.keys(await addressSchema());
+    const canBeServed = new Set([...STORED_WRAPPER_KEYS, 'sla']);
+    const phantom = documented.filter((k) => !canBeServed.has(k));
+    assert.deepStrictEqual(
+      phantom,
+      [],
+      `documented but never served by this endpoint: ${phantom.join(', ')}`,
+    );
+  });
+
+  it('marks the two never-promised fields deprecated, in the flag AND the description', async () => {
+    // Both, deliberately. Whether a given renderer honours `deprecated: true` is not
+    // something this repo can verify, and a description is the one thing a spec view
+    // cannot omit and still be a spec view.
+    const properties = await addressSchema();
+    for (const field of ['sla_range_expanded', 'precedence']) {
+      assert.equal(
+        properties[field].deprecated,
+        true,
+        `${field} must carry deprecated: true`,
+      );
+      assert.match(
+        properties[field].description,
+        /DEPRECATED/,
+        `${field}'s description must carry the notice too — the flag alone may render nowhere a consumer looks`,
+      );
+    }
+  });
+});
