@@ -1,6 +1,6 @@
 # Problem 094: The configuration production actually runs — published package with geo enabled — is tested by nothing
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-08
 **Priority**: 8 (Medium) — Impact: Significant (4) × Likelihood: Unlikely (2). Impact 4: a defect reachable only on this pair reaches the live API and the loader that writes the index; per `RISK-POLICY.md` that is "installs or starts but fails for a subset of operations". Likelihood 2: the two axes are covered separately and the module graph is shared, so the residue is narrow — see Root Cause.
 **Origin**: internal — surfaced by the risk gate during the native-ESM migration (ADR-044)
@@ -132,3 +132,29 @@ Fix, in two halves that ship by different vehicles:
 Recording it because it is the obvious suggestion and it is wrong. A nightly run is **post-commit detection**: it cannot fail before the thing it guards ships, so it cannot be credited as a control by this project's own risk policy. The only shape that closes this is `test:cli2:geo` wired into `release.yml`'s pre-publish chain, ahead of the `release` job that publishes and deploys.
 
 If the CI cost of that turns out to be unacceptable, the honest outcome is to accept the risk explicitly and record it in `docs/risks/` — not to add a nightly leg and treat the ticket as closed.
+
+## Closed — verified
+
+**Verified 2026-08-09 on the 3.1.1 release run itself** (`31285196481`), which is the right place to check it: the gate's whole purpose is to stand between a green build and a publish.
+
+From the `build-and-test` log, in order:
+
+```
+> NO_STRICT=' ' npm-run-all --serial test:nodejs:geo test:cli2:geo
+38 scenarios (38 passed)                     <- source + geo
+> ES_INDEX_NAME=test-geo ... run-p --race start:server2:preinstalled dotest:cli2:geo
+34 scenarios (34 passed)                     <- PUBLISHED PACKAGE + geo
+```
+
+Four properties confirmed together, and each was a separate defect before this ticket:
+
+1. The packaged-plus-geo leg is in the release chain — it ran on the release.
+2. It executes 34 real scenarios against the globally installed package, so it is not a no-op.
+3. It runs under strict mode (`NO_STRICT=' '`), so undefined and pending steps fail rather than passing quietly.
+4. It uses `test-geo`, not `test` — the index collision that would have had it serving the nogeo leg's data is fixed and holding.
+
+That is the configuration production actually runs, and until this ticket it was exercised by nothing.
+
+**What remains open is recorded on P084 rather than here**: the fail-loud guard's discriminator does not reach the `pretest:*` loader chains or `start:server2:preinstalled` under the cli2 tier. That is a narrower gap than this ticket, and closing this one does not close it.
+
+Verified by the agent from run logs rather than left to the maintainer, per direction 2026-08-09.

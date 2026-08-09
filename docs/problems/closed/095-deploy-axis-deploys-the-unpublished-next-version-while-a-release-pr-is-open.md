@@ -1,6 +1,6 @@
 # Problem 095: The push-tier deploy axis deploys the unpublished NEXT version while a release PR is open
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-08
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3). Impact 4: a failed deployment against the live origin plus recoverable Terraform state drift. Not 5 — `RollbackLaunchOnFailure` held and production never stopped serving. Likelihood 3: fires whenever a `deploy/**` push coincides with a pending changeset, which is a normal combination.
 **Origin**: internal — realised in production, run 31252424980
@@ -162,3 +162,15 @@ Do not push a `deploy/**` change while a release PR is open. Merge the release f
 - [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) — authored the three-disjunct deploy gate and the `deploy/**` axis.
 - [ADR-044](../../decisions/044-native-esm-without-a-build-step.proposed.md) — its deferred dead-code deletion was the `deploy/**` push that surfaced this.
 - [ADR-001](../../decisions/001-risk-gated-release-process.proposed.md) — its 2026-07-27 amendment admits the push-tier `deploy/**` entry point; this incident is evidence for the next re-ratification of that amendment.
+
+## Closed — verified
+
+**Verified in production 2026-08-09, on the exact case this ticket was filed for.**
+
+The discriminating scenario is a `deploy/**` push landing while a release PR is open. That occurred: run `31283258197` ran at 23:07 on 2026-08-08, and release PR #515 was open from 15:25 until 23:59. In that same job `changesets/action` ran, bumping the workspace to 3.1.1 to author the PR — which is the precise condition that broke it the first time.
+
+The deploy resolved **3.1.0**, the version published on npm at that moment, not the bumped workspace version. Evidence from the run: the S3 object id is `mountainpass-addressr-deployment-3.1.0.zip`, and the post-deploy smoke returned `{"status":"healthy","version":"3.1.0"}`.
+
+Before the fix this deployed 3.1.1, which did not exist on the registry, and Elastic Beanstalk failed `npm install` on both instances — run `31252424980`, 2026-08-08 at 10:16.
+
+Verified by the agent from run logs rather than left to the maintainer, per direction 2026-08-09.

@@ -51,16 +51,14 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off the dual-tolerant glob `docs/problems/*.verifying.md docs/problems/verifying/*.md` per ADR-022 + RFC-002 migration window). Sorted by `Released date ASC` (oldest at row 1; same-day releases tiebreak by ID ASC). <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` column carries an **evidence-first** cell per P186 — three canonical values: `yes — observed: <evidence>`, `no — not observed` (default for newly-released tickets), `no — observed regression`. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 --> Age is preserved separately via the `Released` column.
 
-| ID   | Title                                                                       | Released            | Likely verified?                                                                                                   |
-| ---- | --------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| P051 | release:watch stalls on the changeset release-PR approval gate              | 2026-07-18          | no — not observed                                                                                                  |
-| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content               | 2026-07-20          | no — not observed                                                                                                  |
-| P023 | Cross-origin root `/` not browser-cached (preflight flood)                  | 2026-07-25 v3.0.2   | no — not observed                                                                                                  |
-| P067 | addressr server has no SIGTERM graceful-shutdown handler                    | 2026-07-26 v3.0.3   | no — not observed                                                                                                  |
-| P070 | stream-down promotes failed and partial downloads into cache                | 2026-07-29 v3.0.4   | no — not observed                                                                                                  |
-| P069 | Partial-prefix search drops results a shorter query returns                 | 2026-08-02 33e6c04  | yes — observed: `55 Pyrmont Bri` returns 4 results with the target at #1 on the live endpoint (was 0); #365 closed |
-| P095 | Deploy axis deploys the unpublished NEXT version while a release PR is open | 2026-08-08 09ab4dbc | no — not observed                                                                                                  |
-| P094 | Published package with geo enabled is tested by nothing                     | 2026-08-09 v3.1.1   | no — not observed                                                                                                  |
+| ID   | Title                                                          | Released           | Likely verified?                                                                                                   |
+| ---- | -------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18         | no — not observed                                                                                                  |
+| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20         | no — not observed                                                                                                  |
+| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2  | no — not observed                                                                                                  |
+| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3  | no — not observed                                                                                                  |
+| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4  | no — not observed                                                                                                  |
+| P069 | Partial-prefix search drops results a shorter query returns    | 2026-08-02 33e6c04 | yes — observed: `55 Pyrmont Bri` returns 4 results with the target at #1 on the live endpoint (was 0); #365 closed |
 
 ## Inbound Upstream Reports
 
