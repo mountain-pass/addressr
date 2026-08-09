@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-09 **P094 known error** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
+> Last reviewed: 2026-08-09 **P094 verification pending** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -16,7 +16,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
-| 8.0  | P094 | Published package with geo enabled is tested by nothing               | Medium (8)   | Known Error   | M      | 2026-08-08 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
@@ -61,6 +60,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P070 | stream-down promotes failed and partial downloads into cache                | 2026-07-29 v3.0.4   | no — not observed                                                                                                  |
 | P069 | Partial-prefix search drops results a shorter query returns                 | 2026-08-02 33e6c04  | yes — observed: `55 Pyrmont Bri` returns 4 results with the target at #1 on the live endpoint (was 0); #365 closed |
 | P095 | Deploy axis deploys the unpublished NEXT version while a release PR is open | 2026-08-08 09ab4dbc | no — not observed                                                                                                  |
+| P094 | Published package with geo enabled is tested by nothing                     | 2026-08-09 v3.1.1   | no — not observed                                                                                                  |
 
 ## Inbound Upstream Reports
 

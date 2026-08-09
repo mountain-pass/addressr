@@ -1,6 +1,6 @@
 # Problem 094: The configuration production actually runs — published package with geo enabled — is tested by nothing
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-08-08
 **Priority**: 8 (Medium) — Impact: Significant (4) × Likelihood: Unlikely (2). Impact 4: a defect reachable only on this pair reaches the live API and the loader that writes the index; per `RISK-POLICY.md` that is "installs or starts but fails for a subset of operations". Likelihood 2: the two axes are covered separately and the module graph is shared, so the residue is narrow — see Root Cause.
 **Origin**: internal — surfaced by the risk gate during the native-ESM migration (ADR-044)
@@ -92,6 +92,19 @@ Two decision records move as a result:
 - [ADR-029](../../decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md) carries a confirmation criterion requiring "both `test:nogeo` and `test:geo` scopes" to pass. That criterion was assessed when `test:geo` meant one profile; it now means two. Strictly stronger, so the tick still holds, but the referent widened — noted there so a future reader does not over-read it.
 
 **One measurement that had to come first.** My original hand-run of `test:cli2:geo` for the 3.1.0 release was under `--no-strict` (a bare `npm run test:cli2:geo` leaves `NO_STRICT` unset, and cucumber then does not fail on undefined or pending steps), so 34 green did not prove step coverage. Re-run as `NO_STRICT=' ' npm run test:cli2:geo`: still 34 / 217, so the coverage is real. Wiring it without that check would have risked discovering undefined steps as a red master.
+
+## Fix Released
+
+**Released**: 2026-08-09 in **v3.1.1**, from `7fbde89e` (`fix(test): wire the packaged-plus-geo diagonal into the pre-publish gate`). Confirmed in the published artefact rather than inferred: the commit is an ancestor of the released SHA `6fd6603e`, and `client/elasticsearch.js` in the 3.1.1 tarball carries the `TEST_PROFILE` guard.
+
+Fix, in two halves that ship by different vehicles:
+
+1. **The gate itself** — `test:cli2:geo` is wired into `test:geo`, so the packaged-plus-geo diagonal now runs before publish and `release.yml` holds on it. That is CI configuration; the master push is its release vehicle, not npm. Three defects had to be fixed before the leg could run at all: an index collision with the nogeo chain, a hardcoded `ES_INDEX_NAME` in a script shared by both chains, and a missing heap.
+2. **The guard, which does ship** — `resolveIndexName()` throws when `ES_INDEX_NAME` is unset under `TEST_PROFILE` instead of silently resolving to the production index name. This is in the npm package as of 3.1.1.
+
+**Awaiting user verification** — the observable is that a release now fails rather than publishes if the packaged-plus-geo tier breaks. The leg has run green on both OpenSearch matrix legs since wiring, including on the 3.1.1 release, so the gate is exercised; what is NOT yet exercised is the gate actually catching a regression, which is the property it exists for.
+
+**Known residue, carried deliberately.** The guard's discriminator does not reach every process this ticket names. `TEST_PROFILE` is set on the cucumber-invoking script strings, so the single-process tiers and the `dotest:cli2:*` strings are covered. It is NOT set by the `pretest:*` loader chains, nor by `start:server2:preinstalled` under the cli2 tier — so if one of those drops `ES_INDEX_NAME`, the loader or the server points at the production index name and nothing throws. That is the write path and the server path, which is where this ticket originally bit. Raised by the risk scorer during the 3.1.1 release assessment; the remedy is either setting `TEST_PROFILE` on those strings too, or moving the discriminator to something both processes carry.
 
 ## Workaround
 

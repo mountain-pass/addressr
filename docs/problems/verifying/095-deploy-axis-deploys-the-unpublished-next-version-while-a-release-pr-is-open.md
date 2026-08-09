@@ -158,7 +158,7 @@ Do not push a `deploy/**` change while a release PR is open. Merge the release f
 ## Related
 
 - [P039](../known-error/039-decouple-saas-deployment-from-npm-publish.md) — decoupling SaaS deployment from npm publish. This is a defect in the wiring that ticket's fix delivered, not unfinished work belonging to it: P039's recorded residual on this axis is a **governance-tier** concern (push-tier reaches production), whereas this is **version skew**. Raising the tier would not have prevented it, and gating on pending releases does not change the tier.
-- [P094](../known-error/094-published-package-with-geo-enabled-is-tested-by-nothing.md) — both are gaps between what CI exercises and what production actually runs.
+- [P094](094-published-package-with-geo-enabled-is-tested-by-nothing.md) — both are gaps between what CI exercises and what production actually runs.
 - [ADR-040](../../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) — authored the three-disjunct deploy gate and the `deploy/**` axis.
 - [ADR-044](../../decisions/044-native-esm-without-a-build-step.proposed.md) — its deferred dead-code deletion was the `deploy/**` push that surfaced this.
 - [ADR-001](../../decisions/001-risk-gated-release-process.proposed.md) — its 2026-07-27 amendment admits the push-tier `deploy/**` entry point; this incident is evidence for the next re-ratification of that amendment.
