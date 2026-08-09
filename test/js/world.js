@@ -9,7 +9,12 @@ import {
 import debug from 'debug';
 import fs from 'node:fs';
 import waitport from 'wait-port';
-import { esConnect } from '../../client/elasticsearch.js';
+import {
+  esConnect,
+  ES_INDEX_NAME,
+  ES_LOCALITY_INDEX_NAME,
+} from '../../client/elasticsearch.js';
+import { awaitIndexReady } from './index-ready.js';
 import { AddressrRest2Driver } from './drivers/AddressrRest2Driver.js';
 import { AddressrRest2EmbeddedDriver } from './drivers/AddressrRest2EmbeddedDriver.js';
 import {
@@ -70,6 +75,28 @@ BeforeAll({ timeout: 240_000 }, async function () {
   logger(`cwd`, cwd);
   this.containers = {};
   await esConnect();
+
+  // P097. `startExternalServer` waits on the TCP port, and the port opens before
+  // the index answers a query — so up to here the only readiness this suite has
+  // ever asserted is "something is listening". Three legs started against an
+  // index that was present and not yet searchable and failed as
+  // `expected [] not to be empty` inside a step definition, which is a symptom
+  // consistent with an absent index, an empty one and an unrefreshed one alike.
+  // The gate below waits for the real precondition and, when it times out, says
+  // which of those three happened. Placed AFTER esConnect() because it needs the
+  // client that call installs.
+  //
+  // BOTH indices, not just the address one. `localitiesv2.feature` asserts the
+  // same not-empty shape against `ES_LOCALITY_INDEX_NAME`, which is a separate
+  // index with its own refresh. Gating on the address index alone would leave
+  // that half exposed AND actively mislead: a locality-side recurrence would
+  // print `index test-geo ready: N documents, searchable` immediately above an
+  // empty locality list, which reads as evidence against the refresh race.
+  await awaitIndexReady({ client: globalThis.esClient, index: ES_INDEX_NAME });
+  await awaitIndexReady({
+    client: globalThis.esClient,
+    index: ES_LOCALITY_INDEX_NAME,
+  });
 });
 
 AfterAll({ timeout: 30_000 }, async function () {

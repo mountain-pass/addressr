@@ -48,7 +48,12 @@ function resolveIndexName() {
   return 'addressr';
 }
 
-const ES_INDEX_NAME = resolveIndexName();
+// Exported 2026-08-09 for P097's readiness gate, which needs the resolved name
+// and must not re-derive it. `ES_LOCALITY_INDEX_NAME` was already derived from
+// the same value; the base name being module-private meant a caller wanting it
+// had to restate `resolveIndexName()`'s logic, and a restated index name is how
+// the P094 collision happened.
+export const ES_INDEX_NAME = resolveIndexName();
 export const ES_LOCALITY_INDEX_NAME = `${ES_INDEX_NAME}-localities`;
 export const ELASTIC_PORT = Number.parseInt(process.env.ELASTIC_PORT || '9200');
 const ELASTIC_HOST = process.env.ELASTIC_HOST || '127.0.0.1';
