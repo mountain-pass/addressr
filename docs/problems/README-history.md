@@ -182,3 +182,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-09 **P094 verification pending** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
 
 > Last reviewed: 2026-08-09 **P098 captured** — test files whose assertions never execute, because no runner reaches them or nothing invokes their runner; one is named by an ADR Confirmation criterion, one is the standing instrument for a lint rule enabled the same day, and two are the named guards behind release-reliability outcomes (lightweight aside via /wr-itil:capture-problem)
+
+## 2026-08-10
+
+> Last reviewed: 2026-08-09 **P097 verification pending** — the cucumber tiers now wait for a searchable index rather than an open port, and say which of four things went wrong when they do not get one; released in v3.3.0

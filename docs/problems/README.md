@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-09 **P097 verification pending** — the cucumber tiers now wait for a searchable index rather than an open port, and say which of four things went wrong when they do not get one; released in v3.3.0
+> Last reviewed: 2026-08-10 **P099 captured** — the assistant pushes interface work onto the user instead of presenting decidable choices in the interface the user actually has (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,6 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
+| 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices  | High (12)    | Open          | S      | 2026-08-10 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
