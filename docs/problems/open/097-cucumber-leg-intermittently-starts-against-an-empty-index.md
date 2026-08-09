@@ -1,15 +1,25 @@
-# Problem 097: The cucumber nogeo leg intermittently starts against an empty index
+# Problem 097: A cucumber leg intermittently starts against an empty index
 
 **Status**: Open
 **Reported**: 2026-08-09
-**Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: it fails the release gate, so no version can be published or deployed until someone re-runs it — the RISK-POLICY level-3 clause, with existing installs and the live service unaffected. Not 4: nothing reaches production, and `fail-fast` means the run stops immediately rather than reporting partial coverage. See Rating notes below.
+**Priority**: 9 (High) — Impact: Moderate (3) × Likelihood: Possible (3). **Re-rated 2026-08-09, same day, on a second instance — this ticket's own trigger fired within hours of it being written.** Impact 3: it fails the release gate, so no version can be published or deployed until someone re-runs it — the RISK-POLICY level-3 clause, with existing installs and the live service unaffected. Not 4: nothing reaches production, and `fail-fast` means the run stops immediately rather than reporting partial coverage. See Rating notes below.
 **Origin**: internal — observed 2026-08-09, run `31284588346`
 **Effort**: M — the fix is unknown until the race is characterised; the investigation is the work
-**WSJF**: 3.0 — (6 × 1.0) / 2
+**WSJF**: 4.5 — (9 × 1.0) / 2; was 3.0 at Priority 6
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 
 ## Rating notes
+
+**Likelihood 3 as of the second instance. The first rating's reasoning is kept below because it was right to be tentative, and the thing it warned about is what happened.**
+
+Second instance: run `31292412669`, the retro commit, `build-and-test (3.5.0)`, `Run tests (geo)`, failing inside `test:nodejs:geo`. Identical assertion, identical scenario. Green on re-run.
+
+**Two framings in the first draft are now falsified, and both were mine.** It is not confined to one backend version — instance 1 was 2.19.5, instance 2 was 3.5.0. It is not confined to the nogeo tier — instance 1 was `test:nodejs:nogeo`, instance 2 was `test:nodejs:geo`. "One leg red, the other green" described a sample of one, not a property.
+
+**What IS invariant across both, and is the sharpest signal in the ticket**: the failure is `test/resources/features/addressv2.feature:27` — the **first** `Search` scenario in the file — both times, immediately after the loader's `pretest:*` step completed. Same scenario, same assertion, different backend, different tier. A defect in the scenario or in the backend would not select the first query so precisely; a readiness race is the only candidate that predicts it.
+
+**Original Likelihood 2 note, retained:**
 
 **Likelihood 2, and the denominator is thin — stated rather than implied.** Observed once, on run `31284588346`, against roughly a dozen full matrix runs on 2026-08-09. Two things stop that being firm evidence for 2 over 3. The denominator is a same-day count, not a historical one. And `--fail-fast` destroys the evidence that would distinguish "index empty" from "one scenario genuinely wrong", so earlier instances may have been mis-attributed rather than absent — the same under-observation bias this ticket's Investigation Task 3 names. Re-rate to 3 if a second instance appears, and treat the absence of prior sightings as weak.
 
@@ -52,11 +62,11 @@ Not established. The shape — index empty on the first query, on one backend ve
 1. **The loader completed but OpenSearch had not refreshed.** A search issued before the index refresh interval elapses returns nothing on a freshly-written index. If the harness waits on the loader process exiting rather than on a refresh or a document count, that gap is real and version-sensitive.
 2. **The server was ready before the index was.** `waitport` in `test/js/world.js` waits on the TCP port only, which is the same blind spot P094 recorded from a different angle — the port opening says nothing about the index behind it.
 
-Candidate 2 is the more interesting one because it is a known instrument gap in this repo rather than a new hypothesis, and it predicts exactly this symptom: first query, empty result, timing-dependent, no error anywhere.
+**Candidate 2 is now the leading one and candidate 1 is weakened.** A version-specific refresh difference cannot explain instances on both 2.19.5 and 3.5.0. The readiness gap can, and it predicts precisely what both instances show: the first query after load, empty result, timing-dependent, no error anywhere. It is also a known instrument gap in this repo rather than a fresh hypothesis — `waitport` waits on the TCP port, and the port opens before the index is queryable.
 
 ## Investigation Tasks
 
-- [ ] Determine whether the two OpenSearch versions differ in default refresh behaviour, or whether the 2.19.5 leg is simply the slower one and the race is version-agnostic.
+- [x] ~~Determine whether the two OpenSearch versions differ in default refresh behaviour.~~ **Answered by instance 2: the race is version-agnostic.** It has now fired on both 2.19.5 and 3.5.0, and on both the geo and nogeo tiers.
 - [ ] Add a readiness precondition to the cucumber `Before` hook that asserts a known OT document is retrievable, not merely that the port is open. This is the same fix P094's residue names, and it would convert this failure from an assertion deep in a scenario into a loud, specific setup failure.
 - [ ] File the second-order desensitisation cost as its own standing risk in `docs/risks/`, or attach it to R023 (gate-signal trust from the lying-green side; this is the crying-wolf side). The Rating notes above exclude it from this ticket's Priority deliberately, and an exclusion with no carrier is a deferral into prose — it discharges when the entry exists, not when it is planned. Deliberately NOT bundled into the retro commit that raised it: a curated above-appetite entry moves the register's above-appetite partition, which the bolded-partition invariant enforces across `docs/`, and that is a batch of its own.
 - [ ] Decide whether `--fail-fast` is right for this tier. It saves CI minutes and it also destroys the evidence needed to tell "index empty" from "one scenario wrong" — here it skipped 34 scenarios that would have distinguished them.
