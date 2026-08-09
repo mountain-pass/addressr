@@ -2,7 +2,7 @@
 
 **Status**: Open
 **Reported**: 2026-08-03
-**Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3) — derived at capture; developer-time only, no runtime, publish or consumer path, but it lands on whoever next edits `service/` or `src/`
+**Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3) — **re-grounded 2026-08-09, product unchanged.** Impact 2 does NOT rest on the flagged surface being off the production path — it is not. Two `.mjs` files in the corpus are bundled into the deployed Cloudflare edge proxy (see the measured section). It rests on the CATCH-POWER of the missing lint: on those files the rules with sites are the formatting and naming classes, so lint's absence there costs formatting, not correctness. The cost of the gap is developer-time-shaped even where the file is production-shaped
 **Origin**: internal
 **Effort**: M — derived at capture: the auto-fixable share is one command, the rest is ~214 hand edits across two directories
 **JTBD**: JTBD-400
@@ -77,9 +77,9 @@ This is a workaround, not the fix. The rules are real and the code does violate 
 
 ## Impact Assessment
 
-- **Who is affected**: the maintainer, on the next edit to a flagged file. No consumer, runtime, publish or deploy path.
+- **Who is affected**: the maintainer, on the next edit to a flagged file. Mostly no consumer, runtime, publish or deploy path — with the two Cloudflare Worker `.mjs` files as the stated exception, which carry no correctness-class findings.
 - **Frequency**: once per touched file, until swept.
-- **Severity**: Minor. `RISK-POLICY.md` Impact 1-2 territory — developer tooling that does not affect build, publish or runtime. Worth noting the secondary shape though: `lint-staged` runs `eslint --fix` and re-stages, so a commit touching a heavily-flagged file silently carries auto-fix churn the author did not review.
+- **Severity**: Minor. `RISK-POLICY.md` Impact 1-2 territory — the findings are developer tooling in effect, even on the two files that do reach runtime. Worth noting the secondary shape though: `lint-staged` runs `eslint --fix` and re-stages, so a commit touching a heavily-flagged file silently carries auto-fix churn the author did not review.
 
 ## Root Cause Analysis
 
@@ -92,13 +92,47 @@ Contributing: lint is not in CI, so drift accrues invisibly between upgrades. Th
 - [ ] Sweep the auto-fixable share first, scoped per directory so the diff stays reviewable: `npx eslint service/ --fix`, then `src/`, then `test/`. Expect this to clear all 133 `prettier/prettier` plus the fixable unicorn classes.
 - [ ] Work `unicorn/no-this-outside-of-class` (173). Check whether these are genuine CJS-era `this` usages that should become explicit parameters or module-scope references, or whether the rule is wrong for this codebase and belongs in the permanent-off list next to `unicorn/prefer-module` and `unicorn/prefer-top-level-await` (both already off, both citing ADR-005).
 - [ ] Work `unicorn/name-replacements` (41), then raise both rules back to `error` per directory as each is cleared.
-- [ ] Decide whether lint belongs in CI. It is the reason this debt was invisible until an upgrade forced it. Note the architect separately observed that `lint-staged` is scoped to `*.{js,jsx}` while the repo has substantial `.mjs` surface (`test/js/__tests__/`, `test/precommit/`, `scripts/*.mjs`) that **nothing** lints — that gap is arguably the bigger one and would be closed by the same change.
+- [ ] Decide whether lint belongs in CI. It is the reason this debt was invisible until an upgrade forced it.
+- [ ] **The `.mjs` blind spot, measured 2026-08-09 rather than left as an observation.** This task previously read as a note appended to the CI question. It is the bigger half, as the architect said at capture, and it now has numbers — see the section below.
+
+### The `.mjs` blind spot, measured
+
+`npx eslint . --format json` on a clean tree at `432700cb`:
+
+| Extension | Files | Errors | Warnings |
+| --------- | ----- | ------ | -------- |
+| `.mjs`    | 50    | 365    | 256      |
+| `.js`     | 46    | 47     | 197      |
+
+47 of 50 `.mjs` files carry a finding, against roughly an eighth the errors in the `.js` corpus that `lint-staged` does cover. Top `.mjs` rules: `prettier/prettier` 137, `unicorn/name-replacements` 75, `security/detect-non-literal-fs-filename` 74, `security/detect-object-injection` 45, `unicorn/filename-case` 35.
+
+**Two gaps compose, and both must close for either to matter.** `lint-staged` matches `*.{js,jsx}` for eslint and `*.{json,css,md}` for prettier, so `.mjs` matches neither; and `npm run lint` is in no hook and no workflow. eslint itself is willing — the flat config puts no `files` restriction on its base block, so `eslint .` lints all 96 files. The corpus is reachable; nothing reaches for it.
+
+**Two of the 50 reach production, which the first draft of this section got wrong.** `deploy/cloudflare-worker/worker.js` imports `./ip-matcher.mjs` and `./safe-ips.mjs`, and `build:worker` bundles them into the deployed Cloudflare edge proxy — `ip-matcher.mjs` being the CIDR matcher behind the ADR-018 `safeIps` auth bypass. Also `client/__tests__/*.mjs` sits under `client/`, which IS a `files` entry, so it ships in the tarball inert. The impact rating does not move, but the ground under it changes twice, and the second correction is the one that matters.
+
+The first draft of this correction said the rating holds because those two files are pure functions with behavioural cover in `cloudflare-worker-ip-matcher.test.mjs`. **That is a category error and is withdrawn.** Cover is a control on LIKELIHOOD — it makes a defect less probable. It cannot make an auth-bypass defect on the production edge proxy less CONSEQUENTIAL, which is what an impact argument has to do.
+
+What actually holds Impact 2 is the catch-power of the missing lint. On `ip-matcher.mjs` the rules with sites are the formatting and naming classes — the mask expression is a `prettier/prettier` candidate and nothing more; there is no computed member access for `detect-object-injection` to fire on, and no I/O for `detect-non-literal-fs-filename`. So what lint's absence costs on that file is formatting, not correctness. The surface is production-shaped; the findings are not.
+
+**Re-rate trigger, because that ground is conditional on today's corpus and this ticket argues below that the corpus is not frozen**: a new `.mjs` joining the Worker bundle that is not a pure function, or any `security/*` rule acquiring a site under `deploy/cloudflare-worker/`, moves Impact to 3.
+
+**Non-amplifying per file, growing per corpus.** Touching a `.mjs` file mechanically changes nothing, since it matches no glob, so there is no per-edit churn. But the corpus is not frozen: the unit tier is `.mjs` by convention at 34 of the 50, and its growth driver is P033's conversion programme. Nor is the finding count frozen — this ticket exists because unicorn 64 to 72 took the tree from 102 to 593 in one upgrade, and the same would re-price the `.mjs` share wholesale. The Effort grade has a shelf life, which argues for the auto-fix sweep sooner rather than later.
+
+**Sequencing constraint.** Widening the glob first would make the next person to touch any `.mjs` file responsible for that file's whole backlog, mid-unrelated-change — which is how a gate gets bypassed with `--no-verify` rather than obeyed. Green first, or land the gate with findings explicitly baselined. And per the ADR-014 note below, the widening is a deviation from an accepted decision rather than a free change.
+
+- [ ] Sweep the `.mjs` auto-fixables as their own commit, touching nothing else, so the formatting churn is reviewable as formatting.
+- [ ] Triage the ~119 untriaged `security/*` findings. The `.js` corpus carries site-scoped disables with stated reasons; these have never been looked at. `scripts/check-not-cli2-tags.mjs` first, since it runs as a pre-commit gate rather than a test.
+- [ ] Only then widen the `lint-staged` glob — and check whether `.cjs` needs it too, which nobody has looked at.
 
 ## Dependencies
 
 - **Blocks**: (none — the `warn` downgrade removes the blocking property)
 - **Blocked by**: (none)
 - **Composes with**: (none)
+
+## Withdrawn duplicate
+
+**P096 was opened for the `.mjs` half of this ticket on 2026-08-09 and withdrawn the same day, before it was ever committed.** On reading this ticket it was clear the scope was already here — investigation task 4 named the `.mjs` gap and called it the bigger one, and the Related section below already cites the ADR that pins the glob. Two tickets at identical Priority, Effort and WSJF in the same selection band would have meant whichever was picked left the other live with overlapping fix steps, which a cross-reference annotates rather than prevents. The measurements it had gathered are folded into the section above. **ID 096 is retired rather than reused**, so an external reference to it does not later resolve to something unrelated.
 
 ## Related
 
