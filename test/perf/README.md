@@ -6,6 +6,8 @@ than a number in a document.
 - **Relevance gates** (ADR-043) — `street-level-first-probe.mjs`,
   `partial-prefix-recall-ladder.mjs`, `relevance-lib.mjs`. See the section at
   the end of this file.
+- **Feature-value probes** — `range-alias-value-probe.mjs`. Answers "does this
+  field earn its place", not "did ranking regress". See below.
 - **Primary-path invariants** (ADR-031 / ADR-033) — `read-shadow-invariant-ab.mjs`,
   `sigv4-signing-bench.mjs`, plus the terminal `exact-vs-range-margin-probe.mjs`.
   Documented immediately below.
@@ -21,6 +23,50 @@ apparatus, kept so the claim is reproducible rather than a number in a document.
 Not wired into any npm script or CI job on purpose. It needs two OpenSearch
 instances and a hand-driven server, runs for minutes, and answers a question
 that is asked once per migration.
+
+## Feature-value probe: `range-alias-value-probe.mjs` (P091)
+
+Measures whether `sla_range_expanded` is worth having, which is P091's second
+investigation task. Draws range-form addresses, splits them into those whose
+endpoints exist as their own documents and those whose do not, and asks whether
+the range document is still findable by an endpoint query **without** the alias.
+
+**It is the heaviest probe in this directory, and that is not obvious from
+reading it.** Every sibling filters before scoring — `drawSample` uses
+`prefix: { 'sla.raw': 'UNIT ' }` inside its `function_score`. This one cannot:
+`prefix` on `sla.raw` cannot express "digits then hyphen", and `structured` is
+`{ type: 'object', enabled: false }`, so there is no indexed marker for a range
+document to filter on. The draw is an unfiltered `match_all` inside
+`function_score` — a full scoring pass over all ~16.9M documents, with no early
+termination — repeated until enough range forms fall out. Range forms are ~2% of
+the index, so `--n 500` needs roughly 49 passes plus ~390 ordinary endpoint
+queries.
+
+A `regexp` query over 16.9M documents would be worse, which is why the random
+walk stands. The bound is `seed < seedBase + 200` on the draw loop, which caps
+iterations regardless of `--n`; the passes are sequentially awaited so at most
+one is in flight, and the endpoint probes run at concurrency 4.
+
+**Same constraint as the gates: do not run concurrently with a k6 baseline or an
+ADR-031 soak.** Read-only — `_search` only, no writes, no mapping change, no
+`_update_by_query`.
+
+```
+ADDRESSR_PROBE_HOST=search-….es.amazonaws.com \
+  node test/perf/range-alias-value-probe.mjs --n 500
+```
+
+Redraws per run. `--seed <n>` reproduces a past run and labels its own output
+non-discharging, per ADR-043 Confirmation 1.
+
+**Frame caveat, recorded here as well as on P091 because it limits what any
+result means.** The draw matches `^(\d+)-(\d+)\s+…`, while `attachRangeAliases`
+fires on the broader condition `structured.number.last.number` present — which
+also catches alpha-affixed ranges (`103A-107B …`) and level/flat-prefixed ones
+(`UNIT 5, 103-107 …`). Results are therefore scoped to the bare-numeric-leading
+population. The exclusion is conservative for the removal case: for those forms
+the generated alias drops the affix and the unit, so it competes hardest with a
+real address.
 
 ## Why not k6, and why not production
 
