@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-09 **P094 verification pending** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
+> Last reviewed: 2026-08-09 **P098 captured** — test files whose assertions never execute, because no runner reaches them or nothing invokes their runner; one is named by an ADR Confirmation criterion, one is the standing instrument for a lint rule enabled the same day, and two are the named guards behind release-reliability outcomes (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -23,6 +23,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI     | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
 | 6.0  | P085 | `push:watch` reports success on a red master (3 selector defects)     | High (12)    | Open          | S      | 2026-08-03 | internal |
+| 5.0  | P098 | Test assertions that never execute — no runner, or no caller          | High (10)    | Open          | M      | 2026-08-09 | internal |
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
 | 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |

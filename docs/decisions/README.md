@@ -108,9 +108,9 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-025 — Symmetric `ssla` Indexing for Search Ranking
 
 **Status:** accepted | **Oversight:** confirmed
-**Decides:** Always populate `ssla` (equal to `sla` when an address has no sub-unit) so `bool_prefix` summation stops privileging sub-unit documents, chosen over a `dis_max` query rewrite because the correctness property is encoded in data and survives a backend swap under ADR-021. The claimed outcome was later falsified — P074 measured 62.7% of sub-unit-bearing addresses still returning a sub-unit first, since the sibling `phrase_prefix` clause decides ranking; the symmetric mapping is retained for slash-form notation tolerance.
-**Confirmation:** Named unit test at `service/address-service.test.js` is orphaned — no runner globs it, so it has never executed; un-skipped Cucumber scenario `P007 Exact street address ranks first over sub-unit variants` pins street-level-first on the OT fixture; manual probes preserve the slash-form affordance; post-deploy smoke against the hosted RapidAPI listing.
-**Related:** ADR-002, ADR-009, ADR-021, ADR-042, ADR-043
+**Decides:** Always populate `ssla` (equal to `sla` for addresses with no sub-unit) so `bool_prefix` per-field summation stops privileging sub-unit documents, chosen over a `dis_max` rewrite because encoding the fix in data rather than Lucene-specific DSL keeps it portable under ADR-021. The street-level-first outcome was later falsified — P074 measured 62.7% of sub-unit-bearing addresses still returning a sub-unit first, because the sibling `phrase_prefix` clause decides ranking; the symmetric mapping is retained for slash-form notation tolerance.
+**Confirmation:** Named unit test at `service/address-service.test.js` is orphaned — no runner globs it, so its assertions have never executed (behaviour still covered by the two instruments below); un-skipped Cucumber scenario `P007 Exact street address ranks first over sub-unit variants` pins street-level-first on the OT fixture; manual probes preserve the slash-form affordance; post-deploy smoke against the hosted RapidAPI listing.
+**Related:** ADR-002, ADR-009, ADR-021, ADR-027, ADR-042, ADR-043
 
 ### ADR-027 — ADR 027: Disable fuzziness on short tokens via `AUTO:5,8`
 

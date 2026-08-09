@@ -176,3 +176,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-08 **P095 opened** — the push-tier deploy axis deploys the unpublished NEXT version while a release PR is open; realised in production (run 31252424980), EB rolled back, production never stopped serving.
 
 > Last reviewed: 2026-08-08 **P095 known error** — the deploy now resolves its version from the registry rather than the job workspace; ADR-040 amended and its fired reassessment criterion discharged.
+
+## 2026-08-09
+
+> Last reviewed: 2026-08-09 **P094 verification pending** — the published-package-plus-geo diagonal is wired into the pre-publish chain; the index collision and a hidden hardcode in the shared server script are fixed.
