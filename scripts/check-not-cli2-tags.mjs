@@ -1,12 +1,10 @@
-#!/usr/bin/env node
 // P010 guardrail — fail if any `@not-cli2` tag in a cucumber feature lacks
 // a `docs/problems/NNN-` cross-reference in a nearby comment.
 //
 // Invoked from package.json as `check:not-cli2-tags` and chained into
 // `npm run pre-commit`. Serves JTBD J7.
 
-import { readFile } from 'node:fs/promises';
-import { glob } from 'node:fs/promises';
+import { readFile, glob } from 'node:fs/promises';
 
 const TAG_PATTERN = /(^|\s)@not-cli2(\s|$)/;
 // A line is only a P010-style offender if it tags @not-cli2 WITHOUT also
@@ -18,21 +16,17 @@ const NON_CLI2_CLI_PATTERN = /(^|\s)@not-cli(\s|$)/;
 const REFERENCE_PATTERN = /docs\/problems\/\d{3}-/;
 
 async function findFeatureFiles() {
-  const files = [];
-  for await (const file of glob('test/**/*.feature')) {
-    files.push(file);
-  }
+  const files = await Array.fromAsync(glob('test/**/*.feature'));
   return files;
 }
 
 function lineNumbersWithTag(content) {
   const hits = [];
   const lines = content.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const [index, line] of lines.entries()) {
     if (!TAG_PATTERN.test(line)) continue;
     if (NON_CLI2_CLI_PATTERN.test(line)) continue;
-    hits.push({ line: i + 1, text: line.trim() });
+    hits.push({ line: index + 1, text: line.trim() });
   }
   return hits;
 }

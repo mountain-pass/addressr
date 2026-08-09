@@ -35,7 +35,7 @@ jobs:
         env:
           STATES_INPUT: ${{ inputs.states }}
         # State names MUST be uppercase. The loader at
-        # service/address-service.js:1340 filters G-NAF detail files via
+        # packages/addressr/service/address-service.js:1340 filters G-NAF detail files via
         # `path.basename(f).startsWith(`${COVERED_STATES[i]}_`)`, matching
         # against uppercase filenames like `OT_ADDRESS_DETAIL_psv.psv`. A
         # lowercase state code makes the filter empty and the loader silently

@@ -54,7 +54,9 @@ const load = (f) => parseYaml(readFileSync(`${WF}/${f}`, 'utf8'));
 // own. Select on `uses:` pointing at the callee.
 const callingJob = (f) => {
   const jobs = Object.values(load(f).jobs);
-  const caller = jobs.find((j) => String(j.uses ?? '').includes(CALLEE));
+  const caller = jobs.find((index) =>
+    String(index.uses ?? '').includes(CALLEE),
+  );
   assert.ok(caller, `${f} has no job calling ${CALLEE}`);
   return caller;
 };

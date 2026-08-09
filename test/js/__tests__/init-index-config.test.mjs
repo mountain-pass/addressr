@@ -11,7 +11,7 @@ import {
   indexConfigMatches,
   isSnapshotInProgress,
   retryOnSnapshotInProgress,
-} from '../../../src/init-index-config.js';
+} from '../../../packages/addressr/src/init-index-config.js';
 
 const INDEX = 'addressr';
 

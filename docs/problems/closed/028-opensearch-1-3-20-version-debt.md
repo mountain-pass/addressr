@@ -265,7 +265,7 @@ Architect re-review PASS (all four prior items resolved); JTBD re-review PASS (p
 - [Problem P027 — Synonym expansion bypasses AUTO:5,8 fuzziness](027-synonym-expansion-bypasses-auto-fuzziness.md) — candidate bug whose fix may be an upgrade. Related but independent of P028.
 - [Problem P025 — GitHub Actions Node.js 20 deprecation](025-github-actions-node20-deprecation.md) — adjacent version-debt ticket on a different axis (CI runtime). Similar pattern: managed-platform deprecation schedule forces our hand.
 - [`package.json`](../../../package.json) — `SEARCH_IMAGE: "opensearchproject/opensearch:1.3.20"` and `@opensearch-project/opensearch: ^3.5.1`.
-- [`client/elasticsearch.js`](../../../client/elasticsearch.js) — addressr's connection + index mapping code; will need review under 2.x for any DSL or mapping changes.
+- [`client/elasticsearch.js`](../../../packages/addressr/client/elasticsearch.js) — addressr's connection + index mapping code; will need review under 2.x for any DSL or mapping changes.
 
 ## Closed — version debt retired (2026-07-15)
 

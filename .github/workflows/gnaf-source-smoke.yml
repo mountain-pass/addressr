@@ -67,4 +67,4 @@ jobs:
         run: npm ci
 
       - name: Check the G-NAF source is still fetchable
-        run: node scripts/check-gnaf-source.mjs
+        run: node packages/addressr/scripts/check-gnaf-source.mjs

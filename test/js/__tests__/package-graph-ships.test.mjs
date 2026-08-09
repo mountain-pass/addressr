@@ -75,17 +75,32 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import * as esbuild from 'esbuild';
 
-const root = fileURLToPath(new URL('../../../', import.meta.url));
-const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+// The PACKAGE root, not the repo root — they diverged when the published app
+// moved into packages/addressr/ so changesets could drive the npm package and
+// the hosted service as separate release lines. Every path this test resolves
+// (bins, `files` entries, the module graph it walks) is package-relative, so
+// pointing it at the workspace root would read a private manifest with no
+// `files` and no `bin` — which is exactly how it failed: `Cannot convert
+// undefined or null to object`.
+const root = fileURLToPath(
+  new URL('../../../packages/addressr/', import.meta.url),
+);
+const package_ = JSON.parse(
+  readFileSync(path.join(root, 'package.json'), 'utf8'),
+);
 
 // Everything a consumer can invoke, plus what the bins import — listed
 // explicitly so a bin rewritten to point elsewhere cannot silently shrink the
 // graph this walks.
-const ENTRY_POINTS = [...Object.values(pkg.bin), 'loader.js', 'src/server2.js'];
+const ENTRY_POINTS = [
+  ...Object.values(package_.bin),
+  'loader.js',
+  'src/server2.js',
+];
 
 /** Does `files` cover this repo-relative path? */
 const isShipped = (relative) =>
-  pkg.files.some((entry) =>
+  package_.files.some((entry) =>
     entry.endsWith('/') ? relative.startsWith(entry) : relative === entry,
   );
 
@@ -99,10 +114,10 @@ const isShipped = (relative) =>
 const treatGeneratedVersionAsExternal = {
   name: 'generated-version-external',
   setup(build) {
-    build.onResolve({ filter: /(^|\/)version(\.js)?$/ }, (args) =>
-      args.kind === 'entry-point'
+    build.onResolve({ filter: /(^|\/)version(\.js)?$/ }, (arguments_) =>
+      arguments_.kind === 'entry-point'
         ? undefined
-        : { path: args.path, external: true },
+        : { path: arguments_.path, external: true },
     );
   },
 };
@@ -169,11 +184,11 @@ describe('the published package ships every module it can reach (ADR-044)', () =
     // to a source-tree check and absent from a clean checkout. It shipped inside
     // lib/ before ADR-044 and had to be added to `files` by hand.
     assert.ok(
-      pkg.files.includes('version.js'),
+      package_.files.includes('version.js'),
       'version.js must be an explicit files entry: gitignored, generated at prepack, imported at runtime',
     );
     assert.match(
-      pkg.scripts.prepack ?? '',
+      package_.scripts.prepack ?? '',
       /genversion/,
       'prepack must generate version.js, or the files entry points at nothing',
     );

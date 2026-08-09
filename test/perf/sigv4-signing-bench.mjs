@@ -59,11 +59,13 @@ const make = () => ({
   },
 });
 
-const N = 20000;
-for (let i = 0; i < 2000; i += 1) await buildSignedRequestObject(make()); // warm
+const N = 20_000;
+for (let index = 0; index < 2000; index += 1)
+  await buildSignedRequestObject(make()); // warm
 
 const t = process.hrtime.bigint();
-for (let i = 0; i < N; i += 1) await buildSignedRequestObject(make());
+for (let index = 0; index < N; index += 1)
+  await buildSignedRequestObject(make());
 const totalMs = Number(process.hrtime.bigint() - t) / 1e6;
 console.log(
   JSON.stringify({

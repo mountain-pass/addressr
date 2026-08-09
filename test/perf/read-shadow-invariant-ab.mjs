@@ -9,11 +9,13 @@ const WARM = Number(process.env.WARM || 400);
 // Fixed query set, generated once and reused across BOTH legs, so the two legs
 // see byte-identical work. Randomising per-leg would confound the delta.
 const QUERIES = [];
-for (let i = 0; i < 200; i += 1) {
-  QUERIES.push(`unit ${i % 40} christmas`);
-  QUERIES.push(`${i % 90} lam lam`);
-  QUERIES.push(`norfolk isl`);
-  QUERIES.push(`${i % 30} taylors rd`);
+for (let index = 0; index < 200; index += 1) {
+  QUERIES.push(
+    `unit ${index % 40} christmas`,
+    `${index % 90} lam lam`,
+    `norfolk isl`,
+    `${index % 30} taylors rd`,
+  );
 }
 
 async function once(q) {
@@ -29,12 +31,13 @@ function pct(sorted, p) {
   ];
 }
 
-for (let i = 0; i < WARM; i += 1) await once(QUERIES[i % QUERIES.length]);
+for (let index = 0; index < WARM; index += 1)
+  await once(QUERIES[index % QUERIES.length]);
 
 const samples = [];
 let bad = 0;
-for (let i = 0; i < N; i += 1) {
-  const { ns, ok } = await once(QUERIES[i % QUERIES.length]);
+for (let index = 0; index < N; index += 1) {
+  const { ns, ok } = await once(QUERIES[index % QUERIES.length]);
   if (!ok) bad += 1;
   samples.push(ns / 1e6);
 }

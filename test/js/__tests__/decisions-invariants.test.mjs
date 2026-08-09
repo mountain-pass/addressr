@@ -141,7 +141,9 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     for (const f of adrFiles) {
       const id = idOf(f);
       if (!new RegExp(String.raw`^### ${id}\b`, 'm').test(compendium)) {
-        problems.push(`${id}: no compendium entry (ADR-077 makes it the architect's load surface)`);
+        problems.push(
+          `${id}: no compendium entry (ADR-077 makes it the architect's load surface)`,
+        );
         continue;
       }
       const badgeLine = new RegExp(
@@ -149,7 +151,9 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
         'm',
       ).exec(compendium);
       if (!badgeLine) {
-        problems.push(`${id}: has an entry but its badge line did not parse — unchecked, which is the fail-open shape this test exists to catch`);
+        problems.push(
+          `${id}: has an entry but its badge line did not parse — unchecked, which is the fail-open shape this test exists to catch`,
+        );
         continue;
       }
       const badge = Object.fromEntries(

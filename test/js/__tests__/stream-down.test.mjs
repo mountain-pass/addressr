@@ -64,7 +64,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('rejects on a non-200 response instead of resolving', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({
       statusCode: 403,
       headers: { 'content-type': 'text/html' },
@@ -79,7 +80,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('does not leave the error body on disk as a usable archive', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const html = '<!DOCTYPE html><html>403 Forbidden (CloudFront)</html>';
     const http = mockHttp({ statusCode: 403, headers: {}, body: html });
 
@@ -100,7 +102,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('rejects a 3xx redirect and names the location (redirects are not followed)', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({
       statusCode: 302,
       headers: { location: 'https://elsewhere.example/g-naf.zip' },
@@ -115,7 +118,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('rejects when the received byte count does not match content-length', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({
       statusCode: 200,
       headers: { 'content-length': '9999' },
@@ -130,7 +134,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('falls back to the caller-supplied size when content-length is absent', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({ statusCode: 200, headers: {}, body: 'short' });
 
     await assert.rejects(
@@ -141,7 +146,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('resolves only once the bytes are flushed to disk', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const payload = 'PK pretend this is a zip';
     const http = mockHttp({
       statusCode: 200,
@@ -157,7 +163,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('rejects rather than throwing unhandled when the destination cannot be written', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({ statusCode: 200, headers: {}, body: 'data' });
     const unwritable = path.join(dir, 'no-such-dir', 'g-naf.zip');
 
@@ -168,7 +175,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('rejects when the request itself errors', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({ requestError: new Error('ECONNRESET') });
 
     await assert.rejects(
@@ -178,7 +186,8 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('removes the partial file on failure so it cannot accumulate', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
     const http = mockHttp({
       statusCode: 200,
       headers: { 'content-length': '9999' },
@@ -197,10 +206,10 @@ describe('utils/stream-down.js — failed and partial downloads must not be prom
   });
 
   it('sends the loader User-Agent on the download request', async () => {
-    const { streamDown } = await import('../../../utils/stream-down.js');
-    const { LOADER_USER_AGENT } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { streamDown } =
+      await import('../../../packages/addressr/utils/stream-down.js');
+    const { LOADER_USER_AGENT } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     const payload = 'ok';
     const http = mockHttp({
       statusCode: 200,

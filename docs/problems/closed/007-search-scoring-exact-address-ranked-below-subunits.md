@@ -115,9 +115,9 @@ The sub-unit documents receive roughly **double** the score contribution, which 
 
 ### Evidence
 
-- Query builder: [`service/address-service.js:950-1003`](../../../service/address-service.js) — `searchForAddress`.
-- Mapping: [`client/elasticsearch.js:86-104`](../../../client/elasticsearch.js) — both `sla` and `ssla` use the same analyzer with no `boost` differentiation.
-- Short-SLA construction: [`service/address-service.js:779-784`](../../../service/address-service.js) — `ssla` only set when `structured.flat != undefined`.
+- Query builder: [`service/address-service.js:950-1003`](../../../packages/addressr/service/address-service.js) — `searchForAddress`.
+- Mapping: [`client/elasticsearch.js:86-104`](../../../packages/addressr/client/elasticsearch.js) — both `sla` and `ssla` use the same analyzer with no `boost` differentiation.
+- Short-SLA construction: [`service/address-service.js:779-784`](../../../packages/addressr/service/address-service.js) — `ssla` only set when `structured.flat != undefined`.
 - Reproduction case in the CI fixture (OT / Christmas Island): `19 MURRAY RD, CHRISTMAS ISLAND OT 6798` (pid `GAOT_717321355`) coexists with `UNIT 1/2/3, 19 MURRAY RD` (pids `GAOT_717882967/9/71`) on street locality `OT677711`. The failing Cucumber scenario `P007 Exact street address ranks first over sub-unit variants` in `test/resources/features/addressv2.feature` encodes this repro and is currently tagged `@not-rest2 @not-cli2` until the fix lands.
 - Elasticsearch documentation for `multi_match` confirms `bool_prefix` uses most-fields (sum) combination: the last term is translated to a `prefix` query and scores across fields are summed, unlike `best_fields` which takes the dis_max.
 

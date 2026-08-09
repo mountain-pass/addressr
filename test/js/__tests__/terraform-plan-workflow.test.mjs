@@ -103,11 +103,11 @@ describe('terraform-plan.yml', () => {
     const deployStep = release.jobs.release.steps.find((s) =>
       /Deploy new version/i.test(s.name ?? ''),
     );
-    const tfVars = (o) =>
+    const tfVariables = (o) =>
       Object.keys(o ?? {})
         .filter((k) => k.startsWith('TF_VAR_') || k.startsWith('TF_TOKEN_'))
         .sort();
-    assert.deepEqual(tfVars(planStep().env), tfVars(deployStep.env));
+    assert.deepEqual(tfVariables(planStep().env), tfVariables(deployStep.env));
   });
 
   it('never uploads the raw plan — only an address+actions projection', () => {
@@ -136,8 +136,8 @@ describe('terraform-plan.yml', () => {
       /Refuse to run against a ref/i.test(n),
     );
     const plan = names.findIndex((n) => /Terraform plan/i.test(n));
-    assert.ok(guard > -1, 'the fail-closed ref guard must exist');
-    assert.ok(plan > -1);
+    assert.ok(guard !== -1, 'the fail-closed ref guard must exist');
+    assert.ok(plan !== -1);
     assert.ok(guard < plan, 'the guard must run before terraform does');
     assert.match(steps()[guard].run, /grep -q 'PLAN_ONLY' deploy\/deploy\.sh/);
   });
@@ -174,7 +174,7 @@ describe('deploy.sh PLAN_ONLY branch', () => {
     // absence checks would not catch a reordering here.
     const planOnly = sh.indexOf('PLAN_ONLY:-');
     const apply = sh.indexOf('terraform apply');
-    assert.ok(planOnly > -1 && apply > -1);
+    assert.ok(planOnly !== -1 && apply !== -1);
     assert.ok(
       planOnly < apply,
       'PLAN_ONLY branch must precede the apply branch',

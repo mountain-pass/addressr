@@ -4,7 +4,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveAuthMode, buildEsClientOptions } from '../../../src/es-auth.js';
+import {
+  resolveAuthMode,
+  buildEsClientOptions,
+} from '../../../packages/addressr/src/es-auth.js';
 
 describe('resolveAuthMode (ADR 033)', () => {
   it('defaults to basic when the flag is unset', () => {

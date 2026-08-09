@@ -47,8 +47,8 @@ const k6Step = (() => {
 // Hoisted so a DELETED arm fails on the index, not on a slice that silently
 // counts backwards from the end (`slice(-1)` returns the last character, which
 // is non-empty and would pass an emptiness check).
-const advisoryIdx = k6Step.search(/^ *99\)/m);
-const brokenIdx = k6Step.search(/^ *\*\)/m);
+const advisoryIndex = k6Step.search(/^ *99\)/m);
+const brokenIndex = k6Step.search(/^ *\*\)/m);
 
 describe('perf-regression.yml — P032 k6 exit-code discrimination', () => {
   it('does not blanket-tolerate failure on the k6 step', () => {
@@ -67,8 +67,16 @@ describe('perf-regression.yml — P032 k6 exit-code discrimination', () => {
   it('publishes the exit code before any branch can exit', () => {
     const published = k6Step.indexOf('k6_exit=$rc');
     const exits = k6Step.indexOf('exit 1');
-    assert.notEqual(published, -1, 'k6_exit is never published to GITHUB_OUTPUT');
-    assert.notEqual(exits, -1, 'no failing exit found — the loud branch is gone');
+    assert.notEqual(
+      published,
+      -1,
+      'k6_exit is never published to GITHUB_OUTPUT',
+    );
+    assert.notEqual(
+      exits,
+      -1,
+      'no failing exit found — the loud branch is gone',
+    );
     assert.ok(
       published < exits,
       'k6_exit must be written to GITHUB_OUTPUT before `exit 1`, or the ' +
@@ -77,19 +85,26 @@ describe('perf-regression.yml — P032 k6 exit-code discrimination', () => {
   });
 
   it('orders the arms so the catch-all cannot swallow 99', () => {
-    assert.notEqual(advisoryIdx, -1, 'no 99 (advisory) case arm found');
-    assert.notEqual(brokenIdx, -1, 'no catch-all (broken probe) case arm found');
-    assert.ok(advisoryIdx < brokenIdx, 'the catch-all arm must follow the 99 arm');
+    assert.notEqual(advisoryIndex, -1, 'no 99 (advisory) case arm found');
+    assert.notEqual(
+      brokenIndex,
+      -1,
+      'no catch-all (broken probe) case arm found',
+    );
+    assert.ok(
+      advisoryIndex < brokenIndex,
+      'the catch-all arm must follow the 99 arm',
+    );
   });
 
   it('treats a threshold breach (99) as advisory — warns, does not fail', () => {
-    const advisoryArm = k6Step.slice(advisoryIdx, brokenIdx);
+    const advisoryArm = k6Step.slice(advisoryIndex, brokenIndex);
     assert.match(advisoryArm, /::warning::/);
     assert.doesNotMatch(advisoryArm, /exit 1/);
   });
 
   it('fails loudly on any other nonzero exit — a broken probe', () => {
-    const brokenArm = k6Step.slice(brokenIdx);
+    const brokenArm = k6Step.slice(brokenIndex);
     assert.match(brokenArm, /::error::/);
     assert.match(brokenArm, /exit 1/);
   });

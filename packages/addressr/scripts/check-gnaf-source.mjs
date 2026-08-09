@@ -24,7 +24,7 @@ import {
 
 // Never serve this check from cache — a warm target/keyv-file.msgpack would
 // make it green without touching data.gov.au at all.
-const NO_CACHE = { get: async () => undefined, set: async () => {} };
+const NO_CACHE = { get: async () => {}, set: async () => {} };
 
 /**
  * Validate the resource the loader would actually download, using the same
@@ -38,7 +38,7 @@ export function selectResource(pack, datum = GNAF_DATUM) {
       `G-NAF source check failed: selected resource "${selected.name}" has no url`,
     );
   }
-  if (!Number.isFinite(selected.size) || selected.size <= 0) {
+  if (!Number.isFinite(selected.size) || selected.size === 0) {
     throw new Error(
       `G-NAF source check failed: selected resource "${selected.name}" has implausible size ${selected.size}`,
     );
@@ -51,7 +51,10 @@ export function selectResource(pack, datum = GNAF_DATUM) {
  * 206 on success, so both 200 and 206 are healthy; anything else (including a
  * redirect, which utils/stream-down.js does not follow) is a failure.
  */
-export async function probeResource(url, { fetch: fetchFunction = globalThis.fetch } = {}) {
+export async function probeResource(
+  url,
+  { fetch: fetchFunction = fetch } = {},
+) {
   const response = await fetchFunction(url, {
     headers: { 'User-Agent': LOADER_USER_AGENT, Range: 'bytes=0-0' },
   });
@@ -65,16 +68,27 @@ export async function probeResource(url, { fetch: fetchFunction = globalThis.fet
   return response.status;
 }
 
-export async function checkGnafSource(deps = {}) {
-  const packageResponse = await fetchPackageData({ cache: NO_CACHE, ...deps });
+export async function checkGnafSource(dependencies = {}) {
+  const packageResponse = await fetchPackageData({
+    cache: NO_CACHE,
+    ...dependencies,
+  });
   const pack = JSON.parse(packageResponse.body);
   const { selected } = selectResource(pack);
-  const status = await probeResource(selected.url, deps);
-  return { name: selected.name, url: selected.url, size: selected.size, status };
+  const status = await probeResource(selected.url, dependencies);
+  return {
+    name: selected.name,
+    url: selected.url,
+    size: selected.size,
+    status,
+  };
 }
 
 // Only run when invoked directly, so the tests can import the helpers.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
+if (
+  process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].split('/').pop())
+) {
   try {
     const result = await checkGnafSource();
     console.log(`G-NAF source OK`);

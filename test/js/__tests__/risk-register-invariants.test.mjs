@@ -25,7 +25,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const RISKS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/risks');
+const RISKS = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../docs/risks',
+);
 const SENTINEL = 'not estimated — no prior data';
 
 // `docs/risks/README.md` § Structure sanctions three status suffixes, not two.
@@ -40,17 +43,40 @@ const entries = async (suffixes) =>
   );
 
 // Numerals appear in these entries in word form as often as digits.
-const WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine',
-  'ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen',
-  'eighteen','nineteen','twenty','twenty-one','twenty-two','twenty-three'];
+const WORDS = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
+  'twenty',
+  'twenty-one',
+  'twenty-two',
+  'twenty-three',
+];
 // Returns NaN for anything that is not a numeral. Deliberately NOT indexOf's -1:
 // a bare -1 is an integer, so an `isInteger` guard lets a non-numeral through, and
 // a word like "successful" captured by a loose \w+ then compares as a count.
 const WORD_NUM = (t) => {
   if (t === undefined) return NaN;
   if (/^\d+$/.test(t)) return Number(t);
-  const i = WORDS.indexOf(t.toLowerCase());
-  return i === -1 ? NaN : i;
+  const index = WORDS.indexOf(t.toLowerCase());
+  return index === -1 ? NaN : index;
 };
 
 // Markdown code spans and blockquotes are STRUCTURAL quotation markers, so an
@@ -64,7 +90,7 @@ const WORD_NUM = (t) => {
 // on R004, R020 and R023. Exempting them would have let a claim escape by
 // wearing the register's own house style, which is the opposite of the
 // legible-on-sight property the exemption is justified by.
-const unquoted = (text) => text.replace(/`[^`\n]*`/g, '');
+const unquoted = (text) => text.replaceAll(/`[^`\n]*`/g, '');
 
 // A `## Canonical state` block DECLARES phrasings that must not appear as live
 // claims. It is a spec, not an assertion, so every content check has to skip it —
@@ -78,15 +104,22 @@ const withoutCanonical = (text) => {
 };
 
 const scoreOf = (text, which) =>
-  text.match(new RegExp(`^- \\*\\*${which} Score\\*\\*:\\s*(\\d+)`, 'm'))?.[1];
+  text.match(
+    new RegExp(String.raw`^- \*\*${which} Score\*\*:\s*(\d+)`, 'm'),
+  )?.[1];
 
 describe('docs/risks register invariants (R028)', () => {
   it('no active entry carries the ADR-026 ungrounded-output sentinel', async () => {
     const offenders = [];
     for (const f of await entries(ACTIVE)) {
-      if ((await readFile(path.join(RISKS, f), 'utf8')).includes(SENTINEL)) offenders.push(f);
+      if ((await readFile(path.join(RISKS, f), 'utf8')).includes(SENTINEL))
+        offenders.push(f);
     }
-    assert.deepEqual(offenders, [], `entries still ungrounded:\n  ${offenders.join('\n  ')}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `entries still ungrounded:\n  ${offenders.join('\n  ')}`,
+    );
   });
 
   it('no entry claims in present tense that its scoring fields are ungrounded', async () => {
@@ -95,18 +128,34 @@ describe('docs/risks register invariants (R028)', () => {
     const stale = [];
     for (const f of await entries(ACTIVE)) {
       const t = await readFile(path.join(RISKS, f), 'utf8');
-      if (/fields below carry the ADR-026 ungrounded-output sentinel/.test(t)) stale.push(f);
+      if (/fields below carry the ADR-026 ungrounded-output sentinel/.test(t))
+        stale.push(f);
     }
-    assert.deepEqual(stale, [], `present-tense scaffold stanza on curated entries:\n  ${stale.join('\n  ')}`);
+    assert.deepEqual(
+      stale,
+      [],
+      `present-tense scaffold stanza on curated entries:\n  ${stale.join('\n  ')}`,
+    );
   });
 
   it('each entry has exactly one Change Log', async () => {
     const bad = [];
-    for (const f of [...(await entries(ACTIVE)), ...(await entries('.retired.md'))]) {
-      const n = ((await readFile(path.join(RISKS, f), 'utf8')).match(/^## Change Log$/gm) || []).length;
+    for (const f of [
+      ...(await entries(ACTIVE)),
+      ...(await entries('.retired.md')),
+    ]) {
+      const n = (
+        (await readFile(path.join(RISKS, f), 'utf8')).match(
+          /^## Change Log$/gm,
+        ) || []
+      ).length;
       if (n !== 1) bad.push(`${f} (${n})`);
     }
-    assert.deepEqual(bad, [], `expected exactly one Change Log:\n  ${bad.join('\n  ')}`);
+    assert.deepEqual(
+      bad,
+      [],
+      `expected exactly one Change Log:\n  ${bad.join('\n  ')}`,
+    );
   });
 
   it('README Register rows match each entry’s own inherent and residual scores', async () => {
@@ -116,7 +165,9 @@ describe('docs/risks register invariants (R028)', () => {
     for (const f of await entries(ACTIVE)) {
       const id = f.slice(0, 4);
       const text = await readFile(path.join(RISKS, f), 'utf8');
-      const row = readme.match(new RegExp(`^\\| \\[${id}\\]\\([^)]*\\)([^\\n]*)$`, 'm'));
+      const row = readme.match(
+        new RegExp(String.raw`^\| \[${id}\]\([^)]*\)([^\n]*)$`, 'm'),
+      );
       if (!row) {
         mismatches.push(`${id}: no Register row`);
         continue;
@@ -127,11 +178,21 @@ describe('docs/risks register invariants (R028)', () => {
       const [rowInherent, rowResidual] = [cells[3], cells[4]];
       const inherent = scoreOf(text, 'Inherent');
       const residual = scoreOf(text, 'Residual');
-      if (inherent !== rowInherent) mismatches.push(`${id}: inherent entry=${inherent} README=${rowInherent}`);
-      if (residual !== rowResidual) mismatches.push(`${id}: residual entry=${residual} README=${rowResidual}`);
+      if (inherent !== rowInherent)
+        mismatches.push(
+          `${id}: inherent entry=${inherent} README=${rowInherent}`,
+        );
+      if (residual !== rowResidual)
+        mismatches.push(
+          `${id}: residual entry=${residual} README=${rowResidual}`,
+        );
     }
 
-    assert.deepEqual(mismatches, [], `Register table disagrees with the entries:\n  ${mismatches.join('\n  ')}`);
+    assert.deepEqual(
+      mismatches,
+      [],
+      `Register table disagrees with the entries:\n  ${mismatches.join('\n  ')}`,
+    );
   });
 
   it('R028 states the drift-table total its own scoring cites', async () => {
@@ -141,9 +202,13 @@ describe('docs/risks register invariants (R028)', () => {
     // in prose against an enumeration in the same file — exact, so checkable.
     const f = (await entries(ACTIVE)).find((x) => x.startsWith('R028'));
     const t = await readFile(path.join(RISKS, f), 'utf8');
-    const rows = [...t.matchAll(/^\|(?![\s-]*\|)(?!\s*Drift).*\|\s*(\d+)\s*\|\s*$/gm)];
+    const rows = [
+      ...t.matchAll(/^\|(?![\s-]*\|)(?!\s*Drift).*\|\s*(\d+)\s*\|\s*$/gm),
+    ];
     const summed = rows.reduce((a, m) => a + Number(m[1]), 0);
-    const claimed = t.match(/\*\*(\w+)\*\* instances in the batch tabled above/)?.[1];
+    const claimed = t.match(
+      /\*\*(\w+)\*\* instances in the batch tabled above/,
+    )?.[1];
     assert.equal(
       WORD_NUM(claimed),
       summed,
@@ -180,7 +245,10 @@ describe('docs/risks register invariants (R028)', () => {
 
     const residuals = [];
     for (const f of await entries(ACTIVE)) {
-      const n = scoreOf(await readFile(path.join(RISKS, f), 'utf8'), 'Residual');
+      const n = scoreOf(
+        await readFile(path.join(RISKS, f), 'utf8'),
+        'Residual',
+      );
       residuals.push({ id: f.slice(0, 4), score: Number(n) });
     }
     const above = residuals.filter((r) => r.score > APPETITE).length;
@@ -198,7 +266,9 @@ describe('docs/risks register invariants (R028)', () => {
         else if (e.name.endsWith('.md')) {
           for (const [, n, m] of (await readFile(p, 'utf8')).matchAll(CLAIM)) {
             if (asNumber(n) !== above || Number(m) !== total) {
-              wrong.push(`${path.relative(docs, p)}: claims ${n} of ${m}, computed ${above} of ${total}`);
+              wrong.push(
+                `${path.relative(docs, p)}: claims ${n} of ${m}, computed ${above} of ${total}`,
+              );
             }
           }
         }
@@ -206,7 +276,11 @@ describe('docs/risks register invariants (R028)', () => {
     };
     await walk(docs);
 
-    assert.deepEqual(wrong, [], `above-appetite claims disagree with the register:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `above-appetite claims disagree with the register:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('no entry refers to a check by its position', async () => {
@@ -217,23 +291,35 @@ describe('docs/risks register invariants (R028)', () => {
     // changes, which is every time this file grows. Naming is the fix; this
     // makes the convention mechanical rather than remembered.
     const offenders = [];
-    for (const f of [...(await entries(ACTIVE)), ...(await entries('.retired.md'))]) {
+    for (const f of [
+      ...(await entries(ACTIVE)),
+      ...(await entries('.retired.md')),
+    ]) {
       const t = await readFile(path.join(RISKS, f), 'utf8');
       // Widened: the digit form was the narrow case. Ordinal WORDS and the noun
       // "check" are the same defect — `The twelfth check` goes silently wrong the
       // moment a check lands ahead of position twelve, which is the argument this
       // rule is made from. Mechanising it beats disclosing the narrowing.
-      const ORD = 'first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth';
-      const POSITIONAL = new RegExp(`\\b(?:invariant|check)\\s+\\d+\\b|\\b(?:${ORD})\\s+(?:invariant|check)\\b`, 'gi');
+      const ORD =
+        'first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth';
+      const POSITIONAL = new RegExp(
+        String.raw`\b(?:invariant|check)\s+\d+\b|\b(?:${ORD})\s+(?:invariant|check)\b`,
+        'gi',
+      );
       // Dated Change Log bullets are exempt, per the same rule the fence and the
       // apply-count check apply: a `- YYYY-MM-DD:` line records what was true then.
       // "Twelfth check landed" on 2026-08-05 stays true; a body-prose ordinal does not.
       for (const line of unquoted(withoutCanonical(t)).split('\n')) {
         if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue;
-        for (const m of line.matchAll(POSITIONAL)) offenders.push(`${f}: "${m[0]}"`);
+        for (const m of line.matchAll(POSITIONAL))
+          offenders.push(`${f}: "${m[0]}"`);
       }
     }
-    assert.deepEqual(offenders, [], `refer to checks by name, not position:\n  ${offenders.join('\n  ')}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `refer to checks by name, not position:\n  ${offenders.join('\n  ')}`,
+    );
   });
 
   it('every cited residual figure matches that entry’s own score cell', async () => {
@@ -245,13 +331,17 @@ describe('docs/risks register invariants (R028)', () => {
     // unchecked one.
     const scores = new Map();
     for (const f of await entries(ACTIVE)) {
-      scores.set(f.slice(0, 4), scoreOf(await readFile(path.join(RISKS, f), 'utf8'), 'Residual'));
+      scores.set(
+        f.slice(0, 4),
+        scoreOf(await readFile(path.join(RISKS, f), 'utf8'), 'Residual'),
+      );
     }
 
     // "R028 at 6", "R003/R008/R009 at 8", "R004 and R027 at 9" — a run of IDs
     // sharing one figure. The separator accepts a bare "and": without it the run
     // stopped at the first ID and left the rest of the sentence unchecked.
-    const CITED = /\b(R\d{3}(?:(?:[/,]\s*|\s+and\s+)(?:and\s+)?R\d{3})*)\s+at\s+(\d+)\b/g;
+    const CITED =
+      /\b(R\d{3}(?:(?:[/,]\s*|\s+and\s+)(?:and\s+)?R\d{3})*)\s+at\s+(\d+)\b/g;
 
     // An entry must be able to exhibit its own past errors verbatim — that is what
     // the audit trail is for, and paraphrasing evidence into assertion is the
@@ -272,7 +362,9 @@ describe('docs/risks register invariants (R028)', () => {
             for (const id of ids.match(/R\d{3}/g)) {
               const actual = scores.get(id);
               if (actual !== undefined && actual !== figure) {
-                wrong.push(`${path.relative(docs, p)}: cites ${id} at ${figure}, its cell says ${actual}`);
+                wrong.push(
+                  `${path.relative(docs, p)}: cites ${id} at ${figure}, its cell says ${actual}`,
+                );
               }
             }
           }
@@ -280,7 +372,11 @@ describe('docs/risks register invariants (R028)', () => {
       }
     };
     await walk(docs);
-    assert.deepEqual(wrong, [], `stale score citations:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `stale score citations:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('a referring document is not older than the entry it describes', async () => {
@@ -296,7 +392,11 @@ describe('docs/risks register invariants (R028)', () => {
     // that touches an entry and its referrers together passes.
     const { execFileSync } = await import('node:child_process');
     const docsRoot = path.resolve(RISKS, '../..');
-    const git = (args) => execFileSync('git', args, { cwd: docsRoot, encoding: 'utf8' }).trim();
+    const git = (arguments_) =>
+      execFileSync('git', arguments_, {
+        cwd: docsRoot,
+        encoding: 'utf8',
+      }).trim();
     // Under a shallow clone every `git log -1 --format=%ct -- <path>` returns
     // empty, touched() falls to 0, every comparison becomes 0 < 0, and the check
     // passes having done no work. It shipped that way: both jobs running
@@ -320,10 +420,14 @@ describe('docs/risks register invariants (R028)', () => {
     // every run, from the moment this check landed: a dirty referrer scored as
     // clean and was reported stale against a target it was being edited alongside.
     // A check that fails open on its first input is the shape this file exists for.
-    const porcelain = execFileSync('git', ['status', '--porcelain', '--no-renames'], {
-      cwd: docsRoot,
-      encoding: 'utf8',
-    });
+    const porcelain = execFileSync(
+      'git',
+      ['status', '--porcelain', '--no-renames'],
+      {
+        cwd: docsRoot,
+        encoding: 'utf8',
+      },
+    );
     const dirty = new Set(
       porcelain
         .split('\n')
@@ -342,13 +446,18 @@ describe('docs/risks register invariants (R028)', () => {
     // compounds. Committed history still dates from any commit; widen to a
     // log-walk if a stale pair ever survives a sitting boundary.
     const body = (t) => {
-      const i = t.indexOf('\n## Change Log\n');
-      return i === -1 ? t : t.slice(0, i);
+      const index = t.indexOf('\n## Change Log\n');
+      return index === -1 ? t : t.slice(0, index);
     };
     const logOnly = (rel) => {
       try {
-        const head = execFileSync('git', ['show', `HEAD:${rel}`], { cwd: docsRoot, encoding: 'utf8' });
-        return body(head) === body(readFileSync(path.join(docsRoot, rel), 'utf8'));
+        const head = execFileSync('git', ['show', `HEAD:${rel}`], {
+          cwd: docsRoot,
+          encoding: 'utf8',
+        });
+        return (
+          body(head) === body(readFileSync(path.join(docsRoot, rel), 'utf8'))
+        );
       } catch {
         return false; // new file, or unreadable — treat as a real move
       }
@@ -361,7 +470,9 @@ describe('docs/risks register invariants (R028)', () => {
     // produced exactly that: eleven pairs where the remedy had already been
     // written and the check refused to see it.
     const touched = (rel) =>
-      dirty.has(rel) ? Infinity : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
+      dirty.has(rel)
+        ? Infinity
+        : Number(git(['log', '-1', '--format=%ct', '--', rel]) || 0);
     // WIDENED TO COMMITTED HISTORY 2026-08-09, taking the upgrade path the
     // `ponytail:` note above named: "widen to a log-walk if a stale pair ever
     // survives a sitting boundary." One did, and it turned trunk red.
@@ -382,9 +493,12 @@ describe('docs/risks register invariants (R028)', () => {
     // file whose only recent commits are verification bullets keeps the date of
     // its last real move, and its referrers stay green.
     const BODY_WALK = 40;
-    const show = (ref) => {
+    const show = (reference) => {
       try {
-        return execFileSync('git', ['show', ref], { cwd: docsRoot, encoding: 'utf8' });
+        return execFileSync('git', ['show', reference], {
+          cwd: docsRoot,
+          encoding: 'utf8',
+        });
       } catch {
         return null; // created in this commit, or otherwise absent
       }
@@ -399,7 +513,10 @@ describe('docs/risks register invariants (R028)', () => {
         // Absent parent means the file was created here, which is a real move.
         // Every git failure inside the walk returns a NEWER date, so it biases
         // toward flagging rather than toward silence.
-        if (older === null || body(show(`${sha}:${rel}`) ?? '') !== body(older)) {
+        if (
+          older === null ||
+          body(show(`${sha}:${rel}`) ?? '') !== body(older)
+        ) {
           return Number(ts);
         }
       }
@@ -413,7 +530,7 @@ describe('docs/risks register invariants (R028)', () => {
       // does not propagate. Unreachable today at single-digit per-file depth.
       // `log.length === 0` cannot happen for a tracked file — an untracked one
       // is caught by `dirty` and dated Infinity before reaching here.
-      return log.length ? Number(log[log.length - 1][1]) : 0;
+      return log.length > 0 ? Number(log.at(-1)[1]) : 0;
     };
     const movedAt = (rel) =>
       dirty.has(rel) && !logOnly(rel) ? Infinity : bodyMovedAt(rel);
@@ -435,7 +552,10 @@ describe('docs/risks register invariants (R028)', () => {
     // remedy is a no-op does not get waived, it gets performed — which converts a
     // real signal into a ritual. Retired records are kept honest by date-scoping
     // their claims when written, not by perpetual maintenance.
-    const targets = [...(await entries(ACTIVE)), ...(await entries('.retired.md'))];
+    const targets = [
+      ...(await entries(ACTIVE)),
+      ...(await entries('.retired.md')),
+    ];
     const active = await entries(ACTIVE);
     const stale = [];
     for (const target of targets) {
@@ -464,13 +584,24 @@ describe('docs/risks register invariants (R028)', () => {
         // A backtick sits AT the claim, which is what makes the code-span
         // analogy hold — and it is why the register's own remedy for a fence
         // failure (write a verification bullet) does not create blind spots.
-        if (!unquoted(await readFile(path.join(RISKS, referrer), 'utf8')).includes(id)) continue;
+        if (
+          !unquoted(
+            await readFile(path.join(RISKS, referrer), 'utf8'),
+          ).includes(id)
+        )
+          continue;
         if (touched(rRel) < targetTime) {
-          stale.push(`${referrer} references ${id} but predates its last change`);
+          stale.push(
+            `${referrer} references ${id} but predates its last change`,
+          );
         }
       }
     }
-    assert.deepEqual(stale, [], `referring entries not revisited:\n  ${stale.join('\n  ')}`);
+    assert.deepEqual(
+      stale,
+      [],
+      `referring entries not revisited:\n  ${stale.join('\n  ')}`,
+    );
   });
 
   it('every stated push-tier apply count agrees with R021’s canonical cell', async () => {
@@ -499,8 +630,8 @@ describe('docs/risks register invariants (R028)', () => {
     // it is still cited by R020 and P083, which are live. Retiring the entry
     // that owns the cell must not orphan the fact; a retired entry is still
     // the authority for what it recorded.
-    const canonicalFile = (await entries([...ACTIVE, '.retired.md'])).find((f) =>
-      f.startsWith('R021'),
+    const canonicalFile = (await entries([...ACTIVE, '.retired.md'])).find(
+      (f) => f.startsWith('R021'),
     );
     assert.ok(
       canonicalFile,
@@ -522,7 +653,9 @@ describe('docs/risks register invariants (R028)', () => {
     // canonical-cell shape as before; the cell is just no longer entangled with
     // a claim about outcomes.
     const canonical = WORD_NUM(
-      r021.match(/^- \*\*Metrics\*\*:[^\n]*?\*\*Canonical count: (\w+)\*\*/m)?.[1],
+      r021.match(
+        /^- \*\*Metrics\*\*:[^\n]*?\*\*Canonical count: (\w+)\*\*/m,
+      )?.[1],
     );
     assert.ok(
       Number.isInteger(canonical),
@@ -544,14 +677,17 @@ describe('docs/risks register invariants (R028)', () => {
     // `twenty` before `twenty-one`, so "twenty-one applies" would take `twenty`,
     // fail on the hyphen, backtrack and capture `one` — a false red, which is the
     // failure mode that gets a check waived. Latent at an apply count of 4.
-    const NUM = ['\\d+', ...[...WORDS].sort((a, b) => b.length - a.length)].join('|');
+    const NUM = [
+      String.raw`\d+`,
+      ...[...WORDS].sort((a, b) => b.length - a.length),
+    ].join('|');
     // Numeral-required capture AND the noun-phrase anchor. Dropping the anchor
     // made it match "two applies instead of one" in P077, which is about deferral
     // arithmetic, not this axis. Third iteration on this expression: too narrow,
     // then too loose, then anchored at both ends.
     const COUNT = new RegExp(
-      `\\b(${NUM})(?:\\s+\\w+){0,2}\\s+(?:production|successful)\\s+applies\\b` +
-        `|\\bfired on production\\s+(${NUM})\\s+times\\b`,
+      String.raw`\b(${NUM})(?:\s+\w+){0,2}\s+(?:production|successful)\s+applies\b` +
+        String.raw`|\bfired on production\s+(${NUM})\s+times\b`,
       'gi',
     );
     const docs = path.resolve(RISKS, '..');
@@ -561,13 +697,17 @@ describe('docs/risks register invariants (R028)', () => {
         const p = path.join(dir, e.name);
         if (e.isDirectory()) await walk(p);
         else if (e.name.endsWith('.md')) {
-          for (const line of unquoted(withoutCanonical(await readFile(p, 'utf8'))).split('\n')) {
+          for (const line of unquoted(
+            withoutCanonical(await readFile(p, 'utf8')),
+          ).split('\n')) {
             if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue; // dated bullet
             if (/\bas (?:at|of)\b/i.test(line)) continue; // explicitly scoped (case-insensitive: entries open sentences with "As at")
             for (const m of line.matchAll(COUNT)) {
               const n = WORD_NUM(m[1] ?? m[2]);
               if (Number.isInteger(n) && n !== canonical) {
-                wrong.push(`${path.relative(docs, p)}: states ${m[1] ?? m[2]}, canonical is ${canonical}`);
+                wrong.push(
+                  `${path.relative(docs, p)}: states ${m[1] ?? m[2]}, canonical is ${canonical}`,
+                );
               }
             }
           }
@@ -575,7 +715,11 @@ describe('docs/risks register invariants (R028)', () => {
       }
     };
     await walk(docs);
-    assert.deepEqual(wrong, [], `push-tier apply counts disagree with R021:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `push-tier apply counts disagree with R021:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('no entry contradicts a fact it declares canonical', async () => {
@@ -595,7 +739,10 @@ describe('docs/risks register invariants (R028)', () => {
     // Exemptions match the rest of the file: code spans are quotation, and a
     // `- YYYY-MM-DD:` bullet records what was true then.
     const offenders = [];
-    for (const f of [...(await entries(ACTIVE)), ...(await entries('.retired.md'))]) {
+    for (const f of [
+      ...(await entries(ACTIVE)),
+      ...(await entries('.retired.md')),
+    ]) {
       const text = await readFile(path.join(RISKS, f), 'utf8');
       // Sliced, not regex-matched. A lazy `([\s\S]*?)` with a `(?=\n## |$)`
       // lookahead under the `m` flag terminates at the FIRST line end, because `$`
@@ -609,13 +756,25 @@ describe('docs/risks register invariants (R028)', () => {
 
       const phrasings = [];
       for (const row of section.split('\n')) {
-        if (!row.startsWith('|') || /^\|[\s|-]*\|$/.test(row) || /\|\s*Fact\s*\|/.test(row)) continue;
+        if (
+          !row.startsWith('|') ||
+          /^\|[\s|-]*\|$/.test(row) ||
+          /\|\s*Fact\s*\|/.test(row)
+        )
+          continue;
         const cells = row.split('|').map((c) => c.trim());
-        for (const p of (cells[3] ?? '').split(';').map((x) => x.trim()).filter(Boolean)) {
+        for (const p of (cells[3] ?? '')
+          .split(';')
+          .map((x) => x.trim())
+          .filter(Boolean)) {
           // Normalise the declared phrase the SAME way the line is normalised, or a
           // phrasing containing a code span can never match: `unquoted()` strips the
           // span from the line, leaving the two sides misaligned.
-          phrasings.push({ fact: cells[1], value: cells[2], phrase: unquoted(p).replace(/\s+/g, ' ').trim() });
+          phrasings.push({
+            fact: cells[1],
+            value: cells[2],
+            phrase: unquoted(p).replaceAll(/\s+/g, ' ').trim(),
+          });
         }
       }
 
@@ -626,24 +785,39 @@ describe('docs/risks register invariants (R028)', () => {
         if (/^\s*-\s*\d{4}-\d{2}-\d{2}:/.test(line)) continue;
         const bare = unquoted(line);
         for (const { fact, value, phrase } of phrasings) {
-          if (phrase && bare.replace(/\s+/g, ' ').includes(phrase)) {
-            offenders.push(`${f}: "${phrase}" contradicts declared ${fact} = ${value}`);
+          if (phrase && bare.replaceAll(/\s+/g, ' ').includes(phrase)) {
+            offenders.push(
+              `${f}: "${phrase}" contradicts declared ${fact} = ${value}`,
+            );
           }
         }
       }
     }
-    assert.deepEqual(offenders, [], `entries contradicting their own canonical state:\n  ${offenders.join('\n  ')}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `entries contradicting their own canonical state:\n  ${offenders.join('\n  ')}`,
+    );
   });
 
   it('every active entry is listed in the Register and every retired one in Retired', async () => {
     const readme = await readFile(path.join(RISKS, 'README.md'), 'utf8');
-    const register = readme.slice(readme.indexOf('## Register'), readme.indexOf('## Retired'));
+    const register = readme.slice(
+      readme.indexOf('## Register'),
+      readme.indexOf('## Retired'),
+    );
     const retired = readme.slice(readme.indexOf('## Retired'));
     const missing = [];
 
-    for (const f of await entries(ACTIVE)) if (!register.includes(f)) missing.push(`${f} absent from Register`);
-    for (const f of await entries('.retired.md')) if (!retired.includes(f)) missing.push(`${f} absent from Retired`);
+    for (const f of await entries(ACTIVE))
+      if (!register.includes(f)) missing.push(`${f} absent from Register`);
+    for (const f of await entries('.retired.md'))
+      if (!retired.includes(f)) missing.push(`${f} absent from Retired`);
 
-    assert.deepEqual(missing, [], `index does not cover the register:\n  ${missing.join('\n  ')}`);
+    assert.deepEqual(
+      missing,
+      [],
+      `index does not cover the register:\n  ${missing.join('\n  ')}`,
+    );
   });
 });

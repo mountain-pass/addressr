@@ -10,7 +10,7 @@ import {
   dropIndex,
   loadGnaf,
   mapAddressDetails,
-} from '../../service/address-service.js';
+} from '../../packages/addressr/service/address-service.js';
 
 var logger = debug('test');
 var error = debug('error');

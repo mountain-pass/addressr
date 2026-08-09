@@ -1,8 +1,8 @@
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
-/* eslint-disable unicorn/prevent-abbreviations */
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildClientNode } from '../../../src/client-node-url.js';
+import { buildClientNode } from '../../../packages/addressr/src/client-node-url.js';
 
 // P036-discovered: the loader (client/elasticsearch.js) shared the same
 // URL-construction bug as read-shadow (src/read-shadow.js) — passwords

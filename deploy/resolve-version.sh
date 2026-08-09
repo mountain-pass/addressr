@@ -58,11 +58,24 @@
 
 set -u
 
-pkg="${npm_package_name:?npm_package_name required}"
+# THE PUBLISHED MANIFEST IS THE SOURCE OF TRUTH, not npm's environment.
+# BROKEN AND FIXED 2026-08-10 by the workspace split. npm sets npm_package_name
+# / npm_package_version from the manifest whose script is running, and the root
+# manifest is now the PRIVATE workspace root `addressr-workspace` with no
+# `version` field at all. So the env vars resolved to the wrong name and to
+# nothing. Read the published manifest directly and keep the fail-closed `:?`.
+# Resolved relative to THIS SCRIPT, not cwd, so it survives being invoked from
+# anywhere; revisit if this script itself moves.
+_manifest="$(dirname "$0")/../packages/addressr/package.json"
+pkg="$(node -e "console.log(require(require('path').resolve('$_manifest')).name)" 2>/dev/null)"
+: "${pkg:?could not read the published package name from $_manifest}"
+
 
 if [ "${ADDRESSR_DEPLOY_JUST_PUBLISHED:-}" = "1" ]; then
   # Publish path: correct by construction, no registry round-trip.
-  printf '%s\n' "${npm_package_version:?npm_package_version required}"
+  _v="$(node -e "console.log(require(require('path').resolve('$_manifest')).version)" 2>/dev/null)"
+  : "${_v:?could not read the published version from $_manifest}"
+  printf '%s\n' "$_v"
   exit 0
 fi
 

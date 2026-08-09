@@ -13,14 +13,14 @@ import {
   esConnect,
   ES_INDEX_NAME,
   ES_LOCALITY_INDEX_NAME,
-} from '../../client/elasticsearch.js';
+} from '../../packages/addressr/client/elasticsearch.js';
 import { awaitIndexReady } from './index-ready.js';
 import { AddressrRest2Driver } from './drivers/AddressrRest2Driver.js';
 import { AddressrRest2EmbeddedDriver } from './drivers/AddressrRest2EmbeddedDriver.js';
 import {
   startRest2Server,
   stopServer as stopRest2Server,
-} from '../../src/waycharter-server.js';
+} from '../../packages/addressr/src/waycharter-server.js';
 
 const fsp = fs.promises;
 

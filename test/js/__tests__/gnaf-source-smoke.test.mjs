@@ -23,14 +23,14 @@ const CKAN_BODY = JSON.stringify({
         mimetype: 'application/zip',
         name: 'MAY 2026 - Geoscape G-NAF - GDA94',
         url: 'https://data.gov.au/x/g-naf_may26_allstates_gda94_psv_1023.zip',
-        size: 1703076498,
+        size: 1_703_076_498,
       },
       {
         state: 'active',
         mimetype: 'application/zip',
         name: 'MAY 2026 - Geoscape G-NAF - GDA2020',
         url: 'https://data.gov.au/x/g-naf_may26_allstates_gda2020_psv_1023.zip',
-        size: 1706838674,
+        size: 1_706_838_674,
       },
     ],
   },
@@ -49,19 +49,21 @@ function ckanFetch(status = 200) {
 
 describe('scripts/check-gnaf-source.mjs — probeResource', () => {
   it('accepts 206, which is what a ranged GET actually returns', async () => {
-    const { probeResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { probeResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     const status = await probeResource('https://x/g-naf.zip', {
       fetch: async () => new Response('', { status: 206 }),
     });
-    assert.equal(status, 206, 'requiring a strict 200 would red on a healthy source');
+    assert.equal(
+      status,
+      206,
+      'requiring a strict 200 would red on a healthy source',
+    );
   });
 
   it('accepts a plain 200', async () => {
-    const { probeResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { probeResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     assert.equal(
       await probeResource('https://x/g-naf.zip', {
         fetch: async () => new Response('', { status: 200 }),
@@ -71,9 +73,8 @@ describe('scripts/check-gnaf-source.mjs — probeResource', () => {
   });
 
   it('fails on a 403, which is the breakage it exists to catch', async () => {
-    const { probeResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { probeResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     await assert.rejects(
       () =>
         probeResource('https://x/g-naf.zip', {
@@ -84,9 +85,8 @@ describe('scripts/check-gnaf-source.mjs — probeResource', () => {
   });
 
   it('fails on a redirect and names the location', async () => {
-    const { probeResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { probeResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     await assert.rejects(
       () =>
         probeResource('https://x/g-naf.zip', {
@@ -102,12 +102,10 @@ describe('scripts/check-gnaf-source.mjs — probeResource', () => {
   });
 
   it('sends the same User-Agent the loader sends', async () => {
-    const { probeResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
-    const { LOADER_USER_AGENT } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { probeResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
+    const { LOADER_USER_AGENT } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     let seen;
     await probeResource('https://x/g-naf.zip', {
       fetch: async (url, options) => {
@@ -125,9 +123,8 @@ describe('scripts/check-gnaf-source.mjs — probeResource', () => {
 
 describe('scripts/check-gnaf-source.mjs — selectResource', () => {
   it('rejects a resource with an implausible size', async () => {
-    const { selectResource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { selectResource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     const pack = {
       result: {
         resources: [
@@ -147,9 +144,8 @@ describe('scripts/check-gnaf-source.mjs — selectResource', () => {
 
 describe('scripts/check-gnaf-source.mjs — checkGnafSource end to end', () => {
   it('never serves from cache — a warm cache would make it green without a network call', async () => {
-    const { checkGnafSource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { checkGnafSource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     let calls = 0;
     const result = await checkGnafSource({
       fetch: async (url) => {
@@ -165,14 +161,12 @@ describe('scripts/check-gnaf-source.mjs — checkGnafSource end to end', () => {
   });
 
   it('fails when the CKAN hop itself is refused', async () => {
-    const { checkGnafSource } = await import(
-      '../../../scripts/check-gnaf-source.mjs'
-    );
+    const { checkGnafSource } =
+      await import('../../../packages/addressr/scripts/check-gnaf-source.mjs');
     await assert.rejects(
       () =>
         checkGnafSource({
-          fetch: async () =>
-            new Response('<html>403</html>', { status: 403 }),
+          fetch: async () => new Response('<html>403</html>', { status: 403 }),
         }),
       /403/,
     );
@@ -184,7 +178,7 @@ describe('.github/workflows/gnaf-source-smoke.yml', () => {
   // Comments explain WHY id-token is absent, so assert against directives only.
   const directives = workflow
     .split('\n')
-    .filter((line) => !line.trim().startsWith('#'))
+    .filter((line) => !line.trimStart().startsWith('#'))
     .join('\n');
 
   it('declares no id-token permission', () => {
@@ -205,6 +199,9 @@ describe('.github/workflows/gnaf-source-smoke.yml', () => {
   });
 
   it('runs the smoke script', () => {
-    assert.match(workflow, /node scripts\/check-gnaf-source\.mjs/);
+    assert.match(
+      workflow,
+      /node packages\/addressr\/scripts\/check-gnaf-source\.mjs/,
+    );
   });
 });

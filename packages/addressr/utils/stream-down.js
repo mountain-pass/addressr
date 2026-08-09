@@ -45,13 +45,13 @@ export function streamDown(url, path, size, deps = {}) {
 
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destination);
-    let settled = false;
+    let isSettled = false;
 
     // A failed download must leave nothing behind that a later run could
     // mistake for a good artefact, so drop the partial file on every reject.
     const fail = (error) => {
-      if (settled) return;
-      settled = true;
+      if (isSettled) return;
+      isSettled = true;
       file.destroy();
       try {
         fs.unlinkSync(destination);
@@ -111,7 +111,7 @@ export function streamDown(url, path, size, deps = {}) {
       response.pipe(file);
 
       file.on('finish', () => {
-        if (settled) return;
+        if (isSettled) return;
         if (expected !== undefined && received !== expected) {
           fail(
             new Error(
@@ -120,7 +120,7 @@ export function streamDown(url, path, size, deps = {}) {
           );
           return;
         }
-        settled = true;
+        isSettled = true;
         console.log(`\n${uri.pathname} downloaded to: ${destination}`);
         resolve(response);
       });

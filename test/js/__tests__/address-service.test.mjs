@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildAddressSearchBody } from '../../../src/build-search-body.js';
+import { buildAddressSearchBody } from '../../../packages/addressr/src/build-search-body.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +31,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 describe('service/address-service.js — read-shadow integration (ADR 031)', () => {
   it('imports mirrorRequest from src/read-shadow', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     assert.match(
@@ -43,7 +46,10 @@ describe('service/address-service.js — read-shadow integration (ADR 031)', () 
 
   it('searchForAddress calls mirrorRequest after the primary client.search', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     const startIndex = source.indexOf('export async function searchForAddress');
@@ -82,7 +88,10 @@ describe('service/address-service.js — read-shadow integration (ADR 031)', () 
 
   it('searchForAddress passes method=search and the same body to mirrorRequest', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     const startIndex = source.indexOf('export async function searchForAddress');
@@ -107,7 +116,10 @@ describe('service/address-service.js — read-shadow integration (ADR 031)', () 
 describe('service/address-service.js — progress logging (P012)', () => {
   it('mapAddressDetails does not JSON.stringify the address in progress logging', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     const startIndex = source.indexOf('function mapAddressDetails');
@@ -140,7 +152,10 @@ describe('service/address-service.js — progress logging (P012)', () => {
 describe('service/address-service.js — getAddress catch block (P014)', () => {
   it('guards error_.body before accessing .found and .error.type', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     const startIndex = source.indexOf('export async function getAddress(');
@@ -177,7 +192,10 @@ describe('service/address-service.js — getAddress catch block (P014)', () => {
 
   it('maps RequestTimeout to 504 to align with getAddresses', async () => {
     const source = await readFile(
-      path.resolve(__dirname, '../../../service/address-service.js'),
+      path.resolve(
+        __dirname,
+        '../../../packages/addressr/service/address-service.js',
+      ),
       'utf8',
     );
     const startIndex = source.indexOf('export async function getAddress(');

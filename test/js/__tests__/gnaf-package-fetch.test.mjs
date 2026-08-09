@@ -16,14 +16,13 @@ import assert from 'node:assert/strict';
 
 describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.gov.au WAF compat)', () => {
   it('sends LOADER_USER_AGENT in the request headers on cache miss', async () => {
-    const { fetchPackageData, LOADER_USER_AGENT } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { fetchPackageData, LOADER_USER_AGENT } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
 
     // Inject mocks via DI: cache always misses; fetch records its args
     // and returns a minimal-but-valid CKAN package_show response.
     const mockCache = {
-      get: async () => undefined,
+      get: async () => {},
       set: async () => {},
     };
     const fetchCalls = [];
@@ -64,9 +63,8 @@ describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.go
   });
 
   it('returns the cached response on cache hit without calling fetch', async () => {
-    const { fetchPackageData } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { fetchPackageData } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
 
     const cachedBody = JSON.stringify({ result: { resources: [] } });
     const cachedHeaders = {
@@ -99,9 +97,8 @@ describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.go
   });
 
   it('returns stale cache (with warning header) when fetch fails and cache <30 days', async () => {
-    const { fetchPackageData } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { fetchPackageData } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
 
     const cachedBody = JSON.stringify({ result: { resources: [] } });
     // 2 days old: stale (>1 day) but within 30-day stale-while-error window.
@@ -138,11 +135,10 @@ describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.go
   // successful response, got written to the Keyv cache, and only surfaced as a
   // JSON.parse error in address-service that named the wrong subsystem.
   it('rejects a non-ok response instead of returning the error body', async () => {
-    const { fetchPackageData } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { fetchPackageData } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
 
-    const mockCache = { get: async () => undefined, set: async () => {} };
+    const mockCache = { get: async () => {}, set: async () => {} };
     const mockFetch = async () =>
       new Response('<!DOCTYPE html><html>403 Forbidden</html>', {
         status: 403,
@@ -157,13 +153,12 @@ describe('service/gnaf-package-fetch.js — fetchPackageData User-Agent (data.go
   });
 
   it('does not cache a non-ok response', async () => {
-    const { fetchPackageData } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { fetchPackageData } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
 
     const sets = [];
     const mockCache = {
-      get: async () => undefined,
+      get: async () => {},
       set: async (key, value) => {
         sets.push({ key, value });
       },
@@ -200,37 +195,34 @@ describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P0
           mimetype: 'application/zip',
           name: 'MAY 2026 - Geoscape G-NAF - GDA94',
           url: 'https://data.gov.au/x/g-naf_may26_allstates_gda94_psv_1023.zip',
-          size: 1703076498,
+          size: 1_703_076_498,
         },
         {
           state: 'active',
           mimetype: 'application/zip',
           name: 'MAY 2026 - Geoscape G-NAF - GDA2020',
           url: 'https://data.gov.au/x/g-naf_may26_allstates_gda2020_psv_1023.zip',
-          size: 1706838674,
+          size: 1_706_838_674,
         },
       ],
     },
   };
 
   it('defaults to GDA94, preserving the datum the index was built with', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     assert.match(selectGnafResource(bothDatums).url, /_gda94_/);
   });
 
   it('selects the requested datum when asked for GDA2020', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     assert.match(selectGnafResource(bothDatums, 'gda2020').url, /_gda2020_/);
   });
 
   it('is not order-dependent — a CKAN reorder must not silently flip the datum', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     const reordered = {
       result: { resources: [...bothDatums.result.resources].reverse() },
     };
@@ -242,9 +234,8 @@ describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P0
   });
 
   it('throws naming the available datums when the requested one is absent', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     assert.throws(
       () => selectGnafResource(bothDatums, 'gda2099'),
       /gda2099[\s\S]*gda94/i,
@@ -253,9 +244,8 @@ describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P0
   });
 
   it('throws when no active zip resource exists at all', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     assert.throws(
       () => selectGnafResource({ result: { resources: [] } }),
       /no active/i,
@@ -264,9 +254,8 @@ describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P0
   });
 
   it('ignores inactive resources', async () => {
-    const { selectGnafResource } = await import(
-      '../../../service/gnaf-package-fetch.js'
-    );
+    const { selectGnafResource } =
+      await import('../../../packages/addressr/service/gnaf-package-fetch.js');
     const withdrawn = {
       result: {
         resources: [
@@ -281,6 +270,6 @@ describe('service/gnaf-package-fetch.js — selectGnafResource datum pinning (P0
         ],
       },
     };
-    assert.equal(selectGnafResource(withdrawn).size, 1703076498);
+    assert.equal(selectGnafResource(withdrawn).size, 1_703_076_498);
   });
 });

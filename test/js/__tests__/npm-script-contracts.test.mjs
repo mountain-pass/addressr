@@ -68,8 +68,8 @@ const { scripts } = JSON.parse(read('../../../package.json'));
  * assignments while they precede the command word. Everything after the first
  * token that is not an assignment is arguments, and is not read.
  */
-const prefixEnv = (command = '') => {
-  const env = {};
+const prefixEnvironment = (command = '') => {
+  const environment = {};
   // Consumed from the head rather than by splitting on whitespace, because the
   // value this most needs to read — NO_STRICT=' ' — CONTAINS a space. A
   // split-on-whitespace tokeniser reads that as two words and silently returns
@@ -82,10 +82,10 @@ const prefixEnv = (command = '') => {
       rest,
     );
     if (!match) break;
-    env[match[1]] = match[2];
+    environment[match[1]] = match[2];
     rest = rest.slice(match[0].length);
   }
-  return env;
+  return environment;
 };
 
 /** Every `VAR=value` anywhere in a command — for chains like `a && VAR=x b`. */
@@ -99,10 +99,10 @@ const reachableFromNpmTest = () => {
   const walk = (key, seen = new Set()) => {
     if (seen.has(key)) return seen;
     seen.add(key);
-    for (const [, ref] of (scripts[key] ?? '').matchAll(
+    for (const [, reference] of (scripts[key] ?? '').matchAll(
       /(?:^|\s)((?:pre|post|do)?test:[a-zA-Z0-9:]+)/g,
     ))
-      walk(ref, seen);
+      walk(reference, seen);
     return seen;
   };
   return walk('test');
@@ -136,7 +136,7 @@ const ADR_009 = '../../../docs/decisions/009-cucumber-bdd-testing.accepted.md';
 describe('npm script contracts — the packaged-test index name (P094)', () => {
   it(`${INHERITS_INDEX} pins no index, so it is not covertly nogeo-specific`, () => {
     assert.equal(
-      prefixEnv(scripts[INHERITS_INDEX]).ES_INDEX_NAME,
+      prefixEnvironment(scripts[INHERITS_INDEX]).ES_INDEX_NAME,
       undefined,
       `${INHERITS_INDEX} must inherit ES_INDEX_NAME from its caller. Pinning it here serves the geo chain from the nogeo chain's index, and waitport cannot see that.`,
     );
@@ -149,7 +149,7 @@ describe('npm script contracts — the packaged-test index name (P094)', () => {
       // PRODUCTION index name. client/elasticsearch.js now throws under
       // TEST_PROFILE instead, which is what makes that edge loud.
       assert.ok(
-        prefixEnv(scripts[caller]).ES_INDEX_NAME,
+        prefixEnvironment(scripts[caller]).ES_INDEX_NAME,
         `${caller} starts ${INHERITS_INDEX}, which pins nothing — so this script must set ES_INDEX_NAME.`,
       );
     });
@@ -181,8 +181,8 @@ describe('npm script contracts — the packaged-test index name (P094)', () => {
     // They run serially under `npm test`. Sharing means the geo loader writes
     // over the nogeo leg's data, or serves its leftovers.
     assert.notEqual(
-      prefixEnv(scripts['dotest:cli2:geo']).ES_INDEX_NAME,
-      prefixEnv(scripts['test:cli2:nogeo']).ES_INDEX_NAME,
+      prefixEnvironment(scripts['dotest:cli2:geo']).ES_INDEX_NAME,
+      prefixEnvironment(scripts['test:cli2:nogeo']).ES_INDEX_NAME,
     );
   });
 });
@@ -216,8 +216,8 @@ describe('npm script contracts — the pre-publish geo gate (P094)', () => {
     // Without strictness, undefined and pending steps do not fail — which is
     // how a 34-scenario green run can prove less than it appears to. That
     // happened here, before the wiring landed.
-    assert.equal(prefixEnv(scripts['test:geo']).NO_STRICT, "' '");
-    assert.equal(prefixEnv(scripts['test:nogeo']).NO_STRICT, "' '");
+    assert.equal(prefixEnvironment(scripts['test:geo']).NO_STRICT, "' '");
+    assert.equal(prefixEnvironment(scripts['test:nogeo']).NO_STRICT, "' '");
   });
 
   it('every declared tier script is reachable, or deliberately excepted', () => {
@@ -262,5 +262,59 @@ describe('npm script contracts — the pre-publish geo gate (P094)', () => {
       [],
       `listed as deliberately unwired but reachable from \`npm test\`: ${stale.join(', ')}`,
     );
+  });
+});
+
+describe('turbo root tasks — the release path must actually execute (workspace split)', () => {
+  // MEASURED SILENT-GREEN TRAP, 2026-08-10. When the repo became a two-package
+  // workspace, `turbo run ci:version` stopped finding anything: turbo runs tasks
+  // in WORKSPACE PACKAGES, and `ci:version` / `ci:publish` live in the root
+  // manifest, which turbo excludes from its package graph. The observed output
+  // was:
+  //
+  //     WARNING  No tasks were executed as part of this run.
+  //     Tasks:    0 successful, 0 total          exit 0
+  //
+  // That is the release path. `changeset version` would never run, no release PR
+  // would ever be created, no publish would ever happen — on a GREEN run. Same
+  // family as the unit-tier glob trap guarded by scripts/assert-test-files.mjs,
+  // and as ADR-044's zero-match cucumber profile: a runner that finds nothing to
+  // do and calls that success.
+  //
+  // The fix is turbo's root-task syntax (`//#<task>`), which addresses the
+  // workspace root explicitly. Both halves are pinned because either alone is
+  // insufficient: the script could invoke `//#ci:version` with no matching
+  // turbo.json entry, or turbo.json could declare it while the script still
+  // calls the bare name.
+  const turbo = JSON.parse(read('../../../turbo.json'));
+
+  for (const task of ['ci:version', 'ci:publish']) {
+    it(`invokes ${task} as a ROOT task, not a package task`, () => {
+      const script = scripts[`turbo:${task}`];
+      assert.ok(script, `turbo:${task} must exist — it is the release path`);
+      assert.match(
+        script,
+        new RegExp(`turbo run //#${task.replace(':', ':')}`),
+        `must be \`turbo run //#${task}\` — the bare name resolves to zero packages and exits 0`,
+      );
+    });
+
+    it(`declares //#${task} in turbo.json so the root task is runnable`, () => {
+      assert.ok(
+        Object.hasOwn(turbo.tasks ?? {}, `//#${task}`),
+        `turbo.json must declare "//#${task}"; without it turbo runs nothing and still exits 0`,
+      );
+    });
+  }
+
+  it('keeps the changesets scripts on the workspace root, where turbo addresses them', () => {
+    // If these ever move into packages/addressr, the //# addressing above stops
+    // resolving and the release path silently empties again.
+    for (const task of ['ci:version', 'ci:publish']) {
+      assert.ok(
+        scripts[task],
+        `${task} must stay in the ROOT manifest — //# addresses the workspace root`,
+      );
+    }
   });
 });

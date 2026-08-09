@@ -28,9 +28,10 @@ import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const { findGnafDirectory } = await import('../../../service/gnaf-directory.js');
+const { findGnafDirectory } =
+  await import('../../../packages/addressr/service/gnaf-directory.js');
 
-const withTempTree = async (build, assertions) => {
+const withTemporaryTree = async (build, assertions) => {
   const root = await mkdtemp(path.join(tmpdir(), 'gnaf-discovery-'));
   try {
     await build(root);
@@ -44,7 +45,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
   it('finds a nested G-NAF directory and returns it relative to the extract root', async () => {
     // The real shape: the zip expands to a dated wrapper directory, and G-NAF
     // sits under it at a depth the caller does not know in advance.
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'g-naf_augustXX/G-NAF/Standard'), {
           recursive: true,
@@ -61,7 +62,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
   it('returns an empty array when no G-NAF directory is present', async () => {
     // The caller turns this into "Cannot find 'G-NAF' directory in Data dir",
     // so an empty array must mean absent rather than throw.
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'somewhere/else'), { recursive: true });
         await writeFile(path.join(root, 'somewhere/else/x.psv'), 'x');
@@ -77,7 +78,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
     // directory-only by contract; Node's built-in does not document that, so a
     // stray file would otherwise be returned and the caller would derive a
     // mainDirectory that does not exist.
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'decoy'), { recursive: true });
         await writeFile(path.join(root, 'decoy/G-NAF'), 'not a directory');
@@ -94,7 +95,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
     // "Cannot find 'G-NAF' directory in Data dir" with a raw fs error. A
     // dangling symlink is the cheap reproducible case; EACCES is the same
     // shape. One bad entry must not hide a good extract sitting beside it.
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'real/G-NAF'), { recursive: true });
         await mkdir(path.join(root, 'broken'), { recursive: true });
@@ -122,7 +123,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
     const parentOf = (unzipped, match) =>
       path.dirname(`${unzipped}/${match.slice(0, -1)}`);
 
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'g-naf_augustXX/G-NAF/Standard'), {
           recursive: true,
@@ -144,7 +145,7 @@ describe('service/gnaf-directory.js — findGnafDirectory', () => {
     // The caller indexes [0] with no sort of its own. Neither implementation
     // guarantees an order, so discovery owns it — otherwise which extract wins
     // depends on filesystem iteration order.
-    await withTempTree(
+    await withTemporaryTree(
       async (root) => {
         await mkdir(path.join(root, 'zeta/G-NAF'), { recursive: true });
         await mkdir(path.join(root, 'alpha/G-NAF'), { recursive: true });

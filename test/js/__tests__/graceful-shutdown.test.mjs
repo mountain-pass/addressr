@@ -1,5 +1,5 @@
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
-/* eslint-disable unicorn/prevent-abbreviations */
+
 /* eslint-disable max-lines-per-function */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,10 +13,13 @@ import {
   trackServer,
   stopServer,
   forceCloseConnections,
-} from '../../../src/graceful-shutdown.js';
+} from '../../../packages/addressr/src/graceful-shutdown.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const server2Path = path.resolve(__dirname, '../../../src/server2.js');
+const server2Path = path.resolve(
+  __dirname,
+  '../../../packages/addressr/src/server2.js',
+);
 
 // P067: nothing wired the existing stopServer() to a process signal, so any
 // termination dropped in-flight requests. ADR-039's tini init made the container

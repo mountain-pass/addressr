@@ -97,7 +97,7 @@ const pathsOf = (name) => {
   const paths = lines
     .slice(start + 1, end)
     .filter((l) => /^ {6}- '.+'$/.test(l))
-    .map((l) => l.trim().replace(/^- '|'$/g, ''));
+    .map((l) => l.trim().replaceAll(/^- '|'$/g, ''));
   assert.ok(paths.length > 0, `'${name}:' paths list sliced empty`);
   return paths;
 };
@@ -247,40 +247,42 @@ describe("the image's CMD path survives a package layout change (ADR-044)", () =
     fileURLToPath(new URL('../../../Dockerfile', import.meta.url)),
     'utf8',
   );
-  const pkg = JSON.parse(
+  const package_ = JSON.parse(
     readFileSync(
-      fileURLToPath(new URL('../../../package.json', import.meta.url)),
+      fileURLToPath(
+        new URL('../../../packages/addressr/package.json', import.meta.url),
+      ),
       'utf8',
     ),
   );
 
   /** The part of an absolute in-image path that lies inside the package. */
   const packageInternal = (absolute) => {
-    const marker = `/node_modules/${pkg.name}/`;
+    const marker = `/node_modules/${package_.name}/`;
     const index = absolute.indexOf(marker);
     assert.notEqual(index, -1, `not a package-internal path: ${absolute}`);
     return absolute.slice(index + marker.length);
   };
 
-  const cmd = dockerfile.match(/^CMD \["([^"]+)"\]/m);
+  const command = dockerfile.match(/^CMD \["([^"]+)"\]/m);
 
   it('names a script the package actually declares as a bin', () => {
-    assert.ok(cmd, 'Dockerfile must declare a CMD');
-    const internal = packageInternal(cmd[1]);
+    assert.ok(command, 'Dockerfile must declare a CMD');
+    const internal = packageInternal(command[1]);
     assert.ok(
-      Object.values(pkg.bin).includes(internal),
-      `CMD runs "${internal}", which is not a bin entry in package.json. The bin NAMES are stable across layout changes but this path is not — Distroless has no shell to resolve the shim. Declared bins: ${Object.values(pkg.bin).join(', ')}`,
+      Object.values(package_.bin).includes(internal),
+      `CMD runs "${internal}", which is not a bin entry in package.json. The bin NAMES are stable across layout changes but this path is not — Distroless has no shell to resolve the shim. Declared bins: ${Object.values(package_.bin).join(', ')}`,
     );
   });
 
   it('names a script the tarball actually ships', () => {
     // A path can match a bin entry and still be absent from the tarball if
     // `files` was not updated alongside it.
-    const internal = packageInternal(cmd[1]);
-    const top = `${internal.split('/')[0]}/`;
+    const internal = packageInternal(command[1]);
+    const top = `${internal.split('/', 1)[0]}/`;
     assert.ok(
-      pkg.files.includes(top) || pkg.files.includes(internal),
-      `CMD runs "${internal}" but neither "${top}" nor that file is in package.json "files", so it is not in the tarball the image is built from. files: ${pkg.files.join(', ')}`,
+      package_.files.includes(top) || package_.files.includes(internal),
+      `CMD runs "${internal}" but neither "${top}" nor that file is in package.json "files", so it is not in the tarball the image is built from. files: ${package_.files.join(', ')}`,
     );
   });
 
@@ -336,7 +338,7 @@ describe("the image's CMD path survives a package layout change (ADR-044)", () =
       for (const match of matches) {
         assert.equal(
           packageInternal(match),
-          pkg.bin['addressr-loader'],
+          package_.bin['addressr-loader'],
           `${relative} documents "${match}", whose package-internal part is not the declared bin. This path is not covered by the stable-bin-name promise — it is resolved, because Distroless has no shell.`,
         );
       }

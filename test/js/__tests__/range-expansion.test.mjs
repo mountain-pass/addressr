@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { expandRangeAliases } from '../../../service/range-expansion.js';
+import { expandRangeAliases } from '../../../packages/addressr/service/range-expansion.js';
 
 // ADR 028 (supersedes ADR 026): endpoint-only expansion. For a G-NAF range
 // address like `103-107 GAZE RD` (where NUMBER_FIRST=103 and NUMBER_LAST=107),
@@ -102,12 +102,7 @@ describe('service/range-expansion.js — expandRangeAliases (ADR 028, endpoint-o
   });
 
   it('preserves street and locality tokens verbatim in both endpoints', () => {
-    const aliases = expandRangeAliases(
-      5,
-      7,
-      'st geoRGES tce',
-      'perth WA 6000',
-    );
+    const aliases = expandRangeAliases(5, 7, 'st geoRGES tce', 'perth WA 6000');
     assert.equal(aliases[0], '5 st geoRGES tce, perth WA 6000');
     assert.equal(aliases[1], '7 st geoRGES tce, perth WA 6000');
   });

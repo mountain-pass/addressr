@@ -21,7 +21,10 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DOCS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs');
+const DOCS = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../docs',
+);
 
 // docs/adrs/template.md ships `yyyymmdd-xxx.md` as a fill-in-the-blank placeholder.
 const EXCLUDED = new Set([path.join(DOCS, 'adrs/template.md')]);
@@ -46,7 +49,8 @@ describe('docs/** relative links (R018)', () => {
       const text = await readFile(file, 'utf8');
       for (const [, target] of text.matchAll(LINK_RE)) {
         // Skip absolute paths, URLs (http:, mailto:) and in-page anchors.
-        if (path.isAbsolute(target) || /^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
+        if (path.isAbsolute(target) || /^[a-z][a-z0-9+.-]*:/i.test(target))
+          continue;
         if (!existsSync(path.resolve(path.dirname(file), target))) {
           broken.push(`${path.relative(DOCS, file)} -> ${target}`);
         }
@@ -55,6 +59,10 @@ describe('docs/** relative links (R018)', () => {
 
     // Enumerate every offender: a repair is only mechanical if the failure names
     // all of them at once.
-    assert.deepEqual(broken, [], `${broken.length} broken doc link(s):\n  ${broken.join('\n  ')}`);
+    assert.deepEqual(
+      broken,
+      [],
+      `${broken.length} broken doc link(s):\n  ${broken.join('\n  ')}`,
+    );
   });
 });

@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import {
   attachRangeAliases,
   buildIndexedDocument,
-} from '../../../src/build-indexed-document.js';
+} from '../../../packages/addressr/src/build-indexed-document.js';
 
 /** A mapped address shaped as `mapAddressDetails` returns it. */
 const mapped = ({ last, ...overrides } = {}) => ({
@@ -159,7 +159,7 @@ describe('buildIndexedDocument — what actually reaches the index (P033 / P091)
     // pending P091. That leaves `sla` and `ssla`, which the destructure hoists
     // by construction. Its value is prospective.
     const { buildAddressIndexBody } =
-      await import('../../../src/init-index-config.js');
+      await import('../../../packages/addressr/src/init-index-config.js');
     const properties = buildAddressIndexBody([]).mappings.properties;
     assert.equal(
       properties.structured.enabled,

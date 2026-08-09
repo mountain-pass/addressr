@@ -91,8 +91,8 @@ Shipped. ADR-026 expands each hyphenated range into a multi-valued `sla_range_ex
 - [ADR 025](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — symmetric ssla indexing (P007 fix) — related approach
 - [ADR 026](../../decisions/026-range-number-address-expansion.superseded.md) — range-number expansion via multi-valued text alias field — proposed fix
 - [P007](../closed/007-search-scoring-exact-address-ranked-below-subunits.md) — search scoring (different but related query-builder issue)
-- [`client/elasticsearch.js:58-76`](../../../client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
-- [`service/address-service.js:950-1003`](../../../service/address-service.js) — `searchForAddress` query builder
+- [`client/elasticsearch.js:58-76`](../../../packages/addressr/client/elasticsearch.js) — `whitecomma` tokeniser and `my_analyzer`
+- [`service/address-service.js:950-1003`](../../../packages/addressr/service/address-service.js) — `searchForAddress` query builder
 
 ## Closed — verified
 

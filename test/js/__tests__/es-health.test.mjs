@@ -5,7 +5,7 @@ import {
   isEsProbeEnabled,
   checkEsHealthCached,
   _resetHealthCache,
-} from '../../../src/es-health.js';
+} from '../../../packages/addressr/src/es-health.js';
 
 // ADR 029 zero-outage: /health must reflect OpenSearch reachability so a
 // misconfigured v2/SigV4 cutover fails EB's health-gated rollout (auto-rollback)
@@ -33,7 +33,7 @@ describe('checkEsHealth', () => {
   });
 
   it('returns not-connected when the client is missing (startup window)', async () => {
-    const result = await checkEsHealth(undefined);
+    const result = await checkEsHealth();
     assert.deepEqual(result, { ok: false, reason: 'not-connected' });
   });
 
@@ -45,7 +45,7 @@ describe('checkEsHealth', () => {
   it('passes a bounded requestTimeout to ping so /health responds within the ELB timeout', async () => {
     let seen;
     const client = {
-      ping: async (_params, options) => {
+      ping: async (_parameters, options) => {
         seen = options;
         return { statusCode: 200 };
       },
@@ -57,7 +57,7 @@ describe('checkEsHealth', () => {
   it('defaults to a 2s requestTimeout when none is supplied', async () => {
     let seen;
     const client = {
-      ping: async (_params, options) => {
+      ping: async (_parameters, options) => {
         seen = options;
         return { statusCode: 200 };
       },

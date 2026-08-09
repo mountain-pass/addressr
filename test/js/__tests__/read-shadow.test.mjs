@@ -1,5 +1,5 @@
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
-/* eslint-disable unicorn/prevent-abbreviations */
+
 /* eslint-disable max-lines-per-function */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -20,7 +20,7 @@ const SHADOW_VARS = [
   'ADDRESSR_SHADOW_TIMEOUT_MS',
 ];
 
-function snapshotEnv() {
+function snapshotEnvironment() {
   const snap = {};
   for (const k of SHADOW_VARS) {
     snap[k] = process.env[k];
@@ -29,7 +29,7 @@ function snapshotEnv() {
   return snap;
 }
 
-function restoreEnv(snap) {
+function restoreEnvironment(snap) {
   for (const k of SHADOW_VARS) {
     if (snap[k] === undefined) {
       delete process.env[k];
@@ -43,16 +43,16 @@ describe('validateReadShadowConfig (ADR 031)', () => {
   let snapshot;
 
   beforeEach(() => {
-    snapshot = snapshotEnv();
+    snapshot = snapshotEnvironment();
   });
 
   afterEach(() => {
-    restoreEnv(snapshot);
+    restoreEnvironment(snapshot);
   });
 
   it('does not throw when ADDRESSR_SHADOW_HOST is unset (self-hosted default)', async () => {
     const { validateReadShadowConfig } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     assert.doesNotThrow(() => validateReadShadowConfig());
   });
 
@@ -61,14 +61,14 @@ describe('validateReadShadowConfig (ADR 031)', () => {
     process.env.ADDRESSR_SHADOW_USERNAME = 'user';
     process.env.ADDRESSR_SHADOW_PASSWORD = 'pass';
     const { validateReadShadowConfig } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     assert.doesNotThrow(() => validateReadShadowConfig());
   });
 
   it('does not throw when host is set and credentials pair is fully unset', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     const { validateReadShadowConfig } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     assert.doesNotThrow(() => validateReadShadowConfig());
   });
 
@@ -76,7 +76,7 @@ describe('validateReadShadowConfig (ADR 031)', () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     process.env.ADDRESSR_SHADOW_USERNAME = 'user';
     const { validateReadShadowConfig } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     assert.throws(
       () => validateReadShadowConfig(),
       (error) => {
@@ -93,7 +93,7 @@ describe('validateReadShadowConfig (ADR 031)', () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     process.env.ADDRESSR_SHADOW_PASSWORD = 'pass';
     const { validateReadShadowConfig } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     assert.throws(
       () => validateReadShadowConfig(),
       (error) => {
@@ -111,11 +111,11 @@ describe('mirrorRequest (ADR 031)', () => {
   let snapshot;
 
   beforeEach(() => {
-    snapshot = snapshotEnv();
+    snapshot = snapshotEnvironment();
   });
 
   afterEach(() => {
-    restoreEnv(snapshot);
+    restoreEnvironment(snapshot);
   });
 
   it('is a no-op when ADDRESSR_SHADOW_HOST is unset (no client constructed, no calls made)', async () => {
@@ -130,7 +130,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     mirrorRequest({
@@ -160,7 +160,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     mirrorRequest({
@@ -182,17 +182,17 @@ describe('mirrorRequest (ADR 031)', () => {
 
   it('returns synchronously without awaiting the shadow promise', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
-    let shadowResolved = false;
+    let isShadowResolved = false;
     const FakeClient = class {
       // eslint-disable-next-line no-unused-vars
       async search(_parameters) {
         await new Promise((resolve) => setTimeout(resolve, 50));
-        shadowResolved = true;
+        isShadowResolved = true;
         return { body: {} };
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     const returnValue = mirrorRequest({
@@ -202,16 +202,16 @@ describe('mirrorRequest (ADR 031)', () => {
     });
 
     assert.equal(returnValue, undefined);
-    assert.equal(shadowResolved, false);
+    assert.equal(isShadowResolved, false);
     await new Promise((resolve) => setTimeout(resolve, 100));
-    assert.equal(shadowResolved, true);
+    assert.equal(isShadowResolved, true);
   });
 
   it('swallows shadow client rejection without raising unhandled rejection', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
-    let unhandled = false;
+    let isUnhandled = false;
     const onUnhandled = () => {
-      unhandled = true;
+      isUnhandled = true;
     };
     process.on('unhandledRejection', onUnhandled);
 
@@ -222,7 +222,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     assert.doesNotThrow(() =>
@@ -235,7 +235,7 @@ describe('mirrorRequest (ADR 031)', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 30));
     process.off('unhandledRejection', onUnhandled);
-    assert.equal(unhandled, false);
+    assert.equal(isUnhandled, false);
   });
 
   it('swallows synchronous throws from the shadow client constructor', async () => {
@@ -246,7 +246,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     assert.doesNotThrow(() =>
@@ -268,7 +268,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     assert.doesNotThrow(() =>
@@ -292,7 +292,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     mirrorRequest({
@@ -330,7 +330,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     mirrorRequest({
@@ -347,7 +347,7 @@ describe('mirrorRequest (ADR 031)', () => {
   it('rejects unknown method synchronously (programmer error)', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     assert.throws(
@@ -371,7 +371,7 @@ describe('mirrorRequest (ADR 031)', () => {
       }
     };
     const { mirrorRequest, _resetShadowClientForTesting } =
-      await import('../../../src/read-shadow.js');
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
 
     mirrorRequest({
@@ -403,11 +403,11 @@ describe('getShadowStatus (P035)', () => {
   let snapshot;
 
   beforeEach(() => {
-    snapshot = snapshotEnv();
+    snapshot = snapshotEnvironment();
   });
 
   afterEach(() => {
-    restoreEnv(snapshot);
+    restoreEnvironment(snapshot);
   });
 
   it('returns all-false / zero counters when shadow is disabled (host unset)', async () => {
@@ -415,7 +415,7 @@ describe('getShadowStatus (P035)', () => {
       getShadowStatus,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -431,9 +431,8 @@ describe('getShadowStatus (P035)', () => {
 
   it('returns hostSet:true when ADDRESSR_SHADOW_HOST is configured', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
-    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
-      '../../../src/read-shadow.js'
-    );
+    const { getShadowStatus, _resetShadowCountersForTesting } =
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowCountersForTesting();
 
     const status = getShadowStatus();
@@ -444,9 +443,8 @@ describe('getShadowStatus (P035)', () => {
   it('returns credentialsSet:false when only one of USERNAME/PASSWORD is set', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     process.env.ADDRESSR_SHADOW_USERNAME = 'user';
-    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
-      '../../../src/read-shadow.js'
-    );
+    const { getShadowStatus, _resetShadowCountersForTesting } =
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowCountersForTesting();
 
     const status = getShadowStatus();
@@ -457,9 +455,8 @@ describe('getShadowStatus (P035)', () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
     process.env.ADDRESSR_SHADOW_USERNAME = 'user';
     process.env.ADDRESSR_SHADOW_PASSWORD = 'pass';
-    const { getShadowStatus, _resetShadowCountersForTesting } = await import(
-      '../../../src/read-shadow.js'
-    );
+    const { getShadowStatus, _resetShadowCountersForTesting } =
+      await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowCountersForTesting();
 
     const status = getShadowStatus();
@@ -478,7 +475,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -506,7 +503,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -548,7 +545,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -585,7 +582,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -615,7 +612,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -636,7 +633,9 @@ describe('getShadowStatus (P035)', () => {
     // Drive multiple distinct error shapes to exercise the classifier
     const errorShapes = [
       Object.assign(new Error('aborted'), { name: 'AbortError' }),
-      Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+      Object.assign(new Error('connect ECONNREFUSED'), {
+        code: 'ECONNREFUSED',
+      }),
       Object.assign(new Error('Response Error'), { statusCode: 403 }),
       new Error('something weird'),
       'a non-error string rejection',
@@ -646,7 +645,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
 
     for (const shape of errorShapes) {
       _resetShadowClientForTesting();
@@ -699,7 +698,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -713,16 +712,28 @@ describe('getShadowStatus (P035)', () => {
     // The bug manifests as: attempts=0, failures=1, no constructor call.
     // Fixed shape: attempts=1, failures=0, constructor called with a parseable URL.
     const status = getShadowStatus();
-    assert.equal(constructed.length, 1, 'shadow client constructor must be called with a parseable URL');
-    assert.equal(status.attempts, 1, 'mirrorRequest must reach the attempt counter (URL must be valid)');
-    assert.equal(status.failures, 0, 'no synchronous URL-parse throw should have fired');
+    assert.equal(
+      constructed.length,
+      1,
+      'shadow client constructor must be called with a parseable URL',
+    );
+    assert.equal(
+      status.attempts,
+      1,
+      'mirrorRequest must reach the attempt counter (URL must be valid)',
+    );
+    assert.equal(
+      status.failures,
+      0,
+      'no synchronous URL-parse throw should have fired',
+    );
   });
 
   it('counter-increment-as-failure-mode: incrementer throwing synchronously does not bubble (architect §3 / risk R2)', async () => {
     process.env.ADDRESSR_SHADOW_HOST = 'shadow.example.com';
-    let unhandled = false;
+    let isUnhandled = false;
     const onUnhandled = () => {
-      unhandled = true;
+      isUnhandled = true;
     };
     process.on('unhandledRejection', onUnhandled);
 
@@ -740,8 +751,8 @@ describe('getShadowStatus (P035)', () => {
         return new Proxy(
           {},
           {
-            get(_target, prop) {
-              if (prop === 'then') return undefined; // fall through to plain resolve
+            get(_target, property) {
+              if (property === 'then') return; // fall through to plain resolve
               throw new Error('synthetic throw on body access');
             },
           },
@@ -753,7 +764,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -767,7 +778,11 @@ describe('getShadowStatus (P035)', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 30));
     process.off('unhandledRejection', onUnhandled);
-    assert.equal(unhandled, false, 'shadow code path must not raise unhandled rejection');
+    assert.equal(
+      isUnhandled,
+      false,
+      'shadow code path must not raise unhandled rejection',
+    );
   });
 
   // P035 BS-2 — CHARACTERISATION TESTS. See
@@ -798,7 +813,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 
@@ -826,7 +841,10 @@ describe('getShadowStatus (P035)', () => {
       'CHARACTERISATION (P035 BS-2): pins the current DEFECTIVE value — the failure IS counted, so failures > attempts.',
     );
     assert.equal(status.successes, 0);
-    assert.ok(status.lastError, 'the failure is at least visible as a lastError');
+    assert.ok(
+      status.lastError,
+      'the failure is at least visible as a lastError',
+    );
   });
 
   it('P035 BS-2: non-thenable client return leaves an attempt with no terminal outcome (characterisation)', async () => {
@@ -843,7 +861,7 @@ describe('getShadowStatus (P035)', () => {
       mirrorRequest,
       _resetShadowClientForTesting,
       _resetShadowCountersForTesting,
-    } = await import('../../../src/read-shadow.js');
+    } = await import('../../../packages/addressr/src/read-shadow.js');
     _resetShadowClientForTesting();
     _resetShadowCountersForTesting();
 

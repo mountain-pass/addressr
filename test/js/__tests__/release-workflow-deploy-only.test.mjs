@@ -199,6 +199,38 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('reads the PUBLISHED manifest for the P044 assertion, never the workspace root', () => {
+    // MEASURED FAIL-OPEN, 2026-08-10. This step read `./package.json` for the
+    // name and version it compares against npm. The workspace split made that
+    // the PRIVATE root `addressr-workspace` with no `version` field, so
+    // `npm view` returned empty and the step took its documented
+    // warn-and-`exit 0` branch. The guard that makes a swallowed publish LOUD
+    // disabled itself, silently, on a green run — and it failed OPEN, which is
+    // strictly worse than failing closed.
+    //
+    // The step's own design is what converts the break into a pass, so the fix
+    // cannot be "notice it next time": pin the path. A private root manifest has
+    // no `version`, so any future re-point at the root reintroduces exactly this.
+    const step = stepNamed(
+      'Fail if a publish was expected but did not happen (P044)',
+    );
+    assert.match(
+      step.run,
+      /require\('\.\/packages\/addressr\/package\.json'\)\.name/,
+      'P044 must read the published package name, not the private workspace root',
+    );
+    assert.match(
+      step.run,
+      /require\('\.\/packages\/addressr\/package\.json'\)\.version/,
+      'P044 must read the published version, not the private workspace root',
+    );
+    assert.doesNotMatch(
+      step.run,
+      /require\('\.\/package\.json'\)/,
+      'the workspace root has no `version`, so reading it makes this assertion vacuous and it fails OPEN',
+    );
+  });
+
   it('gates exactly three steps on published OR deploy_only, under success()', () => {
     // The count catches a gate DELETED from a step that is already there —
     // including "Wait for deployment to stabilize", whose body is `sleep 120`
@@ -443,7 +475,7 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     const forwarded = new Set(
       String(deploy.with?.env ?? '')
         .split('\n')
-        .map((l) => l.trim().split('=')[0])
+        .map((l) => l.trim().split('=', 1)[0])
         .filter(Boolean),
     );
     const declared = Object.keys(deploy.env ?? {});
@@ -579,7 +611,7 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
     const waitIndex = releaseWatch.search(/^wait_for_completion \|\| exit 1$/m);
     const scanIndex = releaseWatch.indexOf('JOBS_TSV=');
     assert.ok(
-      waitIndex > -1 && scanIndex > -1 && waitIndex < scanIndex,
+      waitIndex > -1 && scanIndex !== -1 && waitIndex < scanIndex,
       'completion must be asserted BEFORE the job scan, not after it',
     );
 
@@ -641,7 +673,7 @@ describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
     const waitIndex = pushWatch.search(/^wait_for_completion \|\| exit 1$/m);
     const scanIndex = pushWatch.indexOf('JOBS_TSV=');
     assert.ok(
-      waitIndex > -1 && scanIndex > -1 && waitIndex < scanIndex,
+      waitIndex > -1 && scanIndex !== -1 && waitIndex < scanIndex,
       'completion must be asserted BEFORE the job scan',
     );
   });

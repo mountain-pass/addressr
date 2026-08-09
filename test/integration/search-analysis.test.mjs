@@ -28,8 +28,8 @@ import {
   buildAddressIndexBody,
   buildAnalysis,
   mapAuthCodeTableToSynonymList,
-} from '../../src/init-index-config.js';
-import { buildAddressSearchBody } from '../../src/build-search-body.js';
+} from '../../packages/addressr/src/init-index-config.js';
+import { buildAddressSearchBody } from '../../packages/addressr/src/build-search-body.js';
 
 const HOST = process.env.ELASTIC_TEST_HOST || 'http://localhost:9200';
 const INDEX = 'addressr-adr041-integration';
@@ -116,7 +116,7 @@ async function search(index, q) {
  * exists separately.
  */
 function prefixes(text, from = 1) {
-  const tokens = text.replace(/,/g, '').split(/\s+/);
+  const tokens = text.replaceAll(',', '').split(/\s+/);
   const out = [];
   for (let n = from; n <= tokens.length; n += 1) {
     const whole = tokens.slice(0, n).join(' ');

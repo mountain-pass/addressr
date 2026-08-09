@@ -38,6 +38,7 @@ import {
   mkdtempSync,
   writeFileSync,
   chmodSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
 } from 'node:fs';
@@ -46,7 +47,41 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
-const resolver = path.join(repoRoot, 'deploy', 'resolve-version.sh');
+
+/**
+ * A throwaway tree holding a COPY of the resolver plus a fake published
+ * manifest at the path the resolver actually reads.
+ *
+ * REWRITTEN 2026-08-10, and the reason is the whole point of this test.
+ * It used to run the real `deploy/resolve-version.sh` while INJECTING
+ * `npm_package_name` and `npm_package_version` into its environment — which
+ * meant it supplied the very contract it was supposed to verify. When the
+ * workspace split made npm export those variables from the PRIVATE root
+ * manifest (`addressr-workspace`, no `version` at all), the resolver broke in
+ * production and this test stayed green, because the fixture kept handing it
+ * the values npm no longer would. The risk scorer caught it; the suite did not.
+ *
+ * So the fixture now provides a MANIFEST, not variables. The resolver reads it
+ * the same way it reads the real one — script-relative — so the resolution
+ * mechanism itself is under test rather than stubbed out.
+ */
+const fakeTree = (version = '3.1.0', name = '@mountainpass/addressr') => {
+  const root = mkdtempSync(path.join(tmpdir(), 'addressr-resolve-'));
+  mkdirSync(path.join(root, 'deploy'), { recursive: true });
+  mkdirSync(path.join(root, 'packages', 'addressr'), { recursive: true });
+  writeFileSync(
+    path.join(root, 'packages', 'addressr', 'package.json'),
+    JSON.stringify({ name, version }),
+  );
+  const destination = path.join(root, 'deploy', 'resolve-version.sh');
+  writeFileSync(
+    destination,
+    readFileSync(path.join(repoRoot, 'deploy', 'resolve-version.sh'), 'utf8'),
+  );
+  chmodSync(destination, 0o755);
+  return destination;
+};
+const resolver = fakeTree();
 
 /** A directory containing a stub `npm` that behaves as instructed. */
 const stubNpm = (body) => {
@@ -57,7 +92,7 @@ const stubNpm = (body) => {
   return dir;
 };
 
-const runResolver = (npmBody, env = {}) => {
+const runResolver = (npmBody, environment = {}) => {
   const stub = stubNpm(npmBody);
   try {
     return {
@@ -65,9 +100,9 @@ const runResolver = (npmBody, env = {}) => {
       stdout: execFileSync('sh', [resolver], {
         env: {
           PATH: `${stub}:${process.env.PATH}`,
-          npm_package_name: '@mountainpass/addressr',
-          npm_package_version: '3.1.0',
-          ...env,
+          // Deliberately NOT set. npm no longer exports a usable name/version
+          // at the workspace root, and the resolver must not depend on them.
+          ...environment,
         },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -158,6 +193,20 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     const capture = path.join(work, 'capture');
     execFileSync('sh', ['-c', `mkdir -p "${capture}"`]);
 
+    // The published manifest, at the path deploy.sh and resolve-version.sh
+    // actually read (script-relative, one level up from deploy/). Before the
+    // 2026-08-10 workspace split these two scripts took the package name and
+    // version from `npm_package_*`, which this harness injected — so the
+    // harness was supplying the contract instead of testing it, and the split
+    // broke production while this suite stayed green. Providing a manifest
+    // rather than variables is what makes the resolution mechanism itself the
+    // thing under test.
+    mkdirSync(path.join(work, 'packages', 'addressr'), { recursive: true });
+    writeFileSync(
+      path.join(work, 'packages', 'addressr', 'package.json'),
+      JSON.stringify({ name: '@mountainpass/addressr', version: '3.1.0' }),
+    );
+
     const write = (name, body) => {
       const bin = path.join(stub, name);
       writeFileSync(bin, `#!/bin/sh\n${body}\n`);
@@ -173,7 +222,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     // it would be archived — the only point where that set is observable.
     write(
       'zip',
-      `printf '%s\\n' "$*" > "${capture}/zipargs"; ls -A > "${capture}/zipcontents"; exit 0`,
+      String.raw`printf '%s\n' "$*" > "${capture}/zipargs"; ls -A > "${capture}/zipcontents"; exit 0`,
     );
 
     execFileSync('sh', [
@@ -192,8 +241,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
       execFileSync('sh', [path.join(work, 'deploy', 'deploy.sh'), 'plan'], {
         env: {
           PATH: `${stub}:${process.env.PATH}`,
-          npm_package_name: '@mountainpass/addressr',
-          npm_package_version: '3.1.0',
+          // Deliberately NOT set — see the manifest written above.
           PLAN_ONLY: '1',
         },
         encoding: 'utf8',
@@ -210,7 +258,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     const { deployDir, capture } = runDeployScript();
 
     const tfvars = readFileSync(path.join(capture, 'tfvars'), 'utf8');
-    const zipArgs = readFileSync(path.join(capture, 'zipargs'), 'utf8');
+    const zipArguments = readFileSync(path.join(capture, 'zipargs'), 'utf8');
     const manifest = JSON.parse(
       readFileSync(path.join(deployDir, 'deployment', 'package.json'), 'utf8'),
     );
@@ -240,11 +288,11 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
       'the manifest version was previously unguarded and could drift from the pin',
     );
     assert.match(
-      zipArgs,
+      zipArguments,
       new RegExp('deployment-' + RESOLVED + String.raw`\.zip`),
       "the zip filename is what main.tf's `source` reads",
     );
-    assert.doesNotMatch(zipArgs, workspaceRe);
+    assert.doesNotMatch(zipArguments, workspaceRe);
   });
 
   it('bundles EXACTLY the manifest, which is what makes the source_hash honest', () => {

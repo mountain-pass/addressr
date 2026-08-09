@@ -46,11 +46,11 @@ import { fileURLToPath } from 'node:url';
 import {
   buildRest2App,
   startRest2Server,
-} from '../../../src/waycharter-server.js';
+} from '../../../packages/addressr/src/waycharter-server.js';
 import {
   attachRangeAliases,
   buildIndexedDocument,
-} from '../../../src/build-indexed-document.js';
+} from '../../../packages/addressr/src/build-indexed-document.js';
 import { load as parseYaml } from 'js-yaml';
 
 const ACAO = 'ADDRESSR_ACCESS_CONTROL_ALLOW_ORIGIN';
@@ -449,7 +449,12 @@ describe('/api-docs Address schema vs what getAddress actually returns (P091)', 
     // specs cannot drift apart from each other OR from the response.
     const swagger = parseYaml(
       readFileSync(
-        fileURLToPath(new URL('../../../api/swagger-2.yaml', import.meta.url)),
+        fileURLToPath(
+          new URL(
+            '../../../packages/addressr/api/swagger-2.yaml',
+            import.meta.url,
+          ),
+        ),
         'utf8',
       ),
     );

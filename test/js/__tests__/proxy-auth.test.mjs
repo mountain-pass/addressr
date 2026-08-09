@@ -1,5 +1,5 @@
 /* eslint-disable @eslint-community/eslint-comments/disable-enable-pair */
-/* eslint-disable unicorn/prevent-abbreviations */
+
 /* eslint-disable max-lines-per-function */
 /* eslint-disable unicorn/consistent-function-scoping */
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -9,7 +9,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const serverPath = path.resolve(__dirname, '../../../src/waycharter-server.js');
+const serverPath = path.resolve(
+  __dirname,
+  '../../../packages/addressr/src/waycharter-server.js',
+);
 
 // ADR 024 Confirmation criteria 3 & 4:
 // Partial configuration of the ADDRESSR_PROXY_AUTH_* env var pair must fail
@@ -41,20 +44,23 @@ describe('validateProxyAuthConfig (ADR 024)', () => {
   });
 
   it('does not throw when both env vars are unset (self-hosted default)', async () => {
-    const { validateProxyAuthConfig } = await import('../../../src/proxy-auth.js');
+    const { validateProxyAuthConfig } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     assert.doesNotThrow(() => validateProxyAuthConfig());
   });
 
   it('does not throw when both env vars are set', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Gateway-Secret';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { validateProxyAuthConfig } = await import('../../../src/proxy-auth.js');
+    const { validateProxyAuthConfig } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     assert.doesNotThrow(() => validateProxyAuthConfig());
   });
 
   it('throws when only ADDRESSR_PROXY_AUTH_HEADER is set, naming both vars and the missing one', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Gateway-Secret';
-    const { validateProxyAuthConfig } = await import('../../../src/proxy-auth.js');
+    const { validateProxyAuthConfig } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     assert.throws(
       () => validateProxyAuthConfig(),
       (error) => {
@@ -69,7 +75,8 @@ describe('validateProxyAuthConfig (ADR 024)', () => {
 
   it('throws when only ADDRESSR_PROXY_AUTH_VALUE is set, naming both vars and the missing one', async () => {
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { validateProxyAuthConfig } = await import('../../../src/proxy-auth.js');
+    const { validateProxyAuthConfig } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     assert.throws(
       () => validateProxyAuthConfig(),
       (error) => {
@@ -110,7 +117,7 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
 
   function runMiddleware(mw, { path = '/addresses', headers = {} } = {}) {
     return new Promise((resolve) => {
-      const req = {
+      const request = {
         path,
         headers: Object.fromEntries(
           Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
@@ -130,15 +137,16 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
         json(payload) {
           this.body = payload;
           this.headersOut['content-type'] = 'application/json';
-          resolve({ req, res: this, nextCalled: false });
+          resolve({ req: request, res: this, nextCalled: false });
         },
       };
-      mw(req, res, () => resolve({ req, res, nextCalled: true }));
+      mw(request, res, () => resolve({ req: request, res, nextCalled: true }));
     });
   }
 
   it('is a pass-through when both env vars are unset', async () => {
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { nextCalled } = await runMiddleware(proxyAuthMiddleware());
     assert.equal(nextCalled, true);
   });
@@ -146,7 +154,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('rejects with 401 when header is missing', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { res, nextCalled } = await runMiddleware(proxyAuthMiddleware());
     assert.equal(nextCalled, false);
     assert.equal(res.statusCode, 401);
@@ -156,7 +165,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('rejects with 401 when header value is wrong', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { res, nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
       headers: { 'X-Test-Header': 'wrong' },
     });
@@ -167,7 +177,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('passes when header value matches', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
       headers: { 'X-Test-Header': 's3cr3t' },
     });
@@ -177,7 +188,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('exempts /health from enforcement', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
       path: '/health',
     });
@@ -187,7 +199,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('exempts /api-docs from enforcement', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
       path: '/api-docs',
     });
@@ -201,7 +214,8 @@ describe('proxyAuthMiddleware (ADR 024)', () => {
   it('exempts /debug/shadow-config from enforcement', async () => {
     process.env.ADDRESSR_PROXY_AUTH_HEADER = 'X-Test-Header';
     process.env.ADDRESSR_PROXY_AUTH_VALUE = 's3cr3t';
-    const { proxyAuthMiddleware } = await import('../../../src/proxy-auth.js');
+    const { proxyAuthMiddleware } =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const { nextCalled } = await runMiddleware(proxyAuthMiddleware(), {
       path: '/debug/shadow-config',
     });
@@ -243,7 +257,7 @@ describe('proxy-auth ALLOWLIST membership (ADR 024 closed list)', () => {
   // diff for this test localised.
   function runMiddleware(mw, { path = '/addresses', headers = {} } = {}) {
     return new Promise((resolve) => {
-      const req = {
+      const request = {
         path,
         headers: Object.fromEntries(
           Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
@@ -263,15 +277,16 @@ describe('proxy-auth ALLOWLIST membership (ADR 024 closed list)', () => {
         json(payload) {
           this.body = payload;
           this.headersOut['content-type'] = 'application/json';
-          resolve({ req, res: this, nextCalled: false });
+          resolve({ req: request, res: this, nextCalled: false });
         },
       };
-      mw(req, res, () => resolve({ req, res, nextCalled: true }));
+      mw(request, res, () => resolve({ req: request, res, nextCalled: true }));
     });
   }
 
   it('contains exactly the documented closed list', async () => {
-    const moduleSource = await import('../../../src/proxy-auth.js');
+    const moduleSource =
+      await import('../../../packages/addressr/src/proxy-auth.js');
     const expected = ['/health', '/api-docs', '/debug/shadow-config'];
     for (const path of expected) {
       const { nextCalled } = await runMiddleware(
@@ -324,10 +339,7 @@ describe('proxy-auth OPTIONS exemption stays OPTIONS-scoped (R2 / ADR-037 × ADR
     const source = await readFile(serverPath, 'utf8');
     const start = source.indexOf('export function buildRest2App');
     assert.notEqual(start, -1, 'buildRest2App must exist');
-    const proxyAuth = source.indexOf(
-      'app.use(proxyAuthMiddleware())',
-      start,
-    );
+    const proxyAuth = source.indexOf('app.use(proxyAuthMiddleware())', start);
     assert.notEqual(
       proxyAuth,
       -1,

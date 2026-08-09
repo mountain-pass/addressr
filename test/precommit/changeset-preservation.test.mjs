@@ -12,18 +12,25 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, cpSync, symlinkSync } from 'node:fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  cpSync,
+  symlinkSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-function sh(cmd, args, opts = {}) {
-  return execFileSync(cmd, args, {
+function sh(command, arguments_, options = {}) {
+  return execFileSync(command, arguments_, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
-    ...opts,
+    ...options,
   });
 }
 
@@ -79,20 +86,21 @@ describe('Problem 011: pre-commit preserves staged .changeset/*.md', () => {
       join(workDir, 'touched.js'),
       "export const touched = 'P011 repro';\n",
     );
-    writeFileSync(
-      join(workDir, 'README.md'),
-      '# Repro\n\nSome content.\n',
-    );
+    writeFileSync(join(workDir, 'README.md'), '# Repro\n\nSome content.\n');
     writeFileSync(
       join(workDir, 'docs', 'JOBS_TO_BE_DONE.md'),
       '# Jobs\n\nContent.\n',
     );
     // The rename: 999-seed.open.md -> 999-seed.known-error.md
-    sh('git', [
-      'mv',
-      'docs/problems/999-seed.open.md',
-      'docs/problems/999-seed.known-error.md',
-    ], { cwd: workDir });
+    sh(
+      'git',
+      [
+        'mv',
+        'docs/problems/999-seed.open.md',
+        'docs/problems/999-seed.known-error.md',
+      ],
+      { cwd: workDir },
+    );
     // .feature file — not in lint-staged config, mirrors the P009 scenario
     mkdirSync(join(workDir, 'test', 'resources', 'features'), {
       recursive: true,
@@ -102,14 +110,18 @@ describe('Problem 011: pre-commit preserves staged .changeset/*.md', () => {
       'Feature: repro\n  Scenario: noop\n    Given nothing\n',
     );
 
-    sh('git', [
-      'add',
-      '.changeset/p011-repro.md',
-      'touched.js',
-      'README.md',
-      'docs/JOBS_TO_BE_DONE.md',
-      'test/resources/features/repro.feature',
-    ], { cwd: workDir });
+    sh(
+      'git',
+      [
+        'add',
+        '.changeset/p011-repro.md',
+        'touched.js',
+        'README.md',
+        'docs/JOBS_TO_BE_DONE.md',
+        'test/resources/features/repro.feature',
+      ],
+      { cwd: workDir },
+    );
 
     // Run the real lint-staged (the pre-commit gate). Then commit with
     // --no-verify since the hook already ran. If lint-staged silently drops

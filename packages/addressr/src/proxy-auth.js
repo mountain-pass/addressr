@@ -31,14 +31,14 @@ function isNonEmpty(value) {
 }
 
 export function validateProxyAuthConfig(environment = process.env) {
-  const headerSet = isNonEmpty(environment[HEADER_VAR]);
-  const valueSet = isNonEmpty(environment[VALUE_VAR]);
-  if (headerSet && !valueSet) {
+  const isHeaderSet = isNonEmpty(environment[HEADER_VAR]);
+  const isValueSet = isNonEmpty(environment[VALUE_VAR]);
+  if (isHeaderSet && !isValueSet) {
     throw new Error(
       `Proxy auth misconfigured: ${HEADER_VAR} is set but ${VALUE_VAR} is missing. Set both to enforce a gateway auth header, or unset both to disable enforcement.`,
     );
   }
-  if (valueSet && !headerSet) {
+  if (isValueSet && !isHeaderSet) {
     throw new Error(
       `Proxy auth misconfigured: ${VALUE_VAR} is set but ${HEADER_VAR} is missing. Set both to enforce a gateway auth header, or unset both to disable enforcement.`,
     );

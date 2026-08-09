@@ -33,17 +33,23 @@
 // Usage:
 //   ADDRESSR_PROBE_HOST=search-….es.amazonaws.com node test/perf/range-alias-value-probe.mjs --n 400
 
-import { probeClient, INDEX, search, mapLimit, PAGE_SIZE } from './relevance-lib.mjs';
+import {
+  probeClient,
+  INDEX,
+  search,
+  mapLimit,
+  PAGE_SIZE,
+} from './relevance-lib.mjs';
 
 const argv = process.argv.slice(2);
-const arg = (name, fallback) => {
-  const i = argv.indexOf(`--${name}`);
-  return i === -1 ? fallback : argv[i + 1];
+const argument = (name, fallback) => {
+  const index = argv.indexOf(`--${name}`);
+  return index === -1 ? fallback : argv[index + 1];
 };
 
-const TARGET = Number(arg('n', 400));
-const SEED_BASE = arg('seed') ? Number(arg('seed')) : Date.now();
-const FROZEN = Boolean(arg('seed'));
+const TARGET = Number(argument('n', 400));
+const SEED_BASE = argument('seed') ? Number(argument('seed')) : Date.now();
+const IS_FROZEN = Boolean(argument('seed'));
 
 // `103-107 GAZE RD, CHRISTMAS ISLAND OT 6798` -> the two endpoint forms.
 // ADR-028 is endpoint-only: the aliases are the first and last numbers, never
@@ -78,7 +84,11 @@ const endpoints = (sla) => {
 async function drawRanges(client, target, seedBase) {
   const seen = new Set();
   const out = [];
-  for (let seed = seedBase; out.length < target && seed < seedBase + 200; seed += 1) {
+  for (
+    let seed = seedBase;
+    out.length < target && seed < seedBase + 200;
+    seed += 1
+  ) {
     const { body } = await client.search({
       index: INDEX,
       body: {
@@ -112,8 +122,8 @@ async function endpointsPresent(client, pairs) {
   const all = pairs.flatMap((p) => p.aliases);
   const present = new Set();
   // Chunked: a terms query with thousands of values is a different kind of load.
-  for (let i = 0; i < all.length; i += 500) {
-    const chunk = all.slice(i, i + 500);
+  for (let index = 0; index < all.length; index += 500) {
+    const chunk = all.slice(index, index + 500);
     const { body } = await client.search({
       index: INDEX,
       // size is 4x the chunk, NOT chunk.length. G-NAF carries primary/secondary
@@ -121,7 +131,11 @@ async function endpointsPresent(client, pairs) {
       // exceed the number of distinct values asked for. A truncated result
       // silently misclassifies a COMPETING case as a GAP case, which inflates
       // exactly the number this probe exists to report.
-      body: { size: chunk.length * 4, _source: ['sla'], query: { terms: { 'sla.raw': chunk } } },
+      body: {
+        size: chunk.length * 4,
+        _source: ['sla'],
+        query: { terms: { 'sla.raw': chunk } },
+      },
     });
     // ASSERT the bound rather than assume it. A `terms` query returns the top N
     // BY SCORE, and under `terms` every score is constant — so any truncation
@@ -145,7 +159,9 @@ const main = async () => {
   const client = probeClient();
   console.log(
     `# range-alias value probe — index=${INDEX} target=${TARGET} seed=${SEED_BASE}${
-      FROZEN ? ' (FROZEN SEED — reproduction only, NON-DISCHARGING)' : ' (fresh draw)'
+      IS_FROZEN
+        ? ' (FROZEN SEED — reproduction only, NON-DISCHARGING)'
+        : ' (fresh draw)'
     }`,
   );
 
@@ -157,19 +173,29 @@ const main = async () => {
   if (pairs.length === 0) return;
 
   const present = await endpointsPresent(client, pairs);
-  const gap = pairs.filter((p) => !p.aliases.some((a) => present.has(a)));
+  const gap = pairs.filter((p) => p.aliases.every((a) => !present.has(a)));
   const competing = pairs.length - gap.length;
 
   console.log('');
-  console.log('| population                                                          | count | share |');
-  console.log('| ------------------------------------------------------------------- | ----- | ----- |');
+  console.log(
+    '| population                                                          | count | share |',
+  );
+  console.log(
+    '| ------------------------------------------------------------------- | ----- | ----- |',
+  );
   const pct = (n) => `${((n / pairs.length) * 100).toFixed(1)}%`;
-  console.log(`| neither endpoint exists — the only case the alias could help         | ${gap.length} | ${pct(gap.length)} |`);
-  console.log(`| at least one endpoint exists — alias would compete with the real doc | ${competing} | ${pct(competing)} |`);
+  console.log(
+    `| neither endpoint exists — the only case the alias could help         | ${gap.length} | ${pct(gap.length)} |`,
+  );
+  console.log(
+    `| at least one endpoint exists — alias would compete with the real doc | ${competing} | ${pct(competing)} |`,
+  );
 
   // For the gap cases only: can the range doc be found by an endpoint query
   // WITHOUT the alias? That is the recall question the removal decision turns on.
-  const probes = gap.flatMap((g) => g.aliases.map((q) => ({ q, id: g.id, sla: g.sla })));
+  const probes = gap.flatMap((g) =>
+    g.aliases.map((q) => ({ q, id: g.id, sla: g.sla })),
+  );
   const results = await mapLimit(probes, 4, async ({ q, id }) => {
     const hits = await search(client, { query: q, variant: 'baseline' });
     const rank = hits.findIndex((h) => h.id === id);
@@ -181,7 +207,9 @@ const main = async () => {
   const missing = results.length - inPage;
 
   console.log('');
-  console.log(`# gap cases only, endpoint query WITHOUT the alias (page size ${PAGE_SIZE})`);
+  console.log(
+    `# gap cases only, endpoint query WITHOUT the alias (page size ${PAGE_SIZE})`,
+  );
   console.log('|                                 |     |');
   console.log('| ------------------------------- | --- |');
   console.log(`| probes run                      | ${results.length} |`);
@@ -191,17 +219,20 @@ const main = async () => {
 
   if (missing > 0) {
     console.log('');
-    console.log('# not-in-page cases — these are what the alias would have to justify:');
-    for (const [i, r] of results.entries()) {
-      if (!r.found) console.log(`#   ${probes[i].q}  ->  ${probes[i].sla}`);
+    console.log(
+      '# not-in-page cases — these are what the alias would have to justify:',
+    );
+    for (const [index, r] of results.entries()) {
+      if (!r.found)
+        console.log(`#   ${probes[index].q}  ->  ${probes[index].sla}`);
     }
   }
   console.log('');
   console.log(
     missing === 0
       ? '# RESULT: 0 not-in-page WITHIN THIS FRAME (bare-numeric-leading ranges only;\n' +
-        '#   alpha-affixed and unit/level-prefixed ranges also generate aliases and are NOT sampled).\n' +
-        '#   The alias adds no recall in the population measured. See test/perf/README.md before quoting.'
+          '#   alpha-affixed and unit/level-prefixed ranges also generate aliases and are NOT sampled).\n' +
+          '#   The alias adds no recall in the population measured. See test/perf/README.md before quoting.'
       : `# RESULT: ${missing} not-in-page. Does NOT reproduce the 2026-08-08 finding — the alias has a recall case.`,
   );
 };

@@ -62,10 +62,7 @@ export default {
     const url = new URL(request.url);
     url.hostname = UPSTREAM_HOST;
 
-    const upstreamRequest = new Request(
-      url.toString(),
-      new Request(request, {}),
-    );
+    const upstreamRequest = new Request(url.toString(), new Request(request));
     upstreamRequest.headers.set('x-rapidapi-key', environment.RAPIDAPI_KEY);
     upstreamRequest.headers.set('x-rapidapi-host', UPSTREAM_HOST);
 

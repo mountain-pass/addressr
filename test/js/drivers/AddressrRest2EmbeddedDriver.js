@@ -1,6 +1,6 @@
 import { waychaser } from '@mountainpass/waychaser';
 import { inject } from 'light-my-request';
-import { buildRest2App } from '../../../src/waycharter-server.js';
+import { buildRest2App } from '../../../packages/addressr/src/waycharter-server.js';
 import { AddressrRest2Driver } from './AddressrRest2Driver.js';
 
 // Adapt light-my-request's response to the minimal WHATWG-fetch Response shape

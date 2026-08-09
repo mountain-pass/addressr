@@ -21,7 +21,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-const MODULE = '../../../src/init-index-config.js';
+const MODULE = '../../../packages/addressr/src/init-index-config.js';
 
 describe('index body builders — both analyzers on every searched field (ADR-041)', () => {
   it('puts analyzer and search_analyzer on sla, ssla and sla_range_expanded', async () => {
@@ -75,8 +75,9 @@ describe('index body builders — both analyzers on every searched field (ADR-04
   });
 
   it('defines both analyzers in the shared analysis block, search minus synonyms', async () => {
-    const { buildAnalysis, INDEX_ANALYZER, SEARCH_ANALYZER } =
-      await import(MODULE);
+    const { buildAnalysis, INDEX_ANALYZER, SEARCH_ANALYZER } = await import(
+      MODULE
+    );
     const { analyzer } = buildAnalysis([]);
     assert.ok(
       analyzer[INDEX_ANALYZER].filter.includes('my_synonym_filter'),
@@ -147,7 +148,10 @@ describe('synonym rules — equivalent form, direction-agnostic (ADR-041)', () =
       Authority_Code_STREET_SUFFIX_AUT_psv: [{ CODE: 'S', NAME: 'SOUTH' }],
     });
     assert.equal(rules.length, 4);
-    assert.ok(rules.includes('LG, LOWER GROUND'), 'multi-word members included');
+    assert.ok(
+      rules.includes('LG, LOWER GROUND'),
+      'multi-word members included',
+    );
   });
 });
 
@@ -174,8 +178,9 @@ describe('analysis structure stamp (ADR-041 stale-index detection)', () => {
   });
 
   it('flags an index carrying no stamp as stale', async () => {
-    const { isStaleAnalysisConfig, analysisStructureStamp } =
-      await import(MODULE);
+    const { isStaleAnalysisConfig, analysisStructureStamp } = await import(
+      MODULE
+    );
     assert.equal(
       isStaleAnalysisConfig(
         { addressr: { mappings: {} } },
@@ -188,8 +193,9 @@ describe('analysis structure stamp (ADR-041 stale-index detection)', () => {
   });
 
   it('accepts an index whose stamp matches', async () => {
-    const { isStaleAnalysisConfig, buildAddressIndexBody } =
-      await import(MODULE);
+    const { isStaleAnalysisConfig, buildAddressIndexBody } = await import(
+      MODULE
+    );
     const desired = buildAddressIndexBody([]).mappings._meta.analysisStamp;
     assert.equal(
       isStaleAnalysisConfig(

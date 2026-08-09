@@ -138,7 +138,7 @@ Shipped in **v2.4.0** (commit `920fce6`, 2026-04-20) as part of "exact-number ra
 - [P015 — Range-number addresses not findable by base number](015-range-number-addresses-not-searchable-by-base-number.md) — originally captured the recall dimension. Closed by ADR 026 for cases 2 and 4 recall. This ticket captures the ranking dimension that P015's framing missed.
 - [ADR 026](../../decisions/026-range-number-address-expansion.superseded.md) — the recall fix. Ranking invariants documented there remain satisfied; this problem is orthogonal.
 - [ADR 025](../../decisions/025-search-ranking-symmetric-ssla.accepted.md) — `ssla` symmetric-population precedent; the `bool_prefix` summation-symmetry property from ADR 025 is preserved by the proposed fix (field list unchanged).
-- [`service/address-service.js:982-1005`](../../../service/address-service.js) — `searchForAddress` query-builder location (post-v2.4.0: the `bool_prefix` clause with `AUTO:5,8` sits at lines 947-965).
+- [`service/address-service.js:982-1005`](../../../packages/addressr/service/address-service.js) — `searchForAddress` query-builder location (post-v2.4.0: the `bool_prefix` clause with `AUTO:5,8` sits at lines 947-965).
 - [ADR 027](../../decisions/027-fuzziness-auto-5-8.proposed.md) — the shipped fix (`AUTO:5,8`); documents why the token-split Fix Strategy above was rejected (Option D).
 - [Baseline + post-deploy checklist](../026-baseline-v2.3.0.md) — the 14 v2.3.0 production queries and the unticked post-deploy verification checklist.
 - [P027 — Synonym expansion bypasses AUTO fuzziness](027-synonym-expansion-bypasses-auto-fuzziness.md) — sibling fuzziness ticket, separate root cause; not addressed by ADR 027.

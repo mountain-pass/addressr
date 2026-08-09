@@ -13,7 +13,7 @@ const {
   detailFileState,
   matchesCoveredStatePrefix,
   hasNoCoveredDetailMatch,
-} = await import('../../../service/covered-states.js');
+} = await import('../../../packages/addressr/service/covered-states.js');
 
 describe('service/address-service.js — COVERED_STATES case-insensitivity (P034)', () => {
   it('uppercases lowercase entries so `ot` covers OT_ADDRESS_DETAIL_psv.psv', () => {
@@ -50,10 +50,9 @@ describe('service/address-service.js — COVERED_STATES case-insensitivity (P034
     it('matches a file whose prefix is a covered state, case-insensitively', () => {
       // covered states come pre-uppercased from getCoveredStates()
       assert.ok(
-        matchesCoveredStatePrefix(
-          'G-NAF/Standard/OT_ADDRESS_DETAIL_psv.psv',
-          ['OT'],
-        ),
+        matchesCoveredStatePrefix('G-NAF/Standard/OT_ADDRESS_DETAIL_psv.psv', [
+          'OT',
+        ]),
       );
       assert.ok(
         matchesCoveredStatePrefix('foo/NSW_STREET_LOCALITY_psv.psv', [
@@ -84,7 +83,10 @@ describe('service/address-service.js — COVERED_STATES case-insensitivity (P034
     it('is false (no throw) when a covered state matches a detail file, even mis-cased', () => {
       // 'ot' is lowercase but the file is OT_ — the pre-uppercased covered
       // list makes the membership check succeed, so no throw.
-      assert.equal(hasNoCoveredDetailMatch(otFiles, getCoveredStatesFor('ot')), false);
+      assert.equal(
+        hasNoCoveredDetailMatch(otFiles, getCoveredStatesFor('ot')),
+        false,
+      );
     });
 
     it('is true (throw) when a covered state matches zero detail files (typo/absent)', () => {
@@ -99,7 +101,10 @@ describe('service/address-service.js — COVERED_STATES case-insensitivity (P034
     });
 
     it('is false when there are no detail files at all (nothing to load)', () => {
-      assert.equal(hasNoCoveredDetailMatch([], getCoveredStatesFor('ot')), false);
+      assert.equal(
+        hasNoCoveredDetailMatch([], getCoveredStatesFor('ot')),
+        false,
+      );
     });
   });
 });

@@ -60,7 +60,7 @@ import { fileURLToPath } from 'node:url';
 // configuration on 22.7, the `engines: ">=22"` floor may be wrong. Nothing else
 // tests cucumber on 22.7 — `engine-floor` runs `test:js` only. Recorded on P094.
 const [major, minor] = process.versions.node.split('.').map(Number);
-const REQUIRE_ESM_AVAILABLE = major > 22 || (major === 22 && minor >= 12);
+const IS_REQUIRE_ESM_AVAILABLE = major > 22 || (major === 22 && minor >= 12);
 
 const PROFILES = ['default', 'rest2', 'cli2'];
 
@@ -77,7 +77,7 @@ const cwd = fileURLToPath(new URL('../../../', import.meta.url));
 // non-empty — and `--dry-run` writes it, listing every scenario it skipped. So
 // after any local cucumber run, gitignored leftover state would decide what this
 // test resolves. Measured: it was doing exactly that when this file was written.
-const env = {
+const environment = {
   ES_INDEX_NAME: 'test',
   COVERED_STATES: 'OT',
   CUCUMBER_IGNORE_RERUN: '1',
@@ -95,14 +95,14 @@ const resolve = async (profile) => {
   const { loadConfiguration } = await import('@cucumber/cucumber/api');
   return loadConfiguration(
     { file: 'cucumber.js', profiles: profile === 'default' ? [] : [profile] },
-    { cwd, env, logger },
+    { cwd, env: environment, logger },
   );
 };
 
 describe(
   'cucumber profile resolution — cucumber resolving it, not us (ADR-044)',
   {
-    skip: REQUIRE_ESM_AVAILABLE
+    skip: IS_REQUIRE_ESM_AVAILABLE
       ? false
       : `needs Node >=22.12 for require(esm); running ${process.versions.node}`,
   },

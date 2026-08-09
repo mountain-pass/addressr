@@ -24,8 +24,8 @@
 // below refuses to run if that shape ever returns.
 
 import { Client } from '@opensearch-project/opensearch';
-import { buildEsClientOptions } from '../../src/es-auth.js';
-import { buildAddressSearchBody } from '../../src/build-search-body.js';
+import { buildEsClientOptions } from '../../packages/addressr/src/es-auth.js';
+import { buildAddressSearchBody } from '../../packages/addressr/src/build-search-body.js';
 
 export const PAGE_SIZE = 8;
 
@@ -86,7 +86,12 @@ export const INDEX = process.env.ADDRESSR_PROBE_INDEX || 'addressr';
  * Decision Outcome table, which is where a result belongs once the option that
  * produced it is withdrawn.
  */
-export function bodyFor({ query, variant = 'baseline', page = 1, size = PAGE_SIZE }) {
+export function bodyFor({
+  query,
+  variant = 'baseline',
+  page = 1,
+  size = PAGE_SIZE,
+}) {
   const body = buildAddressSearchBody({
     searchString: query,
     page,

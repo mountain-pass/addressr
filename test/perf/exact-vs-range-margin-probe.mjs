@@ -121,7 +121,10 @@ if (k.verdict !== 'FLIP-green-range-first') {
 }
 
 const frame = JSON.parse(
-  fs.readFileSync(new URL('./exact-vs-range-frame.json', import.meta.url)),
+  fs.readFileSync(
+    new URL('exact-vs-range-frame.json', import.meta.url),
+    'utf8',
+  ),
 );
 const buckets = {},
   inBand = [],
@@ -152,7 +155,7 @@ for (const { probe, range } of frame) {
 }
 const swings = inBand.filter((x) => x.swing !== undefined).map((x) => x.swing);
 const q = (a, p) =>
-  a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))] ?? null;
+  [...a].sort((x, y) => x - y)[Math.floor(p * (a.length - 1))] ?? null;
 console.log(
   JSON.stringify(
     {

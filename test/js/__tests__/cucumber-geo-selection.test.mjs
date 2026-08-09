@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 // `require()`s ESM, which needs Node >=22.12. On the 22.7 engine floor it
 // throws before any assertion runs. Recorded on P094.
 const [major, minor] = process.versions.node.split('.').map(Number);
-const REQUIRE_ESM_AVAILABLE = major > 22 || (major === 22 && minor >= 12);
+const IS_REQUIRE_ESM_AVAILABLE = major > 22 || (major === 22 && minor >= 12);
 
 const cwd = fileURLToPath(new URL('../../../', import.meta.url));
 const configUrl = new URL('../../../cucumber.js', import.meta.url).href;
@@ -46,7 +46,7 @@ const configUrl = new URL('../../../cucumber.js', import.meta.url).href;
 process.env.CUCUMBER_IGNORE_RERUN = '1';
 delete process.env.ADDRESSR_ENABLE_GEO;
 
-const env = {
+const environment = {
   ES_INDEX_NAME: 'test-geo',
   COVERED_STATES: 'OT',
   CUCUMBER_IGNORE_RERUN: '1',
@@ -114,7 +114,7 @@ describe('geo tag selection (P094)', () => {
 describe(
   'the geo tier selects geo-specific scenarios (P094)',
   {
-    skip: REQUIRE_ESM_AVAILABLE
+    skip: IS_REQUIRE_ESM_AVAILABLE
       ? false
       : `needs Node >=22.12 for require(esm); running ${process.versions.node}`,
   },
@@ -128,7 +128,7 @@ describe(
         await import('@cucumber/cucumber/api');
       const { runConfiguration } = await loadConfiguration(
         { file: 'cucumber.js', profiles: ['cli2'] },
-        { cwd, env, logger },
+        { cwd, env: environment, logger },
       );
       return { sources: runConfiguration.sources, loadSources };
     };

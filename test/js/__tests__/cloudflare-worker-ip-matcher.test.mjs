@@ -153,7 +153,7 @@ describe('cloudflare-worker/ip-matcher — v4ToInt direct', () => {
   });
 
   it('parses 255.255.255.255 as 0xFFFFFFFF (unsigned)', () => {
-    assert.equal(v4ToInt('255.255.255.255'), 0xffffffff);
+    assert.equal(v4ToInt('255.255.255.255'), 0xff_ff_ff_ff);
   });
 
   it('returns null for octets >255', () => {

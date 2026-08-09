@@ -66,12 +66,12 @@ Pre-commit is the lightest-touch option — runs only when commits land, gives d
 
 Two of the three orphan test files moved from `test/js/` to `test/js/__tests__/` with extension change `.test.js` → `.test.mjs` to match the existing working pattern (`waycharter-server.test.mjs`):
 
-- `test/js/proxy-auth.test.mjs` — ADR 024 proxy-auth middleware unit tests. Runs `validateProxyAuthConfig` (4 tests) and `proxyAuthMiddleware` (6 tests). All pass. Relative import path updated to `../../../src/proxy-auth.js`.
+- `test/js/proxy-auth.test.mjs` — ADR 024 proxy-auth middleware unit tests. Runs `validateProxyAuthConfig` (4 tests) and `proxyAuthMiddleware` (6 tests). All pass. Relative import path updated to `../../../packages/addressr/src/proxy-auth.js`.
 - `test/js/__tests__/steps.test.mjs` — TDD gate placeholder. Passes.
 
 `npm run test:js` now runs 12 tests across 4 suites (up from 1 test / 1 suite). The test:js step fires as part of the pre-commit hook (see `.husky/pre-commit` → `package.json` `pre-commit` script).
 
-Not moved: `test/js/locality-search.test.js` remains in place (still dead). Moving it into the active glob exposed a pre-existing import resolution failure in `service/address-service.js:18` (`from '../client/elasticsearch'` — missing `.js` extension, relies on Babel transpilation). Running those tests under stock `node --test` fails because node's ESM resolver requires explicit extensions; the wider fix touches the `service/` barrel imports and is out-of-scope for this ticket. Kept as an orphan until the scope-expanded fix lands.
+Not moved: `test/js/locality-search.test.js` remains in place (still dead). Moving it into the active glob exposed a pre-existing import resolution failure in `service/address-service.js:18` (`from '../packages/addressr/client/elasticsearch'` — missing `.js` extension, relies on Babel transpilation). Running those tests under stock `node --test` fails because node's ESM resolver requires explicit extensions; the wider fix touches the `service/` barrel imports and is out-of-scope for this ticket. Kept as an orphan until the scope-expanded fix lands.
 
 ## Follow-up
 

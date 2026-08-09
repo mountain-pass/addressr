@@ -17,7 +17,7 @@ import {
   isPreflightEnabled,
   preflightHeaders,
   buildPreflightHandler,
-} from '../../../src/cors-preflight.js';
+} from '../../../packages/addressr/src/cors-preflight.js';
 
 /** Minimal express-shaped response that records what the handler did to it. */
 const fakeResponse = () => ({
@@ -38,9 +38,9 @@ const fakeResponse = () => ({
   },
 });
 
-const run = (env) => {
+const run = (environment) => {
   const response = fakeResponse();
-  buildPreflightHandler(env)({}, response);
+  buildPreflightHandler(environment)({}, response);
   return response;
 };
 

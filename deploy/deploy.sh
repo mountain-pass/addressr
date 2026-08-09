@@ -16,6 +16,12 @@ cd "$(dirname "$0")" || exit 1
 # for the publish-path/registry-path split.
 deploy_version=$(./resolve-version.sh) || exit 1
 
+# Same workspace-split fix as resolve-version.sh: npm_package_name is now the
+# PRIVATE workspace root, so the manifest below would have pinned
+# "addressr-workspace" — a package that does not exist on the registry.
+deploy_pkg=$(node -e "console.log(require(require('path').resolve('../packages/addressr/package.json')).name)") || exit 1
+: "${deploy_pkg:?could not read the published package name}"
+
 tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
 trap "rm -f $tmpfile" 0 2 3 15
 
@@ -40,10 +46,10 @@ rm -f "mountainpass-addressr-deployment-${deploy_version}.zip"
 mkdir -p deployment
 cat > "deployment/package.json" <<- EOM
 {
-    "name": "${npm_package_name:?required}-deployment",
+    "name": "${deploy_pkg}-deployment",
     "version": "${deploy_version}",
     "dependencies": {
-        "${npm_package_name:?required}": "${deploy_version}"
+        "${deploy_pkg}": "${deploy_version}"
     },
     "scripts": {
         "start": "addressr-server-2"

@@ -77,18 +77,18 @@ function isNonEmpty(value) {
 }
 
 export function validateReadShadowConfig(environment = process.env) {
-  const hostSet = isNonEmpty(environment[HOST_VAR]);
-  const usernameSet = isNonEmpty(environment[USERNAME_VAR]);
-  const passwordSet = isNonEmpty(environment[PASSWORD_VAR]);
-  if (!hostSet) {
+  const isHostSet = isNonEmpty(environment[HOST_VAR]);
+  const isUsernameSet = isNonEmpty(environment[USERNAME_VAR]);
+  const isPasswordSet = isNonEmpty(environment[PASSWORD_VAR]);
+  if (!isHostSet) {
     return; // feature disabled, nothing to validate
   }
-  if (usernameSet && !passwordSet) {
+  if (isUsernameSet && !isPasswordSet) {
     throw new Error(
       `Read-shadow misconfigured: ${USERNAME_VAR} is set but ${PASSWORD_VAR} is missing. Set both to enable basic auth, or unset both to use the shadow target without auth.`,
     );
   }
-  if (passwordSet && !usernameSet) {
+  if (isPasswordSet && !isUsernameSet) {
     throw new Error(
       `Read-shadow misconfigured: ${PASSWORD_VAR} is set but ${USERNAME_VAR} is missing. Set both to enable basic auth, or unset both to use the shadow target without auth.`,
     );

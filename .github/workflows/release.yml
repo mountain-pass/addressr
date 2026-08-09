@@ -141,7 +141,7 @@ jobs:
         id: gnaf-cache
         with:
           path: target/gnaf/*.zip
-          key: gnaf-zip-${{ hashFiles('service/address-service.js') }}
+          key: gnaf-zip-${{ hashFiles('packages/addressr/service/address-service.js') }}
           restore-keys: |
             gnaf-zip-
       - name: Prepare OT test fixture
@@ -150,7 +150,7 @@ jobs:
           # no @babel/register hook; the source is what runs.
           if [ ! -f target/gnaf/*.zip ]; then
             node --input-type=module -e "
-              const { fetchGnafFile } = await import('./service/address-service.js');
+              const { fetchGnafFile } = await import('./packages/addressr/service/address-service.js');
               console.log('Downloaded:', await fetchGnafFile());
             "
           fi
@@ -310,8 +310,16 @@ jobs:
           # and guard every read to avoid a transient node/npm read failing it.
           set +e
 
-          name=$(node -p "require('./package.json').name" 2>/dev/null)
-          local_version=$(node -p "require('./package.json').version" 2>/dev/null)
+          # THE PUBLISHED MANIFEST, not the root. The workspace split (2026-08-10)
+          # made ./package.json the PRIVATE workspace root `addressr-workspace`
+          # with no `version` at all, so this read yielded a name npm has never
+          # heard of and an undefined version. `npm view` then returned empty and
+          # the step below took its warn-and-exit-0 branch — the assertion that
+          # makes a swallowed publish LOUD silently disabled itself, and failed
+          # OPEN, on a green run. Exactly the class this assertion exists to catch,
+          # arriving through the assertion itself.
+          name=$(node -p "require('./packages/addressr/package.json').name" 2>/dev/null)
+          local_version=$(node -p "require('./packages/addressr/package.json').version" 2>/dev/null)
           if [ -z "$name" ] || [ -z "$local_version" ]; then
             echo "::warning::could not read package.json name/version; skipping publish assertion (P044)"
             exit 0
