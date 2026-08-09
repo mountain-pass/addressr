@@ -19,6 +19,17 @@ wr-retrospective run-retro references check-ask-hygiene.sh / check-briefing-budg
 - `wr-retrospective-check-ask-hygiene` → command not found during run-retro Step 2d.8 (R6 gate) in adopter repos
 - run-retro Step 3 Tier-3 budget pass and check-tickets-deferred-cause advisory cannot fire as written outside the source monorepo
 
+### Still live, 2026-08-09 — two advisories failed inside one retro
+
+Fresh evidence that the park has not aged out. Running `/wr-retrospective:run-retro` in this adopter repo:
+
+- `wr-retrospective-check-readme-jtbd-currency` exited with `check-readme-jtbd-currency: packages dir not found: packages`. The shim exists on `$PATH`, but its body assumes the plugin **source** layout (`packages/<plugin>/…`), which no adopter repo has.
+- The Tier 3 briefing-budget pass could not run at all: the skill instructs `packages/retrospective/scripts/check-briefing-budgets.sh`, there is no `wr-retrospective-check-briefing-budgets` shim on `$PATH`, and the repo-relative path does not resolve. The pass was done by hand (`wc -c` against the 5120-byte threshold), which found six files over budget — so the check has real output to produce and simply had no way to produce it.
+
+The two failure modes are different and worth separating, because the second is not what this ticket's title describes: one is a shim that exists but whose body is source-repo-shaped, the other is a script with no shim at all. `wr-retrospective-check-autocreate-rfc-scope` ran cleanly in the same retro, so the shim mechanism itself works.
+
+Both degrade fail-open as designed — the retro completed — but an advisory that never runs is an advisory that never fires.
+
 ## Workaround
 
 Invoke the cached script directly: `bash ~/.claude/plugins/cache/windyroad/wr-retrospective/<ver>/scripts/check-ask-hygiene.sh docs/retros` (same for the other two scripts).
