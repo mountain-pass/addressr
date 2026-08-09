@@ -24,16 +24,28 @@ const logger = debug('test');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Reject once `ms` has elapsed.
+ * Race `promise` against `ms`, rejecting with PROBE_TIMEOUT if the clock wins.
  *
- * The timer is `unref`'d so a race won by the probe does not hold the event loop
- * open for the remainder of the deadline — this gate runs in `BeforeAll` and the
- * process has a whole cucumber suite to get on with afterwards.
+ * The timer is CLEARED when the race settles rather than `unref`'d. Unref was
+ * the first attempt and it is wrong in a way local runs hid: with an unref'd
+ * timer and a probe that never settles, the timer is the only pending handle,
+ * so Node drains the event loop mid-wait and node:test reports "Promise
+ * resolution is still pending but the event loop has already resolved". CI
+ * caught it on all three jobs; the local run did not, because other handles
+ * happened to be alive. Clearing gives both properties: the loop stays alive
+ * while we are genuinely waiting, and is released the moment we are not.
  */
-const rejectAfter = (ms) =>
-  new Promise((_resolve, reject) => {
-    setTimeout(() => reject(new Error(PROBE_TIMEOUT)), ms).unref?.();
+const raceDeadline = async (promise, ms) => {
+  let timer;
+  const expiry = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(PROBE_TIMEOUT)), ms);
   });
+  try {
+    return await Promise.race([promise, expiry]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 const PROBE_TIMEOUT = 'probe exceeded the readiness deadline';
 const isProbeTimeout = (error) => error?.message === PROBE_TIMEOUT;
@@ -96,7 +108,7 @@ export async function awaitIndexReady({
   // A probe starting with NO budget left is not raced at all. Observed against a
   // real OpenSearch on 2026-08-09: pointing the gate at a missing index reported
   // "did not answer within 60s" instead of "does not exist". The client threw a
-  // clean 404 every time, but on the LAST poll `remaining` was 0, `rejectAfter(0)`
+  // clean 404 every time, but on the LAST poll `remaining` was 0, the deadline timer
   // fired before the response landed, and a legitimate answer lost a race it
   // should never have been in. The stub could not have caught this — it encodes
   // the same assumption it is meant to test, which is why the gate was run
@@ -104,7 +116,7 @@ export async function awaitIndexReady({
   const withinDeadline = (promise) => {
     const remaining = Math.max(0, deadline - now());
     if (remaining === 0) return promise;
-    return Promise.race([promise, rejectAfter(remaining)]);
+    return raceDeadline(promise, remaining);
   };
 
   for (;;) {
