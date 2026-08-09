@@ -252,7 +252,17 @@ jobs:
       #
       # Do not re-add it. The successor entry point is the changesets release
       # PR: an infra change carries a changeset for the deployment package, and
-      # merging that PR is the apply. Pinned by
+      # merging that PR is the apply.
+      #
+      # NOT TRUE YET, as of Phase 2 (2026-08-10). `packages/deployment` exists
+      # and takes changesets, but this gate still keys on `published` and
+      # `deploy_only`. `packages/deployment` is `private: true`, so
+      # `changeset publish` skips it and `published` stays false — meaning a
+      # release PR carrying ONLY a deployment-package changeset versions the
+      # package, publishes nothing, and SKIPS Deploy, Stabilise and Smoke, on a
+      # green run. Until this gate is repointed at that package's version bump,
+      # `deploy_only` remains the only route to an infrastructure apply (R020),
+      # and it is the less-proven one. Pinned by
       # test/js/__tests__/release-workflow-deploy-only.test.mjs, which asserts
       # the retired step's id occurs nowhere in this file — the detection step
       # re-added ALONE would read as harmless in review and sit one character

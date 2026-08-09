@@ -19,7 +19,7 @@ deploy_version=$(./resolve-version.sh) || exit 1
 # Same workspace-split fix as resolve-version.sh: npm_package_name is now the
 # PRIVATE workspace root, so the manifest below would have pinned
 # "addressr-workspace" — a package that does not exist on the registry.
-deploy_pkg=$(node -e "console.log(require(require('path').resolve('../packages/addressr/package.json')).name)") || exit 1
+deploy_pkg=$(node -e "console.log(require(require('path').resolve('../addressr/package.json')).name)") || exit 1
 : "${deploy_pkg:?could not read the published package name}"
 
 tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
@@ -76,7 +76,11 @@ EOM
 # from the repo root (this script has cd'd into deploy/) so the npm script's
 # relative paths resolve. The bundle is gitignored — derived fresh each run
 # from the same source the unit tests import, so it cannot drift.
-( cd .. && npm run build:worker )
+# `cd ../..`, not `cd ..`. This script lives at packages/deployment/ since
+# 2026-08-10 and has already cd'd into its own directory above, so one level
+# up is `packages/` -- which has no package.json and no npm scripts. Two is
+# the workspace root, where build:worker is declared.
+( cd ../.. && npm run build:worker )
 
 if test -z "$*"; then
     set -x

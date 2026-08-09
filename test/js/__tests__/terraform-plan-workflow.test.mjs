@@ -139,7 +139,7 @@ describe('terraform-plan.yml', () => {
     assert.ok(guard !== -1, 'the fail-closed ref guard must exist');
     assert.ok(plan !== -1);
     assert.ok(guard < plan, 'the guard must run before terraform does');
-    assert.match(steps()[guard].run, /grep -q 'PLAN_ONLY' deploy\/deploy\.sh/);
+    assert.match(steps()[guard].run, /grep -q 'PLAN_ONLY' packages\/deployment\/deploy\.sh/);
   });
 
   it('cannot reach apply — the single gated path stays single', () => {
@@ -164,7 +164,7 @@ describe('terraform-plan.yml', () => {
 });
 
 describe('deploy.sh PLAN_ONLY branch', () => {
-  const sh = readFileSync('deploy/deploy.sh', 'utf8');
+  const sh = readFileSync('packages/deployment/deploy.sh', 'utf8');
 
   it('exits before the apply branch', () => {
     // JTBD-400's single-gated-path outcome, as a checkable artefact rather than

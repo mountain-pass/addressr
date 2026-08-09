@@ -67,16 +67,19 @@ const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
  */
 const fakeTree = (version = '3.1.0', name = '@mountainpass/addressr') => {
   const root = mkdtempSync(path.join(tmpdir(), 'addressr-resolve-'));
-  mkdirSync(path.join(root, 'deploy'), { recursive: true });
+  mkdirSync(path.join(root, 'packages', 'deployment'), { recursive: true });
   mkdirSync(path.join(root, 'packages', 'addressr'), { recursive: true });
   writeFileSync(
     path.join(root, 'packages', 'addressr', 'package.json'),
     JSON.stringify({ name, version }),
   );
-  const destination = path.join(root, 'deploy', 'resolve-version.sh');
+  const destination = path.join(root, 'packages', 'deployment', 'resolve-version.sh');
   writeFileSync(
     destination,
-    readFileSync(path.join(repoRoot, 'deploy', 'resolve-version.sh'), 'utf8'),
+    readFileSync(
+      path.join(repoRoot, 'packages', 'deployment', 'resolve-version.sh'),
+      'utf8',
+    ),
   );
   chmodSync(destination, 0o755);
   return destination;
@@ -227,7 +230,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
 
     execFileSync('sh', [
       '-c',
-      `cp -R "${path.join(repoRoot, 'deploy')}" "${work}/deploy"`,
+      `mkdir -p "${work}/packages" && cp -R "${path.join(repoRoot, 'packages', 'deployment')}" "${work}/packages/deployment"`,
     ]);
     // Seed a stale artefact into the bundle directory. deploy.sh must clear it:
     // `zip` UPDATES an existing archive rather than replacing it, and the
@@ -235,10 +238,10 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     // anything surviving here would ship invisibly under a correct-looking hash.
     execFileSync('sh', [
       '-c',
-      `mkdir -p "${work}/deploy/deployment" && echo stale > "${work}/deploy/deployment/LEFTOVER"`,
+      `mkdir -p "${work}/packages/deployment/deployment" && echo stale > "${work}/packages/deployment/deployment/LEFTOVER"`,
     ]);
     try {
-      execFileSync('sh', [path.join(work, 'deploy', 'deploy.sh'), 'plan'], {
+      execFileSync('sh', [path.join(work, 'packages', 'deployment', 'deploy.sh'), 'plan'], {
         env: {
           PATH: `${stub}:${process.env.PATH}`,
           // Deliberately NOT set — see the manifest written above.
@@ -251,7 +254,10 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     } catch {
       // The script may exit non-zero once past the artefact-writing stage.
     }
-    return { deployDir: path.join(work, 'deploy'), capture };
+    return {
+      deployDir: path.join(work, 'packages', 'deployment'),
+      capture,
+    };
   };
 
   it('writes the SAME version into the tfvar, the manifest and the zip name', () => {

@@ -66,7 +66,7 @@ set -u
 # nothing. Read the published manifest directly and keep the fail-closed `:?`.
 # Resolved relative to THIS SCRIPT, not cwd, so it survives being invoked from
 # anywhere; revisit if this script itself moves.
-_manifest="$(dirname "$0")/../packages/addressr/package.json"
+_manifest="$(dirname "$0")/../addressr/package.json"
 pkg="$(node -e "console.log(require(require('path').resolve('$_manifest')).name)" 2>/dev/null)"
 : "${pkg:?could not read the published package name from $_manifest}"
 

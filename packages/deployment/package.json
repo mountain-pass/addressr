@@ -1,0 +1,11 @@
+{
+  "name": "@mountainpass/addressr-deployment",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Terraform + Elastic Beanstalk + Cloudflare deployment of the Addressr production service",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mountainpass/addressr": "3.3.0"
+  },
+  "//": "Private on purpose: changeset publish skips it while changeset version still bumps it. The dependency below is the version this deployment ships, rewritten automatically when an app changeset cascades. NOTE: until the release.yml deploy gate is repointed at this package's version bump, a changeset here versions the package and applies NOTHING."
+}

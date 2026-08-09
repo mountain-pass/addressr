@@ -5,7 +5,7 @@ import {
   ipInCidr,
   v4ToInt,
   v6ToBig,
-} from '../../../deploy/cloudflare-worker/ip-matcher.mjs';
+} from '../../../packages/deployment/cloudflare-worker/ip-matcher.mjs';
 
 // ADR 032 (P042): the worker's IP allowlist was previously
 // `safeIps.includes(srcIp)` — a strict string-equality test that could never
