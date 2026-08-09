@@ -27,6 +27,11 @@ sketch above is preserved.
 
 `deploy/create-deployment-archive.js` failed the same test and was removed in
 its own commit on 2026-08-08, for exactly the reason it was held back: any
-change under `deploy/` arms the push-tier production terraform apply. It went
+change under `deploy/` armed the push-tier production terraform apply. (That
+axis was RETIRED 2026-08-10 — ADR-001 and ADR-040 amendments, R021 retired — so
+a `deploy/` change no longer arms anything. The precaution taken here was
+correct at the time, and is the same hazard that eventually retired the axis:
+moving the tree out of `deploy/` would have presented as deletions UNDER
+`deploy/` and applied Terraform on a pure refactor.) It went
 alone, and a baseline `terraform-plan` dispatch against master returned an empty
 change set first, so the apply it armed had nothing to apply.

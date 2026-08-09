@@ -25,7 +25,7 @@ It only saw it when forced to score the path. Left alone the recommendation stoo
 
 **Inaction** — a production rollback drill scored **15/25, a STOP**, because the drill was priced against an implicit zero for not drilling. Scored properly as two states it reversed: drilling **12/25**, not drilling **15/25**. No deferral was involved at all.
 
-P077 is explicit that a rule written only about deferral would not have caught the second case, and states the general form: _"the scorer prices the action in front of it against an unscored baseline. Deferral is one way the hazard leaves the window; inaction is another."_ This entry is scoped to that class. Scoping it to deferral would repeat the defect [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.active.md) had to be rescued from — an entry titled after the instance that triggered the hint, nearly retired on a check that discharged only that instance while the class ran live.
+P077 is explicit that a rule written only about deferral would not have caught the second case, and states the general form: _"the scorer prices the action in front of it against an unscored baseline. Deferral is one way the hazard leaves the window; inaction is another."_ This entry is scoped to that class. Scoping it to deferral would repeat the defect [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) had to be rescued from — an entry titled after the instance that triggered the hint, nearly retired on a check that discharged only that instance while the class ran live.
 
 ### The half that never reaches a scoring surface
 
@@ -85,6 +85,8 @@ The rule belongs in the scorer agent rather than `RISK-POLICY.md`: `/wr-risk-sco
 - Personas affected: [addressr-maintainer](../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md)
 
 ## Change Log
+
+- 2026-08-10: **Revisited for the `deploy/**` push-axis retirement.** [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) and [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) retired (hazard deleted, not reduced); [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) re-scored 8 → 10 because retiring the axis deleted the ground its Impact 4 rested on. Governance: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), 2026-08-10 amendments. **Direction: this entry is about deferred integration accumulating unpriced risk, and the interim opened here is exactly its subject matter.** Between the axis retiring and the successor entry point landing, `deploy_only` is the only infra-apply route and is exercised only against no-op plans. That interim is priced on R020 rather than left unpriced, which is what this entry asks for. No re-rate, but the interim is the live instance to watch.
 
 - 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
 

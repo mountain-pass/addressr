@@ -1,13 +1,29 @@
 # @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 #
-# Read-only Terraform plan — pre-verify a deploy/** change before the push that
-# applies it.
+# Read-only Terraform plan — pre-verify an infrastructure change before the act
+# that applies it.
 #
-# WHY THIS EXISTS. A `deploy/**` push on master fires a full production
-# `terraform apply` (release.yml), with no plan-approval gate in front of it.
-# And the root module's variables come from GitHub Actions secrets, so
-# `terraform plan` cannot run on an operator machine at all — which made
-# pre-verification impossible rather than merely inconvenient.
+# PURPOSE RESTATED 2026-08-10, and this is a change of meaning rather than a
+# tidy-up. This header read "pre-verify a `deploy/**` change before the push that
+# applies it", because such a push fired a full production apply with no
+# plan-approval gate in front of it. That axis is retired (ADR-001 and ADR-040,
+# 2026-08-10 amendments; R021 retired), so there is no longer a push to get ahead
+# of. What this pre-verifies now is a `deploy_only` dispatch.
+#
+# THAT MAKES IT MORE LOAD-BEARING, NOT LESS, and the point is easy to get
+# backwards. With R021 retired this is the ONLY plan review left on any path to
+# production: the two surviving entry points are a release-PR merge and a
+# `deploy_only` dispatch, and neither shows an operator what the apply would
+# change. R020 records a baseline dispatch here as the hand-performed stand-in
+# for the approval gate R021 said the pipeline lacked — and R020 re-scored to 10
+# on 2026-08-10 precisely because `deploy_only` became the sole infra-apply route
+# while never having carried a real mutation. Run this before every
+# `deploy_only`, not occasionally.
+#
+# The other half of the original reason is unchanged and still decisive: the root
+# module's variables come from GitHub Actions secrets, so `terraform plan` cannot
+# run on an operator machine at all — which makes pre-verification impossible
+# rather than merely inconvenient without this workflow.
 #
 # Reading the changed files is not a substitute. `apply` refreshes and
 # reconciles the WHOLE root module, so an Elastic Beanstalk change can arise

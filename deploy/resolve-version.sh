@@ -10,13 +10,19 @@
 # with a release pending it deployed a version that was not published. Elastic
 # Beanstalk ran `npm install` for it and failed on both instances.
 #
-# The gate's three disjuncts are not equally safe. `published == 'true'` and
-# `deploy_only == true` both guarantee workspace-version == registry-version.
-# `deploy-paths.changed` fires on a `deploy/**` push and says nothing about the
-# version at all. This script is where that difference is handled, rather than a
-# condition bolted in front of the gate: a `deploy/**` push during a pending
-# release now deploys the infrastructure change against the CURRENTLY PUBLISHED
-# version, which is what it should always have done.
+# AMENDED 2026-08-10. This paragraph used to open "the gate's THREE disjuncts
+# are not equally safe" and turned on the third — a `deploy/**` push, which
+# fired on a path diff and so said nothing about the version at all. That axis
+# is retired; the gate now has two disjuncts and BOTH of them guarantee
+# workspace-version == registry-version at the moment they fire.
+#
+# THE SPLIT BELOW SURVIVES ANYWAY, and the distinction is worth keeping
+# straight: it is not that one disjunct is unsafe, it is that on the publish
+# path the workspace version is correct BY CONSTRUCTION while on the dispatch
+# path only the registry knows. Retiring the unsafe third disjunct removed the
+# reason this script had to exist defensively; it did not remove the reason the
+# two paths resolve differently. Do not collapse them on the strength of the
+# axis going away.
 #
 # TWO PATHS, and the split is deliberate.
 #
@@ -32,7 +38,8 @@
 #     than loud-wrong.
 #
 #   otherwise                          -> `npm view <pkg> version`.
-#     The `deploy/**` and `deploy_only` paths. Whatever is on the registry is
+#     The `deploy_only` path (and, until 2026-08-10, the retired `deploy/**`
+#     push path). Whatever is on the registry is
 #     what EB can actually install, which is the only thing that makes the
 #     deployment manifest satisfiable.
 #

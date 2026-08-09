@@ -88,6 +88,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-10: **Revisited for the `deploy/**` push-axis retirement.** [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) and [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) retired (hazard deleted, not reduced); [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) re-scored 8 → 10 because retiring the axis deleted the ground its Impact 4 rested on. Governance: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), 2026-08-10 amendments. **Direction: unchanged.** The cutover residual is a property of the cutover, not of the entry point that initiates it. One second-order note: a cutover now has one fewer way to be started accidentally, which is favourable and too small to move a score. No re-rate.
+
 - 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
 
   **This entry's citation holds** — the count moved, not the ownership, and nothing here restates the cardinal. Recorded because R021 and R020 both took body edits at their count sites, so the fence correctly required their referrers in the same commit. Under the widened fence this bullet does not propagate further.

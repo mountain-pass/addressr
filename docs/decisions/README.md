@@ -22,7 +22,9 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
 **Status:** proposed | **Oversight:** confirmed
-**Confirmation:** npm run release:watch runs scripts/release-watch.sh; -- --deploy-only dispatches deploy_only=true; BOTH forms are blocked by the wr-risk-scorer git-push-gate hook without a passing release risk score; npm run deploy:watch does not deploy — it exits non-zero without reaching prod; Direct gh pr merge of a release PR (title "chore: release") is redirected to release:watch; The script identifies the changesets release PR, merges it, and watches the workflow
+**Decides:** Gate releases behind a local `npm run release:watch` script that merges the changesets PR and watches the workflow, because it reuses the existing risk-scorer hook infrastructure rather than needing new CI, branches, or GitHub admin config. Production deploy now has two entry points sharing one set of deploy steps — a publish-driven release and a publish-free `deploy_only` dispatch; the `deploy/**`-on-push third axis was authorised 2026-07-27 and retired 2026-08-10 because a rename out of `deploy/` would have applied Terraform as a rider on a refactor.
+**Confirmation:** `npm run release:watch` runs `scripts/release-watch.sh`; `-- --deploy-only` dispatches `deploy_only=true`; both forms are blocked by the wr-risk-scorer git-push-gate hook without a passing release risk score; `npm run deploy:watch` does not deploy — it exits non-zero without reaching prod; direct `gh pr merge` of a release PR (title "chore: release") is redirected to `release:watch`; the script identifies the changesets release PR, merges it, and watches the workflow
+**Related:** ADR-004, ADR-007, ADR-024, ADR-029, ADR-035, ADR-039, ADR-040, ADR-044
 
 ### ADR-002 — ADR 002: OpenSearch as the Search Engine
 

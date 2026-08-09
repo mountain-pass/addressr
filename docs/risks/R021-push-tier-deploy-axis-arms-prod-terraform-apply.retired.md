@@ -1,11 +1,11 @@
 # Risk R021: The push-tier deploy axis runs a production apply at the lowest governance of the three entry points
 
-**Status**: Active
+**Status**: Retired (2026-08-10 — hazard deleted: the deploy/** push axis is gone)
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
-**Last reviewed**: 2026-08-09
-**Next review**: 2026-11-09
+**Last reviewed**: 2026-08-10
+**Next review**: n/a (retired)
 **Curation**: human-curated 2026-08-04 (superseding the auto-scaffolded pending-review state of 2026-07-27)
 
 ## Description
@@ -129,6 +129,14 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27T01:18:00Z: fired in `.risk-reports/2026-07-27T01-18-00-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
+
+- 2026-08-10: **RETIRED — the hazard is deleted, not reduced.** `release.yml`'s `Detect a deploy/** change in this push` step is gone and the shared deploy gate is narrowed to two disjuncts, so a `git push` can no longer reach a production `terraform apply` by any route. This entry's whole subject was that third entry point.
+
+  **The ground is not the one this entry anticipated.** Its Monitoring section watched for the axis misfiring, and it did misfire once (run `31252424980`, P095) — but that was remediated one layer down and the axis survived it. What retired the axis is structural: the detection predicate diffed a PATH, and a rename OUT of `deploy/` presents as deletions UNDER `deploy/`, so moving the tree into `packages/deployment/` would itself have armed a push-tier production apply as a rider on a refactor. Verified by replaying the predicate against a real `git mv`.
+
+  **The canonical push-tier apply count in the Metrics cell above is NOT retired with the entry.** Six applies happened; that is a historical fact still cited by R020 and P083, both live. `test/js/__tests__/risk-register-invariants.test.mjs` was changed in the same commit to read this cell from retired entries as well as active ones — it previously filtered to active suffixes, so retiring this entry would have thrown a TypeError and errored the whole suite rather than failing it. A retired entry is still the authority for what it recorded.
+
+  **Governance:** [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) 2026-08-10 amendment withdraws the push-tier authorisation; [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) 2026-08-10 amendment takes the matrix row from three entry points to two. R022 retires alongside. **R020 does NOT** — see its own entry; it re-scores upward.
 
 - 2026-08-09 (second entry today): **Treatment ratified, and it is a third option the table did not offer.** The maintainer rejected both the plan-approval gate and the explicit above-appetite acceptance in favour of hardening the per-disjunct preconditions. The agent had recommended the plan gate and then withdrew it on the maintainer's challenge — the realised failure would not have been caught by a plan review, so proposing one as its treatment aimed a control at a hazard that has never fired. The second precondition landed the same day (`source_hash` over the deployment manifest). **The residual is UNCHANGED at 10 and above appetite**, which the Treatment section now states rather than implies: Impact is fixed at 5, and closing a sixth route inherits the objection that closing the fifth did.
 

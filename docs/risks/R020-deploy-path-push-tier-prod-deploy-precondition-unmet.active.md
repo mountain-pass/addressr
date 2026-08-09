@@ -6,13 +6,13 @@
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
-**Last reviewed**: 2026-08-05
-**Next review**: 2027-02-04
+**Last reviewed**: 2026-08-10
+**Next review**: 2026-11-10
 **Curation**: human-curated 2026-08-04 (superseding the auto-scaffolded pending-review state)
 
 ## Description
 
-ADR-001 Amendment 2026-07-27 authorises a `deploy/**` push-tier production Terraform apply while JTBD-400's "exercise the manual --deploy-only path first" precondition is unmet (zero dispatches); deferral lifted by user 2026-07-26 rather than satisfied.
+ADR-001 Amendment 2026-07-27 **authorised** (withdrawn 2026-08-10) a `deploy/**` push-tier production Terraform apply while JTBD-400's "exercise the manual --deploy-only path first" precondition is unmet (zero dispatches); deferral lifted by user 2026-07-26 rather than satisfied.
 
 > **Origin.** Auto-scaffolded by the Phase 2b drain (`wr-risk-scorer` ADR-056) from a
 > `wr-risk-scorer:pipeline` RISK_REGISTER_HINT bullet. The scoring fields **carried** the
@@ -25,7 +25,7 @@ The entry's premise was a conjunction: the `deploy/**` push-tier axis is **armed
 
 Both halves were checked against the GitHub Actions history rather than reasoned about, and they have diverged:
 
-**The axis half is discharged, and is no longer unblemished.** The push-tier trigger has now fired on production six times, four successful — the ADR-041 cutover (`33e6c04`), the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`), and `50f1360` clearing R022's held drift against an empty plan, which exercised the trigger rather than an apply. Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all four. **The fifth, run `31252424980` on 2026-08-08, failed** — it deployed an unpublished version and EB failed on both instances, with `RollbackLaunchOnFailure` holding (P095; R021 re-rated 2026-08-09). The mechanism works and is no longer an untested path; that claim survives the failure, and this entry's Impact 4 depends on it rather than on the path being flawless.
+**The axis half is discharged, and is no longer unblemished.** _(Historical as of 2026-08-10 — the axis is retired; retained because it is the evidence the Impact raise turns on.)_ The push-tier trigger fired on production six times, **five successful** per [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md)'s canonical cell — the count and the breakdown are R021's to declare and this entry defers to it — the ADR-041 cutover (`33e6c04`), the two staged `addressr5` decommission applies (`96e965c`, `2e557b9`), and `50f1360` clearing R022's held drift against an empty plan, which exercised the trigger rather than an apply. Confirmed by reading each run's `release` job: the `Deploy new version` step concluded `success` on all four. **The fifth, run `31252424980` on 2026-08-08, failed** — it deployed an unpublished version and EB failed on both instances, with `RollbackLaunchOnFailure` holding (P095; R021 re-rated 2026-08-09). The mechanism works and is no longer an untested path; that claim survives the failure, and this entry's Impact — **4 until 2026-08-10, now 5** — depended on it rather than on the path being flawless.
 
 **The recovery half was not, until 2026-08-05.** Every `workflow_dispatch` run of `release.yml` was inspected on 2026-08-04. Four existed (2026-07-24 through 2026-07-28) and on every one the `Deploy new version`, `Wait for deployment to stabilize` and `Smoke test production` steps concluded **`skipped`** — no dispatch had ever carried `deploy_only=true`, nineteen months after the input was added and eight days after the deferral was lifted.
 
@@ -59,28 +59,33 @@ others twice.
 
 Impact × Likelihood _before_ controls.
 
-- **Impact**: 4 (Significant) — this is a _recovery-path_ risk, not a primary-path one. The realisation is: the push-tier axis is unavailable or unsafe (a red master, a revert in flight, an infra-only fix needed with no code change to push), the operator reaches for `deploy_only`, and it does not work. That is a delayed recovery during an incident, not an outage in itself. Below the Severe band because the primary path is now proven and would usually be available.
+- **Impact**: 5 (Severe) — **RAISED 2026-08-10 from 4.** This was a _recovery-path_ risk and is no longer one. The realisation is: the push-tier axis is unavailable or unsafe (a red master, a revert in flight, an infra-only fix needed with no code change to push), the operator reaches for `deploy_only`, and it does not work. That is a delayed recovery during an incident, not an outage in itself. It sat below the Severe band on one explicit ground — _"the primary path is now proven and would usually be available"_ — and the 2026-08-10 retirement of the `deploy/**` push axis ([R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md)) deletes that ground. `deploy_only` is not a fallback any more; until the successor entry point lands it is the ONLY route to an infrastructure apply, so "the operator reaches for it and it does not work" now means there is nothing else to reach for.
 - **Likelihood**: 3 (Possible) — an unexercised path is not a working path. Before 2026-08-05 nothing had ever run those three steps under a dispatch, so a defect in the gating expression, the input plumbing, or the risk-gate's `release:watch` command-prefix interception would surface for the first time under incident pressure.
-- **Inherent Score**: 12
+- **Inherent Score**: 15
 - **Inherent Band**: High
 
 ## Controls
 
-- **The push-tier axis is proven — EVIDENCED, six production applies: three that applied a reviewed plan, one (`50f1360`) that ran against an empty plan and applied nothing, and one (`31252424980`) that applied and failed.** This is the control that changed the score, so the qualifiers are load-bearing rather than pedantic — an unqualified "five" credits the label where only four applied anything and only three applied a reviewed plan successfully. **The 2026-08-08 failure does not withdraw this control**, and the reason is what the control is credited for: it holds impact at 4 rather than 5 because a working primary path means the recovery path is a fallback rather than the only route. A primary path that failed once, auto-rolled back, and had its cause fixed is still available; it would take the path being unavailable or untrustworthy to push impact to 5.
-- **`release-workflow-deploy-only.test.mjs` pins the gating expression — EVIDENCED.** It asserts the boolean is compared unquoted (`inputs.deploy_only == true`, never `== 'true'`), which is the trap that would make the gate silently never fire and take the run **green with the deploy skipped**. It also pins the three-gate occurrence count, the `deploy-paths` step id, its push-event scoping and its fail-closed missing-parent guard. Runs in CI on every push.
+- **WITHDRAWN 2026-08-10 — the push-tier axis no longer exists, so it can no longer be credited as a control here.** It was credited for exactly one thing: holding Impact at 4 by making `deploy_only` a fallback rather than the only route. Retiring the axis withdraws the credit and the Impact raise above is the consequence. The evidence itself stands as history and is retained: six production applies: three that applied a reviewed plan, one (`50f1360`) that ran against an empty plan and applied nothing, and one (`31252424980`) that applied and failed.** This was the control that set the score, so the qualifiers are load-bearing rather than pedantic.
+
+  **Its argument is superseded and is quoted here rather than left standing**, per [DECISION-MANAGEMENT.md](../../DECISION-MANAGEMENT.md)'s retain-as-history rule — it read: _"The 2026-08-08 failure does not withdraw this control, and the reason is what the control is credited for: it holds impact at 4 rather than 5 because a working primary path means the recovery path is a fallback rather than the only route. A primary path that failed once, auto-rolled back, and had its cause fixed is still available; **it would take the path being unavailable or untrustworthy to push impact to 5**."_
+
+  That last clause is exactly what happened. The path is not merely untrustworthy — as of 2026-08-10 it **does not exist**, so the condition its own author named as the trigger for Impact 5 is satisfied in the strongest available way. The raise above is this bullet's own stated consequence, not a re-reading of it.
+
+- **`release-workflow-deploy-only.test.mjs` pins the gating expression — EVIDENCED.** It asserts the boolean is compared unquoted (`inputs.deploy_only == true`, never `== 'true'`), which is the trap that would make the gate silently never fire and take the run **green with the deploy skipped**. It pinned the `deploy-paths` step id, its push-event scoping and its fail-closed missing-parent guard until 2026-08-10, when those three assertions were removed with the axis; what survives is the three-gate occurrence count, joined by a new assertion that the axis cannot silently return. Superseded text follows: "It also pins the three-gate occurrence count, the `deploy-paths` step id, its push-event scoping and its fail-closed missing-parent guard. Runs in CI on every push.
 - **NOT a control: the four pre-2026-08-05 dispatches.** They exercised the workflow, not the path. Every one skipped all three deploy steps, so they demonstrate that `deploy_only` was absent rather than that it works. Counting them would be exactly the error this entry exists to name. The two 2026-08-05 dispatches DID run the path and are credited in the Residual section — for the plumbing only, since both ran against an empty plan.
 
 ## Residual Risk
 
 Impact × Likelihood _after_ controls.
 
-- **Impact**: 4 (Significant) — unchanged. No control shortens a recovery that fails when reached for.
+- **Impact**: 5 (Severe) — tracks the inherent raise. No control shortens a recovery that fails when reached for, and no control restores the alternative route whose existence held this at 4.
 - **Likelihood**: 2 (Unlikely) — **held at 2, not dropped to 1, and the reason is in this entry's own text.** The path was exercised on 2026-08-05 and the plumbing works: Two `deploy_only=true` dispatches: run `30989443618` and run `30991052224`. In both, the publish steps skipped and `Deploy new version`, `Wait for deployment to stabilize` and the smoke ran rather than skipped — the gate resolves true and everything downstream of it executes. The second run completed green end to end. "Everything downstream of the gate", which the previous likelihood called unproven, is now measured **for dispatch, gating and step-entry**.
 
-  Two things stop it reaching 1. First, **both exercises ran against a plan that changed nothing**, so step-_completion_ under a real plan is still unproven — that is where R003's `version_label` binding fires, the EB fleet cycles at `BatchSize = 100 Percentage`, and stabilise and smoke have something to actually wait on. A different execution profile, not a longer version of the same one. Second, **the smoke flake is partly this entry's hazard, not only R015's**: an operator reaching for `deploy_only` mid-incident gets a successful deploy and a red run on a healthy service, and under incident pressure cannot distinguish "recovery failed" from "runner egress flaked". That produces exactly the delayed recovery this entry's Impact 4 is defined as — arriving by a route an earlier draft of this section disclaimed.
+  Two things stop it reaching 1. First, **both exercises ran against a plan that changed nothing**, so step-_completion_ under a real plan is still unproven — that is where R003's `version_label` binding fires, the EB fleet cycles at `BatchSize = 100 Percentage`, and stabilise and smoke have something to actually wait on. A different execution profile, not a longer version of the same one. Second, **the smoke flake is partly this entry's hazard, not only R015's**: an operator reaching for `deploy_only` mid-incident gets a successful deploy and a red run on a healthy service, and under incident pressure cannot distinguish "recovery failed" from "runner egress flaked". That produces exactly the delayed recovery this entry's Impact is defined as (4 when this was written, 5 since 2026-08-10) — arriving by a route an earlier draft of this section disclaimed.
 
-- **Residual Score**: 8
-- **Residual Band**: Medium
+- **Residual Score**: 10
+- **Residual Band**: High per `RISK-POLICY.md`'s table — above appetite (5, inclusive)
 - **Within appetite?**: **No** — appetite is 5 inclusive.
 
 ### What the exercise did NOT prove, and one thing it found
@@ -95,11 +100,15 @@ That is a **flaky production smoke gate, observed once in two runs**, and it mat
 
 **Mitigate — treatment PARTIALLY discharged 2026-08-05.** The named treatment was one action: dispatch `release.yml` with `deploy_only=true` and confirm the three steps run rather than skip. Done, twice, via the documented `npm run release:watch -- --deploy-only` route.
 
-It was as cheap as predicted: a no-op apply against already-deployed code on a green master, at a time of choosing rather than during an incident. Sequenced deliberately — a `terraform-plan.yml` baseline first, so the change set was known to be empty before anything ran that could apply. That plan step is the approval gate [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.active.md) records the axis as lacking, performed by hand.
+It was as cheap as predicted: a no-op apply against already-deployed code on a green master, at a time of choosing rather than during an incident. Sequenced deliberately — a `terraform-plan.yml` baseline first, so the change set was known to be empty before anything ran that could apply. That plan step is the approval gate [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) records the axis as lacking, performed by hand.
 
 Remaining, and smaller than what it replaced: the path has never carried a real infrastructure mutation, and the smoke gate flaked once in two runs.
 
-Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path, and the evidence for keeping it is the four applies that succeeded — three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing. The fifth apply failed (`31252424980`, 2026-08-08) and does not change this: its cause is fixed, and the argument for keeping the axis was never that it cannot fail, but that the alternative leaves the recovery path as the only route.
+**SUPERSEDED 2026-08-10 — this paragraph argued to keep the axis that has now been removed.** It read: _"Deliberately NOT proposed: removing the push-tier axis or re-imposing the deferral. The axis is now the proven path, and the evidence for keeping it is the four applies that succeeded — three that applied a reviewed plan plus one (`50f1360`) that ran against an empty plan and applied nothing. The fifth apply failed (`31252424980`, 2026-08-08) and does not change this: its cause is fixed, and the argument for keeping the axis was never that it cannot fail, but that the alternative leaves the recovery path as the only route."_
+
+The reversal is recorded on [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), and it does **not** rest on this paragraph having been wrong on its own terms. It was right that the axis was the exercised path and right that removing it leaves the recovery path unproven and sole — that is precisely why this entry re-scores to 10 rather than retiring. What it could not weigh is the structural defect that retired the axis: the detection predicate diffed a PATH, so a rename OUT of `deploy/` would itself have armed a production apply on a pure refactor.
+
+**What IS proposed now, and it is this entry's existing treatment rather than new work:** run the first real infrastructure change through `deploy_only` as the named non-empty-plan exercise, sequenced behind a `terraform-plan.yml` baseline dispatch — which, with R021 retired, is the only plan review left on any path to production. Discharging the interim and discharging this treatment are the same action.
 
 ## Monitoring
 
@@ -122,6 +131,16 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27T01:07:31Z: fired in `.risk-reports/2026-07-27T01-07-31-commit.md` (reason: user-stated-precondition)
 
 ## Change Log
+
+- 2026-08-10: **RE-SCOPED and RE-SCORED UPWARD — 8 → 10, above appetite.** The `deploy/**` push axis retired ([R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md), [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) 2026-08-10 amendments). This entry's own Monitoring trigger — _"any change to the deploy-gating expression in `release.yml`"_ — fired, so this re-rate is the entry's own instruction rather than an imposition.
+
+  **This entry does NOT retire with R021, and the direction of travel is the opposite one.** R021's hazard was the axis existing; this entry's hazard is the recovery path failing when reached for. Deleting the axis discharges the first and _intensifies_ the second: `deploy_only` stops being a fallback and becomes the only route to an infrastructure apply.
+
+  **Impact 4 → 5 on the entry's own stated ground.** The 4 was held explicitly _"because the primary path is now proven and would usually be available"_. It is not available any more. Likelihood is unchanged at 2 — nothing about the retirement makes the dispatch more or less likely to fail; it changes what failing costs.
+
+  **The uncomfortable fact, recorded rather than smoothed over.** The retired axis is the path with real applies — six, five successful. This entry's own path has been exercised twice, **both against a plan that changed nothing**, and has never carried a real infrastructure mutation. The 2026-08-10 change therefore makes the _less_-proven path the only path, for a bounded interim. That is a deliberate trade and it is priced here rather than argued away.
+
+  **Treatment is unchanged and now urgent rather than outstanding.** Run the first real infrastructure change through `deploy_only` as this entry's named non-empty-plan exercise, sequenced behind a `terraform-plan.yml` baseline dispatch — which, with R021 retired, is the only plan review left on any path to production. Discharging the interim and discharging this entry's treatment are the same action.
 
 - 2026-08-09 (second entry today): Re-verified against R021's treatment ratification — the maintainer chose to harden the axis's per-disjunct preconditions rather than add a plan-approval gate or accept above appetite, and the second precondition (`source_hash` over the deployment bundle's manifest) landed with it. **This entry's citation holds**: this entry cites R021 for the axis's governance level and for the apply count, and none of that is reached by a treatment choice. Recorded because R021's Treatment and Controls both took body edits, so the fence correctly required its referrers in the same commit.
 

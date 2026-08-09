@@ -54,10 +54,15 @@
 // no prod-touching content of its own to key on). ADR-040's Confirmation names
 // that count by name; it is strengthened here, not dropped.
 //
-// Note the detection step deliberately carries no `success()` — any `if:` drops
-// GitHub's implicit success default, so it runs after an upstream failure. That
-// is harmless (it only writes an output, and all three deploy steps carry their
-// own `success() &&`) and is NOT to be "fixed" by adding a conjunct.
+// RETIRED 2026-08-10 along with its subject. This paragraph read: "Note the
+// detection step deliberately carries no `success()` — any `if:` drops GitHub's
+// implicit success default, so it runs after an upstream failure. That is
+// harmless (it only writes an output, and all three deploy steps carry their own
+// `success() &&`) and is NOT to be 'fixed' by adding a conjunct." There is no
+// detection step left to carry or omit `success()`. The half that survives and
+// is still load-bearing: the three deploy steps each carry their own
+// `success() &&`, and the parentheses in DEPLOY_GATE below are what stop
+// `success() && A || B` deploying after an upstream failure.
 //
 // STILL TEXT, deliberately: the assertions over `scripts/release-watch.sh` and
 // `scripts/push-and-watch.sh` below. Those are shell, not YAML, and the right
@@ -128,8 +133,11 @@ const pushWatch = read('../../../scripts/push-and-watch.sh');
 // `success() && A || B` parses as `(success() && A) || B` and would deploy on a
 // deploy-only dispatch even after an upstream step failed — strictly worse than
 // the status quo.
+//
+// NARROWED 2026-08-10 from three disjuncts to two, when the deploy/** push axis
+// was retired. The parenthesis note above is unchanged and still load-bearing.
 const DEPLOY_GATE =
-  "success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')";
+  "success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)";
 
 const releaseSteps = release.jobs.release.steps;
 const stepNamed = (name) => {
@@ -226,6 +234,43 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('keeps the retired deploy/** push axis from silently returning', () => {
+    // Phase 0 retired the ADR-040 stage-3 push axis: a push touching deploy/**
+    // no longer applies Terraform to production. The axis is gone rather than
+    // narrowed, so the guard is that NOTHING reads its step output again.
+    //
+    // Why this assertion and not merely the DEPLOY_GATE string: re-adding the
+    // disjunct to one of the three gated steps would be caught by the gate
+    // comparison, but re-adding the detection step alone would not — it would
+    // sit there writing an output nobody reads, look harmless in review, and be
+    // one character away from live. Keying on the output reference catches both
+    // halves, and the raw backstop catches a re-add in a `run:` body or a
+    // `with:` input where no `if:` parse would ever look.
+    //
+    // WHY THE AXIS WENT, recorded here because the diff alone does not say it:
+    // release.yml's detection step diffed `-- deploy/`, and a rename OUT of
+    // deploy/ shows as deletions under deploy/. So the commit that moves the
+    // tree into packages/deployment/ would itself have set changed=true and
+    // fired a push-tier production apply as a rider on a refactor. Verified by
+    // replaying the predicate against a real `git mv`, not reasoned about.
+    const expressions = Object.values(release.jobs).flatMap((job) => [
+      job.if,
+      ...(job.steps ?? []).map((s) => s.if),
+    ]);
+    for (const expression of expressions.filter(Boolean)) {
+      assert.doesNotMatch(
+        expression,
+        /steps\.deploy-paths/,
+        `the deploy/** push axis is retired; nothing may read its output again: ${expression}`,
+      );
+    }
+    assert.doesNotMatch(
+      read('../../../.github/workflows/release.yml'),
+      /deploy-paths/,
+      'the deploy-paths step and every reference to it must be gone, in any position',
+    );
+  });
+
   it('never compares deploy_only against the string "true", anywhere', () => {
     // Two instruments, because neither alone is honest.
     //
@@ -259,42 +304,29 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
-  it('detects a deploy/** change from a step whose id the gate actually names', () => {
-    // The gate reads steps.deploy-paths.outputs.changed. Rename the step id and
-    // that expression resolves to the empty string FOREVER: the deploy/** axis
-    // never fires, and every run stays green while doing nothing. Same
-    // silent-green class as the boolean-quoting trap above. Asserting the id ON
-    // the named step is what the text form could not do — it checked that the
-    // string `id: deploy-paths` appeared somewhere in the file.
-    const detect = stepNamed('Detect a deploy/** change in this push');
-    assert.equal(detect.id, 'deploy-paths');
-    assert.match(
-      detect.run,
-      /echo "changed=\$\{changed\}" >> "\$GITHUB_OUTPUT"/,
-    );
-  });
+  // REMOVED 2026-08-10, with the deploy/** push axis they pinned:
+  //
+  //   - 'detects a deploy/** change from a step whose id the gate actually names'
+  //   - 'scopes path detection to push events (ADR-040 empty-string trap)'
+  //   - the missing-parent half of the fail-closed assertion below
+  //   - 'keeps the provider lockfile from arming a push-tier prod apply'
+  //
+  // Recorded rather than silently deleted, because three of the four were
+  // guarding real silent-green traps and a future reader should know the traps
+  // went with the mechanism rather than being judged unimportant. The
+  // step-id pin, the push-event scoping and the `git cat-file -e` fail-closed
+  // guard have no subject once no step reads a path diff. The lockfile
+  // exclusion is the one with a live successor: a provider-lock bump now
+  // reaches production only by carrying a changeset for the deployment package,
+  // which is strictly stronger than the pathspec exclusion it replaces — the
+  // exclusion made lockfile churn NOT deploy, whereas the successor makes
+  // nothing deploy without an explicit, reviewed declaration.
+  //
+  // What replaces all four is 'keeps the retired deploy/** push axis from
+  // silently returning' above, which is a stronger guard than the four together
+  // were: they constrained how the axis behaved, it forbids the axis existing.
 
-  it('scopes path detection to push events (ADR-040 empty-string trap)', () => {
-    // ADR-040 Confirmation: on a deploy_only dispatch a skipped step's output is
-    // the EMPTY STRING. The scoping must be explicit, not incidental on "a
-    // dispatch happens to touch no paths".
-    assert.equal(
-      stepNamed('Detect a deploy/** change in this push').if,
-      "github.event_name == 'push'",
-    );
-  });
-
-  it('fails closed on a missing parent commit, and needs full history to do it', () => {
-    // All-zeros github.event.before (branch creation) and a force-pushed-away
-    // parent both fail this guard, yielding changed=false and NO deploy.
-    const detect = stepNamed('Detect a deploy/** change in this push');
-    assert.match(
-      detect.run,
-      /if git cat-file -e "\$\{BEFORE\}\^\{commit\}" 2>\/dev\/null; then/,
-    );
-
-    // fetch-depth: 0 is load-bearing, not incidental. A push can carry several
-    // commits; at depth 2 a deploy/** change in any but the last is invisible.
+  it('fetches full history in the release job, for changelog attribution', () => {
     //
     // Scoped to the `release` job STRUCTURALLY. The text form needed a
     // hand-rolled slicer — indexOf on '\n  release:' plus a regex for the next
@@ -310,22 +342,8 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     assert.equal(
       checkout.with?.['fetch-depth'],
       0,
-      'the release job must fetch full history — deploy/** detection diffs against the push parent',
+      'the release job must fetch full history — changesets/action needs it for changelog attribution',
     );
-  });
-
-  it('keeps the provider lockfile from arming a push-tier prod apply', () => {
-    // deploy/.terraform.lock.hcl carries no infra intent and is the likeliest
-    // file to be swept incidentally into an unrelated push. Excluded here; a
-    // deliberate provider upgrade goes through the release-tier deploy_only
-    // dispatch instead. The exclusion announces itself so it is never a silent
-    // no-deploy.
-    const detect = stepNamed('Detect a deploy/** change in this push');
-    assert.match(
-      detect.run,
-      /grep -v '\^deploy\/\\\.terraform\\\.lock\\\.hcl\$'/,
-    );
-    assert.match(detect.run, /::notice::deploy\/ change is provider-lock only/);
   });
 
   it('publishes the image on a package release, via workflow_call, exactly once', () => {
@@ -437,29 +455,43 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
-  it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {
-    // ADR-040's Confirmation: release.yml must contain no deploy/**
-    // path-detection step unless ADR-001 carries an amendment naming that entry
-    // point AND its push-tier score. Asserted here rather than left to a human
-    // grep, which is what ADR-040 asks for by name.
+  it("holds ADR-001's deploy/** push-tier authorisation as retained history", () => {
+    // WHAT THIS PIN IS FOR NOW, because its job changed on 2026-08-10.
     //
-    // Keyed on the co-occurrence of 'deploy/**' and 'push-tier', NOT on a
-    // generic 'Amendment' heading: ADR-001 already carried an unrelated
-    // 2026-07-26 amendment block, so a heading-keyed assertion would have
-    // passed BEFORE the required block was ever written — a vacuous pass that
-    // would defeat the whole criterion. Verified failing against ADR-001 as it
-    // stood before the block landed.
+    // It began as ADR-040's mechanical prerequisite: release.yml must contain
+    // no deploy/** path-detection step unless ADR-001 carries an amendment
+    // naming that entry point AND its push-tier score. That prerequisite is now
+    // discharged vacuously — the step is gone, so nothing needs authorising.
     //
-    // Deliberately UNCONDITIONAL, which is strictly stronger than ADR-040's
-    // "only if the step is present" phrasing: the governance record must stand
-    // whether or not someone later removes the step.
-    assert.ok(
-      adr001.includes('deploy/**'),
-      'ADR-001 must name the deploy/** entry point',
+    // The assertion is KEPT, and inherits a better job: it is the only
+    // mechanical guard on the RETAINED HISTORY. DECISION-MANAGEMENT.md makes
+    // retain-as-history REQUIRED once a decision is ratified and implemented,
+    // and both hold here — ADR-001 carries human-oversight: confirmed and the
+    // axis applied to production six times. So the 2026-07-27 authorisation
+    // block must survive its own retirement, quoted rather than rewritten.
+    //
+    // NOT INVERTED, and that was a real option considered and rejected:
+    // asserting the text is ABSENT would forbid the very history the governance
+    // rule requires be kept — a test mandating a governance violation.
+    //
+    // STRENGTHENED at the same time, and the reason is subtle enough to be
+    // worth spelling out. The old form asserted the co-occurrence of the
+    // strings 'deploy/**' and 'push-tier' anywhere in the file. The RETIREMENT
+    // amendment necessarily contains both. So from the moment that amendment
+    // landed, the old assertion would have passed on the retirement block alone
+    // — and someone deleting the 2026-07-27 authorisation block would have gone
+    // green. That is precisely the vacuous pass the previous comment recorded
+    // having verified against ("failing against ADR-001 as it stood before the
+    // block landed"), re-introduced by the fix. Keying on the dated heading
+    // co-occurring with the tier is what makes it fail on that deletion.
+    assert.match(
+      adr001,
+      /\*\*Amendment 2026-07-27[^\n]*PUSH-TIER/,
+      "ADR-001's 2026-07-27 deploy/** authorisation must be retained as history, not rewritten away — see DECISION-MANAGEMENT.md",
     );
     assert.ok(
-      adr001.includes('push-tier'),
-      'ADR-001 must record the deploy/** axis as push-tier governance',
+      adr001.includes('deploy/**'),
+      'ADR-001 must still name the deploy/** entry point it once authorised',
     );
   });
 });
@@ -590,32 +622,6 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
       releaseWatch,
       /select\(\.name == "build"\)/,
       'the non-existent "build" job selector must not come back',
-    );
-  });
-
-  it('holds ADR-001 to the deploy/** push-tier amendment ADR-040 requires', () => {
-    // ADR-040's Confirmation: release.yml must contain no deploy/**
-    // path-detection step unless ADR-001 carries an amendment naming that entry
-    // point AND its push-tier score. Asserted here rather than left to a human
-    // grep, which is what ADR-040 asks for by name.
-    //
-    // Keyed on the co-occurrence of 'deploy/**' and 'push-tier', NOT on a
-    // generic 'Amendment' heading: ADR-001 already carried an unrelated
-    // 2026-07-26 amendment block, so a heading-keyed assertion would have
-    // passed BEFORE the required block was ever written — a vacuous pass that
-    // would defeat the whole criterion. Verified failing against ADR-001 as it
-    // stood before the block landed.
-    //
-    // Deliberately UNCONDITIONAL, which is strictly stronger than ADR-040's
-    // "only if the step is present" phrasing: the governance record must stand
-    // whether or not someone later removes the step.
-    assert.ok(
-      adr001.includes('deploy/**'),
-      'ADR-001 must name the deploy/** entry point',
-    );
-    assert.ok(
-      adr001.includes('push-tier'),
-      'ADR-001 must record the deploy/** axis as push-tier governance',
     );
   });
 });

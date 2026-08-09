@@ -137,11 +137,11 @@ Option 2 is the status quo's trajectory. Each hatch is cheap on its own and the 
 
 ### The detection matrix
 
-| Axis           | Fires when                                                                                                                                                                                    |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| npm publish    | A changeset is consumed — `steps.changesets.outputs.published == 'true'`                                                                                                                      |
-| docker publish | `published == 'true'` **OR** (a push to `master` touched `Dockerfile`, `.dockerignore.tmpl`, `package.json`, `package-lock.json`, or the docker workflow files **AND** `published != 'true'`) |
-| deploy         | `published == 'true'` **OR** the `deploy_only` dispatch input **OR** a push to `master` touched `deploy/**`                                                                                   |
+| Axis           | Fires when                                                                                                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npm publish    | A changeset is consumed — `steps.changesets.outputs.published == 'true'`                                                                                                                                              |
+| docker publish | `published == 'true'` **OR** (a push to `master` touched `Dockerfile`, `.dockerignore.tmpl`, `package.json`, `package-lock.json`, or the docker workflow files **AND** `published != 'true'`)                         |
+| deploy         | `published == 'true'` **OR** the `deploy_only` dispatch input — ~~**OR** a push to `master` touched `deploy/**`~~ **(third disjunct RETIRED 2026-08-10 — see the amendment of that date, which supersedes this row)** |
 
 > **SUPERSEDED by the 2026-07-27 stage-3 amendment, points 1-3.** The docker-axis row is now `published == 'true'` **OR** a push to `master` touching `Dockerfile` / `.dockerignore.tmpl` / the docker workflow file — `package.json` and `package-lock.json` are off the push filter under option C, so the `&& published != 'true'` conjunct below is **deleted**, not merely unused. The deploy row gained a `deploy/**` exclusion for `deploy/.terraform.lock.hcl` (amendment point 6). The two paragraphs immediately below are retained as the historical reasoning; read the amendment for what is built.
 
@@ -157,7 +157,7 @@ That guard is why the docker publish path lives **in `release.yml`**. `published
 
 ### Topology — one definition per action
 
-- **Deploy** keeps a single set of steps in `release.yml`, `if:`-widened to the three disjuncts above. Never forked into a second job, per [ADR 001](001-risk-gated-release-process.proposed.md).
+- **Deploy** keeps a single set of steps in `release.yml`, `if:`-gated on the disjuncts above — three as written, **two since the 2026-08-10 amendment**. Never forked into a second job, per [ADR 001](001-risk-gated-release-process.proposed.md).
 - **Docker build, smoke, and push** become one reusable `workflow_call` workflow with an explicit `push` boolean input and declared `secrets:`. `release.yml` invokes it with `push: true`; `docker-image.yml` keeps validating pull requests by invoking the same definition with `push: false`, and its push-to-master trigger reduces to pull-request-only so there are not two definitions of "build the image on master". One definition, two callers — the anti-divergence guarantee. This follows the `workflow_call` shape `reusable-update.yml` already establishes in this repo.
 
 ### Docker tag identity
@@ -195,6 +195,8 @@ Docker Hub credentials move to GitHub Actions secrets `DOCKER_ID_USER` / `DOCKER
 
 ### The `deploy/**` axis, and what governs it
 
+> **RETIRED 2026-08-10 — read this section in the past tense.** It describes an entry point that no longer exists. Retained as history rather than deleted: the decision was ratified and implemented, with six production applies behind it. Superseded by the 2026-08-10 amendment, which gives the ground — the detection predicate diffed a PATH, so a rename OUT of `deploy/` would itself have armed a production apply on a pure refactor.
+
 This axis is [P039](../problems/known-error/039-decouple-saas-deployment-from-npm-publish.md) variant 4b. [JTBD-400](../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md) records it as **deliberately deferred until the manual `--deploy-only` path has been exercised a few times**. That precondition is **not met** — `--deploy-only` landed on 2026-07-26 and has been dispatched zero times. The user lifted the deferral on 2026-07-26 regardless. Recording it plainly rather than quietly satisfying the precondition on paper:
 
 The other two deploy entry points carry a **release-tier** risk score, because the wr-risk-scorer gate matches on the `npm run release:watch` command prefix. A `deploy/**` path push carries only **push-tier** — the git-push gate sees `git push`, not `release:watch`. So this axis reaches a full production Terraform apply at a lower governance tier than either existing entry point, with no human intent and no opt-in. [ADR 001](001-risk-gated-release-process.proposed.md)'s accepted residual does not cover it: that residual is scoped to a _deliberate_ raw dispatch, which is a different class from an always-on automatic trigger.
@@ -205,7 +207,7 @@ ADR 001 is not amended here, but not because amending a `confirmed` ADR is off-l
 >
 > **The absence of an auto-trigger is deliberate**, not an omission. It carries no push or `pull_request` trigger for two reasons: the Terraform Cloud workspace is remote-state/local-execution, so a plan takes the workspace lock and would contend with an in-flight release; and a fork PR receives no secrets, making the resulting plan confidently wrong rather than merely failed. It shares `release.yml`'s concurrency group so it queues behind an apply instead of racing it.
 >
-> **What this axis is structurally blind to.** `aws_s3_object.elasticapp` carries no `etag`/`source_hash`, so Terraform diffs only the key/source strings and a rebuilt deployment bundle produces no diff at all. This axis verifies infrastructure _configuration_ only. A green plan must not be read as "the deployed artifact is correct".
+> **What this axis is structurally blind to.** ~~`aws_s3_object.elasticapp` carries no `etag`/`source_hash`, so Terraform diffs only the key/source strings and a rebuilt deployment bundle produces no diff at all.~~ **CORRECTED 2026-08-10 — the struck claim is stale and was stated twice in this ADR.** A `source_hash` over the deployment manifest was added 2026-08-09 (`deploy/deploy.sh:14`), so Terraform CAN now see a manifest that disagrees with the version in its own name. What survives is the narrower caveat: the hash is over `deployment/package.json`, not over the zip — hashing the archive would diff on every run because it carries mtimes — so a green plan certifies the manifest this ref would generate, not the archive's bytes. This axis still verifies infrastructure _configuration_ only, and a green plan must still not be read as "the deployed artifact is correct".
 >
 > Pinned in `test/js/__tests__/terraform-plan-workflow.test.mjs` per this ADR's own Confirmation that the trigger be asserted in test rather than by grep.
 
@@ -218,7 +220,7 @@ ADR 001 is not amended here, but not because amending a `confirmed` ADR is off-l
 - Bad: **the tag form inverts semver ordering.** `X.Y.Z-<sha>` is a semver _pre-release_ of `X.Y.Z` and sorts **before** it, but `package.json` is not bumped until the release PR merges, so a trunk build tagged `X.Y.Z-<sha>` contains code strictly **newer** than the `X.Y.Z` release build. Renovate, Watchtower, Docker Hub's sort and humans all read the ordering backwards. `:master-<gitsha>` or `:<version>-post-<gitsha>` would preserve ordering. The `:<version>-<gitsha>` form was pinned by the user on 2026-07-26, so it is implemented as directed and the inversion recorded here for the ratification drain to confirm or overturn
 - Bad: **`:latest` changes meaning**, from "the latest release" to "the latest trunk build". `prebuild:docker` packs the working tree, and the docker axis fires precisely when `published != 'true'`, so a master push publishes unreleased code and moves `:latest`. This drops the artefact-to-published-npm-version correspondence ADR 013 and ADR 039 established
 - Bad: **an operator tracking `:latest` receives changes without asking for them** — which is exactly how the breaking Distroless change (no shell, loader by script path) will reach them. This is why `docs/DOCKER-IMAGE-CHANGELOG.md` exists and why it lands before the docker axis ever publishes
-- Bad: **the `deploy/**` axis reaches production at push-tier governance**, as set out above. Mitigated only by the ADR 001 amendment prerequisite, which must land before the trigger is wired
+- Bad: ~~**the `deploy/**` axis reaches production at push-tier governance**~~ **— CONSEQUENCE RETIRED 2026-08-10 with the axis. It was accepted for 14 days and realised once (run `31252424980`).**, as set out above. Mitigated only by the ADR 001 amendment prerequisite, which must land before the trigger is wired
 - Bad: **fail-closed coupling.** With `needs: release`, a failing `release` job — including the P044 swallowed-publish assertion — skips the docker publish even for a pure `Dockerfile` change. Not publishing from a red tree is desirable, but it is a behavioural change from today's independent `docker-image.yml`
 - Bad: **on the publish path the docker axis is not independent of the deploy axis.** `needs: release` plus GitHub's implicit success requirement puts the docker publish behind the deploy, the 120s wait, and the whole prod smoke block. A red prod smoke after a successful npm publish leaves npm and Docker Hub divergent with no automatic retry. Benign — it degrades to today's manual `npm run docker:push` — but it is real, and it adds publish latency
 - Bad: **the docker axis is independent in _what fires_, not in _latency_.** `release` carries `needs: build-and-test`, so a docker-only rebuild queues behind the full two-version OpenSearch matrix (`2.19.5`, `3.5.0`) that the standalone `docker-image.yml` bypasses entirely today
@@ -242,14 +244,14 @@ Stage 1 (this ADR, the ADR 039 amendment, the tag scheme in `package.json`, `doc
 - [ ] `start:server:docker` resolves to a tag `build:docker` produces
 - [ ] A push to `master` touching only `Dockerfile` publishes an image and does **not** publish to npm and does **not** deploy
 - [ ] A changesets release publishes to npm, publishes the image **once** (not twice), and deploys
-- [ ] A push to `master` touching only `deploy/**` deploys and does **not** publish to npm or to GHCR (was "Docker Hub" — retired by the 2026-07-28 GHCR amendment)
+- [ ] ~~A push to `master` touching only `deploy/**` deploys and does **not** publish to npm or to GHCR~~ (was "Docker Hub" — retired by the 2026-07-28 GHCR amendment) — **STRUCK 2026-08-10**: the `deploy/**` push axis is retired, so this box can never be ticked. Struck rather than deleted, per this ADR's own stage-2 rule that _an unsatisfiable criterion is worse than none_ — the same treatment its ratification-ordering criterion received.
 - [ ] Credential handling: **see the 2026-07-28 GHCR amendment's own Confirmation bullet** on `packages: write` and no remaining `DOCKER_ID_*` references. The Docker Hub credential-skip criterion this replaces is retired. Stated as a cross-reference rather than restated, so one check does not become two independently-tickable boxes that can disagree
 - [ ] A pull request touching `Dockerfile` builds and smoke-tests the image and does **not** push, with the secrets present
 - [ ] `docker manifest inspect ghcr.io/mountain-pass/addressr:<version>-<gitsha>` resolves after a docker-axis publish, and the bare `:<version>` digest is unchanged by that publish
 
 ### Reassessment Criteria
 
-- The `deploy/**` axis fires an unintended production deploy — reconsider whether it should require the dispatch after all. Note this is no longer a live fallback position JTBD-400 still holds: as of stage 3 that outcome is **contradicted**, not merely stale (stage-3 amendment point 9), so reverting to it would be a fresh decision rather than a return to the documented state
+- ~~The `deploy/**` axis fires an unintended production deploy — reconsider whether it should require the dispatch after all.~~ **DISCHARGED AND CLOSED 2026-08-10** — it fired once (run `31252424980`, P095), was answered "no" on 2026-08-08, and the axis then retired on an independent structural ground. No axis remains for this criterion to watch. Original note follows: Note this is no longer a live fallback position JTBD-400 still holds: as of stage 3 that outcome is **contradicted**, not merely stale (stage-3 amendment point 9), so reverting to it would be a fresh decision rather than a return to the documented state
 - The semver-ordering inversion causes a real misresolve for a consumer or an automated updater — switch to `:master-<gitsha>` or `:<version>-post-<gitsha>`
 - The npm and docker axes stop having distinct audiences — for example the package starts shipping the image, or vice versa — at which point re-coupling them may be simpler than maintaining the matrix
 - Docker Hub is replaced by another registry, or the project publishes to more than one — the tag scheme is registry-agnostic but the credential handling is not
@@ -275,6 +277,31 @@ These are edits to `human-oversight: confirmed` artefacts, which this AFK run ha
 - **JTBD-400 `screens:` omits** `package.json`, `Dockerfile`, `.github/workflows/docker-image.yml`, `.dockerignore.tmpl`, and the new `docs/DOCKER-IMAGE-CHANGELOG.md` — all central to this change, and one of which already annotates itself `@jtbd JTBD-400`
 - **JTBD-202 does not exist.** P055 already requests `JTBD-202: Operate and troubleshoot a self-hosted Addressr container`. The tag contract belongs in it — which tag to pin, what `:latest` promises, when a pinned tag can and cannot change, and how an operator learns an image changed. P055's own `JTBD: JTBD-200` header re-points at it once it exists. Until then, `docs/DOCKER-IMAGE-CHANGELOG.md` is a consumer-facing surface no documented job owns
 
+## Amendment 2026-08-10 (stage 3's deploy axis is RETIRED — the matrix goes three entry points to two)
+
+The stage-3 amendment above is retained verbatim as history per [DECISION-MANAGEMENT.md](../../DECISION-MANAGEMENT.md): it was ratified (`human-oversight: confirmed`, `oversight-date: 2026-07-27`) and implemented, with six production applies behind it. It is superseded here, not rewritten.
+
+**What changes.** The deploy row of the change-type→action matrix loses its push axis. `release.yml`'s `Detect a deploy/** change in this push` step is deleted and the shared deploy gate narrows from three disjuncts to two:
+
+```
+success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+```
+
+This is the first change to that row that **removes** an entry point rather than narrowing or widening one. Every prior change to it landed as a dated in-place amendment (stage 2, stage 3, the 2026-07-28 GHCR move, the 2026-08-08 P095 fix); this follows the same form deliberately, because the row is this ADR's normative enumeration of the ways production can change.
+
+**This reverses the answer this ADR gave on 2026-08-08, and the reversal is argued rather than implied.** The reassessment criterion _"the `deploy/**` axis fires an unintended production deploy — reconsider whether it should require the dispatch after all"_ fired on run `31252424980` and was answered here: _"the answer is **no** … it is made safe one layer down."_ **That reasoning is not withdrawn and the P095 remediation did not fail.** The axis retires on an independent ground the 2026-08-08 answer had no way to anticipate: the detection predicate diffed a **path**, and a rename **out of** `deploy/` presents as deletions **under** it, so the commit that moves the tree into `packages/deployment/` would itself have armed a push-tier production apply as a rider on a refactor. Verified by replaying the predicate against a real `git mv`. [ADR 044](044-native-esm-without-a-build-step.proposed.md) hit the same shape and routed around it once by holding a file back; this removes the trap.
+
+**Confirmation (this amendment).**
+
+- [x] `release.yml` contains no `deploy/**` path-detection step, and no expression reads its output
+- [x] The shared gate carries exactly two disjuncts, and the gated-step count of **three** (Deploy / Wait / Smoke) is **unchanged** — the count pins steps, not disjuncts, which the stage-3 amendment's looser _"a third disjunct changes both"_ wording got wrong and this amendment corrects
+- [x] `test/js/__tests__/release-workflow-deploy-only.test.mjs` asserts the axis cannot silently return, and was verified RED against `release.yml` before the step was removed
+- [x] The four assertions that pinned the removed step are removed **with their rationale recorded in place**, not silently deleted — discharging this ADR's standing _"the test is updated, not deleted"_ criterion
+- [x] [ADR 001](001-risk-gated-release-process.proposed.md) carries the matching dated amendment withdrawing the push-tier authorisation, with the 2026-07-27 block retained as history
+- [x] The mechanical prerequisite this ADR set on itself — no `deploy/**` detection step without an ADR-001 amendment naming it — is now satisfied **vacuously**, and its test assertion has been re-keyed onto the retained history so it cannot pass on the retirement block alone
+
+**What this does NOT do.** It does not establish the successor entry point. Between this amendment and that decision, `deploy_only` is the only route to an infrastructure apply — the _less_-proven of the two, per R020. That interim, its price and its two compensating conditions are recorded in ADR 001's 2026-08-10 amendment rather than duplicated here.
+
 ## Amendment 2026-08-08 — the deployed version is the registry's, not the workspace's (P095)
 
 **The reassessment criterion "the `deploy/**` axis fires an unintended production deploy" has FIRED, and this amendment discharges it.** Run 31252424980 deployed a version that was not published, and Elastic Beanstalk failed on both instances. The answer is **no, the axis should not require the dispatch after all** — it is made safe one layer down, at version resolution, which leaves the change-type matrix intact.
@@ -283,7 +310,7 @@ These are edits to `human-oversight: confirmed` artefacts, which this AFK run ha
 
 **The three disjuncts were never equivalent.** `published == 'true'` and `deploy_only == true` both guarantee workspace-version equals registry-version. `steps.deploy-paths.outputs.changed == 'true'` says nothing about the version at all. That asymmetry is the defect; the matrix is not.
 
-**Decision.** `deploy/resolve-version.sh` resolves the version once, and `deploy/deploy.sh` uses it at all four sites that must agree — the `elasticapp_version` tfvar (which drives the S3 key _and_ the EB application-version label), the deployment manifest's own `version`, the dependency pin EB installs, and the zip filename `main.tf`'s `source` reads. Resolving fewer than all four would label the environment one version while the bundle installs another, and `aws_s3_object.elasticapp` carries no `etag` or `source_hash`, so `terraform plan` cannot see that disagreement. The silent identity lie would be worse than the loud failure being fixed.
+**Decision.** `deploy/resolve-version.sh` resolves the version once, and `deploy/deploy.sh` uses it at all four sites that must agree — the `elasticapp_version` tfvar (which drives the S3 key _and_ the EB application-version label), the deployment manifest's own `version`, the dependency pin EB installs, and the zip filename `main.tf`'s `source` reads. Resolving fewer than all four would label the environment one version while the bundle installs another, and `aws_s3_object.elasticapp` carried no `etag` or `source_hash` at the time, so `terraform plan` could not see that disagreement (a manifest `source_hash` was added 2026-08-09; the four-site agreement invariant is unaffected — it is what makes the sites agree, not what detects them disagreeing). The silent identity lie would be worse than the loud failure being fixed.
 
 Two paths, deliberately split:
 

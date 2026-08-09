@@ -10,7 +10,7 @@
 
 ## Description
 
-There is no way to publish a package version without also deploying to production. `.github/workflows/release.yml:358` gates the **Deploy new version** step on `steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true'`. The first disjunct is the coupling: a changeset merging to master publishes to npm and, in the same job, deploys to Elastic Beanstalk and smoke-tests production.
+There is no way to publish a package version without also deploying to production. `.github/workflows/release.yml:348` gates the **Deploy new version** step on `steps.changesets.outputs.published == 'true' || inputs.deploy_only == true`. **Corrected 2026-08-10** — this previously quoted a third disjunct, `steps.deploy-paths.outputs.changed == 'true'`, which retired with the `deploy/**` push axis, and cited line 358. The correction narrows the quoted gate; it does not weaken this entry, because the retired disjunct was the one path that deployed WITHOUT publishing and so was never part of the coupling this entry names. The first disjunct is the coupling: a changeset merging to master publishes to npm and, in the same job, deploys to Elastic Beanstalk and smoke-tests production.
 
 **The coupling is a decision, not an oversight, and should not be "fixed".** ADR-001's 2026-07-26 amendment states the asymmetry in terms — every publish is followed by a deploy, not every deploy needs a publish — and ADR-040 encodes `published == 'true'` as the first disjunct of the deploy row in a change-type-to-action matrix whose entire purpose was decoupling. It survived that decoupling deliberately. P039 gives the mechanical reason: the generated `deployment/package.json` pins `"@mountainpass/addressr"` at the version `deploy/deploy.sh` resolves, so **the EB instance installs the running artefact from the public npm registry**. _Mechanism corrected 2026-08-08: that version used to come from `npm_package_version`, the job's working tree, which is what P095 broke on; `deploy.sh` now resolves it once via `./resolve-version.sh` and interpolates `${deploy_version}` at every site. **The conclusion is unaffected** — the manifest still pins from the public registry, so `publish ⇒ deploy must stay` holds and this entry's residual does not move._ A publish not followed by a deploy leaves production pointing at a version behind the registry. P039 records `publish ⇒ deploy must stay` as a constraint on any fix.
 
@@ -30,14 +30,14 @@ Impact × Likelihood _before_ controls.
 ## Controls
 
 - **EB health-gated rolling deploy with `RollbackLaunchOnFailure`** — implemented in `deploy/main.tf`. Evidenced: exercised and timed at 6m36s push-to-EB-updated during the ADR-041 rollback drill (commits `43b3309`, `f295bd8`). Note the caveat recorded on R003: `BatchSize = 100 Percentage` cycles the whole fleet, so "Rolling" does not mean a partial-fleet blast radius.
-- **`Wait for deployment to stabilize` then `Smoke test production`** — `.github/workflows/release.yml:397,401`, gated on the same condition as the deploy, so a release cannot report green without production answering.
+- **`Wait for deployment to stabilize` then `Smoke test production`** — `.github/workflows/release.yml:404,408`, gated on the same condition as the deploy, so a release cannot report green without production answering.
 
   **Measured false-red rate: 1 in 2** (2026-08-05, runs `30989443618` and `30991052224`). In the failing run `/api-docs` took 9m18s and `/debug/shadow-config` then returned HTTP ≥400 after ~5 minutes of retries, while production probed directly was healthy on all three endpoints in under 300 ms and Terraform had applied nothing. The runner's egress was degraded; the service was not. Because this control runs **after** npm publish and the prod deploy, a false red reports a release that has in fact shipped as failed — and invites a rollback of a good release.
 
   This is now the **third** face of one control on this entry: it fails **open** for the shadow-config class (below), it gates correctly in the modal case, and it fails **closed spuriously** at an observed 1-in-2. Fix tracked on P039 beside the parameterisation task: retry/backoff plus discriminating runner-egress failure from service failure, so a red smoke means the service is bad rather than the path to it.
 
 - **Changeset-gated releases** — a publish only happens when a changeset exists, so the coupling cannot fire on an arbitrary merge to master.
-- **P044 swallowed-publish assertion** — `release.yml:307` fails the run when a publish was expected but did not happen, making a broken publish→deploy loop loud rather than silently green.
+- **P044 swallowed-publish assertion** — `release.yml:280` fails the run when a publish was expected but did not happen, making a broken publish→deploy loop loud rather than silently green.
 
 ## Residual Risk
 
@@ -83,6 +83,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-24T23:34:06Z: fired in `.risk-reports/2026-07-24T23-34-06-commit.md` (reason: above-appetite-residual)
 
 ## Change Log
+
+- 2026-08-10: **Revisited for the `deploy/**` push-axis retirement.** [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) and [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) retired (hazard deleted, not reduced); [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) re-scored 8 → 10 because retiring the axis deleted the ground its Impact 4 rested on. Governance: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), 2026-08-10 amendments. **Directly relevant, and this entry gains rather than loses.** Its subject is npm publish being coupled to a prod deploy. Retiring the push axis removes the one entry point that deployed WITHOUT publishing, so the coupling this entry names is now carried by two paths instead of three — but both survivors are deliberate acts, which is a small improvement in reviewability and none at all in coupling. **Its quoted gate string and `release.yml` line references were stale and are corrected in this same commit.** Treatment is unchanged: P039's smoke-parameterisation task. No re-rate — the residual of 8 stands.
 
 - 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
 

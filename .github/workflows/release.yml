@@ -213,71 +213,52 @@ jobs:
           node-version: '22.x'
       - uses: actions/checkout@v5
         with:
-          # The deploy/** detection step below diffs github.event.before against
-          # the pushed head. A push can carry SEVERAL commits, so fetch-depth: 2
-          # would silently miss a deploy/** change in any but the last one. Full
-          # history is correct by construction, costs little on an 8 MB repo, and
-          # changesets/action wants history anyway for changelog attribution.
+          # changesets/action wants full history for changelog attribution.
+          #
+          # RE-POINTED 2026-08-10, and the distinction matters because the two
+          # reasons are not equally strong. This comment used to LEAD with the
+          # retired path-detection step — full history was needed because a push
+          # can carry several commits and depth 2 would silently miss a change in
+          # any but the last — with changelog attribution as an afterthought.
+          # That step is gone, so the leading reason is void and only the
+          # afterthought survives. It is enough on its own, and it costs little
+          # on an 8 MB repo, so the setting is unchanged. Recorded rather than
+          # left standing on a dead premise.
           fetch-depth: 0
       - name: Install dependencies
         run: |
           npm ci
 
-      # ADR-040 stage 3, deploy axis (P039 variant 4b). A commit under deploy/
-      # on master must reach prod without laundering itself through a changeset.
-      # Env config is Terraform-managed (deploy/main.tf), so this axis is
-      # git-visible and enforces IaC rather than tolerating console drift.
-      # ADR-001's 2026-07-27 amendment records that it runs at PUSH-TIER
-      # governance, which is lower than the other two entry points.
+      # RETIRED 2026-08-10 — the ADR-040 stage-3 deploy/** push axis.
       #
-      # Plain git, NOT a marketplace filter action: this job holds the AWS,
-      # Cloudflare and Terraform Cloud credentials, so a third-party action here
-      # would be deploy-credential supply-chain surface.
+      # A step here used to diff `github.event.before` against the pushed head
+      # over `deploy/` and, on any hit, arm the deploy gate below. That made a
+      # routine `git push` the cheapest of three routes to a production apply,
+      # at push-tier governance with no plan-approval gate — the hazard R021
+      # carried and ADR-001's 2026-07-27 amendment authorised.
       #
-      # Scoped to `push` on purpose. On a deploy_only dispatch a skipped step's
-      # output is the EMPTY STRING; leaving the third disjunct to rest on "path
-      # detection happens to find nothing off a push" would be incidental rather
-      # than explicit. Same class as the boolean-coercion trap documented above.
+      # WHY IT WENT, and it is not the reason ADR-040's own reassessment
+      # entertained. On 2026-08-08 that criterion fired (run 31252424980, P095)
+      # and was answered `no, the axis should not require the dispatch after all
+      # — it is made safe one layer down`. That answer still stands on its own
+      # terms; the P095 remediation did not fail. What retires the axis is a
+      # different fact: the predicate diffed a PATH, and a rename OUT of
+      # `deploy/` shows as deletions under `deploy/`. Moving the tree into
+      # `packages/deployment/` would therefore have set changed=true and applied
+      # Terraform to production as a rider on a pure refactor. Verified by
+      # replaying this exact predicate against a real `git mv`, not reasoned
+      # about. ADR-044 hit the same shape and held
+      # `deploy/create-deployment-archive.js` out of the ESM change for it.
       #
-      # Placed BEFORE the changesets step so it can never observe a worktree
-      # that `changeset version` has already mutated.
-      #
-      # Fails CLOSED: an all-zeros github.event.before (branch creation) or a
-      # force-pushed-away parent both fail `git cat-file -e`, yielding false.
-      #
-      # `deploy/.terraform.lock.hcl` is EXCLUDED from the pathspec on purpose.
-      # A provider-lock bump carries no infra intent of its own and is the
-      # likeliest file to be swept incidentally into an unrelated push, so
-      # leaving it in would let routine lockfile churn arm a push-tier prod
-      # apply. A deliberate provider upgrade is exactly the change that deserves
-      # the RELEASE-tier gate instead: dispatch it with `deploy_only`, which the
-      # wr-risk-scorer gate intercepts via the `release:watch` command prefix.
-      # The exclusion is announced in the log below so it can never be a silent
-      # no-deploy.
-      #
-      # Carrying an `if:` drops GitHub's implicit success() default, so this step
-      # runs even after an earlier failure. Harmless — it only writes an output,
-      # and all three deploy steps carry their own `success() &&`.
-      - name: Detect a deploy/** change in this push
-        id: deploy-paths
-        if: github.event_name == 'push'
-        env:
-          BEFORE: ${{ github.event.before }}
-        shell: bash
-        run: |
-          changed=false
-          if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            touched=$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}" -- deploy/)
-            considered=$(printf '%s\n' "${touched}" | grep -v '^deploy/\.terraform\.lock\.hcl$' || true)
-            if [ -n "${considered}" ]; then
-              changed=true
-            fi
-            if [ -n "${touched}" ] && [ -z "${considered}" ]; then
-              echo "::notice::deploy/ change is provider-lock only; NOT auto-deploying. Dispatch release.yml with deploy_only=true to apply it at release-tier gating."
-            fi
-          fi
-          echo "deploy/** changed in this push: ${changed}"
-          echo "changed=${changed}" >> "$GITHUB_OUTPUT"
+      # Do not re-add it. The successor entry point is the changesets release
+      # PR: an infra change carries a changeset for the deployment package, and
+      # merging that PR is the apply. Pinned by
+      # test/js/__tests__/release-workflow-deploy-only.test.mjs, which asserts
+      # the retired step's id occurs nowhere in this file — the detection step
+      # re-added ALONE would read as harmless in review and sit one character
+      # from live. That assertion is why this note spells the id out nowhere,
+      # including here: a comment naming it would satisfy the raw scan and
+      # defeat the pin.
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
@@ -352,15 +333,18 @@ jobs:
           fi
           echo "No pending publish: package.json $local_version, npm $npm_version (P044 assertion passed)"
 
-      # P039 / ADR 001 amendments 2026-07-26 and 2026-07-27: SINGLE DEFINITION.
-      # The deploy path has exactly one set of steps, shared by all THREE entry
-      # points — the publish path (`published == 'true'`), the publish-free
-      # dispatch (`deploy_only`), and the ADR-040 stage-3 infra axis
-      # (`deploy-paths.changed`). Never fork this into a second job or duplicate
-      # these steps: divergence between the prod-deploy paths is the failure this
-      # widening exists to prevent, and the master-HEAD-only job guard above is
-      # what keeps every entry point on the same source. Each new axis is an
-      # `if:`-WIDENING of this one gate, never a new copy of it.
+      # P039 / ADR 001 amendment 2026-07-26: SINGLE DEFINITION.
+      # The deploy path has exactly one set of steps, shared by every entry
+      # point — as of 2026-08-10 that is TWO: the publish path
+      # (`published == 'true'`) and the publish-free dispatch (`deploy_only`).
+      # The third, ADR-040 stage 3's infra axis, is retired; see the note where
+      # its detection step used to sit. Never fork this into a second job or
+      # duplicate these steps: divergence between the prod-deploy paths is the
+      # failure this shared gate exists to prevent, and the master-HEAD-only job
+      # guard above is what keeps every entry point on the same source. Each
+      # change to the entry-point set is an `if:` edit on this one gate, never a
+      # new copy of it — and that holds for NARROWING, as here, exactly as it
+      # held for the two widenings before it.
       #
       # `success() && (...)` is explicit on purpose. `deploy_only` is a constant
       # on the dispatch path, carrying no upstream dependency, so without it the
@@ -368,7 +352,7 @@ jobs:
       # are load-bearing: `&&` binds tighter than `||`, so `success() && A || B`
       # would deploy after an upstream failure.
       - name: Deploy new version
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         uses: devcontainers/ci@v0.3
         # P095: tell deploy.sh that a publish just happened on THIS run, so it
         # ships the workspace version rather than reading the registry.
@@ -381,9 +365,15 @@ jobs:
         # version green and silent, which is worse than the loud failure P095
         # records.
         #
-        # Only this disjunct gets the signal. `deploy_only` and the `deploy/**`
-        # push both resolve from the registry, which is what makes the
-        # deployment manifest satisfiable — that is the P095 fix. Omitting the
+        # Only this disjunct gets the signal. `deploy_only` resolves from the
+        # registry instead, which is what makes the deployment manifest
+        # satisfiable — that is the P095 fix. (Until 2026-08-10 the retired
+        # `deploy/**` push shared that registry path, and it was the axis P095
+        # was actually about: it could fire while a release was pending and so
+        # deploy a version that was never published. `deploy_only` cannot do
+        # that, so the split now guards a narrower case than the one that
+        # created it — kept because the publish path still must NOT read the
+        # registry, for the CDN-staleness reason recorded above.) Omitting the
         # signal falls back to the registry, so forgetting it fails safe.
         env:
           ADDRESSR_DEPLOY_JUST_PUBLISHED: ${{ steps.changesets.outputs.published == 'true' && '1' || '0' }}
@@ -424,11 +414,11 @@ jobs:
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         run: sleep 120
 
       - name: Smoke test production
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true || steps.deploy-paths.outputs.changed == 'true')
+        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
         run: |
           set -e
           echo "Testing health endpoint..."

@@ -485,10 +485,28 @@ describe('docs/risks register invariants (R028)', () => {
     // Change Log entry records what was true on that date and keeps its
     // contemporaneous figure. So is anything explicitly scoped with "as at" or
     // "as of". A bare present-tense count is live and must agree.
-    const r021 = await readFile(
-      path.join(RISKS, (await entries(ACTIVE)).find((f) => f.startsWith('R021'))),
-      'utf8',
+    // READ FROM EVERY SUFFIX, not just the active ones, and the reason is
+    // this check's own failure mode rather than tidiness. `entries(ACTIVE)`
+    // filters to `.active.md`/`.accepted.md`; the moment R021 was retired its
+    // `find` returned undefined, `path.join` threw a TypeError, and the whole
+    // suite ERRORED rather than failing — a check that cannot survive its own
+    // subject being retired. R021 became `.retired.md` on 2026-08-10 when the
+    // deploy/** push axis went, so this is the live path now, not a guard
+    // against a hypothetical.
+    //
+    // The canonical cell OUTLIVES the entry's active status on purpose. The
+    // push-tier apply count is a historical fact — six applies happened — and
+    // it is still cited by R020 and P083, which are live. Retiring the entry
+    // that owns the cell must not orphan the fact; a retired entry is still
+    // the authority for what it recorded.
+    const canonicalFile = (await entries([...ACTIVE, '.retired.md'])).find((f) =>
+      f.startsWith('R021'),
     );
+    assert.ok(
+      canonicalFile,
+      'R021 owns the canonical push-tier apply count; no entry with that id was found under any status suffix',
+    );
+    const r021 = await readFile(path.join(RISKS, canonicalFile), 'utf8');
     // WIDENED 2026-08-09, and the reason is the check's own subject matter.
     // This read `\b(\w+), all successful`, which bound the canonical count to a
     // phrase asserting every apply had SUCCEEDED. That held for as long as the

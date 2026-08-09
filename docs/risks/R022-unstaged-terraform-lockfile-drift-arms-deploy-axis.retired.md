@@ -2,12 +2,12 @@
 
 > **Filename retained deliberately.** The `<slug>` in this file's name is the dedupe key the ADR-056 Phase 2b drain matches on, so renaming it would let the same hazard re-scaffold as a new entry. The H1, the README row and the body carry the corrected scope; the filename is an identifier, not a description.
 
-**Status**: Active — RE-SCOPED 2026-08-04 (the lockfile half discharged by construction; the `.tf` half was the live instance, cleared 2026-08-05 at `50f1360` — the class stands)
+**Status**: Retired (2026-08-10 — hazard deleted with R021: no axis left to arm) — RE-SCOPED 2026-08-04 (the lockfile half discharged by construction; the `.tf` half was the live instance, cleared 2026-08-05 at `50f1360` — the class stands)
 **Category**: operational (ISO 31000) — production infrastructure change control
 **Identified**: 2026-07-27
 **Owner**: addressr-maintainer
-**Last reviewed**: 2026-08-05
-**Next review**: 2027-02-04
+**Last reviewed**: 2026-08-10
+**Next review**: n/a (retired)
 **Curation**: human-curated 2026-08-04 (superseding the auto-scaffolded pending-review state of 2026-07-27)
 
 ## Description
@@ -101,6 +101,12 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 - 2026-07-27T01:18:00Z: fired in `.risk-reports/2026-07-27T01-18-00-commit.md` (reason: user-stated-precondition)
 
 ## Change Log
+
+- 2026-08-10: **RETIRED with [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md).** This entry's hazard was uncommitted `deploy/**` drift _arming the push axis_. With the axis gone there is nothing left to arm, so the hazard is deleted rather than reduced — the drift itself was never the hazard, only its ability to trigger an unreviewed apply.
+
+  **Retired, not re-scoped, and the distinction was checked rather than assumed.** A re-scope would be right if unreviewed `deploy/**` content could still reach an apply by some other route. It cannot: the two surviving entry points are a release-PR merge and a `deploy_only` dispatch, both of which are deliberate acts against a committed tree.
+
+  **One control this entry credited is now load-bearing elsewhere.** The `deploy/.terraform.lock.hcl` pathspec exclusion is deleted along with the step that carried it. It made lockfile churn _not_ deploy; the successor makes _nothing_ deploy without an explicit reviewed declaration, which is strictly stronger. Recorded so the exclusion's disappearance is not later read as a regression.
 
 - 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
 
