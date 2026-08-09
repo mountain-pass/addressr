@@ -76,6 +76,8 @@ Measured rather than assumed, and each step verified before the next:
 
 ## Confirmation
 
+- [x] **Added 2026-08-10 — the zero-match/exit-0 trap is guarded in the UNIT tier too, not only the cucumber tier.** `scripts/assert-test-files.mjs`, chained into `pretest:js`, refuses to run `test:js` when the `test/js/__tests__/*.test.mjs` glob resolves to fewer than 30 files (36 present). This ADR already records that a zero-match cucumber profile reports `0 scenarios / 0 steps` and exits 0, and that "a person noticing the counts had changed is not a control". Measured on 2026-08-10 that the same shape reaches the unit tier: a dry-run of the `packages/addressr` migration left `npm run test:js` reporting `tests 0 / pass 0 / fail 0` with exit code 0, silently removing every governance fence while pre-commit, `engine-floor` and release.yml's "Workflow and unit pins" step all stayed green. Deliberately NOT a test inside `test/js/__tests__/` — a test in that directory cannot detect that the directory did not run. Mutation-proved by repointing the check at a non-existent directory: it refuses and `test:js` never executes.
+
 - `package.json` contains `"type": "module"`, no `build` script, and no `@babel/*` dependency.
 - `.babelrc` does not exist.
 - `node --input-type=module -e "import('./src/waycharter-server.js')"` resolves and returns `buildRest2App`.
