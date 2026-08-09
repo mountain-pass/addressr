@@ -90,12 +90,21 @@ All decisions follow the MADR 4.0 format with Claude Code-specific extensions:
 ```yaml
 ---
 status: 'proposed|accepted|rejected|deprecated|superseded'
+human-oversight: 'confirmed|unconfirmed'
+oversight-date: YYYY-MM-DD
 date: YYYY-MM-DD
+reassessment-date: YYYY-MM-DD
 decision-makers: [list of makers]
 consulted: [list of consulted resources/people]
 informed: [list of informed parties]
 ---
 ```
+
+**`human-oversight` is the ratification axis and is independent of `status`.** `status` records how far a decision has progressed toward production validation; `human-oversight` records whether a human ratified its substance, and `oversight-date` records when. The two move separately, and a decision can be ratified long before it is promoted — **counted 2026-08-09: 17 of the 38 in-force decisions are `proposed` and every one carries a confirmed marker**, several of them running in production (the OpenSearch SigV4 auth model since July; the native-ESM migration since v3.1.0). Dated because it is a claim about a moving corpus: promoting any single decision moves the 17 without moving the 38, which is the drift direction least likely to be noticed. Recount rather than quote it.
+
+The field is **three-valued**: `confirmed`, `unconfirmed`, and **absent**. Absence is a distinct state, not a default — treat anything other than `confirmed` as not-ratified. New decisions must carry the key explicitly rather than omitting it. Write the pair adjacent and replace in place when updating; inserting a second copy mints a duplicate YAML key, which the frontmatter parser rejects.
+
+`reassessment-date` schedules the periodic review below. It was carried by most decisions and specified here by nobody until 2026-08-09 — the same omission as `human-oversight`, one key over, and found the same way: by reading the corpus rather than the document.
 
 ### Required Sections
 
@@ -216,7 +225,40 @@ A decision moves to `rejected` status when:
 3. Document specific reasons for rejection
 4. Preserve decision for institutional knowledge
 
-## Decision Deprecation and Supersession
+## Decision Amendment, Deprecation and Supersession
+
+Three treatments, ordered by scope: amending a claim inside a decision, replacing a decision with another, and retiring one with nothing in its place. Amendment comes first because it is by far the most frequently exercised of the three.
+
+### Amending a Decision in Place: Retain-as-History vs Rewrite-in-Place
+
+Most corrections are smaller than a supersession — a Confirmation criterion naming a command that no longer exists, a count that has drifted, a justification whose premise expired. Two treatments are available, and the boundary between them is a **lifecycle condition, not a matter of taste**:
+
+| Treatment             | When                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rewrite in place**  | The decision is still being iterated: not ratified, or ratified and not yet implemented. Also all working material — code comments, notes on an unshipped proposal, drafts. |
+| **Retain as history** | **REQUIRED** once the decision is ratified **AND** implemented in production. Quote the superseded wording verbatim, date it, and say what replaced it.                     |
+
+Both conditions must hold for retention to be required. Ratified-but-unimplemented is still being iterated; implemented-but-unratified has nothing to preserve yet. **When in doubt, retain** — retention costs a sentence, and a silent rewrite is irreversible in the surface that matters.
+
+**"Ratified" means the `human-oversight: confirmed` marker, NOT `status: accepted`.** The two axes are orthogonal (see Required Frontmatter above) and conflating them gets the scope wrong in the direction that matters: a `proposed` decision carrying a confirmed marker and running in production is fully in scope. A `status`-keyed rule would exempt the `proposed`-but-ratified population — 17 of 38 as counted above — including the production OpenSearch auth model and the native-ESM migration, which shipped in v3.1.0 and is `proposed` still.
+
+That is not a drafting accident on this rule's part. Status Definitions and the Proposed → Accepted criteria above describe `accepted` as validated through production use, which if reliably exercised would collapse this trigger into `status: accepted`. Promotion is exercised sometimes and not dependably — **as of 2026-08-09** — so `status` under-reports what is actually running. This rule is keyed on the marker to route around that; the promotion-discipline gap is real and is a separate matter.
+
+**Why retention, and why this trigger.** A shipped decision's record IS the audit trail — editing it so it reads as though it always said the right thing removes the evidence that it did not, and that evidence is the reason the record exists rather than the code alone. The sharper reason is what the marker attests to: `human-oversight: confirmed` attests to the substance **as it stood at `oversight-date`**, and an amendment afterwards neither re-runs the ratification nor clears the marker. A silent rewrite therefore makes the marker attest to text no human ever saw, quietly, with nothing able to detect it. Retention is what keeps the marker honest — which is why the field that records ratification is the field that scopes when the record freezes.
+
+This also extends a principle the document already holds. Old decisions are deprecated, not deleted (Decision Lifecycle Philosophy); the Superseding Process below prescribes retain-as-history at file level — keep the file, mark it, date it, give a reason. This is the same shape at sub-file granularity.
+
+**The rejected alternative: "git history is the audit trail, so rewrite freely."** It loses because git history is a different artefact with a different audience. A reader of a decision does not run `git log -p` on it, and a squashed or rewritten history carries no obligation to preserve prose. The audit trail has to be legible in the artefact being audited.
+
+**Do not delete a superseded claim on the grounds that a false string stays greppable.** That argument is real and belongs to working material — a class-sweep whose instrument is a bare-token grep is defeated by quoting the very strings it hunts. The resolution is surface-specific rather than global: delete in the code comments, retain in the decision record. Where a sweep enumerates its surviving hits, quoted history in a decision record belongs in that enumeration as an excluded class.
+
+**Scope limits.**
+
+- **The generated compendium is out of scope.** `docs/decisions/README.md` is derived and is rewritten in place by definition; retain-as-history binds the per-decision body only. Do not hand-edit the compendium to preserve history — the standalone generator is destructive there.
+- **Not retroactive.** This binds future amendments. Historic silent rewrites are not to be reconstructed: guessing at wording that can no longer be recovered manufactures a false audit trail, which is worse than an absent one.
+- **"Implemented in production" is a judgement, not a mechanical check**, and inventing one would be its own defect. The evidence rule: a decision counts as implemented when its Confirmation criteria have been discharged against production, or the change is in a released version, or a runbook names it as live.
+
+Recorded 2026-08-09 on maintainer direction, after two same-day corrections to shipped decisions got it backwards — one described the superseded wording instead of quoting it, and one changed a Confirmation criterion's command with no note at all. A `status`-keyed trigger would have caught only the first, and the one it missed is the one where the rewrite was fully silent. Both were corrected by a follow-up commit quoting what the first deleted, which is the shape this rule requires of itself.
 
 ### Natural Deprecation Flow
 

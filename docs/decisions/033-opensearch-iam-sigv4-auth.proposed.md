@@ -69,7 +69,7 @@ The audit logs were the ADR-stated residual trace for the still-open P035 index-
 
 ### Data load moves off GitHub Actions (loader-principal decision)
 
-The full 9-state populate ran as GitHub Actions workflows (`populate-search-domain.yml` → `reusable-update.yml`), each state leg up to 6h — burning too much GHA quota (user directive 2026-07-07). The load **moves to the local operator machine** (`babel-node loader.js` against the domain endpoint), which SigV4-signs as the operator's IAM identity. This both eliminates the GHA quota cost **and** makes the loader principal a simple local IAM identity in the access policy instead of a GitHub OIDC role — no GitHub in the data path. The GHA populate workflow is retired for v2. (v1's small quarterly `update-*.yml` deltas are out of scope here; revisit if quota pressure persists.)
+The full 9-state populate ran as GitHub Actions workflows (`populate-search-domain.yml` → `reusable-update.yml`), each state leg up to 6h — burning too much GHA quota (user directive 2026-07-07). The load **moves to the local operator machine** (`node loader.js` against the domain endpoint — _amended 2026-08-09, originally `babel-node loader.js`, which stopped being runnable when ADR 044 retired Babel on 2026-08-08; only the command changed_), which SigV4-signs as the operator's IAM identity. This both eliminates the GHA quota cost **and** makes the loader principal a simple local IAM identity in the access policy instead of a GitHub OIDC role — no GitHub in the data path. The GHA populate workflow is retired for v2. (v1's small quarterly `update-*.yml` deltas are out of scope here; revisit if quota pressure persists.)
 
 ### Auth-mode selection (backward compatible)
 
@@ -126,6 +126,7 @@ SigV4 adds per-request signing on the consumer-facing search path in prod:
 - `deploy/modules/opensearch/main.tf` has **no `advanced_security_options` block** (FGAC off; AWS defaults it disabled), no `master_user_*`, and `access_policies` scoped to the EB instance role ARN + `arn:aws:iam::869772437473:user/tompahoward` with `es:ESHttp*` — never `"*"`.
 - `client/elasticsearch.js` selects SigV4 vs basic on `ELASTIC_AUTH_MODE`, default basic; unit-tested both branches (TDD).
 - A local `node loader.js` run with `ELASTIC_AUTH_MODE=sigv4` authenticates against the recreated `addressr4` and indexes documents (SigV4 as the operator identity).
+  - _Amended 2026-08-09_: this criterion read "A local `babel-node loader.js` run", which stopped being executable when ADR 044 (Native ESM without a build step) retired Babel on 2026-08-08. Only the command changed; the criterion itself is unaltered. Recorded rather than silently corrected because this decision is ratified and implemented in production — a shipped decision's record is the audit trail, and editing it to read as though it always said the right thing removes the evidence that it did not.
 - Cucumber `test:nogeo` stays green with `ELASTIC_AUTH_MODE` unset (basic-auth default preserved).
 - ~~ADR 031 primary-path ≤1 ms p95 invariant re-verified with SigV4 on before cutover.~~ **DISCHARGED 2026-07-31 at ≤ ~0.1 ms p95, roughly 10× under the gate.**
 
