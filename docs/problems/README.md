@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-09 **P098 captured** — test files whose assertions never execute, because no runner reaches them or nothing invokes their runner; one is named by an ADR Confirmation criterion, one is the standing instrument for a lint rule enabled the same day, and two are the named guards behind release-reliability outcomes (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-09 **P097 verification pending** — the cucumber tiers now wait for a searchable index rather than an open port, and say which of four things went wrong when they do not get one; released in v3.3.0
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -27,7 +27,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
 | 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |
-| 4.5  | P097 | Cucumber leg intermittently starts against an empty index             | Medium (9)   | Open          | M      | 2026-08-09 | internal |
 | 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
@@ -61,6 +60,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3  | no — not observed                                                                                                  |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4  | no — not observed                                                                                                  |
 | P069 | Partial-prefix search drops results a shorter query returns    | 2026-08-02 33e6c04 | yes — observed: `55 Pyrmont Bri` returns 4 results with the target at #1 on the live endpoint (was 0); #365 closed |
+| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0  | no — not observed                                                                                                  |
 
 ## Inbound Upstream Reports
 

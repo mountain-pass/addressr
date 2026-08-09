@@ -1,6 +1,6 @@
 # Problem 097: A cucumber leg intermittently starts against an empty index
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-08-09
 **Priority**: 9 (High) — Impact: Moderate (3) × Likelihood: Possible (3). **Re-rated 2026-08-09, same day, on a second instance — this ticket's own trigger fired within hours of it being written.** Impact 3: it fails the release gate, so no version can be published or deployed until someone re-runs it — the RISK-POLICY level-3 clause, with existing installs and the live service unaffected. Not 4: nothing reaches production, and `fail-fast` means the run stops immediately rather than reporting partial coverage. See Rating notes below.
 **Origin**: internal — observed 2026-08-09, run `31284588346`
@@ -107,6 +107,14 @@ Not established. The shape — index empty on the first query, on one backend ve
 
 - [ ] File the second-order desensitisation cost as its own standing risk in `docs/risks/`, or attach it to R023 (gate-signal trust from the lying-green side; this is the crying-wolf side). The Rating notes above exclude it from this ticket's Priority deliberately, and an exclusion with no carrier is a deferral into prose — it discharges when the entry exists, not when it is planned. Deliberately NOT bundled into the retro commit that raised it: a curated above-appetite entry moves the register's above-appetite partition, which the bolded-partition invariant enforces across `docs/`, and that is a batch of its own.
 - [ ] Decide whether `--fail-fast` is right for this tier. It saves CI minutes and it also destroys the evidence needed to tell "index empty" from "one scenario wrong" — here it skipped 34 scenarios that would have distinguished them.
+
+## Fix Released
+
+**Released in v3.3.0, 2026-08-09.** The readiness gate is live on every cucumber tier. Verification is the absence of recurrence over a run of releases, which is the one thing this ticket cannot self-assert — three instances landed inside 24 hours, so a quiet day is not evidence.
+
+**What to look for, so verification is a check rather than a feeling.** If the race recurs it can no longer present as `expected [] not to be empty` deep in a scenario; it must present as `P097 readiness gate: index "X" holds N documents but they are not yet searchable`, at the top of the run, naming the index. Any of the other three exits means something else broke and the gate is telling you which. And if a leg still fails with the old bare empty-list assertion, the gate opened and the emptiness arrived afterwards — a different defect from this one, and worth a new ticket rather than reopening this.
+
+**Two tasks remain open below and neither gates verification.** Filing the desensitisation cost as a standing register entry is a carrier for a second-order cost this ticket's Priority deliberately excludes; the `--fail-fast` decision is about evidence preservation on failure. Neither is the defect. They are listed as unchecked rather than moved so they are not lost, per the ticket's own argument that a deferral with no checkbox evaporates.
 
 ## Workaround
 
