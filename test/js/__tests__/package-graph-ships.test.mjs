@@ -70,7 +70,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import * as esbuild from 'esbuild';
@@ -193,4 +193,55 @@ describe('the published package ships every module it can reach (ADR-044)', () =
       'prepack must generate version.js, or the files entry points at nothing',
     );
   });
+});
+
+describe('shipped scripts npm execs must be executable BY node, not by sh', () => {
+  // MEASURED OUTAGE, 2026-08-10. `packages/addressr/scripts/check-version.js`
+  // is a `files` entry and `postinstall` runs it as a BARE COMMAND. With the
+  // exec bit set and no shebang the kernel hands it to `sh`, which reads
+  // `import { readFileSync }` and reports "import: not found". `npm ci` fails,
+  // so EVERY CI job fails — and every consumer install of the published package
+  // fails the same way.
+  //
+  // It was not lost in a rename. `eslint . --fix` stripped it, because the
+  // `n/hashbang` exemption in eslint.config.js was anchored to the pre-split
+  // path and silently stopped matching when the file moved. That glob is fixed;
+  // this is the pin that makes the next such strip loud instead of silent.
+  //
+  // WHY HERE. This file's own header records that it asserts shipped ⊇
+  // reachable and explicitly NOT invocability. That gap is exactly where the
+  // outage lived, so the gap is closed rather than re-documented.
+  //
+  // DERIVED, NOT LISTED: the file set comes from `bin` plus any script invoked
+  // as a bare path, so a new entry point is covered without editing this test.
+  const bareCommandScripts = () => {
+    const files = new Set(Object.values(package_.bin ?? {}));
+    for (const cmd of Object.values(package_.scripts ?? {})) {
+      const m = /^([\w./-]+\.(?:js|mjs|cjs))\s*$/.exec(cmd.trim());
+      if (m) files.add(m[1]);
+    }
+    return [...files];
+  };
+
+  for (const relative of bareCommandScripts()) {
+    it(`${relative} starts with a node shebang`, () => {
+      const first = readFileSync(path.join(root, relative), 'utf8').split(
+        '\n',
+      )[0];
+      assert.match(
+        first,
+        /^#!.*\bnode\b/,
+        `${relative} is run as a bare command, so without a node shebang the kernel hands it to sh and npm ci fails`,
+      );
+    });
+
+    it(`${relative} is executable`, () => {
+      // The shebang is only consulted if the file can be exec'd at all.
+      const mode = statSync(path.join(root, relative)).mode;
+      assert.ok(
+        (mode & 0o111) !== 0,
+        `${relative} must carry the exec bit — npm runs it as a bare command`,
+      );
+    });
+  }
 });

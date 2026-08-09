@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // P010 guardrail — fail if any `@not-cli2` tag in a cucumber feature lacks
 // a `docs/problems/NNN-` cross-reference in a nearby comment.
 //

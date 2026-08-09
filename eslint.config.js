@@ -140,7 +140,16 @@ export default [
     },
   },
   {
-    files: ['scripts/check-version.js'],
+    // GLOB WIDENED 2026-08-10, and it is the root cause of a production-red
+    // outage rather than tidiness. This read `['scripts/check-version.js']`,
+    // which in flat config anchors to the config's base directory. When the
+    // workspace split moved the file to `packages/addressr/scripts/`, the
+    // override stopped matching, `n/hashbang` went live on it, and the next
+    // `eslint . --fix` STRIPPED the shebang the comment below exists to
+    // protect. `npm ci` then handed the file to `sh` — "import: not found" —
+    // and every job on master went red. A path-anchored exemption for a file
+    // that can move is a guard with an expiry date nobody sees.
+    files: ['**/scripts/check-version.js'],
     rules: {
       // Load-bearing, do not remove: this file SHIPS (it is a package.json
       // `files` entry) and postinstall runs it through `sh`, but it is not a

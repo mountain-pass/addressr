@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Fail loudly when the unit-tier glob matches nothing.
 //
 // WHY THIS EXISTS, measured rather than imagined. `test:js` is
