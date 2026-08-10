@@ -86,6 +86,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-10 (second entry today): **Re-verified after [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md)'s treatment and monitoring were re-pointed** off the `deploy_only` dispatch and onto the changeset-armed release-PR route, per the user-ratified JTBD-400 amendment in commit `09f6418`. **Direction: unchanged.** A major-version cutover is a deliberate act on any entry point, including one armed by a changeset. No re-rate.
+
 - 2026-08-10: **Revisited for the `deploy/**` push-axis retirement.** [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) and [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) retired (hazard deleted, not reduced); [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) re-scored 8 → 10 because retiring the axis deleted the ground its Impact 4 rested on. Governance: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), 2026-08-10 amendments. **Direction: unchanged.** A major-version cutover is a deliberate act on any entry point. No re-rate.
 
 - 2026-08-09 (third entry today): Re-verified after the push-tier axis fired again — run `31283258197` applied the `source_hash` hardening itself, taking the canonical apply count to six with five successful. The apply was `0 added, 1 changed, 0 destroyed`, an in-place update of `aws_s3_object.elasticapp` with its id unchanged, so the application version and `version_label` were untouched and the fleet did not cycle. Predicted from the pinned provider's schema before the push and matched exactly.
