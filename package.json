@@ -107,7 +107,7 @@
     "ci:publish": "[ \"$CI\" = true ] && changeset publish || echo \"Dry run: changeset publish\"",
     "push:watch": "bash scripts/push-and-watch.sh",
     "release:watch": "bash scripts/release-watch.sh",
-    "deploy:watch": "echo 'Use: npm run release:watch -- --deploy-only (the risk gate matches on release:watch; an alias here would reach prod ungated -- ADR 001 / P039)' >&2 && exit 1",
+    "deploy:watch": "echo 'Retired (ADR-045). There is no deploy-only command: arm an infrastructure deploy by committing a changeset for apps/addressr-deployment, then run npm run release:watch -- merging the release PR is the apply. An alias here would reach prod UNGATED, because the risk gate matches the release:watch command prefix and npm spawns the inner command in a child shell the hook never sees.' >&2 && exit 1",
     "prepare": "husky",
     "pretest:nodejs:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,test,es node packages/addressr/loader.js"
   },

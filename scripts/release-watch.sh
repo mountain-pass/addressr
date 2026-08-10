@@ -2,34 +2,41 @@
 # @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 #
 # Usage: npm run release:watch
-#        npm run release:watch -- --deploy-only
 #
-# Default: merges the open changesets release PR, watches the Release workflow,
-# and reports publish + deploy status. On failure: shows what failed and prompts
-# for a fix.
+# Merges the open changesets release PR, watches the Release workflow, and
+# reports publish + deploy status. On failure: shows what failed and prompts for
+# a fix.
 #
-# --deploy-only (P039 / ADR 001 amendment 2026-07-26): deploys the CURRENT
-# published version to prod without publishing anything. Dispatches release.yml
-# with deploy_only=true and watches the same run. Use for EB env-var and
-# Terraform-only changes that previously needed a no-op changeset and a churned
-# public npm version.
+# THE --deploy-only FLAG IS GONE (2026-08-10, ADR-045). It dispatched
+# release.yml with deploy_only=true to deploy the current published version
+# without publishing. That entry point is superseded: an infrastructure change
+# now reaches production by carrying a changeset for `apps/addressr-deployment`,
+# and merging the release PR — this script's ONLY path — is the apply. So an
+# infra-only release is not a different command any more; it is an ordinary
+# release whose changeset happens to name the deployment package.
 #
 # Risk gate: this script is gated by the PLUGIN-OWNED wr-risk-scorer
 # git-push-gate hook (NOT a repo-local .claude/hooks/ script — that directory
 # does not exist), which checks the release risk score before allowing
 # execution. If the score is above appetite, the command is blocked.
 #
-# The gate matches on the `npm run release:watch` command PREFIX, so the
-# --deploy-only form is gated by construction — which is exactly why the
-# deploy-only path lives here as a flag rather than in a separate
-# scripts/deploy-watch.sh. A `npm run deploy:watch` alias would reach prod
-# UNGATED: npm spawns the inner command in a child shell the hook never sees.
+# The gate matches on the `npm run release:watch` command PREFIX. That is why
+# there is no `scripts/deploy-watch.sh` and why `npm run deploy:watch` refuses
+# rather than aliasing: npm spawns the inner command in a child shell the hook
+# never sees, so an alias would reach prod UNGATED. This mattered more when a
+# --deploy-only flag existed; it still holds, because ANY second entry point
+# added here would need to keep the same prefix.
 
 set -euo pipefail
 
-DEPLOY_ONLY=0
+# Refuse the retired flag loudly rather than ignoring it. Silently accepting
+# `--deploy-only` and running an ordinary release is the worst outcome: the
+# operator asked for a publish-free deploy and would get a publish.
 if [ "${1:-}" = "--deploy-only" ]; then
-  DEPLOY_ONLY=1
+  echo "release:watch: --deploy-only is retired (ADR-045)." >&2
+  echo "Arm an infrastructure deploy by committing a changeset for apps/addressr-deployment;" >&2
+  echo "merging the release PR is the apply. Then run: npm run release:watch" >&2
+  exit 1
 fi
 
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
@@ -54,18 +61,6 @@ show_failure_guidance() {
   echo "CLAUDE: The release pipeline failed. Show the user which checks failed above,"
   echo "help them fix the issue, then run \`npm run release:watch\` again."
 }
-
-if [ "$DEPLOY_ONLY" = "1" ]; then
-
-# ── 1-3 (deploy-only). No PR to find, approve, check or merge — dispatch. ────
-# The workflow's `release` job is guarded on refs/heads/master, so --ref master
-# is required, not merely conventional. build-and-test is an unconditional
-# `needs:`, so the full OpenSearch matrix still runs before anything deploys.
-echo "Dispatching deploy-only run of release.yml (no npm publish)..."
-gh workflow run release.yml --ref master -f deploy_only=true
-echo ""
-
-else
 
 # ── 1. Find the open changesets release PR ───────────────────────────────────
 PR_JSON=$(gh pr list --base master --state open --search "chore: release in:title" --limit 1 --json number,url,title 2>/dev/null)
@@ -187,18 +182,17 @@ echo "Merging release PR #$PR_NUMBER..."
 gh pr merge "$PR_NUMBER" --merge
 echo ""
 
-fi
-
 # ── 4. Find the triggered Release workflow run ──────────────────────────────
-# With two entry points there are now two kinds of run on master, so filter by
-# event — otherwise this loop can latch onto whichever run is in flight.
+# One entry point again, so no event filter is needed. It carried
+# `--event workflow_dispatch` while the deploy-only dispatch existed, because
+# two kinds of run on master meant this loop could latch onto whichever was in
+# flight. Kept as an empty string rather than deleted so the `gh run list`
+# invocation below is unchanged and a future second entry point has somewhere
+# obvious to re-point.
+#
 # Deliberately a string, not an array: under `set -u`, bash 3.2 (still the
-# system bash on macOS) errors on "${arr[@]}" when the array is empty. These
-# two tokens contain no whitespace or globs, so word splitting is safe.
+# system bash on macOS) errors on "${arr[@]}" when the array is empty.
 RUN_EVENT_FILTER=""
-if [ "$DEPLOY_ONLY" = "1" ]; then
-  RUN_EVENT_FILTER="--event workflow_dispatch"
-fi
 printf 'Waiting for Release workflow'
 RUN_ID=""
 for i in $(seq 1 40); do
@@ -371,24 +365,78 @@ case "$DEPLOY_STATUS" in
 esac
 echo ""
 
-# On a deploy-only run a skipped Deploy step is a FAILURE, not the benign
-# "nothing to publish" outcome it means on the release path. It is the exact
-# symptom of a mis-typed `deploy_only` predicate in release.yml (a quoted
-# "true" comparison never matches a boolean input), which otherwise presents
-# as a fully green run that deployed nothing. Fail loud.
-if [ "$DEPLOY_ONLY" = "1" ] && [ "$DEPLOY_STATUS" != "success" ]; then
-  echo "Deploy-only run did not deploy: Deploy step conclusion was '${DEPLOY_STATUS:-unknown}', expected 'success'." >&2
-  echo "Check the deploy_only gate predicates in .github/workflows/release.yml (see P039)." >&2
+# RE-POINTED 2026-08-10 onto the changesets-armed axis, NOT deleted. This is the
+# only thing catching the silent-green class on this path: a release that was
+# supposed to apply infrastructure, went fully green, and applied nothing.
+#
+# It used to fire on a deploy-only dispatch whose Deploy step did not succeed —
+# the symptom of a mis-typed `deploy_only` predicate. That input is retired, so
+# the question becomes: did THIS merge bump the deployment package's version? If
+# it did, Deploy must have succeeded.
+#
+# The predicate is the SAME SCRIPT the workflow gate uses, deliberately. Two
+# implementations of "did this arm a deploy" would drift, and the drift would be
+# invisible until an apply silently did not happen.
+# EVERY FAILURE PATH HERE IS LOUD, and that is the point. This is the one control
+# catching "a release that was supposed to apply infrastructure, went fully
+# green, and applied nothing". A version of it that goes quiet when something
+# breaks is inert exactly when it matters. An earlier draft swallowed a failed
+# fetch and a failed detector into `changed=false` — the guard's PASS value —
+# which is the same fail-open shape as the P044 assertion this repo already had
+# to fix once.
+if ! git fetch -q origin master 2>/dev/null; then
+  echo "Could not fetch origin/master, so cannot tell whether this release should" >&2
+  echo "have deployed. Deploy status was '${DEPLOY_STATUS:-unknown}'." >&2
+  echo "Verify by hand: $RUN_URL" >&2
+  exit 1
+fi
+
+MERGED=$(git rev-parse origin/master 2>/dev/null || true)
+# `origin/master^` is the merge commit's FIRST parent, which is what
+# github.event.before denotes — so this range matches the workflow's exactly.
+MERGED_PARENT=$(git rev-parse "origin/master^" 2>/dev/null || true)
+if [ -z "$MERGED" ] || [ -z "$MERGED_PARENT" ]; then
+  echo "Could not resolve origin/master and its first parent, so cannot tell whether" >&2
+  echo "this release should have deployed. Verify by hand: $RUN_URL" >&2
+  exit 1
+fi
+
+# origin/master explicitly as the head ref: the local HEAD has not been pulled
+# yet at this point (step 8 does that), so letting it default would compare
+# against a commit that predates the merge.
+#
+# Status captured SEPARATELY from stdout. The detector is designed never to exit
+# non-zero (pinned in its own test), so a non-zero exit is unambiguously "the
+# detector broke" — collapsing that into `changed=false` would report the
+# guard's pass value on a broken guard.
+ARMED=$(scripts/detect-deployment-bump.sh "$MERGED_PARENT" "$MERGED" 2>/dev/null)
+DETECT_STATUS=$?
+if [ "$DETECT_STATUS" -ne 0 ]; then
+  echo "The deployment-bump detector exited ${DETECT_STATUS}; it is designed never to." >&2
+  echo "Cannot tell whether this release should have deployed. Verify by hand: $RUN_URL" >&2
+  exit 1
+fi
+
+if [ "$ARMED" = "changed=true" ] && [ "$DEPLOY_STATUS" != "success" ]; then
+  echo "This release bumped the deployment package but did NOT deploy." >&2
+  echo "Deploy step conclusion was '${DEPLOY_STATUS:-unknown}', expected 'success'." >&2
+  echo "That is a green run that applied no infrastructure — check the deploy gate" >&2
+  echo "in .github/workflows/release.yml against ADR-045." >&2
   echo "  $RUN_URL" >&2
   exit 1
 fi
 
 # ── 7. Run post-release hooks ───────────────────────────────────────────────
-# Skipped on the deploy-only path: nothing was published, and the hooks' own
-# PREV_MERGE derivation walks 'chore: release' commits that this run did not
-# create — it would diff and potentially commit unrelated content.
+# The `$DEPLOY_ONLY = 0` conjunct is GONE because its subject is: the deploy-only
+# dispatch is retired, and every run reaching here came through the release PR.
+# The reason it existed still matters and is recorded rather than dropped — the
+# hooks' PREV_MERGE derivation walks 'chore: release' commits, so on a run that
+# created none it would diff and potentially commit unrelated content. These
+# hooks `git add -A`, commit and PUSH TO MASTER, so that was not a cosmetic
+# guard. Every surviving path does create a release commit, which is what makes
+# removing the conjunct safe rather than merely tidy.
 HOOK_DIR="scripts/post-release.d"
-if [ "$DEPLOY_ONLY" = "0" ] && [ -d "$HOOK_DIR" ]; then
+if [ -d "$HOOK_DIR" ]; then
   PREV_MERGE=$(git log --grep='chore: release' -1 --format=%H HEAD~1 2>/dev/null || true)
   if [ -n "$PREV_MERGE" ]; then
     CHANGED_FILES=$(git diff --name-only "$PREV_MERGE"..HEAD~1 2>/dev/null || true)
@@ -416,9 +464,7 @@ fi
 
 echo ""
 echo "CLAUDE: The release workflow completed. Report the results above to the user."
-if [ "$DEPLOY_ONLY" = "1" ]; then
-  echo "The currently published version has been deployed to AWS. Nothing was published to npm (P039 deploy-only)."
-elif [ "$DEPLOY_STATUS" = "success" ]; then
+if [ "$DEPLOY_STATUS" = "success" ]; then
   echo "The new version has been published to npm and deployed to AWS."
 elif [ "$DEPLOY_STATUS" = "skipped" ]; then
   echo "No new version published (no actionable changesets). The release job completed but no deploy occurred."

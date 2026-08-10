@@ -136,8 +136,15 @@ const pushWatch = read('../../../scripts/push-and-watch.sh');
 //
 // NARROWED 2026-08-10 from three disjuncts to two, when the deploy/** push axis
 // was retired. The parenthesis note above is unchanged and still load-bearing.
+//
+// REPOINTED 2026-08-10 (second revision, same day), per ADR-045. The second
+// disjunct was `inputs.deploy_only == true`; it is now the changesets-armed
+// deployment version bump. Still TWO disjuncts, still one shared set of steps —
+// the change is an `if:` edit on the one gate, which is what ADR-001's
+// single-definition doctrine requires and what every prior widening and
+// narrowing also did.
 const DEPLOY_GATE =
-  "success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)";
+  "success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')";
 
 const releaseSteps = release.jobs.release.steps;
 const stepNamed = (name) => {
@@ -167,17 +174,24 @@ const stepBody = (step) =>
     .join('\n');
 
 describe('release.yml — P039 publish-free deploy trigger', () => {
-  it('declares deploy_only as a boolean workflow_dispatch input defaulting to false', () => {
-    // Keyed on the input BY NAME. The text form matched any input in the file
-    // carrying these properties, so it could not have caught deploy_only itself
-    // changing type — the exact silent-green failure this file exists to stop.
-    const input = release.on.workflow_dispatch.inputs.deploy_only;
-    assert.ok(input, 'deploy_only must be a workflow_dispatch input');
-    assert.equal(input.type, 'boolean');
-    assert.equal(
-      input.default,
-      false,
-      'the default must be the BOOLEAN false, not the string "false"',
+  it('keeps the retired deploy_only input from silently returning', () => {
+    // CONVERTED 2026-08-10 from a positive assertion, with its rationale kept.
+    // It read: "declares deploy_only as a boolean workflow_dispatch input
+    // defaulting to false", keyed BY NAME because a text-form match could not
+    // catch the input itself changing type — a quoted "true" comparison never
+    // matches a boolean, so the gates would never fire and the run would go
+    // GREEN with the deploy silently skipped.
+    //
+    // ADR-045 supersedes the entry point and it is DELETED, not left declared.
+    // Leaving it would have made a dispatch skip the publish, skip P044, skip
+    // Deploy/Wait/Smoke — and conclude green. An inert production-deploy
+    // affordance reporting success is the same silent-green class the old
+    // assertion guarded, arriving from the opposite direction.
+    const inputs = release.on?.workflow_dispatch?.inputs ?? {};
+    assert.ok(
+      !('deploy_only' in inputs),
+      'deploy_only is retired (ADR-045): re-adding the input would make a ' +
+        'dispatch green-and-inert, because the deploy gate no longer reads it',
     );
   });
 
@@ -185,17 +199,34 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     assert.equal(release.jobs.release.if, "github.ref == 'refs/heads/master'");
   });
 
-  it('skips the changesets publish step on a deploy-only run', () => {
+  it('leaves the changesets step ungated, now that nothing must skip it', () => {
+    // CONVERTED 2026-08-10. It asserted `if: inputs.deploy_only != true`, which
+    // kept a deploy-only dispatch off the registry. With that entry point gone
+    // there is no path that must skip this step, and a surviving guard would be
+    // a condition with no subject — the shape that rots into a false premise.
     assert.equal(
       stepNamed('Create Release Pull Request or Publish to npm').if,
-      'inputs.deploy_only != true',
+      undefined,
+      'the changesets step must be ungated: the only path that had to skip it is retired',
     );
   });
 
-  it('narrows the P044 assertion without dropping either original conjunct', () => {
+  it('restores the P044 assertion to its two original conjuncts', () => {
+    // It carried a third, `&& inputs.deploy_only != true`, exempting the
+    // publish-free dispatch — a run that attempts no publish has no swallowed
+    // publish to detect, so the assertion would have passed vacuously while
+    // claiming to check something the run was not doing. That input is retired,
+    // so the exemption has no subject and is removed rather than left inert.
+    //
+    // IT NOW RUNS ON A DEPLOYMENT-ONLY RELEASE, and that is intended, not an
+    // oversight. Both conjuncts hold on that path, so it fires — and passes,
+    // because it reads packages/addressr/package.json, which a deployment-only
+    // changeset does not bump: the cascade runs INTO the deployment package,
+    // not out of it. This is the likeliest place the new axis goes unexpectedly
+    // red, which is why the exact expression is pinned rather than described.
     assert.equal(
       stepNamed('Fail if a publish was expected but did not happen (P044)').if,
-      "steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true' && inputs.deploy_only != true",
+      "steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'",
     );
   });
 
@@ -231,7 +262,7 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
-  it('gates exactly three steps on published OR deploy_only, under success()', () => {
+  it('gates exactly three steps on published OR a deployment bump, under success()', () => {
     // The count catches a gate DELETED from a step that is already there —
     // including "Wait for deployment to stabilize", whose body is `sleep 120`
     // and which therefore has no prod-touching content for the predicate below
@@ -263,6 +294,93 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
       unguarded,
       [],
       `these steps reach production without the deploy gate, so they would run on an ordinary push: ${unguarded.join(', ')}`,
+    );
+  });
+
+  it('detects a deployment bump via a SCRIPT, not an inline path diff', () => {
+    // ADR-045 criterion 2. The logic lives in a script BECAUSE criterion 3
+    // requires it be DRIVEN through four fail-closed cases — a rename, an
+    // all-zeros before, an unreachable parent, a non-push event — which an
+    // inline `run:` block cannot be. detect-deployment-bump.test.mjs does that
+    // driving against real git fixtures; this pins the wiring.
+    const step = stepNamed('Detect a deployment version bump');
+    assert.equal(step.id, 'deployment-version', 'the gate reads this step id');
+    assert.match(
+      step.run,
+      /scripts\/detect-deployment-bump\.sh/,
+      'detection must call the script the behavioural test drives',
+    );
+    assert.match(
+      step.run,
+      />>\s*"\$GITHUB_OUTPUT"/,
+      'the verdict must reach the step output the gate reads',
+    );
+  });
+
+  it('scopes detection to push events (the non-push fail-closed leg)', () => {
+    // ADR-045 criterion 3's fourth case. On any other event the step is skipped,
+    // `outputs.changed` is the empty string, and the gate's POSITIVE `== 'true'`
+    // comparison is false. The positive form is load-bearing: the empty-string
+    // trap bites the NEGATED `!= 'true'` form.
+    //
+    // This restores, in a new form, an assertion deliberately removed on
+    // 2026-08-10 with the retired axis ("scopes path detection to push events").
+    // The detector ALSO denies on an empty argument, so the property does not
+    // rest on this condition alone — but a future edit dropping this `if:` would
+    // run the detector on every pull_request, so it is pinned.
+    assert.equal(
+      stepNamed('Detect a deployment version bump').if,
+      "github.event_name == 'push'",
+    );
+  });
+
+  it('detects BEFORE the changesets step runs, and binds to the pushed sha', () => {
+    // BOTH HALVES OF A REAL DEFECT, pinned because it shipped green.
+    //
+    // `changesets/action` on a push carrying changesets checks out
+    // `changeset-release/master`, runs `changeset version`, commits, and does
+    // not switch back. So AFTER it, `HEAD` is the version-bump commit — the
+    // deployment version already bumped, the changesets already deleted. A
+    // detector reading `HEAD` arms on the SECOND and every subsequent
+    // changeset-bearing push of a release cycle: an unreviewed production apply
+    // at push-tier, before the release PR is merged. That is the `deploy/**`
+    // hazard reconstituted with a wider trigger.
+    //
+    // The first version of this step had exactly that shape and passed the
+    // whole suite, because nothing pinned the head ref. Two independent fixes,
+    // both asserted, so the property survives a step reorder OR an env edit.
+    const names = releaseSteps.map((s) => s.name);
+    const detectAt = names.indexOf('Detect a deployment version bump');
+    const changesetsAt = names.indexOf('Create Release Pull Request or Publish to npm');
+    assert.ok(detectAt >= 0 && changesetsAt >= 0, 'both steps must exist');
+    assert.ok(
+      detectAt < changesetsAt,
+      'detection must run BEFORE changesets/action moves HEAD onto the version branch',
+    );
+
+    const step = stepNamed('Detect a deployment version bump');
+    assert.equal(
+      step.env?.PUSHED,
+      '${{ github.sha }}',
+      'the head ref must be the PUSHED sha, never the working HEAD',
+    );
+    assert.match(
+      step.run,
+      /detect-deployment-bump\.sh"?\s+"\$BEFORE"\s+"\$PUSHED"/,
+      'both refs must be passed explicitly; defaulting the head ref is the defect',
+    );
+  });
+
+  it('passes the before-ref through env, keeping the run body a fixed literal', () => {
+    // Matches the shape the retired detection step used and the rest of the file
+    // follows. It also means the `run:` line is a constant that can be asserted
+    // exactly, rather than a template whose expansion varies.
+    const step = stepNamed('Detect a deployment version bump');
+    assert.equal(step.env?.BEFORE, '${{ github.event.before }}');
+    assert.doesNotMatch(
+      step.run,
+      /\$\{\{/,
+      'the run body must not interpolate directly; read the ref from env',
     );
   });
 
@@ -358,7 +476,16 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
   // silently returning' above, which is a stronger guard than the four together
   // were: they constrained how the axis behaved, it forbids the axis existing.
 
-  it('fetches full history in the release job, for changelog attribution', () => {
+  it('fetches full history in the release job, for version-bump detection', () => {
+    // RENAMED 2026-08-10. The assertion is unchanged; its REASON is not.
+    // Changelog attribution was the only surviving reason after the path-detection
+    // step was retired. ADR-045's detection step revives the primary one, and more
+    // strongly: it resolves two refs by SHA (`git cat-file -e` on
+    // github.event.before, then `git show` against both), so an insufficient depth
+    // makes the before-ref unreachable — which the detector treats as a DENIAL.
+    // Silent no-deploy rather than the old silent over-deploy, but silent either
+    // way. A stale rationale on a live pin is the drift this comment style exists
+    // to prevent.
     //
     // Scoped to the `release` job STRUCTURALLY. The text form needed a
     // hand-rolled slicer — indexOf on '\n  release:' plus a regex for the next

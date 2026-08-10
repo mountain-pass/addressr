@@ -86,6 +86,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-10 (third entry today): **Re-verified after R020 was re-scored against the changesets-armed successor route**, which is now BUILT and is the sole path to a production infrastructure apply — `deploy_only` is deleted. **Direction: unchanged.** A major-version cutover is a deliberate act on any entry point, including one armed by a changeset. Note the rollback-latency point recorded on R008 and R020 applies here too if a cutover has to be reversed. No re-rate.
+
 - 2026-08-10 (second entry today): **Re-verified after [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md)'s treatment and monitoring were re-pointed** off the `deploy_only` dispatch and onto the changeset-armed release-PR route, per the user-ratified JTBD-400 amendment in commit `09f6418`. **Direction: unchanged.** A major-version cutover is a deliberate act on any entry point, including one armed by a changeset. No re-rate.
 
 - 2026-08-10: **Revisited for the `deploy/**` push-axis retirement.** [R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md) and [R022](R022-unstaged-terraform-lockfile-drift-arms-deploy-axis.retired.md) retired (hazard deleted, not reduced); [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) re-scored 8 → 10 because retiring the axis deleted the ground its Impact 4 rested on. Governance: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md), 2026-08-10 amendments. **Direction: unchanged.** A major-version cutover is a deliberate act on any entry point. No re-rate.

@@ -7,26 +7,24 @@ on:
   pull_request:
     branches:
       - '*'
+  # RETIRED 2026-08-10 — the `deploy_only` boolean input lived here.
+  #
+  # ADR-045 supersedes it: a production infrastructure apply is now armed by a
+  # committed changeset for `apps/addressr-deployment`, and merging the release
+  # PR is the apply. User-directed — "I don't want it being a flag that the
+  # agent has to provide from our local machine. The change sets should
+  # determine what does and doesn't trigger and deploy."
+  #
+  # DELETED RATHER THAN LEFT DECLARED, deliberately. Repointing the deploy gate
+  # while leaving the input in place would have made a `deploy_only=true`
+  # dispatch skip the publish, skip the P044 assertion, skip Deploy/Wait/Smoke
+  # — and conclude GREEN. A fully inert production-deploy affordance reporting
+  # success is the silent-green class ADR-045 exists to prevent. With the input
+  # gone, GitHub rejects the dispatch outright, which is the loud failure.
+  #
+  # `workflow_dispatch` itself is retained with no inputs: a plain dispatch runs
+  # the build and test tiers, which is useful and arms nothing.
   workflow_dispatch:
-    inputs:
-      # P039 / ADR 001 amendment 2026-07-26: publish-free prod deploy. Dispatch
-      # with deploy_only=true to run the deploy + smoke steps against the
-      # CURRENT published version without touching the npm registry. Use for
-      # EB env-var and Terraform-only changes that previously needed a no-op
-      # changeset and a churned public version.
-      #
-      # BOOLEAN, not string, and the `if:` predicates below MUST compare against
-      # `true` unquoted. The `inputs` context PRESERVES the declared type (only
-      # `github.event.inputs.*` is always-string), and GitHub coerces mismatched
-      # operands to number — so comparing it against a QUOTED "true" evaluates
-      # `1 == NaN` => false, the deploy gates never fire, and the run goes GREEN
-      # with the deploy silently skipped. Pinned by
-      # test/js/__tests__/release-workflow-deploy-only.test.mjs.
-      deploy_only:
-        description: 'Deploy the current published version to prod without publishing to npm'
-        required: false
-        type: boolean
-        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -215,15 +213,24 @@ jobs:
         with:
           # changesets/action wants full history for changelog attribution.
           #
-          # RE-POINTED 2026-08-10, and the distinction matters because the two
-          # reasons are not equally strong. This comment used to LEAD with the
-          # retired path-detection step — full history was needed because a push
-          # can carry several commits and depth 2 would silently miss a change in
-          # any but the last — with changelog attribution as an afterthought.
-          # That step is gone, so the leading reason is void and only the
-          # afterthought survives. It is enough on its own, and it costs little
-          # on an 8 MB repo, so the setting is unchanged. Recorded rather than
-          # left standing on a dead premise.
+          # RE-POINTED TWICE ON 2026-08-10, and the history is worth keeping
+          # because the reason went void and then came back stronger.
+          #
+          # It first LED with the retired path-detection step (full history
+          # needed because a push can carry several commits), with changelog
+          # attribution as an afterthought. When that step was retired the
+          # leading reason went void and only the afterthought survived.
+          #
+          # ADR-045's detection step REVIVES it, and more strongly than the
+          # retired step did. That step diffed paths; this one resolves two refs
+          # by SHA — `git cat-file -e` on `github.event.before`, then `git show`
+          # against both refs. An insufficient depth now makes the before-ref
+          # unreachable, which the script treats as a DENIAL: a silent no-deploy
+          # rather than the old silent over-deploy. Fail-closed, but silent
+          # either way, so the depth is load-bearing.
+          #
+          # Leading reason: ADR-045 version-bump detection. Secondary: changelog
+          # attribution, which still holds on its own.
           fetch-depth: 0
       - name: Install dependencies
         run: |
@@ -254,15 +261,17 @@ jobs:
       # PR: an infra change carries a changeset for the deployment package, and
       # merging that PR is the apply.
       #
-      # NOT TRUE YET, as of Phase 2 (2026-08-10). `apps/addressr-deployment` exists
-      # and takes changesets, but this gate still keys on `published` and
-      # `deploy_only`. `apps/addressr-deployment` is `private: true`, so
-      # `changeset publish` skips it and `published` stays false — meaning a
-      # release PR carrying ONLY a deployment-package changeset versions the
-      # package, publishes nothing, and SKIPS Deploy, Stabilise and Smoke, on a
-      # green run. Until this gate is repointed at that package's version bump,
-      # `deploy_only` remains the only route to an infrastructure apply (R020),
-      # and it is the less-proven one. Pinned by
+      # TRUE AS OF 2026-08-10 — this note recorded the interim and the interim is
+      # over. It read "NOT TRUE YET, as of Phase 2": the deployment package
+      # existed and took changesets, but the gate still keyed on `published` and
+      # `deploy_only`, so a release PR carrying ONLY a deployment-package
+      # changeset versioned the package, published nothing (it is
+      # `private: true`, so `changeset publish` skips it) and SKIPPED Deploy,
+      # Stabilise and Smoke on a green run.
+      #
+      # The gate now keys on that package's version bump — see the detection
+      # step below — so a deployment-only changeset reaches production, and
+      # `deploy_only` is deleted rather than left inert. Pinned by
       # test/js/__tests__/release-workflow-deploy-only.test.mjs, which asserts
       # the retired step's id occurs nowhere in this file — the detection step
       # re-added ALONE would read as harmless in review and sit one character
@@ -270,12 +279,59 @@ jobs:
       # including here: a comment naming it would satisfy the raw scan and
       # defeat the pin.
 
+      # ADR-045: does this push arm a production infrastructure apply?
+      #
+      # The logic lives in a script rather than inline BECAUSE ADR-045
+      # confirmation criterion 3 requires it be DRIVEN through a rename, an
+      # all-zeros before-ref, an unreachable parent and a non-push event. An
+      # inline `run:` block can only be asserted for its shape; a script can be
+      # executed against real git fixtures, which is what
+      # test/js/__tests__/detect-deployment-bump.test.mjs does.
+      #
+      # It compares the deployment package's version VALUE at
+      # `github.event.before` and HEAD — never a path diff. A path diff reports
+      # a RENAME as a change and would arm a production apply on a pure
+      # refactor, which is the defect that retired the predecessor axis.
+      #
+      # `if: github.event_name == 'push'` is the non-push leg: on any other
+      # event the step is skipped, `outputs.changed` is the empty string, and
+      # the gate's POSITIVE `== 'true'` comparison is therefore false. The
+      # positive form is load-bearing — the empty-string trap bites the negated
+      # `!= 'true'` form, not this one. The script denies on an empty argument
+      # too, so the property does not rest on this condition alone.
+      #
+      # BOUND TO THE PUSHED SHA, NOT THE WORKING HEAD — load-bearing, and the
+      # reason is a defect this very step shipped with before review caught it.
+      # `changesets/action` takes the runVersion path on a push carrying
+      # changesets: it checks out `changeset-release/master`, runs
+      # `changeset version`, commits, and does NOT switch back. So after that
+      # step `HEAD` is the version-bump commit — deployment version already
+      # bumped, changesets already deleted. A detector reading `HEAD` would
+      # arm on the SECOND and every subsequent changeset-bearing push of a
+      # release cycle: an unreviewed production apply at push-tier, before the
+      # release PR is even merged. That is the hazard the `deploy/**` axis was
+      # retired for, on a wider trigger.
+      #
+      # Two independent fixes, both applied so the property survives a future
+      # step reorder: this step runs ABOVE the changesets step, and it passes
+      # `github.sha` explicitly rather than defaulting to `HEAD`. Both are
+      # pinned in test.
+      #
+      # This needs `fetch-depth: 0` above: it reads two refs by SHA.
+      - name: Detect a deployment version bump
+        id: deployment-version
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          PUSHED: ${{ github.sha }}
+        run: scripts/detect-deployment-bump.sh "$BEFORE" "$PUSHED" >> "$GITHUB_OUTPUT"
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        # P039: a deploy-only dispatch must never reach the registry. On every
-        # other path (push to master, plain dispatch) `inputs` is null, so
-        # `null != true` => true and this runs exactly as before.
-        if: inputs.deploy_only != true
+        # UNGATED since 2026-08-10. This carried `if: inputs.deploy_only != true`
+        # to keep a deploy-only dispatch off the registry; that input is retired
+        # (see the note at `workflow_dispatch` above), so there is no longer a
+        # path that must skip this step.
         uses: changesets/action@v1.9.0
         with:
           publish: npm run turbo:ci:publish
@@ -303,12 +359,19 @@ jobs:
         # output is authoritative here because `changeset version` deletes the
         # .changeset/*.md files IN THE WORKSPACE before this step runs, so an
         # on-disk check would false-negative (P044 false-positive fix v2).
-        # P039: `&& inputs.deploy_only != true` keeps the assertion off the
-        # deploy-only path. Such a run attempts no publish, so there is no
-        # swallowed publish to detect — it would pass vacuously while asserting
-        # something the run is not doing. Both original conjuncts are retained,
-        # so the publish path is unchanged.
-        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true' && inputs.deploy_only != true
+        # NARROWED BACK 2026-08-10 to its two original conjuncts. It carried a
+        # third, `&& inputs.deploy_only != true`, to keep the assertion off the
+        # publish-free dispatch; that input is retired, so the exemption has no
+        # subject.
+        #
+        # It DOES now run on a deployment-only release, and that is intended. On
+        # that path `published != 'true'` and `hasChangesets != 'true'` both
+        # hold, so the assertion fires — and passes, because it reads
+        # `packages/addressr/package.json`, which a deployment-only changeset
+        # does not bump: the cascade runs INTO the deployment package, not out of
+        # it. Pinned in test, because this is the likeliest place the new axis
+        # goes unexpectedly red.
+        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'
         shell: bash
         run: |
           # P044 / RFC-002: changesets/action does NOT fail the job when npm
@@ -354,9 +417,11 @@ jobs:
       # P039 / ADR 001 amendment 2026-07-26: SINGLE DEFINITION.
       # The deploy path has exactly one set of steps, shared by every entry
       # point — as of 2026-08-10 that is TWO: the publish path
-      # (`published == 'true'`) and the publish-free dispatch (`deploy_only`).
-      # The third, ADR-040 stage 3's infra axis, is retired; see the note where
-      # its detection step used to sit. Never fork this into a second job or
+      # (`published == 'true'`) and the changesets-armed deployment version bump
+      # (ADR-045). Two earlier entry points are gone: ADR-040 stage 3's `deploy/**`
+      # infra axis (retired — see the note where its detection step used to sit)
+      # and the `deploy_only` dispatch it left as the sole route (superseded by
+      # ADR-045 and deleted, not left inert). Never fork this into a second job or
       # duplicate these steps: divergence between the prod-deploy paths is the
       # failure this shared gate exists to prevent, and the master-HEAD-only job
       # guard above is what keeps every entry point on the same source. Each
@@ -364,13 +429,17 @@ jobs:
       # new copy of it — and that holds for NARROWING, as here, exactly as it
       # held for the two widenings before it.
       #
-      # `success() && (...)` is explicit on purpose. `deploy_only` is a constant
-      # on the dispatch path, carrying no upstream dependency, so without it the
-      # deploy would rest on GitHub's implicit success() default. The PARENTHESES
+      # `success() && (...)` is explicit on purpose. The second disjunct reads a
+      # step output that is set independently of whether the publish succeeded,
+      # so without `success()` the deploy would rest on GitHub's implicit
+      # default and could run after an upstream failure. (It carried the same
+      # note when that disjunct was the `deploy_only` constant; the reason
+      # survives the substitution, which is why it is restated rather than
+      # dropped.) The PARENTHESES
       # are load-bearing: `&&` binds tighter than `||`, so `success() && A || B`
       # would deploy after an upstream failure.
       - name: Deploy new version
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
         uses: devcontainers/ci@v0.3
         # P095: tell deploy.sh that a publish just happened on THIS run, so it
         # ships the workspace version rather than reading the registry.
@@ -383,15 +452,17 @@ jobs:
         # version green and silent, which is worse than the loud failure P095
         # records.
         #
-        # Only this disjunct gets the signal. `deploy_only` resolves from the
-        # registry instead, which is what makes the deployment manifest
-        # satisfiable — that is the P095 fix. (Until 2026-08-10 the retired
-        # `deploy/**` push shared that registry path, and it was the axis P095
-        # was actually about: it could fire while a release was pending and so
-        # deploy a version that was never published. `deploy_only` cannot do
-        # that, so the split now guards a narrower case than the one that
-        # created it — kept because the publish path still must NOT read the
-        # registry, for the CDN-staleness reason recorded above.) Omitting the
+        # Only this disjunct gets the signal. The deployment-version-bump
+        # disjunct resolves from the registry instead, which is what makes the
+        # deployment manifest satisfiable — that is the P095 fix, and it is what
+        # the user directed: "The deploy path MUST take the last published
+        # version." (Two predecessors shared that registry path: the retired
+        # `deploy/**` push, which was the axis P095 was actually about because it
+        # could fire while a release was pending and deploy a version that was
+        # never published; and the `deploy_only` dispatch, deleted 2026-08-10.
+        # Neither survives, but the split does, because the publish path still
+        # must NOT read the registry for the CDN-staleness reason above.)
+        # Omitting the
         # signal falls back to the registry, so forgetting it fails safe.
         env:
           ADDRESSR_DEPLOY_JUST_PUBLISHED: ${{ steps.changesets.outputs.published == 'true' && '1' || '0' }}
@@ -432,11 +503,11 @@ jobs:
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
         run: sleep 120
 
       - name: Smoke test production
-        if: success() && (steps.changesets.outputs.published == 'true' || inputs.deploy_only == true)
+        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
         run: |
           set -e
           echo "Testing health endpoint..."
@@ -634,9 +705,13 @@ jobs:
   # `DOCKER_PUBLISH_SEMVER=1 npm run docker:push` break-glass (a local PAT with
   # write:packages against ghcr.io).
   #
-  # The gate is the POSITIVE `== 'true'` form. On a deploy_only dispatch the
-  # changesets step is skipped and this output resolves to the empty string;
-  # `'' == 'true'` is false, so the job correctly does not run.
+  # The gate is the POSITIVE `== 'true'` form, and that is load-bearing. When the
+  # changesets step is skipped or publishes nothing this output resolves to the
+  # empty string; `'' == 'true'` is false, so the job correctly does not run. The
+  # empty-string trap bites the NEGATED `!= 'true'` form, not this one. (The
+  # skipped case used to be a `deploy_only` dispatch; that input is retired, but
+  # a deployment-only release reaches the same state — it publishes nothing
+  # because the package is `private: true`.)
   docker-publish:
     needs: release
     if: needs.release.outputs.published == 'true'
