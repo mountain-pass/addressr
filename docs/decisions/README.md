@@ -214,15 +214,15 @@ _40 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-045 — Changesets-armed release-PR merge as the production deploy entry point
 
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-001's `deploy_only` entry point
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** ADR-001's `deploy_only` entry point
 **Decides:** A production infrastructure apply is armed by a committed changeset for `apps/addressr-deployment` — merging the release PR is the apply — instead of a `workflow_dispatch` flag that records no intent. The gate conjoins a version-VALUE comparison (structurally immune to the rename defect that retired the `deploy/**` path axis) with a changesets-consumed condition (so a hand edit arms nothing), fails closed on any indeterminable range, and leaves `resolve-version.sh`'s registry read untouched.
 **Confirmation:** Gate pinned at all three sites (Deploy, Wait, Smoke); value-not-path proved and `deploy-paths` absent from `release.yml`; fail-closed proved for rename, all-zeros before, unreachable parent, non-push event; cascade mutation-proved (`updateInternalDependencies: "patch"`, exact pin, not ignored, `private: true`); changeset guard as pre-push hook plus CI leg, blocking only when nothing pending will bump `apps/addressr-deployment`, with a `Deploy-Guard-Bypass:` trailer and a sequencing constraint that it land after the gate repoint; first real apply routed through this path behind a plan read.
 **Related:** ADR-001, ADR-007, ADR-040
 
 ### ADR-046 — Packages are distributable, apps are deployed
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** `packages/*` holds distributables published to a registry (`packages/addressr` is `@mountainpass/addressr`) while `apps/*` holds what we deploy or host (`apps/addressr-deployment` today, `apps/website` anticipated), because a second deployable is coming and its infrastructure target is explicitly undecided. The root `workspaces` glob `["packages/*", "apps/*"]` is load-bearing — ADR-045's arming mechanism silently stops reaching production if it ever stops matching — and the `-deployment` suffix is deliberate: that tree holds Terraform pointing at an npm package, not the application.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** `packages/*` holds distributables published to a registry (`packages/addressr` is `@mountainpass/addressr`) and `apps/*` holds what we deploy or host (`apps/addressr-deployment` today, `apps/website` anticipated), because a second deployable is coming and its infrastructure target is explicitly undecided. The root `workspaces` glob `["packages/*", "apps/*"]` is load-bearing — ADR-045's arming mechanism silently stops reaching production if it ever stops matching — and the `-deployment` suffix is deliberate: that tree holds Terraform pointing at an npm package, not the application, while a source-bearing `apps/website` will take no suffix.
 **Confirmation:** `deployment-workspace-membership.test.mjs` asserts the workspaces glob matches the deployment dir, changesets does not ignore it, it stays `private: true`, and `packages/addressr` remains the published distributable; `npx npm@10 ci` resolves the workspace under CI's exact resolver; directory name and package name agree for both workspace packages; no `packages/*` entry is private and no `apps/*` entry is publishable.
 **Related:** ADR-045, ADR-007
 

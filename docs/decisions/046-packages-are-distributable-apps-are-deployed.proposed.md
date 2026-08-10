@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-10
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-10
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent, wr-jtbd:agent, wr-risk-scorer:pipeline]
 informed: []
@@ -10,7 +11,7 @@ reassessment-date: 2026-11-10
 
 # Packages are distributable, apps are deployed
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context and RATIFIED by the decision-maker on 2026-08-10 at the /wr-architect:review-decisions drain. What the user decided directly, and what was derived, is recorded in the commit that wrote the marker.
 
 ## Context and Problem Statement
 
