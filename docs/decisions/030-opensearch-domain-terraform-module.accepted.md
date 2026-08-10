@@ -93,16 +93,42 @@ The root `deploy/main.tf` calls the module once per domain. ADR 029 Phase 1 adds
 
 ## Confirmation
 
+> **REPOINTED 2026-08-10 — these criteria were UNSATISFIABLE as written, in two
+> independent ways.**
+>
+> **Path drift.** They named `deploy/`, a directory that stopped existing at
+> commit `bf106786` and moved again the same day at `2f729d1b`. A reviewer
+> following criterion 1 literally would have found no file and could reasonably
+> have concluded the module was never built. The tree is now
+> `apps/addressr-deployment/` per the packages-are-distributable /
+> apps-are-deployed layout rule (ADR-046, ratified 2026-08-10).
+>
+> **Subject drift, which a path-only repoint would have LAUNDERED.** Criteria 3
+> and 5 named `module.opensearch_v2`. That caller does not exist and has not for
+> months: `apps/addressr-deployment/main.tf:785` declares `module "opensearch_v4"`,
+> and line 179 sources `ELASTIC_HOST` from `module.opensearch_v4.endpoint`. The
+> v3 generation and its siblings were destroyed over two applies on 2026-08-02,
+> leaving v4 the sole search domain. Repointing only the paths would have produced
+> criteria that looked freshly maintained and dated, and were still unsatisfiable
+> — the exact failure this note exists to prevent.
+>
+> **The criteria themselves are unchanged in substance.** Only the paths and the
+> module generation move. Recorded rather than silently rewritten because this
+> ADR is accepted and shipped; an unsatisfiable criterion is worse than none,
+> which is why this is a repoint rather than a deletion. The generation history
+> (v2 as the ADR-029 Phase-1 candidate → v3 → v4) is retained above and below
+> rather than erased.
+
 Mechanically checkable:
 
-- `deploy/modules/opensearch/main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist before any production cutover under ADR 029.
-- `deploy/main.tf` consumes the module via at least one `module "opensearch_..." {}` block referencing `./modules/opensearch`. Ad-hoc `aws_opensearch_domain` resources in `deploy/main.tf` (outside the module) constitute a confirmation violation.
+- `apps/addressr-deployment/modules/opensearch/main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist before any production cutover under ADR 029.
+- `apps/addressr-deployment/main.tf` consumes the module via at least one `module "opensearch_..." {}` block referencing `./modules/opensearch`. Ad-hoc `aws_opensearch_domain` resources in `apps/addressr-deployment/main.tf` (outside the module) constitute a confirmation violation.
 
   > **Amendment 2026-05-14** — during a post-rollback / pre-re-attempt window the module may be retained without a caller. Specifically: ADR 029 Phase 1 was rolled back 2026-05-14 after the `search-addressr4` cluster's blue/green resize stuck mid-stage-4 (3rd observation of the FGAC clobber pattern in P036). The `./modules/opensearch` module is intentionally retained without a caller during this window — re-introducing a caller is a one-line change when a future Phase 1 re-attempt fires (per ADR 029 Reassessment Criteria) or when a locality/postcode secondary-index decision lands. Treat this state as expected, not as drift; not a confirmation violation. Ad-hoc `aws_opensearch_domain` resources remain a violation regardless of caller state.
 
-- `terraform state list` (run against the workspace post-apply) includes `module.opensearch_v2.aws_opensearch_domain.*` for `search-addressr4-…`.
-- `terraform plan` shows zero changes to `search-addressr3-…` throughout Phase 1 (the un-IaC'd domain must remain untouched by Terraform).
-- `ELASTIC_HOST` in `deploy/main.tf` is sourced from a module output (`module.opensearch_v2.endpoint`) once the application is pointing at the new domain.
+- `terraform state list` (run against the workspace post-apply) includes `module.opensearch_v4.aws_opensearch_domain.*`. _Named `module.opensearch_v2` until 2026-08-10; the domain name resolves from `var.elastic_v4_name` rather than being the literal `search-addressr4-…` this criterion previously hardcoded, so it is stated as the module address only._
+- `terraform plan` shows zero changes to `search-addressr3-…` throughout Phase 1 (the un-IaC'd domain must remain untouched by Terraform). _Historical: this criterion belongs to ADR-029 Phase 1 and is spent — the v3 generation was destroyed over two applies on 2026-08-02. Retained as the dated record of what Phase 1 required, not as a live check._
+- `ELASTIC_HOST` in `apps/addressr-deployment/main.tf` is sourced from a module output (`module.opensearch_v4.endpoint`) once the application is pointing at the new domain. Live and holding — `main.tf:179`.
 
 Narrative:
 

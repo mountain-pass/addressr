@@ -126,16 +126,26 @@ The asymmetry vs. ADR 030's OpenSearch module (no sibling source directory) is d
 
 ## Confirmation
 
+> **PATHS REPOINTED 2026-08-10**, and **one criterion re-labelled as a dark
+> instrument.** The paths below named `deploy/`, which stopped existing at commit
+> `bf106786` and moved again the same day at `2f729d1b`; they are now
+> `apps/addressr-deployment/` per ADR-046 (ratified 2026-08-10). The amendment
+> dated 2026-05-25 further up this file still names `deploy/` and is left as
+> written — it is dated history, and its scope is not this section.
+
 Mechanically checkable:
 
-- `deploy/cloudflare-worker/worker.js`, `ip-matcher.mjs`, and `safe-ips.mjs` exist and `worker.js` imports the matcher and safe-list as ES modules.
-- `deploy/modules/cloudflare-worker/main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist; root `deploy/main.tf` consumes the module via a `module "cloudflare_worker" {}` block. Ad-hoc `cloudflare_workers_*` resources in `deploy/main.tf` (outside the module) constitute a confirmation violation, mirroring the ADR 030 line 93 pattern.
-- `node --test test/js/__tests__/cloudflare-worker-ip-matcher.test.mjs` passes — at minimum, all 37 assertions pinning the CIDR-match behaviour (v4 + v6 + cross-family + malformed-input) succeed.
-- `node --test deploy/cloudflare-worker/worker.test.js` passes — at minimum the module loads and a `RAPIDAPI_KEY`-missing fetch returns Response 500 with body `RAPIDAPI_KEY not configured` (JTBD-200 line 25 partial-configuration-fails-loud requirement).
+- `apps/addressr-deployment/cloudflare-worker/worker.js`, `ip-matcher.mjs`, and `safe-ips.mjs` exist and `worker.js` imports the matcher and safe-list as ES modules.
+- `apps/addressr-deployment/modules/cloudflare-worker/main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist; root `apps/addressr-deployment/main.tf` consumes the module via a `module "cloudflare_worker" {}` block. Ad-hoc `cloudflare_workers_*` resources in `apps/addressr-deployment/main.tf` (outside the module) constitute a confirmation violation, mirroring the ADR 030 line 93 pattern.
+- `node --test test/js/__tests__/cloudflare-worker-ip-matcher.test.mjs` passes — at minimum, all 37 assertions pinning the CIDR-match behaviour (v4 + v6 + cross-family + malformed-input) succeed. **This one is live and runs in the unit tier.**
+- **THIS CRITERION HAS NEVER EXECUTED. Do not read the repointed path as evidence it now does.** `node --test apps/addressr-deployment/cloudflare-worker/worker.test.js` — at minimum the module loads and a `RAPIDAPI_KEY`-missing fetch returns Response 500 with body `RAPIDAPI_KEY not configured` (JTBD-200 line 25 partial-configuration-fails-loud requirement). The file exists, but **no runner globs it**: `test:js` matches `test/js/__tests__/*.test.mjs` only, and none of `test:precommit`, `test:mcp:smoke` or `test:integration:search` reach it either. So the assertion this criterion names has never run, in any tier, on any commit.
+
+  _Labelled 2026-08-10 rather than silently repointed. Correcting the path alone would have laundered a never-executed criterion into a fresh-looking one — the same failure this file's sibling ADR-030 note records. The criterion is NOT struck, because it encodes JTBD-200's partial-configuration-fails-loud requirement and nothing else asserts it; striking it would lose the requirement along with the dead instrument. Wiring it into a tier is a behaviour change (a new tier or a widened glob, plus whatever the worker's assertion does under a runner that has never run it) and belongs with the P084 worker lint work, not with a path repoint. Same orphaned-instrument shape the compendium already records for ADR-025's `service/address-service.test.js`._
+
 - `terraform state list` (post-apply against the production workspace) includes `module.cloudflare_worker.cloudflare_workers_script.proxy` and `module.cloudflare_worker.cloudflare_workers_route.api_addressr_io`.
 - `terraform plan` shows zero changes to the worker after the initial `terraform import` no-op (confirms the imported state matches the dashboard source of record at cutover time).
 - `.github/workflows/release.yml` Deploy step env block declares `TF_VAR_cloudflare_api_token`, `TF_VAR_cloudflare_account_id`, `TF_VAR_cloudflare_zone_id`, and `TF_VAR_cloudflare_rapidapi_key` and passes them through to the devcontainer's env.
-- The release.yml smoke probes at lines 230-246 (worker Referer-accept → 200; worker no-Referer → "no-origin not permitted" body) continue to pass after the migration. The 401 body shape is load-bearing — `worker.js` preserves it for the probe assertion.
+- The `release.yml` smoke probes (worker Referer-accept → 200; worker no-Referer → `no-origin not permitted` body) continue to pass after the migration. The 401 body shape is load-bearing — `worker.js` preserves it for the probe assertion. **Locate them with `grep -n "no-origin not permitted" .github/workflows/release.yml`.** _Anchored on the string rather than on line numbers as of 2026-08-10: this criterion cited "lines 230-246", which had drifted to 546 — the subject was live and passing the whole time, only the coordinates rotted. A line-number citation in a Confirmation criterion will always re-rot; a grep for a load-bearing string the criterion already names will not._
 
 Narrative:
 
