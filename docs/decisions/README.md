@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 44 (38 in-force, 6 historical)
+**Total ADRs:** 45 (39 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_38 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_39 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -211,6 +211,13 @@ _38 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** confirmed | **Supersedes:** [005-babel-transpilation]
 **Chosen:** Chosen: **native ESM, no build step**. Option 3 buys most of the benefit but leaves a permanent fidelity gap between test and production resolution, which is a strange thing to introduce in service of better tests. Option 2 cannot reach the...
 **Confirmation:** package.json contains "type": "module", no build script, and no @babel/* dependency.; .babelrc does not exist.; node --input-type=module -e "import('./src/waycharter-server.js')" resolves and returns buildRest2App.; All three Cucumber profiles passed at their pre-migration counts at the time of the migration: nodejs 37/232, ...; npm run test:js passes (341 at the time of writing — likewise an event, not a standing number).
+
+### ADR-045 — Changesets-armed release-PR merge as the production deploy entry point
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-001's `deploy_only` entry point
+**Decides:** A production infrastructure apply is armed by a committed changeset for `packages/deployment` — the release-PR merge is the apply — rather than by a `workflow_dispatch` flag or a path diff. The gate conjoins a version-VALUE comparison (structurally immune to the rename defect that retired the `deploy/**` axis) with a changesets-consumed condition (so a hand edit arms nothing), fails closed on any indeterminable range, and leaves `resolve-version.sh`'s registry read unchanged.
+**Confirmation:** Gate pinned at all three sites (Deploy, Wait, Smoke test); value-not-path detection proved and `deploy-paths` absent from `release.yml`; fail-closed proved for rename, all-zeros before, unreachable parent, non-push event; cascade pinned mutation-proved (`updateInternalDependencies: "patch"`, exact pin, not ignored, `private: true`); changeset guard as pre-push hook plus CI leg (blocking rule OPEN); first real apply routed through this path behind a plan read.
+**Related:** ADR-001, ADR-007, ADR-040
 
 ---
 
