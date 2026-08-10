@@ -13,7 +13,7 @@ screens:
   - .github/workflows/docker-image.yml
   - .github/workflows/rapidapi-listing-sync.yml
   - .github/workflows/update-*.yml
-  - 'packages/deployment/** (Terraform infra source; was deploy/** until commit bf106786 moved it. AMENDED 2026-08-10: the ADR-040 push axis and its .terraform.lock.hcl exclusion are BOTH retired — a change here no longer triggers anything by path, so there is no pathspec left to exclude from. Worker auth behaviour under packages/deployment/cloudflare-worker/ is JTBD-200 — this job owns the deploy mechanism only)'
+  - 'apps/addressr-deployment/** (Terraform infra source. MOVED TWICE ON 2026-08-10: deploy/** -> packages/deployment/** at commit bf106786, then -> apps/addressr-deployment/** per ADR-046, which splits packages/* (distributable) from apps/* (deployed). AMENDED 2026-08-10: the ADR-040 push axis and its .terraform.lock.hcl exclusion are BOTH retired — a change here no longer triggers anything by path, so there is no pathspec left to exclude from. Worker auth behaviour under apps/addressr-deployment/cloudflare-worker/ is JTBD-200 — this job owns the deploy mechanism only)'
   - 'package.json (release surface only — version, changesets config, build:docker / docker:push scripts, and the deploy:* scripts including the read-only deploy:plan; the dependency block serves the runtime jobs)'
   - scripts/release-watch.sh
   - scripts/push-and-watch.sh

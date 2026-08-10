@@ -67,17 +67,21 @@ const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
  */
 const fakeTree = (version = '3.1.0', name = '@mountainpass/addressr') => {
   const root = mkdtempSync(path.join(tmpdir(), 'addressr-resolve-'));
-  mkdirSync(path.join(root, 'packages', 'deployment'), { recursive: true });
+  // Mirrors the REAL layout: the deploy tree under apps/, the published
+  // manifest under packages/. Collapsing them into one parent would make the
+  // `../../packages/addressr` hop resolve by accident and the test would pass
+  // while production broke — the defect this file's header was written about.
+  mkdirSync(path.join(root, 'apps', 'addressr-deployment'), { recursive: true });
   mkdirSync(path.join(root, 'packages', 'addressr'), { recursive: true });
   writeFileSync(
     path.join(root, 'packages', 'addressr', 'package.json'),
     JSON.stringify({ name, version }),
   );
-  const destination = path.join(root, 'packages', 'deployment', 'resolve-version.sh');
+  const destination = path.join(root, 'apps', 'addressr-deployment', 'resolve-version.sh');
   writeFileSync(
     destination,
     readFileSync(
-      path.join(repoRoot, 'packages', 'deployment', 'resolve-version.sh'),
+      path.join(repoRoot, 'apps', 'addressr-deployment', 'resolve-version.sh'),
       'utf8',
     ),
   );
@@ -230,7 +234,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
 
     execFileSync('sh', [
       '-c',
-      `mkdir -p "${work}/packages" && cp -R "${path.join(repoRoot, 'packages', 'deployment')}" "${work}/packages/deployment"`,
+      `mkdir -p "${work}/packages" "${work}/apps" && cp -R "${path.join(repoRoot, 'apps', 'addressr-deployment')}" "${work}/apps/addressr-deployment"`,
     ]);
     // Seed a stale artefact into the bundle directory. deploy.sh must clear it:
     // `zip` UPDATES an existing archive rather than replacing it, and the
@@ -238,10 +242,10 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
     // anything surviving here would ship invisibly under a correct-looking hash.
     execFileSync('sh', [
       '-c',
-      `mkdir -p "${work}/packages/deployment/deployment" && echo stale > "${work}/packages/deployment/deployment/LEFTOVER"`,
+      `mkdir -p "${work}/apps/addressr-deployment/deployment" && echo stale > "${work}/apps/addressr-deployment/deployment/LEFTOVER"`,
     ]);
     try {
-      execFileSync('sh', [path.join(work, 'packages', 'deployment', 'deploy.sh'), 'plan'], {
+      execFileSync('sh', [path.join(work, 'apps', 'addressr-deployment', 'deploy.sh'), 'plan'], {
         env: {
           PATH: `${stub}:${process.env.PATH}`,
           // Deliberately NOT set — see the manifest written above.
@@ -255,7 +259,7 @@ describe('deploy.sh applies the resolved version at EVERY site (P095)', () => {
       // The script may exit non-zero once past the artefact-writing stage.
     }
     return {
-      deployDir: path.join(work, 'packages', 'deployment'),
+      deployDir: path.join(work, 'apps', 'addressr-deployment'),
       capture,
     };
   };

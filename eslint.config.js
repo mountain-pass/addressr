@@ -177,10 +177,71 @@ export default [
     },
   },
   {
-    // Deploy scripts — deps installed in deployment context, not dev
-    files: ['deploy/**'],
+    // Cloudflare Worker sources. NAME-anchored on the directory basename, not
+    // on a repo path, and that is load-bearing: this tree moved twice on
+    // 2026-08-10 (deploy/ -> packages/deployment -> apps/addressr-deployment).
+    // A path-anchored block would go silent on the third move with no error and
+    // no diff — the failure that killed the `deploy/**` block below and the
+    // n/hashbang exemption whose death stripped a shebang and reddened every CI
+    // job (5327a929).
+    files: ['**/cloudflare-worker/**'],
     rules: {
-      'n/no-missing-require': 'off',
+      // NARROWED, not disabled, mirroring the `{ ignores: ['fetch'] }` form
+      // already used above — the rest of the rule stays live here.
+      //
+      // PERMANENT, because the rule is wrong for this file set rather than
+      // deferred debt: `Response`, `Request` and `Headers` are Cloudflare
+      // Workers RUNTIME GLOBALS. This code never executes on Node, so flagging
+      // them against the `>=16.0.0` engines range is a false positive by
+      // construction, not a version-support gap that will age out.
+      //
+      // `test`, `test.describe` and `test.it` are a DIFFERENT case in the same
+      // list: they are real node:test usage in worker.test.js, flagged only
+      // because the engines floor is 16 while the suite runs on 22+. Kept here
+      // rather than fixed because worker.test.js is currently ORPHANED — no
+      // runner globs it (`test:js` matches test/js/__tests__/*.test.mjs only),
+      // so its assertions have never executed. Wiring it up is the real fix and
+      // belongs with ADR-032's confirmation criterion 4, not in a rename commit.
+      'n/no-unsupported-features/node-builtins': [
+        'error',
+        {
+          ignores: [
+            // `fetch` is carried over from the repo-wide narrowing above. It is
+            // NOT redundant: a later flat-config block replaces the rule options
+            // for its matched files rather than merging with them, so omitting
+            // it here re-enables the error for the worker only — which is how
+            // this list was first found one entry short.
+            'fetch',
+            'Response',
+            'Request',
+            'Headers',
+            'test',
+            'test.describe',
+            'test.it',
+          ],
+        },
+      ],
+      // DEFERRED, not wrong — flagged separately from the above on purpose, so
+      // a permanent exemption and a sequencing deferral are not indistinguishable
+      // in this file. `new Request(url.toString(), …)` at worker.js:65 would
+      // become `url.href`, which is behaviour-identical for a URL. It is not
+      // changed here because this is a directory-rename commit and the file sits
+      // on the ADR-018 / ADR-024 origin-auth boundary; it goes with the commit
+      // that wires up worker.test.js. Tracked under P084.
+      'unicorn/prefer-url-href': 'off',
     },
   },
+
+  // REMOVED 2026-08-10: a `files: ['deploy/**']` block turning off
+  // `n/no-missing-require`. `deploy/` stopped existing at bf106786, so the block
+  // had been dead for a day — the second path-anchored config entry to go silent
+  // in that commit, alongside the `n/hashbang` exemption whose death stripped a
+  // shebang and reddened every CI job (fixed at 5327a929 by name-anchoring).
+  // This one was quieter only because `n/no-missing-require` going live emits a
+  // lint error rather than an autofix that mutates a file.
+  //
+  // Deleted rather than repointed at apps/addressr-deployment/**. The tree is
+  // native ESM (ADR-044) and carries no `require(` call, so the exemption is
+  // inert; repointing it would restore a rule that reads as protection, protects
+  // nothing, and acquires a fresh expiry date at the next move.
 ];

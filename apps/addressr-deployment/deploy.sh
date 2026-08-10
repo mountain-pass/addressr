@@ -19,7 +19,15 @@ deploy_version=$(./resolve-version.sh) || exit 1
 # Same workspace-split fix as resolve-version.sh: npm_package_name is now the
 # PRIVATE workspace root, so the manifest below would have pinned
 # "addressr-workspace" — a package that does not exist on the registry.
-deploy_pkg=$(node -e "console.log(require(require('path').resolve('../addressr/package.json')).name)") || exit 1
+# Line 3 already cd'd into this script's own directory, so this resolves from
+# apps/addressr-deployment/. REPOINTED 2026-08-10 with the move OUT of the
+# packages/ tree: `../addressr` used to be a sibling lookup and became
+# apps/addressr, which does not exist. The published manifest stays under
+# packages/ (distributable) while this tree is under apps/ (deployed) — ADR-046.
+# NOTE this line carried no directory literal at all, so the path grep that
+# found the other 30 references could not see it. Caught by review, then proved
+# by deploy-version-resolution.test.mjs going red against the real layout.
+deploy_pkg=$(node -e "console.log(require(require('path').resolve('../../packages/addressr/package.json')).name)") || exit 1
 : "${deploy_pkg:?could not read the published package name}"
 
 tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
@@ -76,7 +84,7 @@ EOM
 # from the repo root (this script has cd'd into deploy/) so the npm script's
 # relative paths resolve. The bundle is gitignored — derived fresh each run
 # from the same source the unit tests import, so it cannot drift.
-# `cd ../..`, not `cd ..`. This script lives at packages/deployment/ since
+# `cd ../..`, not `cd ..`. This script lives at apps/addressr-deployment/ since
 # 2026-08-10 and has already cd'd into its own directory above, so one level
 # up is `packages/` -- which has no package.json and no npm scripts. Two is
 # the workspace root, where build:worker is declared.

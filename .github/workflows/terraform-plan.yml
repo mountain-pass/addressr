@@ -131,8 +131,8 @@ jobs:
       - name: Refuse to run against a ref whose deploy.sh would apply
         run: |
           set -euo pipefail
-          if ! grep -q 'PLAN_ONLY' packages/deployment/deploy.sh; then
-            echo "::error::This ref's packages/deployment/deploy.sh has no PLAN_ONLY branch."
+          if ! grep -q 'PLAN_ONLY' apps/addressr-deployment/deploy.sh; then
+            echo "::error::This ref's apps/addressr-deployment/deploy.sh has no PLAN_ONLY branch."
             echo "::error::Running it would TERRAFORM APPLY to production, not plan."
             exit 1
           fi
@@ -181,11 +181,11 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          test -f packages/deployment/tfplan.json || { echo "::error::no plan JSON produced"; exit 1; }
+          test -f apps/addressr-deployment/tfplan.json || { echo "::error::no plan JSON produced"; exit 1; }
           jq '[.resource_changes[]?
                | select(.change.actions | any(. == "create" or . == "update" or . == "delete"))
                | {address, actions: .change.actions}]' \
-            packages/deployment/tfplan.json > "$RUNNER_TEMP/plan-summary.json"
+            apps/addressr-deployment/tfplan.json > "$RUNNER_TEMP/plan-summary.json"
           echo "--- resources this plan would change ---"
           jq -r '.[] | "\(.actions | join(",")) \(.address)"' "$RUNNER_TEMP/plan-summary.json"
 

@@ -65,8 +65,15 @@ set -u
 # `version` field at all. So the env vars resolved to the wrong name and to
 # nothing. Read the published manifest directly and keep the fail-closed `:?`.
 # Resolved relative to THIS SCRIPT, not cwd, so it survives being invoked from
-# anywhere; revisit if this script itself moves.
-_manifest="$(dirname "$0")/../addressr/package.json"
+# anywhere. The "revisit if this script itself moves" note this comment used to
+# carry was the right warning and it fired: the script moved OUT of the
+# packages/ tree and into apps/addressr-deployment/ on 2026-08-10, at which
+# point `../addressr` resolved to apps/addressr, which does not exist. The
+# published manifest did NOT move — it stays at packages/addressr, because
+# packages/* is distributable and apps/* is deployed (ADR-046). So the hop is
+# now up TWO levels and back down into packages/, and it is no longer a
+# sibling lookup that a future move would silently preserve.
+_manifest="$(dirname "$0")/../../packages/addressr/package.json"
 pkg="$(node -e "console.log(require(require('path').resolve('$_manifest')).name)" 2>/dev/null)"
 : "${pkg:?could not read the published package name from $_manifest}"
 

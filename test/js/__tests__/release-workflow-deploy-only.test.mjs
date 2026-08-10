@@ -282,7 +282,7 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // WHY THE AXIS WENT, recorded here because the diff alone does not say it:
     // release.yml's detection step diffed `-- deploy/`, and a rename OUT of
     // deploy/ shows as deletions under deploy/. So the commit that moves the
-    // tree into packages/deployment/ would itself have set changed=true and
+    // tree into apps/addressr-deployment/ would itself have set changed=true and
     // fired a push-tier production apply as a rider on a refactor. Verified by
     // replaying the predicate against a real `git mv`, not reasoned about.
     const expressions = Object.values(release.jobs).flatMap((job) => [

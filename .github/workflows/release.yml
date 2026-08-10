@@ -244,7 +244,7 @@ jobs:
       # terms; the P095 remediation did not fail. What retires the axis is a
       # different fact: the predicate diffed a PATH, and a rename OUT of
       # `deploy/` shows as deletions under `deploy/`. Moving the tree into
-      # `packages/deployment/` would therefore have set changed=true and applied
+      # `apps/addressr-deployment/` would therefore have set changed=true and applied
       # Terraform to production as a rider on a pure refactor. Verified by
       # replaying this exact predicate against a real `git mv`, not reasoned
       # about. ADR-044 hit the same shape and held
@@ -254,9 +254,9 @@ jobs:
       # PR: an infra change carries a changeset for the deployment package, and
       # merging that PR is the apply.
       #
-      # NOT TRUE YET, as of Phase 2 (2026-08-10). `packages/deployment` exists
+      # NOT TRUE YET, as of Phase 2 (2026-08-10). `apps/addressr-deployment` exists
       # and takes changesets, but this gate still keys on `published` and
-      # `deploy_only`. `packages/deployment` is `private: true`, so
+      # `deploy_only`. `apps/addressr-deployment` is `private: true`, so
       # `changeset publish` skips it and `published` stays false — meaning a
       # release PR carrying ONLY a deployment-package changeset versions the
       # package, publishes nothing, and SKIPS Deploy, Stabilise and Smoke, on a
