@@ -47,7 +47,12 @@ const git = (cwd, ...args) =>
 /** Run the detector in `cwd`; return { stdout, status }. */
 const detect = (cwd, before_) => {
   try {
-    const stdout = execFileSync('sh', [SCRIPT, before_ ?? ''], {
+    // Invoked DIRECTLY, not via `sh SCRIPT`, so a lost exec bit fails these
+    // cases. Both call sites — release.yml and release-watch.sh — run it as a
+    // bare path, which needs mode 100755; going through `sh` would pass
+    // regardless and mask the loss. This repo lost a shebang to `eslint --fix`
+    // once already.
+    const stdout = execFileSync(SCRIPT, [before_ ?? ''], {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

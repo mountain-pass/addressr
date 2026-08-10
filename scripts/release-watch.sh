@@ -409,8 +409,15 @@ fi
 # non-zero (pinned in its own test), so a non-zero exit is unambiguously "the
 # detector broke" — collapsing that into `changed=false` would report the
 # guard's pass value on a broken guard.
-ARMED=$(scripts/detect-deployment-bump.sh "$MERGED_PARENT" "$MERGED" 2>/dev/null)
-DETECT_STATUS=$?
+# `&& ... || ...` rather than a bare assignment, and it is load-bearing under
+# `set -e`. An assignment IS a simple command, so a non-zero command
+# substitution trips `set -e` immediately — the status capture and the
+# diagnostic below would be UNREACHABLE, and the script would exit with a bare
+# non-zero code at the worst possible moment (after the publish and the apply).
+# Fail-closed, but mute, which is not what the header above claims. This is the
+# same idiom this script already uses for `gh run watch`. The detector's own
+# stderr is deliberately NOT discarded here: it names the reason.
+ARMED=$(scripts/detect-deployment-bump.sh "$MERGED_PARENT" "$MERGED") && DETECT_STATUS=0 || DETECT_STATUS=$?
 if [ "$DETECT_STATUS" -ne 0 ]; then
   echo "The deployment-bump detector exited ${DETECT_STATUS}; it is designed never to." >&2
   echo "Cannot tell whether this release should have deployed. Verify by hand: $RUN_URL" >&2
