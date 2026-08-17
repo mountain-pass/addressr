@@ -1,0 +1,304 @@
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+#
+# Terraform plan on the changesets release PR, so the change's author can SEE
+# what merging would do to production BEFORE merging it.
+#
+# User-directed: "add a terraform plan to the CICD pipeline that occurs as part
+# of a release PR, that way you can see what it's planning to do to production
+# before we do the merge. The caveat being that it's a point in time check."
+#
+# WHY IT MATTERS NOW. ADR-045 made merging a release PR that bumps
+# `apps/addressr-deployment` the thing that applies Terraform to production.
+# `deploy_only` is deleted. `terraform-plan.yml` survives as a manual dispatch,
+# but it is not on the release-PR path — so without this, nothing on the live
+# path shows a plan.
+#
+# ADVISORY, NOT BLOCKING — deliberately, and it must be said rather than left for
+# a green tick to imply. `deploy.sh` exits 0 on `-detailed-exitcode` 2 and fails
+# only on 1, so this job is green whatever the plan contains. A HUMAN MUST READ
+# THE COMMENT. "The plan ran green" does not mean "the plan is fine" — that is
+# exactly the misreading R020 records about the four `deploy_only` dispatches
+# that skipped every step and concluded green.
+#
+# Advisory is also the REQUIRED shape, not a concession. The addressr-maintainer
+# persona holds that the release PR "is NOT an approval gate… Self-verification,
+# not sign-off." A blocking plan would convert it into one and contradict a
+# ratified constraint. The compensating control the persona names is VISIBILITY
+# before apply, which the comment supplies — not approval.
+#
+# POINT IN TIME, per the user's own caveat. `changeset-release/master` is
+# force-pushed on every push to master, so a plan describes the head SHA it ran
+# against and nothing later. That SHA is recorded IN the comment, so a stale
+# comment is legible as stale rather than silently trusted.
+#
+# IT DOES NOT PREDICT THE DEPLOYED VERSION, by user decision this date.
+# `release.yml` sets `ADDRESSR_DEPLOY_JUST_PUBLISHED` from whether the merge
+# actually published, which cannot be known before the merge. This job therefore
+# does NOT set it, so `resolve-version.sh` takes its registry path.
+#
+# Note what that costs and what it does not. On the INFRA-ONLY disjunct — the
+# case this workflow exists for — the apply ALSO resolves from the registry
+# (`published` is false because the deployment package is private), so the plan
+# runs under exactly the same version input as the apply. The fidelity loss is
+# confined to the publish disjunct, where the apply ships the workspace version;
+# there the version-derived resources (S3 key, EB application-version label,
+# manifest `source_hash`) describe the currently-published version instead. The
+# comment says so. Modelling the publish predicate was considered and rejected:
+# it would add a SECOND implementation of a deploy-relevant predicate, and a plan
+# confidently wrong about the version reads as authoritative.
+#
+# ON THE FORK GUARD — load-bearing, not defensive. A fork PR gets no secrets, so
+# every `TF_VAR_*` resolves empty, `main.tf`'s precondition passes on the empty
+# proxy-auth pair, and the plan renders as TEARING DOWN the ADR-024 origin
+# gateway boundary — from a green run. A fork can also name its branch
+# `changeset-release/master`, so `head_ref` alone does not separate them.
+#
+# THIS REVERSES A POSITION HELD IN `terraform-plan.yml`, which is asserted
+# dispatch-only — "never push or pull_request" — on exactly the reasoning above.
+# That reasoning is sound and this workflow does not overturn it: it satisfies it
+# by a different means, because a job whose `if:` is false never starts and so
+# never receives secrets. Two plan surfaces, two answers, recorded here so the
+# pair is not read as an accident.
+name: Release PR plan
+
+on:
+  pull_request:
+    branches: [master]
+
+# A PER-PR GROUP, NOT release.yml's. An earlier draft shared
+# `Release-refs/heads/master` to stop a plan racing an apply. That reasoning was
+# half right and the missing half is dangerous.
+#
+# It is true that release.yml sets no cancel-in-progress, so a plan entering the
+# group QUEUES rather than cancelling an in-flight apply. But GitHub also cancels
+# any previously PENDING run in a group when a newer one enters it — and that
+# turns the shared group into a silent-skipped-apply path:
+#
+#   1. a plan run holds the group (checkout + npm ci + devcontainer + refresh
+#      plan is multi-minute, and it re-enters on every push to the release PR)
+#   2. the release PR merges; its release.yml run queues behind the plan
+#   3. any further push to master enters the group and CANCELS that queued run
+#   4. the replacement run sees the deployment version unchanged since the
+#      cancelled run, so the detector says changed=false, Deploy/Wait/Smoke skip,
+#      and P044 passes because it reads packages/addressr — which a
+#      deployment-only changeset never bumps
+#
+#   => a merged infrastructure release applies NOTHING, on a green master, with
+#      no signal anywhere. Precisely the class this workflow exists to remove,
+#      introduced by this workflow.
+#
+# The real serialiser was never the group. `terraform-plan.yml` already records
+# it: local execution takes the TFC workspace lock, so "a plan racing an apply
+# fails on a locked workspace and would be meaningless anyway". Relying on the
+# lock converts the race from a silently-cancelled apply into a LOUD failed
+# plan, which the `if: always()` comment below already narrates as "this plan did
+# not complete". Trading a silent green for a red is the direction ADR-045
+# exists to enforce.
+concurrency: release-pr-plan-${{ github.event.pull_request.number }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    # BOTH conjuncts required; the second is not redundant with the first. See
+    # the fork-guard note in the header.
+    if: >-
+      github.head_ref == 'changeset-release/master' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # NOT the default depth 1. `detect-deployment-bump.sh` resolves both
+          # refs by SHA; under depth 1 the base ref is unreachable, the script
+          # denies, and this job would report "no apply armed" on EVERY release
+          # PR — silently, and in the direction of under-warning.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npx npm@10 ci
+
+      # FAIL-CLOSED PRECONDITION, carried over from terraform-plan.yml with its
+      # reason. `npm run deploy:plan` sets PLAN_ONLY=1, but that only means
+      # anything if the CHECKED-OUT ref's deploy.sh honours it. On a ref without
+      # the branch the variable is unread and control falls through to
+      # `terraform apply -auto-approve` — this workflow would APPLY to production
+      # while calling itself read-only. It runs against a PR head, which is an
+      # arbitrary ref, so this is not theoretical.
+      - name: Refuse to run against a ref whose deploy.sh would apply
+        run: |
+          set -euo pipefail
+          if ! grep -q 'PLAN_ONLY' apps/addressr-deployment/deploy.sh; then
+            echo "::error::This ref's apps/addressr-deployment/deploy.sh has no PLAN_ONLY branch."
+            echo "::error::Running it would TERRAFORM APPLY to production, not plan."
+            exit 1
+          fi
+          echo "OK — this ref's deploy.sh honours PLAN_ONLY."
+
+      # Reuses the SAME predicate the deploy gate uses. A lookalike would drift
+      # from the gate, and the drift would be invisible until an apply silently
+      # did or did not happen. If this reports `changed=false` on a release PR
+      # that is a LIVE signal the changesets cascade broke — the failure ADR-045
+      # accepts as possible, surfaced at runtime rather than only in tests.
+      - name: Will merging this arm a production apply?
+        id: arms
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: scripts/detect-deployment-bump.sh "$BASE" HEAD >> "$GITHUB_OUTPUT"
+
+      # Mirrors release.yml's Deploy step — same devcontainer, same var set, same
+      # TFC token. A plan run under different inputs than the apply answers a
+      # different question and would be worse than no plan. Pinned in
+      # test/js/__tests__/release-pr-plan-workflow.test.mjs by comparing parsed
+      # step envs against release.yml's Deploy step, so the two cannot drift.
+      #
+      # ADDRESSR_DEPLOY_JUST_PUBLISHED is DELIBERATELY ABSENT — see the header.
+      # TF_WORKSPACE=prod is required: deploy.sh hard-refuses PLAN_ONLY without an
+      # explicit workspace, because the fallback derives it from
+      # npm_lifecycle_event and would target a workspace that does not exist.
+      - name: Terraform plan (no apply)
+        uses: devcontainers/ci@v0.3
+        env:
+          TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
+          TF_VAR_aws_access_key: ${{ secrets.TF_VAR_aws_access_key }}
+          TF_VAR_proxy_auth_header: ${{ secrets.TF_VAR_proxy_auth_header }}
+          TF_VAR_proxy_auth_value: ${{ secrets.TF_VAR_proxy_auth_value }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.TF_VAR_cloudflare_api_token }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.TF_VAR_cloudflare_account_id }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.TF_VAR_cloudflare_zone_id }}
+          TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
+        with:
+          runCmd: |
+            npm run deploy:plan
+          env: |
+            TF_IN_AUTOMATION=1
+            TF_WORKSPACE=prod
+            TF_VAR_elasticapp=mountainpass-addressr
+            TF_VAR_aws_secret_key
+            TF_VAR_aws_access_key
+            TF_VAR_proxy_auth_header
+            TF_VAR_proxy_auth_value
+            TF_VAR_cloudflare_api_token
+            TF_VAR_cloudflare_account_id
+            TF_VAR_cloudflare_zone_id
+            TF_VAR_cloudflare_rapidapi_key
+            TF_TOKEN_app_terraform_io
+
+      # WHITELIST projection, never a redaction of the full document.
+      # `terraform show -json` emits every root variable value in CLEARTEXT —
+      # `sensitive = true` flags but does not redact — so the raw plan JSON must
+      # never leave the runner on a public repo. Address plus action verbs is
+      # exactly what "what does this touch?" needs and carries no attribute
+      # values. A whitelist cannot fail open when a new sensitive variable is
+      # added to the root module; a denylist would.
+      #
+      # `if: always()` so a failed plan still reaches the comment step with a
+      # stated absence rather than silence.
+      - name: Project the plan to addresses and actions
+        id: project
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo 'summary<<PLAN_EOF'
+            if [ ! -f apps/addressr-deployment/tfplan.json ]; then
+              echo '**No plan was produced** — the plan step did not complete.'
+            else
+              jq '[.resource_changes[]?
+                   | select(.change.actions | any(. == "create" or . == "update" or . == "delete"))
+                   | {address, actions: .change.actions}]' \
+                apps/addressr-deployment/tfplan.json > "$RUNNER_TEMP/plan-summary.json"
+              if [ "$(jq 'length' "$RUNNER_TEMP/plan-summary.json")" -eq 0 ]; then
+                echo '_No resource changes._'
+              else
+                jq -r '.[] | "- `\(.actions | join(","))` \(.address)"' \
+                  "$RUNNER_TEMP/plan-summary.json"
+              fi
+            fi
+            echo PLAN_EOF
+          } >> "$GITHUB_OUTPUT"
+
+      # Upserted on an HTML marker so repeated force-pushes replace the comment
+      # rather than burying the PR.
+      #
+      # `if: always()` is LOAD-BEARING, not tidiness. The "checkable artefacts,
+      # not memory" outcome is satisfied by a comment that EXISTS. If this job
+      # fails for an infrastructure reason — TFC workspace lock contention against
+      # an in-flight apply (the lock, NOT a shared concurrency group, is what
+      # serialises the two; see the concurrency note above), a devcontainer
+      # failure — then an absent comment is indistinguishable from "hasn't run
+      # yet", and the
+      # merge proceeds with no artefact at all. Posting the absence keeps the
+      # artefact present in both outcomes, which is what the outcome asks for.
+      - name: Upsert the plan comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const MARKER = '<!-- release-pr-plan -->';
+            const armed = ${{ toJSON(steps.arms.outputs.changed) }} === 'true';
+            const planned = ${{ toJSON(job.status) }} === 'success';
+            const body = [
+              MARKER,
+              '## Terraform plan for this release',
+              '',
+              planned
+                ? (armed
+                    ? '**Merging this PR will apply Terraform to production.**'
+                    : '**Merging this PR will NOT apply Terraform.** If you expected it to, the changesets cascade may be broken — see ADR-045.')
+                : '**This plan did not complete, so there is no verification for this merge.** Do not read the absence of findings as an absence of changes.',
+              '',
+              `Planned against the MERGE of \`${context.payload.pull_request.head.sha}\` `
+                + `into \`${context.payload.pull_request.base.sha}\`.`,
+              '',
+              '_Not the head commit alone. `actions/checkout` resolves '
+                + '`refs/pull/N/merge` on a `pull_request` event, so this plan ran '
+                + 'against the merge result — which is the correct subject for '
+                + '"what would merging do", and is also what makes the PLAN_ONLY '
+                + 'refuse-step inspect the POST-merge deploy.sh._',
+              '',
+              'This branch is force-pushed on every push to master, so this is a '
+                + 'point-in-time check — re-read it if either ref has moved.',
+              '',
+              '### Resources this would change',
+              '',
+              ${{ toJSON(steps.project.outputs.summary) }} || '_(not produced)_',
+              '',
+              '---',
+              '',
+              '_Advisory only. This check is green whatever the plan contains, so a '
+              + 'passing tick does not mean the plan is fine — read it._',
+              '',
+              '_Version-derived resources (the S3 key, the EB application-version '
+              + 'label, the manifest `source_hash`) resolve from the CURRENTLY '
+              + 'PUBLISHED version, not from whatever this merge may publish. On an '
+              + 'infra-only release that matches the apply exactly; on a publishing '
+              + 'release it does not. Deliberate — the publish outcome is unknowable '
+              + 'before the merge, and a confidently wrong version reads as '
+              + 'authoritative._',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.find((c) => c.body?.startsWith(MARKER));
+            const args = { owner: context.repo.owner, repo: context.repo.repo, body };
+            if (existing) {
+              await github.rest.issues.updateComment({ ...args, comment_id: existing.id });
+            } else {
+              await github.rest.issues.createComment({
+                ...args,
+                issue_number: context.payload.pull_request.number,
+              });
+            }
