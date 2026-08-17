@@ -189,6 +189,66 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     assert.deepStrictEqual(problems, [], problems.join('; '));
   });
 
+  it('every supersedes-clause target carries a reverse badge in the compendium', () => {
+    // WHY THIS EXISTS. A clause-level supersession — one that retires a single
+    // sentence rather than a whole ADR — cannot rename or restatus its parent,
+    // so DECISION-MANAGEMENT.md's whole-ADR mechanics (rename to .superseded.md,
+    // add a "Superseded by" note) do not apply. The only thing making the
+    // relationship legible FROM THE SUPERSEDED END is a badge field on the
+    // parent's compendium entry.
+    //
+    // That badge is a hand-edit in a file whose own header says AUTO-GENERATED,
+    // do NOT hand-edit. The generator is documented-destructive, and it runs at
+    // the review-decisions drain. So without this assertion the badge dies on
+    // the next regeneration, silently, and a reader landing on the superseded
+    // sentence has nothing pointing forward again — which is precisely the
+    // defect ADR-047's confirmation criterion 4 was written to close, and was
+    // itself false about until the badge was added.
+    //
+    // Derived from the frontmatter, not a hardcoded pair: the scalar
+    // `supersedes-clause: <NNN>#<anchor>` on the SUPERSEDING ADR is the source
+    // of truth, and it survives regeneration because the generator does not
+    // rewrite ADR files. A new clause supersession is covered the moment it
+    // declares the scalar; nothing needs updating here.
+    const compendium = read('README.md');
+    const problems = [];
+
+    for (const f of adrFiles) {
+      const clause = frontmatter(read(f), 'supersedes-clause');
+      if (!clause) continue;
+
+      const superseding = /^(\d{3})/.exec(f.replace(/^.*\//, ''))?.[1];
+      const target = /^(\d{3})/.exec(clause)?.[1];
+      if (!target) {
+        problems.push(
+          `${f}: supersedes-clause "${clause}" does not start with a 3-digit ADR id`,
+        );
+        continue;
+      }
+      if (!adrFiles.some((g) => g.replace(/^.*\//, '').startsWith(target))) {
+        problems.push(`${f}: supersedes-clause targets ADR-${target}, which has no file`);
+        continue;
+      }
+
+      const badgeLine = new RegExp(
+        String.raw`^### ADR-${target}\b[^\n]*\n+(\*\*Status:\*\*[^\n]*)$`,
+        'm',
+      ).exec(compendium);
+      if (!badgeLine) {
+        problems.push(`ADR-${target}: no compendium badge line to carry the reverse reference`);
+        continue;
+      }
+      if (!new RegExp(String.raw`Superseded in part by:\*\*[^|]*ADR-${superseding}\b`).test(badgeLine[1])) {
+        problems.push(
+          `ADR-${target}: ADR-${superseding} declares supersedes-clause "${clause}" but ADR-${target}'s badge carries no `
+            + `"**Superseded in part by:** ADR-${superseding}" — the supersession is invisible from the superseded end`,
+        );
+      }
+    }
+
+    assert.deepStrictEqual(problems, [], problems.join('; '));
+  });
+
   it('compendium count claims agree with the filesystem and with each other', () => {
     const compendium = read('README.md');
     const historical = adrFiles.filter((f) =>

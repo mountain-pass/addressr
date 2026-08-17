@@ -33,14 +33,26 @@ Help contributors trust that every commit which declares a changeset will actual
 
 ## Job Stories
 
-When I have a `deploy/**` change I intend to land, I want to run `terraform plan`
-against the real prod workspace from CI without applying it, so I can see the
-resource-change set **before the act that applies it** — the `deploy_only`
-dispatch as of 2026-08-10; previously the push itself, which is what this story
-originally said — because the root
-module's variables come from GitHub Actions secrets and cannot be supplied on an
-operator machine, which previously made pre-verification impossible rather than
-merely inconvenient.
+When I have an `apps/addressr-deployment/**` change I intend to land, I want to
+run `terraform plan` against the real prod workspace from CI without applying it,
+so I can see the resource-change set **before the act that applies it** — the
+MERGE OF THE CHANGESETS RELEASE PR as of 2026-08-17; the `deploy_only` dispatch
+before that, which is what this story said between 2026-08-10 and 2026-08-17;
+and the push itself before that, which is what it originally said — because the
+root module's variables come from GitHub Actions secrets and cannot be supplied
+on an operator machine, which previously made pre-verification impossible rather
+than merely inconvenient.
+
+**CORRECTED 2026-08-17.** This sentence named the `deploy_only` dispatch, in the
+present tense, as the act that applies — and that input was DELETED at commit
+`8199e5b9`. It is the same defect class as the ADR-045 criterion-5 conditional
+retired this date and the `terraform-plan.yml` header corrected alongside it:
+prose that instructs rather than narrates, still naming a route that no longer
+exists. Two things follow. The pre-verification surface is now
+`release-pr-plan.yml`, which plans automatically on the release PR and posts the
+projection before the merge that applies — so this story is better served than it
+was when written. And the path is repointed from `deploy/**`, which moved twice
+on 2026-08-10 and no longer exists either.
 
 Reading the changed files is not a substitute: `apply` refreshes and reconciles
 the whole root module, so an Elastic Beanstalk change can arise from drift that

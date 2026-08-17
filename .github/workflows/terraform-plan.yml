@@ -8,17 +8,36 @@
 # applies it", because such a push fired a full production apply with no
 # plan-approval gate in front of it. That axis is retired (ADR-001 and ADR-040,
 # 2026-08-10 amendments; R021 retired), so there is no longer a push to get ahead
-# of. What this pre-verifies now is a `deploy_only` dispatch.
+# of.
 #
-# THAT MAKES IT MORE LOAD-BEARING, NOT LESS, and the point is easy to get
-# backwards. With R021 retired this is the ONLY plan review left on any path to
-# production: the two surviving entry points are a release-PR merge and a
-# `deploy_only` dispatch, and neither shows an operator what the apply would
-# change. R020 records a baseline dispatch here as the hand-performed stand-in
-# for the approval gate R021 said the pipeline lacked — and R020 re-scored to 10
-# on 2026-08-10 precisely because `deploy_only` became the sole infra-apply route
-# while never having carried a real mutation. Run this before every
-# `deploy_only`, not occasionally.
+# CORRECTED 2026-08-17. This header read "What this pre-verifies now is a
+# `deploy_only` dispatch", and told the operator to "Run this before every
+# `deploy_only`". Both were true when written and are now FALSE: `deploy_only`
+# was deleted at 8199e5b9, so that sentence instructed an operator to prepare for
+# a dispatch GitHub rejects. The defect class is prose left in the PRESENT TENSE
+# about an input that has been deleted — instructions, not merely stale notes,
+# because a reader acts on them. Found by RUNNING a confirmation criterion over
+# the executable surface rather than reading it. (A decision record covering how
+# that class is retired in ADR prose is `proposed` but not yet ratified, so it is
+# described here rather than cited by number — a workflow comment must not bind
+# to a decision the drain has not confirmed.)
+#
+# What this pre-verifies now is a RELEASE-PR MERGE, which under ADR-045 is the
+# single entry point to a production apply.
+#
+# THAT MAKES IT LESS LOAD-BEARING THAN IT WAS, and the point is easy to get
+# backwards in both directions. When `deploy_only` was the sole infra-apply route
+# this was the ONLY plan review on any path to production, and nothing showed an
+# operator what an apply would change. That gap is now closed by
+# `release-pr-plan.yml`, which plans automatically on the changesets release PR
+# and posts the projection as a comment before the merge that applies. This
+# workflow survives as a MANUAL dispatch for planning a ref that is not on the
+# release-PR path — a short-lived branch you want to check before committing to
+# the change, which JTBD-400 sanctions explicitly.
+#
+# R020 still records a baseline dispatch here as the hand-performed stand-in for
+# the approval gate R021 said the pipeline lacked, and R020's 10 stands: the
+# changeset-armed successor route has still never carried a real mutation.
 #
 # The other half of the original reason is unchanged and still decisive: the root
 # module's variables come from GitHub Actions secrets, so `terraform plan` cannot
