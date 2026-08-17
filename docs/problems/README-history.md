@@ -186,3 +186,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-08-10
 
 > Last reviewed: 2026-08-09 **P097 verification pending** — the cucumber tiers now wait for a searchable index rather than an open port, and say which of four things went wrong when they do not get one; released in v3.3.0
+
+## 2026-08-18
+
+> Last reviewed: 2026-08-10 **P099 captured** — the assistant pushes interface work onto the user instead of presenting decidable choices in the interface the user actually has (lightweight aside via /wr-itil:capture-problem)

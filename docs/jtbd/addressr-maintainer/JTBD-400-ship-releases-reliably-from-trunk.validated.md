@@ -1,7 +1,7 @@
 ---
 status: validated
 human-oversight: confirmed
-oversight-date: 2026-07-06
+oversight-date: 2026-08-17
 job-id: ship-releases-reliably-from-trunk
 persona: addressr-maintainer
 date-created: 2026-04-15

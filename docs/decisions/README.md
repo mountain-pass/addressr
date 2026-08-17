@@ -230,7 +230,7 @@ _41 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-047 — Dead conditionals retired by supersession
 
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-045 (one sentence of confirmation criterion 5 only)
+**Status:** proposed | **Oversight:** confirmed (2026-08-17) | **Supersedes:** ADR-045 (one sentence of confirmation criterion 5 only)
 **Decides:** Retire ADR-045's dead conditional instruction — the one directing the guard's refusal message to name `deploy_only` — via a superseding record that quotes it in full, because its antecedent is permanently unsatisfiable (the dispatch input was deleted at `8199e5b9`, and the guard shipped after the gate repoint, not before). Chosen over relying on the existing negative test, amending in place (prohibited here), or deleting the sentence; scope is that one sentence, and no behaviour changes.
 **Confirmation:** No `deploy_only` apply-route reference in `scripts/`, `.github/workflows/`, `.husky/` (docs excluded deliberately); the "does NOT name `deploy_only`" case in `check-deployment-changeset.test.mjs`, mutation-verified; no `workflow_dispatch` input of that name in `release.yml`, deletion traceable via `git log -S`; supersession reachable from ADR-045 via the compendium listing.
 **Related:** ADR-045, ADR-001, ADR-040

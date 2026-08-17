@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-17
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-17
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent, wr-jtbd:agent, wr-risk-scorer:pipeline]
 informed: []
@@ -11,7 +12,7 @@ supersedes-clause: 045#confirmation-5-sequencing
 
 # Dead conditionals retired by supersession
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context and RATIFIED by the decision-maker on 2026-08-17, in the same session, without waiting for the /wr-architect:review-decisions drain.
 
 ## Context and Problem Statement
 
