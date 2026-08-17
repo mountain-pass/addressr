@@ -1,0 +1,69 @@
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+#
+# ADR-045 confirmation criterion 5 — the server-side half of the changeset
+# guard. Refuses a push to master that changes `apps/addressr-deployment`
+# infrastructure while nothing pending will bump the deployment package.
+#
+# WHY A SECOND SURFACE AT ALL, when `.husky/pre-push` already runs this. Because
+# a client-side-only gate is bypassable and the failure it guards is silent and
+# green. `git push --no-verify` defeats the hook, needs no discovery, and leaves
+# no trace — so a hook-only guard is a guard exactly until the first time it is
+# inconvenient. The two are not alternatives and neither substitutes for the
+# other: the HOOK exists so the author finds out locally, at the cheapest point;
+# THIS LEG exists so that finding cannot be skipped.
+#
+# ITS OWN WORKFLOW, NOT A JOB IN release.yml — criterion 5's Placement paragraph,
+# and the reason is specific. A job there would inherit neither the `release`
+# job's `if: github.ref == 'refs/heads/master'` nor an exemption from that
+# workflow's `pull_request` trigger, so on a PR it would see no
+# `github.event.before`, fail closed, and red EVERY pull request. That is the
+# guard people then disable, which fires this ADR's own reassessment criterion on
+# day one.
+#
+# NOT A SECOND PIPELINE, under the addressr-maintainer persona's one-pipeline
+# constraint. That constraint forbids "a duplicate set of deploy steps, a
+# separate job, or a workflow that reaches production without going through the
+# one that already does". This workflow reaches production by no path at all — it
+# only refuses. Recorded here so it is not re-litigated.
+#
+# ON THE JTBD-400 "finds out locally, not from a failed release pipeline in
+# GitHub Actions" OUTCOME. Read literally that clause forbids this leg; read for
+# its intent — the author learns before the damage, at the cheapest point
+# available — it endorses it, and the pre-push hook is what discharges it. The
+# literal reading MUST NOT be used to justify deleting this workflow. Deleting it
+# does not merely weaken the guard: it blinds the instrument meant to detect that
+# the guard had failed, because nobody bypassing via `--no-verify` writes a
+# `Deploy-Guard-Bypass:` trailer, so the trailer count that was supposed to
+# measure routine bypass reads zero while bypass is universal.
+name: Deploy guard
+
+on:
+  push:
+    branches: [master]
+
+# Per-ref, and NOT release.yml's group. Sharing that group would let this
+# refusal-only job occupy the slot a queued production apply is waiting for, and
+# GitHub cancels a pending run when a newer one enters its group.
+concurrency: deploy-guard-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  changeset-declared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # NOT the default depth 1. The guard resolves `github.event.before` by
+          # sha; under depth 1 that ref is unreachable, the range is
+          # indeterminable, and the guard would refuse on every push that did not
+          # happen to carry a qualifying changeset — over-firing, which ADR-045's
+          # reassessment criteria name as falsifying the rule.
+          fetch-depth: 0
+
+      - name: Does anything pending arm what this push changes?
+        env:
+          BEFORE: ${{ github.event.before }}
+          PUSHED: ${{ github.sha }}
+        run: scripts/check-deployment-changeset.sh "$BEFORE" "$PUSHED"

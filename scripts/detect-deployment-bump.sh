@@ -1,4 +1,6 @@
 #!/bin/sh
+# @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
+#
 #
 # Decide whether this push arms a production Terraform apply. Prints exactly one
 # line on stdout: `changed=true` or `changed=false`.

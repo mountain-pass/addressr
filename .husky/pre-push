@@ -1,1 +1,39 @@
+# set -e is LOAD-BEARING and was absent before the deploy guard landed here.
+# This file previously held a single advisory line ending in `|| echo …`, which
+# guarantees exit 0. Without `set -e`, a non-zero exit from anything but the LAST
+# command is discarded and the hook blocks nothing — green, silent, and
+# indistinguishable from a pass. That is the failure class the guard below
+# exists to remove, so it must not be how the guard itself fails.
+set -e
+
+# Advisory, and deliberately still advisory: mature dependency updates are
+# information, not a reason to refuse a push. The `|| echo` is what keeps it
+# non-blocking under `set -e`.
 npm run check-deps || echo "check-deps: mature updates available (advisory, not blocking push)"
+
+# ADR-045 criterion 5 — the changeset guard.
+#
+# SCOPED TO master, which is not a convenience. JTBD-400 sanctions dispatching
+# the Terraform plan workflow against a short-lived branch, and that push is by
+# construction a new remote branch (all-zeros remote sha), carrying files under
+# apps/addressr-deployment/ (planning them is the point), usually with no
+# changeset yet (you are checking BEFORE committing to the change). Guarding it
+# would red a documented workflow on day one — the measurable form of ADR-045's
+# own "a guard people bypass is worse than none" criterion. Infra can only sit
+# unapplied once it reaches master, so this costs no coverage.
+#
+# git feeds pre-push one line per ref on stdin:
+#     <local ref> <local sha> <remote ref> <remote sha>
+# Those give both the master scoping and the BEFORE ref, which is why they are
+# used rather than @{u} — @{u} would silently follow whatever the branch happens
+# to track and would be wrong for the very ref being pushed.
+#
+# This is the LAST statement in the file on purpose. See the note on set -e.
+while read -r _local_ref local_sha remote_ref remote_sha; do
+	# Only master.
+	[ "$remote_ref" = "refs/heads/master" ] || continue
+	# An all-zeros LOCAL sha is a branch DELETION, which changes no files.
+	[ "$local_sha" != "0000000000000000000000000000000000000000" ] || continue
+
+	scripts/check-deployment-changeset.sh "$remote_sha" "$local_sha"
+done
