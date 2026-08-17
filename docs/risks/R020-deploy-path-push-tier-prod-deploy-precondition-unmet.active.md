@@ -152,6 +152,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-10 (fourth entry today): **Re-verified after R015's stale gate quote and line anchors were corrected.** **Direction: unchanged, and the two entries stay deliberately separate.** R015 corrected its quoted gate to the changesets-armed disjunct and dropped its `release.yml` line anchors, which had rotted twice in a day. Its adjacency note now describes the publish-free route as a deployment-only changeset rather than the deleted `deploy_only` dispatch — matching this entry's own re-score. R015 owns the coupling (what happens when a publish DOES occur); this entry owns the publish-free route. No re-rate.
+
 - 2026-08-10: **RE-SCOPED and RE-SCORED UPWARD — 8 → 10, above appetite.** The `deploy/**` push axis retired ([R021](R021-push-tier-deploy-axis-arms-prod-terraform-apply.retired.md), [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) and [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) 2026-08-10 amendments). This entry's own Monitoring trigger — _"any change to the deploy-gating expression in `release.yml`"_ — fired, so this re-rate is the entry's own instruction rather than an imposition.
 
   **This entry does NOT retire with R021, and the direction of travel is the opposite one.** R021's hazard was the axis existing; this entry's hazard is the recovery path failing when reached for. Deleting the axis discharges the first and _intensifies_ the second: `deploy_only` stops being a fallback and becomes the only route to an infrastructure apply.

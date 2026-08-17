@@ -103,6 +103,8 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-10 (fourth entry today): **Re-verified after R015's stale gate quote and line anchors were corrected.** **Direction: unchanged.** R015 is cited here only as the owner of the release-trigger clause in this entry's decomposition table; that ownership is unaffected by correcting its quoted gate string and dropping its line anchors. No re-rate.
+
 - 2026-08-10 (third entry today): **Re-verified after R020 was re-scored against the changesets-armed successor route**, which is now BUILT and is the sole path to a production infrastructure apply — `deploy_only` is deleted. **Direction: unchanged.** What provisioning a new OpenSearch domain costs on a release is a property of the provisioning, not of what armed the apply. No re-rate.
 
 - 2026-08-10 (second entry today): **Re-verified after [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md)'s treatment and monitoring were re-pointed** off the `deploy_only` dispatch and onto the changeset-armed release-PR route, per the user-ratified JTBD-400 amendment in commit `09f6418`. **Direction: unchanged.** What provisioning a new OpenSearch domain costs on a release is a property of the provisioning, not of how the apply was started. No re-rate.

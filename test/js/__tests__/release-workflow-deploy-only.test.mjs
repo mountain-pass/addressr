@@ -275,6 +275,20 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('pins the two gated step NAMES that only the count would otherwise reach', () => {
+    // `Wait for deployment to stabilize` and `Smoke test production` were
+    // reachable only via the `s.if === DEPLOY_GATE` count, which is name-blind.
+    // Rename either and the suite stayed green — while R015 cites those exact
+    // names as stable anchors, having just dropped its `release.yml:NNN` line
+    // citations in favour of them.
+    //
+    // ADDED 2026-08-10 to make that citation true rather than narrowing it. An
+    // anchor credited to a pin that does not cover it is WORSE than the
+    // coordinate it replaced: a line number rots visibly, a name rots silently.
+    stepNamed('Wait for deployment to stabilize');
+    stepNamed('Smoke test production');
+  });
+
   it('gates EVERY step that touches production, not merely three of them', () => {
     // This closes the limitation the previous header recorded as accepted: "a
     // FIFTH deploy-path step added without the gate would still not be caught."
