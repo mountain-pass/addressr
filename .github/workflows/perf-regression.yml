@@ -187,7 +187,7 @@ jobs:
           case "$rc" in
             0)
               # Validity is checked on the CLEAN path too, not only on a
-              # breach. Today the count>500 threshold means a zero-sample leg
+              # breach. Today the count floor on http_reqs means a zero-sample leg
               # cannot reach exit 0 — but that makes this branch's safety a
               # property of a threshold in another file, and a "passed every
               # threshold" message is the most believed line the probe emits.

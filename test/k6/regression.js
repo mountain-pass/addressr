@@ -76,11 +76,19 @@ export const options = {
     // catches a throw anywhere before the retrieve call without needing to
     // detect the throw itself: no requests, no count, breach.
     //
-    // 500 is deliberately far below the ~21,000 a healthy 60 s window produces
-    // and far above zero. It is a did-this-run-at-all floor, not a throughput
-    // target — tightening it toward observed throughput would make it flap on
-    // runner variance, which is the mistake the latency thresholds already
-    // warn about above.
+    // 100 is a did-this-run-at-all floor, not a throughput target. The first
+    // dispatched run (32249606086) measured 298 requests per leg, so this
+    // fires only on a ~66% throughput collapse.
+    //
+    // IT WAS 500, AND THAT WAS CALIBRATED AGAINST THE DEFECT. P104 records
+    // "21,860 measured-phase iterations", and 500 was picked as far below it.
+    // But that figure was a SYMPTOM: the retrieve read threw before `sleep(1)`,
+    // and an uncaught exception aborts the k6 iteration, so iterations spun
+    // with no sleep at all. With the throw fixed each iteration sleeps, and
+    // 5 VUs over 60 s gives ~300 — so the floor sat ABOVE healthy throughput
+    // and breached on the very first correct run. Exactly the flap this
+    // comment warned against, committed in the same breath as the warning.
+    // Only a dispatched run could show it; no unit test would ever have.
     //
     // BOTH legs are declared, and the declaration is load-bearing beyond the
     // floor itself: k6 only emits a tagged submetric into --summary-export
@@ -90,10 +98,10 @@ export const options = {
     // healthy one. `perf-validity-covers-declared-legs.test.mjs` ties the two
     // files together so they cannot drift apart.
     'http_reqs{phase:main,name:search}': [
-      { threshold: 'count>500', abortOnFail: false },
+      { threshold: 'count>100', abortOnFail: false },
     ],
     'http_reqs{phase:main,name:retrieve}': [
-      { threshold: 'count>500', abortOnFail: false },
+      { threshold: 'count>100', abortOnFail: false },
     ],
     'checks{phase:main}': [{ threshold: 'rate>0.95', abortOnFail: false }],
   },

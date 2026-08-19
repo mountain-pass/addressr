@@ -136,8 +136,26 @@ claim about a shape no code produces.
       `handleSummary`, and `grafana/setup-k6-action@v1` installs latest, so the release that drops the flag
       would red the nightly unannounced. It fails closed rather than silently, but a pin makes the break a
       deliberate upgrade.
-- [ ] **Re-run and confirm `{phase:main,name:retrieve}` reports real samples.** THE ONE THING NOT YET
-      ESTABLISHED. Everything above is verified by unit tests over extracted pieces —
+- [x] **Re-run and confirm `{phase:main,name:retrieve}` reports real samples. DONE 2026-08-19, run 32249606086.** `perf probe validity OK - search=298 retrieve=298`, with
+      `{phase:main,name:retrieve} avg=2.86ms p(95)=6.47ms` where it had been zero samples and a tick.
+      The whole chain is exercised end to end: k6 imported the shared module, `/addresses/{pid}` returned
+      200s, the summary was exported and read, and the workflow routed on it. The k6 pin was verified by
+      reading the INSTALLED version out of the Install step ("Downloading k6 version 0.49.0"), not the
+      step's exit code - an action that ignored an unrecognised version string would also have exited 0.
+
+- [x] **Recalibrate the count floor, which the first correct run showed was set ABOVE healthy throughput.
+      DONE 2026-08-19.** The floor was `count>500`, chosen as "far below the ~21,000 a healthy window
+      produces". That 21,000 was a SYMPTOM, not a baseline: the retrieve read threw before `sleep(1)`, and
+      an uncaught exception aborts a k6 iteration, so iterations spun with no sleep at all. With the throw
+      fixed, 5 VUs over 60 s produce ~298 per leg - so the floor breached on the first healthy run and
+      would have emitted a spurious `::warning::` every night. Now `count>100`, which fires on a ~66%
+      collapse. **The floor was calibrated against the defect it was written to catch**, and the comment
+      warning against exactly this flap was written in the same commit. No unit test could have shown it;
+      only a dispatched run did.
+
+- [ ] **Re-dispatch and confirm a clean exit-0 run.** The run above proved the probe MEASURES; it did not
+      prove a healthy run now passes every threshold, because the stale floor breached. Not closing this
+      ticket until a run exits 0. Everything above is verified by unit tests over extracted pieces —
       `k6-retrieve-url.test.mjs` proves the URL is built from the field the API returns,
       `perf-validity.test.mjs` proves a zero-sample leg is rejected, and every guard was mutation-tested.
       None of that proves the probe now measures retrieves against a running instance: the unit tests would
