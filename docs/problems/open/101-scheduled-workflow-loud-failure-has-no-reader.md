@@ -61,10 +61,49 @@ The repo has a working pattern for exactly this and it is used elsewhere: the se
 
 - [ ] **First, and cheapest: find out why the EXISTING notification did not reach a human.** GitHub already emailed on six failed scheduled runs. Check the account's Actions notification settings, whether scheduled-workflow failure email is enabled, and whether it is being filtered. Answering this may make every option below unnecessary — and if it does not, it tells you what a new channel has to beat.
 - [ ] Only then decide an additional mechanism, cheapest first: open/update a GitHub issue on failure (native, greppable, and unlike email it persists until closed); notify via the existing `addressr-search-ops` SNS topic; or fail a check a human already looks at.
-- [ ] Apply it to **every** `schedule`-triggered workflow, not just this one — enumerate them first. The defect is the trigger class, not the file.
+- [x] **Enumerate them. DONE 2026-08-19 — eleven.** `gnaf-source-smoke` and `perf-regression` daily; the nine `update-{act,nsw,nt,ot,qld,sa,tas,vic,wa}` state loaders on the 21st and 28th of Feb/May/Aug/Nov. `scripts/scheduled-workflow-staleness.mjs` derives this list from the workflow files rather than hardcoding it, so a twelfth is covered on the day it lands. Applying the mechanism to all eleven remains open, pending the channel decision above.
 - [ ] Decide what happens on repeated failure. A daily issue for the same break is its own noise problem, and noise is how the next one gets ignored. Prefer reopening/updating a single issue over opening N.
-- [ ] Consider a staleness assertion: if the newest successful run of a scheduled workflow is older than N days, red something that IS read. This catches "stopped running entirely" as well as "runs and fails", which a failure-triggered notification does not.
-- [ ] Backfill: check whether other scheduled workflows are currently failing unnoticed. This one was found by accident; assume it is not unique.
+- [x] **Staleness assertion: BUILT 2026-08-19, and the backfill turned it from a nice-to-have into the
+      main event.** `scripts/scheduled-workflow-staleness.mjs`, fixture-tested in
+      `test/js/__tests__/scheduled-workflow-staleness.test.mjs` (12 cases, every guard mutation-verified).
+
+      Two findings from the backfill reshaped it:
+
+          **Nine of eleven run QUARTERLY, which inverts the priority.** A failure notification cannot fire for
+          a workflow that never runs. For a daily job, "stopped running" surfaces within a day or two by
+          absence. For these the blind window is up to three months — and GitHub disables scheduled workflows
+          outright after 60 days of repository inactivity, which is exactly what a quiet quarter produces. So
+          for most of this repo's scheduled surface, staleness is not a complement to failure notification. It
+          is the ONLY thing that can detect the failure mode at all.
+
+          **A manual dispatch masks schedule health, so the check filters on `event=schedule`.** On 2026-08-19
+          `update-ot`'s two newest runs were both `workflow_dispatch`, sitting over a scheduled run 83 days
+          older. In a default run listing a manual green is indistinguishable from a scheduled green, so "the
+          workflow is fine" reads true while the schedule itself could have stopped firing months earlier. A
+          staleness check that takes the newest run of any kind is green over precisely the case it exists to
+          catch. The filter therefore lives inside the tested unit rather than in whoever calls it, and the
+          live `update-ot` shape is a fixture.
+
+          Bounds are roughly two to three missed firings: 3 days daily, 21 weekly, 70 monthly, 110 quarterly.
+          One miss is a hiccup; a tighter bound flaps, and a flapping alarm is how the real one gets ignored —
+          which is this ticket's own subject.
+
+          **Quarterly was 200 and that was wrong twice over.** `21,28 2,5,8,11` fires TWICE a quarter, a week
+          apart, so the gaps run 7, 7, ~85 — the largest healthy gap is 85 days, not a quarter. 200 encoded
+          four missed firings and sat ninety days past the 60-day inactivity auto-disable this exists to
+          catch. 110 is flap-free against the 85-day gap and alarms after two or three misses depending which
+          of the pair last ran. Re-derived from the cron independently rather than taken on assertion, because
+          the first value came from arithmetic against the wrong interval.
+
+- [ ] **Wire it to something. DELIBERATELY NOT DONE.** The script is complete and tested and reds nothing,
+      because which signal a stale schedule should break is a decision about what someone actually reads,
+      and that is the same open question as the channel choice above. Putting a network call in the
+      pre-commit hook would break offline commits; putting it in CI makes every build depend on the GitHub
+      API. Run `npm run check-schedules` meanwhile: one line per workflow, non-zero exit on any stale one, and
+      non-zero too if the run history cannot be read — an unreadable listing is not a pass. Aliased rather
+      than left at a path someone has to remember, since operator memory over a checkable artefact is this
+      ticket's own named defect.
+- [x] **Backfill. DONE 2026-08-19 — nothing else is failing.** All eleven last completed successfully. The nine quarterly loaders last fired 2026-05-28 and are 83 days old against a next-fire of 2026-08-21, so they are between runs rather than stale. The assumption that this was not unique was right to make and did not pay out this time.
 
 ## Dependencies
 

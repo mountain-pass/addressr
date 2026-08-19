@@ -96,6 +96,7 @@
     "dopublish": "npm publish mountainpass-addressr-$(node -p \"require('./packages/addressr/package.json').version\").tgz --access public",
     "predocker:push": "if [ -n \"$GITHUB_TOKEN\" ]; then echo \"$GITHUB_TOKEN\" | docker login ghcr.io --username \"${GITHUB_ACTOR:-x-access-token}\" --password-stdin; else echo 'GITHUB_TOKEN unset, skipping ghcr login. Pushing the image from here is NOT a sanctioned route (ADR-050): registry pushes come from the pipeline. If a release did not publish its image, fix the release rather than pushing by hand'; fi",
     "docker:push": "sh scripts/docker-tags.sh | xargs -n1 docker push",
+    "check-schedules": "node scripts/scheduled-workflow-staleness.mjs",
     "check-licenses": "node scripts/license-audit.mjs",
     "pre-commit": "lint-staged && npm run check-licenses && npm run check:not-cli2-tags && npm run test:js",
     "check:not-cli2-tags": "node scripts/check-not-cli2-tags.mjs",
