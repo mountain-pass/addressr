@@ -20,21 +20,51 @@ import { fileURLToPath } from 'node:url';
 
 // Spelled cardinals appear in the ticket's prose, so they are read back and
 // required to agree rather than denylisted one at a time.
-const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen'];
+
+// The ticket wraps at 110 columns, so a cardinal and its noun routinely sit on
+// different lines. Every phrase check below runs against this, not the raw text.
+const wordOf = (n) => WORDS[n];
+const cap = (w) => w[0].toUpperCase() + w.slice(1);
+const inBoth = (a, b) => a.filter((f) => b.includes(f)).length;
 
 const testsDir = fileURLToPath(new URL('.', import.meta.url));
-const ticketPath = fileURLToPath(
-  new URL(
-    '../../../docs/problems/open/033-source-inspection-tests-anti-pattern.md',
-    import.meta.url,
-  ),
-);
+// Lifecycle-agnostic. The path was hardcoded to `open/`, so this guard would
+// have thrown ENOENT and reddened the whole suite the moment the ticket it
+// measures transitioned to verifying/ or closed/ — the R018 mutable-segment
+// class, in executable code, where doc-links-resolve does not scan.
+const ticketPath = (() => {
+  const problems = fileURLToPath(new URL('../../../docs/problems/', import.meta.url));
+  const found = [];
+  // States are DERIVED, not listed. The list was ['open','verifying',
+  // 'known-error','closed'] under a header saying "lifecycle-agnostic" — and
+  // `docs/problems/parked/` exists with sixteen tickets in it. Parking P033
+  // would have found nothing and reddened the suite on a legitimate
+  // transition. A name wider than its configured value, in the guard that
+  // exists to catch names wider than their configured values.
+  const states = readdirSync(problems, { withFileTypes: true });
+  for (const entry of states) {
+    if (!entry.isDirectory()) continue;
+    const stateDir = path.join(problems, entry.name);
+    const entries = readdirSync(stateDir);
+    for (const f of entries) {
+      if (f.startsWith('033-')) found.push(path.join(stateDir, f));
+    }
+  }
+  // Exactly one, so a duplicate left behind by a half-finished move is loud
+  // rather than silently picking whichever the directory listed first.
+  assert.equal(found.length, 1, `expected exactly one 033-* ticket, found ${found.length}`);
+  return found[0];
+})();
 
 // The predicate exactly as the ticket publishes it. If this and the ticket's
 // prose ever diverge, that is the defect — change both together.
 function classify({ excludeSelf = true } = {}) {
   const workflow = [];
   const other = [];
+  const exercises = [];
+  const readsOnly = [];
   // This file is excluded from its own population. It reads test files and
   // asserts, and it quotes '.github/workflows' while explaining the predicate,
   // so it classifies itself into the group it measures and shifts every figure
@@ -48,14 +78,24 @@ function classify({ excludeSelf = true } = {}) {
     if (!/readFileSync|readFile\(|readdirSync/.test(source)) continue;
     if (!source.includes('assert.')) continue;
     (source.includes('.github') && source.includes('workflows') ? workflow : other).push(file);
+    // Second axis, added 2026-08-19 with the per-file audit: does the file
+    // EXERCISE its subject, or only read it? Dynamic `await import(...)` is
+    // matched as well as static `from '...'` — the audit's first classifier
+    // missed proxy-auth.test.mjs on exactly that, so the pattern that missed it
+    // is not the pattern pinned here.
+    (/(?:from|import\()\s*['"][^'"]*(?:packages|scripts|test\/k6)\//.test(source) ||
+    /spawnSync|execFileSync|execSync|spawn\(/.test(source)
+      ? exercises
+      : readsOnly
+    ).push(file);
   }
 
-  return { workflow, other };
+  return { workflow, other, exercises, readsOnly };
 }
 
 describe('P033 population figures recompute from the ticket’s own predicate', () => {
   const ticket = readFileSync(ticketPath, 'utf8');
-  const { workflow, other } = classify();
+  const { workflow, other, exercises, readsOnly } = classify();
 
   it('finds a population at all', () => {
     // An empty corpus would make every assertion below vacuously true — the
@@ -156,36 +196,146 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     );
   });
 
+  it('states the audit split the classifier produces', () => {
+    // The audit's headline figures, computed rather than asserted — which is
+    // the whole of this ticket applied to its own record.
+    assert.equal(exercises.length + readsOnly.length, workflow.length + other.length);
+    assert.ok(
+      ticket.includes(`**${exercises.length} exercise the`),
+      `the ticket should say ${exercises.length} files exercise the subject`,
+    );
+    assert.ok(
+      ticket.includes(`**${readsOnly.length} read only**`),
+      `the ticket should say ${readsOnly.length} read only`,
+    );
+  });
+
   it('states the population size wherever the Investigation Tasks restate it', () => {
     // Two sites in one bullet, and the total was covered by nothing — the
     // ticket's own shape (the unit of a correction is the claim, not the
     // locality) reproduced inside its task list.
-    const total = workflow.length + other.length;
     // Each pattern CAPTURES the population cardinal, and the capture is
     // compared. An `includes(String(total))` over the whole matched span would
     // pass on the wrong number whenever the span carries a second cardinal:
     // at total 10, the stale text "32 files, 10 of them reading" contains
     // "10" and satisfies it. Matching the number you mean is the difference
     // between a check and a coincidence.
-    const patterns = [
-      /(\d+) files, \d+ of them reading workflow YAML/g,
-      /cheap at (\d+)\s*\n?\s*files/g,
-      /a per-file read of the\s*\n?\s*(\d+)/g,
+    // Patterns track the ticket's CURRENT phrasing. They changed on 2026-08-19
+    // when the per-file audit landed and rewrote the section — and the guard
+    // caught that itself, failing on `found 0` rather than passing vacuously
+    // over a population whose wording had moved. That floor is why the rewrite
+    // could not silently orphan the check.
+    // Each pattern must match at least once AND every match must carry the
+    // computed value. Asserting per-pattern rather than a total: a total floor
+    // is a magic number that goes stale when a site is added or removed, and
+    // it cannot tell "one site vanished" from "another gained a match".
+    const sites = [
+      { pattern: /(\d+) files read a repo file and assert/g, expected: workflow.length + other.length },
+      { pattern: /of the (\d+) read-only files/g, expected: readsOnly.length },
     ];
-    let found = 0;
-    for (const pattern of patterns) {
-      for (const match of ticket.matchAll(pattern)) {
-        found += 1;
+    for (const { pattern, expected } of sites) {
+      const matches = ticket.matchAll(pattern).toArray();
+      assert.ok(
+        matches.length > 0,
+        `no restatement site matched ${pattern} — the wording moved and this check went vacuous`,
+      );
+      for (const match of matches) {
         assert.equal(
           Number(match[1]),
-          total,
-          `"${match[0].replace(/\s+/g, ' ').trim()}" states ${match[1]}, but the predicate returns ${total}`,
+          expected,
+          `"${match[0].replaceAll(/\s+/g, ' ').trim()}" disagrees with the computed ${expected}`,
         );
       }
     }
-    // Without this the loops go vacuous the moment the wording moves, and a
-    // guard that matches nothing reports the same green as one that passes.
-    assert.ok(found >= 3, `expected at least 3 restatements of the population size, found ${found}`);
+  });
+
+  it('states the three INTERSECTION cardinals, which the singletons do not cover', () => {
+    // classify() has returned all four sets since the audit landed, but only
+    // their singleton sizes were ever asserted. Seven, ten and three are
+    // intersections, stated as prose, and the ticket's own limits section
+    // declared the unguarded set EMPTY while these sat inside it.
+    //
+    // Not hypothetical staleness: the population moved 31 -> 32 this month and
+    // the guard fired. On the next move every guarded cardinal updates and
+    // these three go stale under a green suite — and the ticket's surviving
+    // conclusion ("no runtime to feed them" is true of seven, not ten) rests
+    // on exactly these.
+    const flat = ticket.replaceAll(/\s+/g, ' ');
+    for (const [label, phrase] of [
+      ['workflow ∩ readsOnly', `${cap(wordOf(inBoth(workflow, readsOnly)))} read \`.github/workflows/**\``],
+      ['other ∩ readsOnly', `The other ${wordOf(inBoth(other, readsOnly))} check declarative artefacts`],
+      ['workflow ∩ exercises', `**${wordOf(inBoth(workflow, exercises))} already spawn a runtime**`],
+    ]) {
+      // Occurrence count, not membership. This document deliberately retains
+      // superseded prose verbatim, so `includes` stays green if the LIVE
+      // sentence is deleted while a history block still carries the same
+      // wording — and the same shape if the population returns to a value some
+      // superseded block states. Exactly one live statement, or fail.
+      const occurrences = flat.split(phrase).length - 1;
+      assert.equal(occurrences, 1, `${label}: expected exactly one "${phrase}", found ${occurrences}`);
+    }
+  });
+
+  it('sums the Step 4 verdict table — ARITHMETIC ONLY; the verdicts are judged, not computed', () => {
+    // Scope is in the title deliberately. The objection to this guard was that
+    // it would read as though the wiring/sentinel/decision classification were
+    // mechanised when it is a hand-read judgement — and the answer is the same
+    // device the under-listing check above already uses: say what it covers in
+    // the name. It checks that the rows add up, nothing more.
+    //
+    // Worth having because the slip it catches fired one revision ago: the
+    // table summed to 12 across five files while the prose above said 13
+    // across six, and a human review caught it. The table has a scheduled next
+    // edit — two candidate files are named as pending a per-pin read.
+    // Rows come from the TABLE's own boundaries, not from a filename list. A
+    // list goes silently partial the moment a row is added for a file it does
+    // not name — and two more files are already named in the ticket as pending
+    // a per-pin read, so that edit is scheduled. Under-listing is the direction
+    // that has actually fired on this guard twice.
+    const lines = ticket.split('\n');
+    const header = lines.findIndex((l) => /^\s*\|\s*file\s*\|\s*pin\s*\|\s*verdict\s*\|/.test(l));
+    assert.notEqual(header, -1, 'the Step 4 verdict table must be present');
+    const rows = [];
+    const afterHeader = lines.slice(header + 2);
+    for (const line of afterHeader) {
+      if (!/^\s*\|/.test(line)) break;
+      rows.push(line);
+    }
+    assert.ok(rows.length >= 8, `expected the verdict table, found ${rows.length} rows`);
+    const tally = { wiring: 0, sentinel: 0, decision: 0 };
+    let pins = 0;
+    for (const row of rows) {
+      const multiplier = /, x2 \|/.test(row) ? 2 : 1;
+      pins += multiplier;
+      const verdict = /\| sentinel/.test(row)
+        ? 'sentinel'
+        : /\| DECISION/.test(row)
+          ? 'decision'
+          : 'wiring';
+      tally[verdict] += multiplier;
+    }
+    const stated = ticket
+      .replaceAll(/\s+/g, ' ')
+      .match(/\*\*(\w+) pins across (\w+) files: (\d+) wiring, (\d+) sentinels, (\d+) decisions/);
+    assert.ok(stated, 'the Step 4 conclusion sentence must be present');
+    assert.equal(pins, WORDS.indexOf(stated[1].toLowerCase()), `table rows sum to ${pins}`);
+    assert.equal(tally.wiring, Number(stated[3]), `table has ${tally.wiring} wiring rows`);
+    assert.equal(tally.sentinel, Number(stated[4]), `table has ${tally.sentinel} sentinel rows`);
+    assert.equal(tally.decision, Number(stated[5]), `table has ${tally.decision} decision rows`);
+
+    // stated[2] was captured by the regex and never compared — and it is
+    // precisely the cardinal that moves when the two pending files are read.
+    const files = new Set(rows.map((r) => r.match(/^\s*\|\s*`([^`]+)`/)?.[1]).filter(Boolean));
+    assert.equal(files.size, WORDS.indexOf(stated[2].toLowerCase()), `table names ${files.size} files`);
+
+    // `six` and `nine` are arithmetic over this tally, not judgement: six is
+    // the decisions, nine is decisions plus the wiring rows that the unsettled
+    // rule would reclassify. Guarding them mechanises no verdict.
+    const flat = ticket.replaceAll(/\s+/g, ' ');
+    assert.ok(
+      flat.includes(`of which ${wordOf(tally.decision)} to ${wordOf(tally.decision + tally.wiring)} are illegitimate`),
+      `headline should read "${wordOf(tally.decision)} to ${wordOf(tally.decision + tally.wiring)} are illegitimate"`,
+    );
   });
 
   it('does not restate a cardinal the predicate contradicts', () => {
