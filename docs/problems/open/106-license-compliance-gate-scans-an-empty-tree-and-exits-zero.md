@@ -163,7 +163,7 @@ empty-corpus case is indistinguishable from the all-clear case at the exit-code 
   _only_ via `@changesets/git` via `@changesets/cli`. The whole `@changesets` subtree sits inside the
   234-package corpus quoted above for the same reason. So P105's fix shrinks this ticket's problem rather
   than merely sitting beside it, and **P105 should be done first** — for that reason, not for its effort.
-- **P104** ([`104-perf-probe-retrieve-threshold-passes-on-zero-samples.md`](104-perf-probe-retrieve-threshold-passes-on-zero-samples.md))
+- **P104** ([`104-perf-probe-retrieve-threshold-passes-on-zero-samples.md`](../closed/104-perf-probe-retrieve-threshold-passes-on-zero-samples.md))
   and **P103** ([`103-workflow-referrers-outside-guard-coverage-rot-unseen.md`](103-workflow-referrers-outside-guard-coverage-rot-unseen.md))
   — **siblings of one class, none of them its parent**: a check reporting success on something it never
   examined. Hang-off check returned PROCEED_NEW against both, plus P098 and P101, on the grounds that a class

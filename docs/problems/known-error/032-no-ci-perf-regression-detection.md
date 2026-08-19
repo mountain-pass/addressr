@@ -4,7 +4,7 @@
 **Reported**: 2026-04-27
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 **Origin**: internal
-**Effort**: M — CI workflow + validation test wiring (k6 exit-code discrimination shipped; awaiting a clean validation run)
+**Effort**: M — CI workflow + validation test wiring (k6 exit-code discrimination shipped; clean validation run landed 2026-08-19, run 32250954868)
 
 > **2026-08-18 — that exit criterion has been UNREACHABLE since 2026-08-12.** "Awaiting a clean validation run" could not arrive: `perf-regression.yml`'s `Generate version file` step ran `npm run genversion`, a script that moved into the `@mountainpass/addressr` workspace with the ADR-046 restructure and no longer resolves at the root. The job died at that step on **every** scheduled run from 2026-08-12 to 2026-08-17 inclusive — six consecutive nights — so no run reached k6 at all. Repointed to `-w @mountainpass/addressr` this date, along with a second unrepointed referrer in the same file (`import('./service/address-service.js')` -> `./packages/addressr/service/address-service.js`, whose twin at `release.yml:151` had been repointed at the time; this one was cache-masked by the G-NAF `-f` guard). The clock on a clean validation run starts from the first green scheduled run after this date, not from the ticket's original estimate.
 >
@@ -80,7 +80,7 @@ Traced by [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) (CI
 2. `test:perf:regression` npm script in [`package.json`](../../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
 3. [`.github/workflows/perf-regression.yml`](../../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
 
-**Status**: fix authored, pushed, and exercised once — the first real nightly run FAILED and reddened master. Repaired 2026-07-25 (see below). Stays **Known Error**: the repair itself has not yet had a clean validation run.
+**Status**: fix authored, pushed, and exercised once — the first real nightly run FAILED and reddened master. Repaired 2026-07-25 (see below). Stays **Known Error**: the probe now validates (run 32250954868, 2026-08-19), but the two items carried from P104 below are open.
 
 ### First-run breakage (2026-07-25) — the shipped probe measured an error path
 
@@ -147,6 +147,25 @@ All three branches were exercised locally against a stub under GitHub's exact sh
 ## RFCs
 
 - [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) — CI perf-regression probe. Proposed. The fix vehicle for this problem (I13 fix-time trace).
+
+## Carried from P104 on its close, 2026-08-19
+
+P104 (the retrieve leg measuring nothing and reporting a tick) is **closed**, verified against dispatched
+run 32250954868: every threshold ticked, zero crossings, and the retrieve leg measuring 296 requests at
+avg=3.33ms p(95)=6.95ms where it had issued zero.
+Two items outlive P104 and belong here, because this ticket owns the probe's residuals.
+
+- [ ] **Close the error-path-with-samples subclass.** The validity check now catches a leg that measured
+      NOTHING. It does not catch a leg that measured only errors: search 200s with hits while every
+      `/addresses/{pid}` 404s clears the count floor, passes validity, drives `checks{phase:main}` under
+      0.95, and routes advisory-green with p95 measured over error latency. That is timing an error path,
+      one leg over from the defect P104 fixed.
+- [ ] **Pin the count floor against attainable throughput.** Nothing asserts the floor's VALUE - only that
+      the threshold key exists - which is how a floor of 500 shipped green and then breached on the first
+      healthy run, having been derived from a request count the defect itself inflated. Derive the pin
+      from the scenario arithmetic (5 VUs x 60 s with `sleep(1)` gives a ceiling near 300), NOT from an
+      observation: a pin calibrated from one run repeats P104's mistake one level up. Two clean runs at
+      296 and 298 support the assumption that the sleep dominates request time.
 
 ## Related
 

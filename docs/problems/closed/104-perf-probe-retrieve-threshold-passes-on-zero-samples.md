@@ -1,6 +1,6 @@
 # Problem 104: The perf probe's retrieve threshold passes on zero samples
 
-**Status**: Open
+**Status**: Closed
 **Reported**: 2026-08-19
 **Priority**: 8 (Medium) — Impact: 2 × Likelihood: 4 — rescored 2026-08-19 from 12 (3×4).
 Impact 3 is reserved for a disrupted publish, image-build or deploy pipeline; this probe is advisory and
@@ -80,7 +80,7 @@ Corroborating the authoring-assumption reading rather than a shape that regresse
 `test/k6/regression.js:116-118` asserts "this href comes back from the server already encoded" — an in-code
 claim about a shape no code produces.
 
-**k6 thresholds have no non-empty floor.** A threshold over zero samples passes. This is the third appearance of that class in this repo in one day — `workflow-npm-scripts-resolve.test.mjs` and `doc-links-resolve.test.mjs` both gained explicit corpus floors on 2026-08-18 for exactly this reason, and ADR-048's Confirmation criterion 5 records it as a named requirement. k6's own engine offers no equivalent, so the floor has to be asserted outside it.
+**k6 thresholds have no non-empty floor.** A threshold over zero samples passes. This is the third appearance of that class in this repo in one day — `workflow-npm-scripts-resolve.test.mjs` and `doc-links-resolve.test.mjs` both gained explicit corpus floors on 2026-08-18 for exactly this reason, and ADR-048's Confirmation criterion 5 records it as a named requirement. **Cite that precedent with care:** `doc-links-resolve.test.mjs`'s floor was found on 2026-08-19 to be a tautology — it is derived from the list it checks, so it reports BLIND under mutation (see P103). Having a floor and having a floor that can fail are different properties, which is the whole of this class. k6's own engine offers no equivalent, so the floor has to be asserted outside it.
 
 ### Investigation Tasks
 
@@ -153,18 +153,50 @@ claim about a shape no code produces.
       warning against exactly this flap was written in the same commit. No unit test could have shown it;
       only a dispatched run did.
 
-- [ ] **Re-dispatch and confirm a clean exit-0 run.** The run above proved the probe MEASURES; it did not
-      prove a healthy run now passes every threshold, because the stale floor breached. Not closing this
-      ticket until a run exits 0. Everything above is verified by unit tests over extracted pieces —
+- [x] **Re-dispatch and confirm a clean exit-0 run. DONE 2026-08-19, run 32250954868.** Every threshold
+      ticked, zero crossings, `perf probe validity OK - search=296 retrieve=296`, and the step printed
+      "perf regression probe passed every threshold" - a line that now means what it says. Everything above is verified by unit tests over extracted pieces —
       `k6-retrieve-url.test.mjs` proves the URL is built from the field the API returns,
       `perf-validity.test.mjs` proves a zero-sample leg is rejected, and every guard was mutation-tested.
       None of that proves the probe now measures retrieves against a running instance: the unit tests would
       pass identically if k6 failed to import the module, or if `/addresses/{pid}` 404'd. Only a dispatched
-      run settles it, and until one lands this ticket stays open.
+      run settles it. One landed: run 32250954868, below.
+
+## Fix Released
+
+- `a8f10a91` - the probe repair: retrieve URL built from the hit's `pid`, an `http_reqs` count floor on
+  both legs, `scripts/perf-validity.mjs` routing a zero-sample leg to a loud failure, and the shared
+  `retrieveUrlFor` that stops the two k6 profiles diverging again.
+- `b63d483f` - the floor recalibrated from 500 to 100, after the first correct run showed 500 sat ABOVE
+  healthy throughput because it had been derived from a request count the defect itself inflated.
+
+## Closed - verified
+
+Verified against dispatched run **32250954868** (2026-08-19), not by the suite. That distinction is the whole
+lesson of this ticket: the unit tests were green at every point, including while the retrieve leg issued
+zero requests, including while a guard required a leg the probe never declared, and including while the
+count floor sat above attainable throughput. Each of those was invisible to every test and visible to a
+live run.
+
+The run shows `{phase:main,name:retrieve}` at avg=3.33ms med=2.46ms p(95)=6.95ms over **296** requests,
+where this leg previously issued **zero** and printed a tick. No threshold crossed; the step exited 0.
+
+**What is NOT closed by this, recorded so the closure does not overstate itself:**
+
+- The **error-path-with-samples** subclass of P032's wrong-measurement residual. If search returns 200s
+  with hits while every `/addresses/{pid}` 404s, the retrieve count clears the floor, validity passes, the
+  retrieve-is-200 check drives `checks{phase:main}` under 0.95, and the run routes advisory-green with p95
+  measured over error latency. Carried on P032.
+- **Nothing pins the count floor against attainable throughput.** No test asserts its value - only that
+  the threshold key exists - which is exactly how the 500 shipped green. The right pin is derived from the
+  scenario arithmetic (5 VUs x 60 s x `sleep(1)` gives a ceiling near 300) rather than from an observation,
+  since a pin calibrated from a single run would repeat this ticket's mistake one level up. Deliberately
+  sequenced after this run rather than before it: two clean runs at 296-298 are what show the sleep
+  dominates request time, which is the assumption the arithmetic rests on. Carried on P032.
 
 ## Dependencies
 
-- **Blocks**: P032's exit criterion. Its "awaiting a clean validation run" was satisfied on 2026-08-19 in the narrow sense — the run completed — but the run proves the probe is half-blind, so a clean validation of the _signal_ has still not happened.
+- **Blocks**: P032's exit criterion, now discharged. Two runs, and they say different things. Run `32203592902` (2026-08-19) completed and satisfied the criterion only in the narrow sense: the HARNESS ran, and reaching k6 is what exposed this ticket's defect, so the SIGNAL was still half-blind. Run `32250954868`, after the fix, is the clean validation of the signal — every threshold ticked, both legs measuring.
 - **Blocked by**: (none)
 - **Composes with**: P101 — the error lines were emitted and unread; detection and delivery are separate halves.
 
@@ -176,8 +208,10 @@ claim about a shape no code produces.
 - **ADR-048** ([`048-moved-path-referrers-resolved-by-executable-guard.proposed.md`](../../decisions/048-moved-path-referrers-resolved-by-executable-guard.proposed.md)) — its criterion 5 requires guards to carry non-empty floors; this is the same requirement applied to a k6 threshold.
 - **R023** (pipeline watchers report success on a red run) — the same class on a different surface. R023 is
   scoped by its H1 to the class rather than to the watcher script that triggered it, so this is a **fourth**
-  instance of a risk the register already carries, not a new one. R023's residual note says its fixes are
-  "not yet exercised in anger"; that is now partly answered, in the wrong direction.
+  instance of a risk the register already carries, not a new one. R023 records its fixes as pending exercise
+  against a live failure, and has since logged one - a release run going red after a successful publish
+  (P108, 2026-08-19). An earlier version of this bullet put quotation marks around a sentence R023 does
+  not contain; the paraphrase above is what it actually says.
 - **JTBD-400** (Ship Releases Reliably From Trunk), persona `addressr-maintainer`.
 
 Captured via `/wr-itil:capture-problem` after dispatching the perf workflow to verify the P032 referrer repoints. The repoints are confirmed working — the run reached k6 for the first time in a week — and reaching k6 is what exposed this.

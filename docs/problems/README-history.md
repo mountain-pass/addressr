@@ -8,17 +8,17 @@ Last reviewed: 2026-05-03 — P035 opened (read-shadow soak validation has multi
 
 ## 2026-05-11
 
-Last reviewed: 2026-05-11 — **README reconciled** — 17 drift entries corrected: P003/P012/P020/P022 (closed), P016/P021/P024 (parked), P025/P026/P027/P029/P030/P031/P032/P033/P034 (missing open), P028 (missing known-error). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF values for newly-added rows are deferred estimates pending next `/wr-itil:review-problems` full re-rank.
+Last reviewed: 2026-05-11 — **README reconciled** — 17 drift entries corrected: P003/P012/P020/P022 (closed), P016/P021/P024 (parked), P025/P026/P027/P029/P030/P031/P032/P033/P034 (missing open), P028 (missing known-error). Reconciliation contract per **wr-itil P118 + wr-itil ADR-014** amended ("Reconciliation as preflight robustness layer"). WSJF values for newly-added rows are deferred estimates pending next `/wr-itil:review-problems` full re-rank.
 
 ## 2026-05-12
 
-Last reviewed: 2026-05-12 — **README reconciled** — 1 drift entry corrected: P036 (missing open). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF deferred pending next `/wr-itil:review-problems`.
+Last reviewed: 2026-05-12 — **README reconciled** — 1 drift entry corrected: P036 (missing open). Reconciliation contract per **wr-itil P118 + wr-itil ADR-014** amended ("Reconciliation as preflight robustness layer"). WSJF deferred pending next `/wr-itil:review-problems`.
 
 ## 2026-05-14
 
 Last reviewed: 2026-05-14 — ADR 029 Phase 1 rolled back; P036 + P038 parked as superseded by the decommission. P037 stays open (loader fix applies to v1 path too). WSJF deferred pending next `/wr-itil:review-problems`.
 
-Last reviewed: 2026-05-14 **README reconciled** — 3 drift entries corrected: P039, P040, P041 (all missing open). Reconciliation contract per P118 + ADR-014 amended ("Reconciliation as preflight robustness layer"). WSJF for new rows is a deferred estimate (3/M=1.5); next `/wr-itil:review-problems` will re-rate.
+Last reviewed: 2026-05-14 **README reconciled** — 3 drift entries corrected: P039, P040, P041 (all missing open). Reconciliation contract per **wr-itil P118 + wr-itil ADR-014** amended ("Reconciliation as preflight robustness layer"). WSJF for new rows is a deferred estimate (3/M=1.5); next `/wr-itil:review-problems` will re-rate.
 
 Last reviewed: 2026-05-14 — P040 → Known Error (RCA corrected — Cloudflare Worker `safeIps` strict-equality bug + UR IP drift, not ADR 024 origin enforcement; Referer-header workaround documented; WSJF 1.5 → 20.0). P042 captured (version-control the worker via Terraform — closes ADR 018 line 50/63). ADR 016 amended to require the Referer header in Confirmation; BRIEFING.md line 65 misattribution corrected; release.yml gains worker-vs-origin smoke probes.
 
@@ -198,6 +198,8 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-10 **P099 captured** — the assistant pushes interface work onto the user instead of presenting decidable choices in the interface the user actually has (lightweight aside via /wr-itil:capture-problem)
 
 ## 2026-08-19
+
+> Last reviewed: 2026-08-19 **P108 rescored 6 → 9 and its cause fixed** — a deploy failure after a successful publish orphaned the 3.3.2 container image, unrecoverably. Root cause was GitHub's implicit success() on docker-publish, now `!cancelled()`. ADR-050 records the decision and supersedes four ADR-040 clauses; no recovery mechanism is built, so 3.3.2 gets no image (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-19 **P108 captured** — releasing 3.3.2, the deploy failed AFTER a successful npm publish, so docker-publish (gated on the whole release job) skipped and re-running could not recover it; npm and production are on 3.3.2 and the container registry is not. ADR-040 records this as an accepted Bad consequence with a local-PAT break-glass; the ticket asks whether that acceptance still holds (lightweight aside via /wr-itil:capture-problem)
 

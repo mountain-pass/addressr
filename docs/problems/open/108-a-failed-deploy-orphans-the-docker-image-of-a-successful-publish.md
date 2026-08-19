@@ -142,8 +142,10 @@ the gate. That is why re-running — the obvious first move, and the one the too
       if so whether the deploy should wait for registry availability before installing. Evidence so far is
       circumstantial but consistent: the deploy began about two minutes after publish, and the identical
       package installs cleanly now.
-- [ ] **R023 says its fixes are "not yet exercised in anger." That arguably stopped being true on
-      2026-08-19.** On the re-run the watcher reported green while `docker-publish` was skipped, and R023's
+- [ ] **R023 records its fixes as pending exercise against a live failure. That arguably stopped being
+      true on 2026-08-19.** (An earlier version of this task put quotation marks around a
+      sentence R023 does not contain. Corrected 2026-08-19; the invented wording is not restated here, so a
+      search for it returns nothing.) On the re-run the watcher reported green while `docker-publish` was skipped, and R023's
       default-deny scan treats `skipped` as acceptable _by design_. This incident sits inside R023's own
       declared residual and its Monitoring trigger — the first live red run after those fixes — has fired.
       Update the entry rather than leaving it claiming otherwise.

@@ -83,14 +83,14 @@ whether packages resolve, not for whether what they declare is what they use.
       **could not have run**. `ci:version` and `ci:publish` are guarded:
 
       ```
-          ci:version: [ "$CI" = true ] && changeset version || echo "Dry run: changeset version"
-          ```
+              ci:version: [ "$CI" = true ] && changeset version || echo "Dry run: changeset version"
+              ```
 
-          Locally `CI` is unset, so both take the `||` branch, echo a string, never invoke `changeset`, and exit 0
-          **whether or not the binary resolves**. A local `npm run ci:publish` passes identically in the broken and
-          the working case. Force the guard (`CI=true`) or, better, assert resolution without mutating anything:
-          `npx --no-install changeset --version` from the root after a clean install, which fails hard when the
-          binary is unresolvable.
+              Locally `CI` is unset, so both take the `||` branch, echo a string, never invoke `changeset`, and exit 0
+              **whether or not the binary resolves**. A local `npm run ci:publish` passes identically in the broken and
+              the working case. Force the guard (`CI=true`) or, better, assert resolution without mutating anything:
+              `npx --no-install changeset --version` from the root after a clean install, which fails hard when the
+              binary is unresolvable.
 
 - [ ] Pin the install to `npx npm@10 ci`. Local npm 11 is not CI npm 10, and ADR-046's own Confirmation
       criteria name `npx npm@10 ci` resolution — an unpinned "clean `npm ci`" reproduces a divergence this
@@ -135,7 +135,7 @@ whether packages resolve, not for whether what they declare is what they use.
   packages P106 had to hand-clear, reaches the production tree only via `@changesets/git` via
   `@changesets/cli`; the whole `@changesets` subtree is inside the 234-package corpus P106 must cover. Fixing
   this shrinks that ticket's problem. The ordering argument is composition, not the effort divisor.
-- **P104** ([`104-perf-probe-retrieve-threshold-passes-on-zero-samples.md`](104-perf-probe-retrieve-threshold-passes-on-zero-samples.md))
+- **P104** ([`104-perf-probe-retrieve-threshold-passes-on-zero-samples.md`](../closed/104-perf-probe-retrieve-threshold-passes-on-zero-samples.md))
   — found in the same sitting; the scoring convention used here is the one P104 was corrected to.
 - **JTBD-400** (Ship Releases Reliably From Trunk), persona `addressr-maintainer`.
 

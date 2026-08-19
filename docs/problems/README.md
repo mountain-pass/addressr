@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-19 **P108 rescored 6 → 9 and its cause fixed** — a deploy failure after a successful publish orphaned the 3.3.2 container image, unrecoverably. Root cause was GitHub's implicit success() on docker-publish, now `!cancelled()`. ADR-050 records the decision and supersedes four ADR-040 clauses; no recovery mechanism is built, so 3.3.2 gets no image (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-19 **P104 closed, verified against a dispatched run** — the perf probe's retrieve leg read `links.self.href`, a key no served response carries, so it threw on every iteration, issued zero retrieve requests, and its `p(95)<1000` threshold passed over an empty sample set. Fixed to build the URL from the hit's `pid`, with an `http_reqs` count floor on both legs and an out-of-band validity check that reds the job when a leg measures nothing. Verified by run `32250954868`: every threshold ticked, zero crossings, retrieve at 296 requests avg=3.33ms p(95)=6.95ms where it had issued zero. The floor shipped at `count>500`, calibrated from a request count the defect itself inflated, and breached on the first healthy run — recalibrated to 100. Two residuals carried to P032: the error-path-with-samples subclass, and that nothing pins the floor against attainable throughput
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -21,7 +21,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
-| 8.0  | P104 | Perf probe's retrieve threshold passes on zero samples                | Medium (8)   | Open          | S      | 2026-08-19 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
 | 8.0  | P107 | A verification vouches only for the state it ran against              | High (16)    | Open          | M      | 2026-08-19 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
