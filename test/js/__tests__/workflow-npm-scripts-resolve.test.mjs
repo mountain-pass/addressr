@@ -208,3 +208,71 @@ describe('workflows — every `npm run` resolves to a declared script', () => {
     assert.deepStrictEqual(problems, [], `\n${problems.join('\n')}\n`);
   });
 });
+
+describe('workflows — no `job` context inside a step `with:` block', () => {
+  // WHY THIS EXISTS. `release-pr-plan.yml` interpolated `${{ toJSON(job.status) }}`
+  // into a `github-script` step's `with: script:`. The `job` context is not
+  // available there, and GitHub rejects the workflow at PARSE time for it — so
+  // the file never ran at all. The failure shape is the problem: the run
+  // appears in the Actions list, its single job sits at QUEUED with ZERO steps,
+  // and the run concludes `startup_failure` with no annotation and no log.
+  // `gh run view --log-failed` returns nothing, because nothing ever executed.
+  //
+  // It had never run once since being added. That is the same class as the
+  // six-day `genversion` outage this file's first guard exists for — a workflow
+  // shipped and assumed working — except one level earlier: not a step that
+  // fails, a file that never starts.
+  //
+  // SCOPE: `job` only. `runner`, `steps`, `env`, `secrets`, `github`, `needs`,
+  // `matrix` and `inputs` are all legitimately available inside `with:` — the
+  // repo uses `runner.temp` there today — so flagging them would be false.
+  const files = readdirSync(workflowDir).filter((f) => /\.ya?ml$/.test(f));
+
+  /** Lines inside a `with:` block, by indentation. Not a YAML parser. */
+  const withBlockLines = (body) => {
+    const out = [];
+    let indent = null;
+    for (const [i, line] of body.split('\n').entries()) {
+      const opens = /^(\s*)with:\s*$/.exec(line);
+      if (opens) {
+        indent = opens[1].length;
+        continue;
+      }
+      if (indent === null) continue;
+      if (line.trim() && line.search(/\S/) <= indent) {
+        indent = null;
+        continue;
+      }
+      out.push({ line, n: i + 1 });
+    }
+    return out;
+  };
+
+  it('finds `with:` blocks to check, so a zero-match pass is impossible', () => {
+    const total = files.reduce(
+      (n, f) => n + withBlockLines(readFileSync(path.join(workflowDir, f), 'utf8')).length,
+      0,
+    );
+    assert.ok(total > 20, `only ${total} lines found inside \`with:\` blocks — the scanner has rotted`);
+  });
+
+  it('never references the `job` context there', () => {
+    const problems = [];
+    for (const file of files) {
+      for (const { line, n } of withBlockLines(readFileSync(path.join(workflowDir, file), 'utf8'))) {
+        if (/^\s*#/.test(line)) continue; // prose about the code is not the code
+        for (const [, expr] of line.matchAll(/\$\{\{\s*(.*?)\s*\}\}/g)) {
+          if (/\bjob\./.test(expr)) {
+            problems.push(
+              `${file}:${n}: \`${expr}\` uses the \`job\` context inside a \`with:\` block. ` +
+                'GitHub rejects the file at parse time, so the workflow never starts — the run ' +
+                'concludes `startup_failure` with a QUEUED job and no steps. Use ' +
+                '`steps.<id>.outcome` instead.',
+            );
+          }
+        }
+      }
+    }
+    assert.deepStrictEqual(problems, [], `\n${problems.join('\n')}\n`);
+  });
+});

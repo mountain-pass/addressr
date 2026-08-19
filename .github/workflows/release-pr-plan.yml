@@ -165,6 +165,7 @@ jobs:
       # explicit workspace, because the fallback derives it from
       # npm_lifecycle_event and would target a workspace that does not exist.
       - name: Terraform plan (no apply)
+        id: tfplan
         uses: devcontainers/ci@v0.3
         env:
           TF_VAR_aws_secret_key: ${{ secrets.TF_VAR_aws_secret_key }}
@@ -246,7 +247,7 @@ jobs:
           script: |
             const MARKER = '<!-- release-pr-plan -->';
             const armed = ${{ toJSON(steps.arms.outputs.changed) }} === 'true';
-            const planned = ${{ toJSON(job.status) }} === 'success';
+            const planned = ${{ toJSON(steps.tfplan.outcome) }} === 'success';
             const body = [
               MARKER,
               '## Terraform plan for this release',

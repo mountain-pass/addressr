@@ -210,7 +210,15 @@ describe('release-pr-plan — the raw plan never leaves the runner', () => {
     const script = String(planStep('Upsert the plan comment').with.script);
     const ALLOWED_INTERPOLATIONS = [
       'toJSON(steps.arms.outputs.changed)',
-      'toJSON(job.status)',
+      // Was `toJSON(job.status)` until 2026-08-19. The `job` context is not
+      // available inside a step's `with:`, and GitHub rejects the whole file at
+      // PARSE time for it — so the workflow never started at all: the job sat
+      // QUEUED with zero steps and the run concluded `startup_failure`. It had
+      // therefore never once run since being added. `steps.tfplan.outcome`
+      // carries no plan content (it is one of success/failure/cancelled/skipped)
+      // and is the more precise question anyway: `job.status` means "status so
+      // far", while the comment needs to say whether THE PLAN produced a plan.
+      'toJSON(steps.tfplan.outcome)',
       'toJSON(steps.project.outputs.summary)',
     ];
     const used = [...script.matchAll(/\$\{\{\s*(.*?)\s*\}\}/g)].map((m) => m[1]);
