@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-18 **P100 captured** — the production recovery floor has never been measured, and refusing a manual recovery path makes that gap load-bearing (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-18 **P103 captured** — workflow referrers outside guard coverage rot unseen; the same file broke twice, both times found by review rather than by test (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -10,10 +10,12 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
 | 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices  | High (12)    | Open          | S      | 2026-08-10 | internal |
+| 12.0 | P101 | Scheduled workflow's loud failure has no reader                       | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 9.0  | P100 | Production recovery floor has never been measured                     | Medium (9)   | Open          | S      | 2026-08-18 | internal |
+| 8.0  | P103 | Workflow referrers outside guard coverage rot unseen                  | Medium (8)   | Open          | M      | 2026-08-18 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |

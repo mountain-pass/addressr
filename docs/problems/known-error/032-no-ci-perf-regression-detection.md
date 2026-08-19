@@ -5,7 +5,9 @@
 **Priority**: 9 (Medium) — Impact: Moderate (3) x Likelihood: Possible (3)
 **Origin**: internal
 **Effort**: M — CI workflow + validation test wiring (k6 exit-code discrimination shipped; awaiting a clean validation run)
-**WSJF**: 9.0 — (9 × 2.0) / 2 — backfilled 2026-07-29 (review)
+
+> **2026-08-18 — that exit criterion has been UNREACHABLE since 2026-08-12.** "Awaiting a clean validation run" could not arrive: `perf-regression.yml`'s `Generate version file` step ran `npm run genversion`, a script that moved into the `@mountainpass/addressr` workspace with the ADR-046 restructure and no longer resolves at the root. The job died at that step on **every** scheduled run from 2026-08-12 to 2026-08-17 inclusive — six consecutive nights — so no run reached k6 at all. Repointed to `-w @mountainpass/addressr` this date, along with a second unrepointed referrer in the same file (`import('./service/address-service.js')` -> `./packages/addressr/service/address-service.js`, whose twin at `release.yml:151` had been repointed at the time; this one was cache-masked by the G-NAF `-f` guard). The clock on a clean validation run starts from the first green scheduled run after this date, not from the ticket's original estimate.
+> **WSJF**: 9.0 — (9 × 2.0) / 2 — backfilled 2026-07-29 (review)
 
 ## Description
 

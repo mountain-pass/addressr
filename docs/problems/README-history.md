@@ -189,4 +189,10 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 ## 2026-08-18
 
+> Last reviewed: 2026-08-18 **P102 captured** — the standing no-amendment directive conflicts with DECISION-MANAGEMENT.md, which calls amendment the most-used treatment (lightweight aside via /wr-itil:capture-problem)
+
+> Last reviewed: 2026-08-18 **P101 captured** — a scheduled workflow's loud failure has no reader; six nights of unread red on the perf-regression probe (lightweight aside via /wr-itil:capture-problem)
+
+> Last reviewed: 2026-08-18 **P100 captured** — the production recovery floor has never been measured, and refusing a manual recovery path makes that gap load-bearing (lightweight aside via /wr-itil:capture-problem)
+
 > Last reviewed: 2026-08-10 **P099 captured** — the assistant pushes interface work onto the user instead of presenting decidable choices in the interface the user actually has (lightweight aside via /wr-itil:capture-problem)

@@ -62,8 +62,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Generate version file
-        # loader.js / server2.js printVersion() import ./version.js.
-        run: npm run genversion
+        # `loader.js` / `src/server2.js` reach `printVersion()`, which imports
+        # `../version.js` — resolving to `packages/addressr/version.js`. The path
+        # is module-relative, NOT repo-root-relative, which is the whole point of
+        # the `-w` below.
+        #
+        # WORKSPACE-SCOPED SINCE 2026-08-18, and it was root-scoped before. This
+        # read `npm run genversion`, which has no root script to resolve to — the
+        # script moved into `@mountainpass/addressr` with the ADR-046 restructure.
+        # The step therefore failed on EVERY scheduled run from 2026-08-12
+        # onward, six consecutive days, and nobody read it. The root `pretest:js`
+        # was repointed at the time; this file was missed because it is
+        # `schedule`-triggered and so reds nothing anyone waits on.
+        run: npm run genversion -w @mountainpass/addressr
       - name: Cache G-NAF zip
         uses: actions/cache@v6
         id: gnaf-cache
@@ -75,9 +86,27 @@ jobs:
       - name: Prepare OT test fixture
         run: |
           # Same slim-OT-fixture prep as release.yml build-and-test.
+          # THE IMPORT BELOW IS REPO-ROOT-RELATIVE, unlike the module-relative
+          # imports elsewhere in this repo: `node -e` runs with cwd at the repo
+          # root. Repointed 2026-08-18 — this was the second unrepointed
+          # ADR-046 referrer in this file, cache-masked because the `-f` test
+          # below skips the branch on a G-NAF cache hit and the Release workflow
+          # warms the same key, so it threw ERR_MODULE_NOT_FOUND only on a miss.
+          # Its twin is the `await import(... address-service.js)` inside
+          # release.yml's own "Prepare OT test fixture" step, which was
+          # repointed at the time. The `hashFiles(...)` key above WAS repointed:
+          # this file carried the right path and the wrong one, two lines apart.
+          #
+          # THESE LINES LIVE OUTSIDE THE `node -e` STRING, and that is not
+          # cosmetic. An earlier version of this comment sat INSIDE it and broke
+          # the step two ways at once: backticks inside a double-quoted shell
+          # string are command substitution, so bash ran `node -e` and `-f` and
+          # errored; and `#` is not a JavaScript comment, so node parsed the
+          # body as ESM and threw SyntaxError on the first one. Explanations go
+          # above the `if`, matching release.yml.
           if [ ! -f target/gnaf/*.zip ]; then
             node --input-type=module -e "
-              const { fetchGnafFile } = await import('./service/address-service.js');
+              const { fetchGnafFile } = await import('./packages/addressr/service/address-service.js');
               console.log('Downloaded:', await fetchGnafFile());
             "
           fi
