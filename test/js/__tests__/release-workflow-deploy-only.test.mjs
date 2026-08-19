@@ -1,3 +1,4 @@
+// @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 // P039: pin the `deploy_only` predicates in .github/workflows/release.yml.
 //
 // PARSED, not grepped, as of 2026-08-08 (P033). The previous header argued the
@@ -64,10 +65,20 @@
 // `success() &&`, and the parentheses in DEPLOY_GATE below are what stop
 // `success() && A || B` deploying after an upstream failure.
 //
-// STILL TEXT, deliberately: the assertions over `scripts/release-watch.sh` and
-// `scripts/push-and-watch.sh` below. Those are shell, not YAML, and the right
-// shape there is a fixture test over an extracted predicate — recorded on P085,
-// not solved by this change.
+// STILL TEXT, and illegitimate rather than exempt: the assertions over
+// `scripts/release-watch.sh` and `scripts/push-and-watch.sh` below. Those are
+// shell, not YAML, and the right shape is a fixture test over an extracted
+// predicate. Partly done — the scan itself was extracted to
+// `scripts/scan-jobs.awk` and is fixture-tested in `scan-jobs-awk.test.mjs`
+// on 2026-08-19, in 15 cases — but the pins below still read source text, and
+// under the rule settled 2026-08-20 a text assertion over source counts
+// whether it pins a decision or a connection, because the line can be present
+// and never reached.
+//
+// THEY ARE STILL LIVE AND LOAD-BEARING. "Illegitimate" names the SHAPE, not
+// the standing: a red here is a real signal about the release path. The remedy
+// is to convert one to a fixture test — never to delete it, skip it, or widen
+// the pattern until it passes.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -773,7 +784,12 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
     );
 
     // 2. The scan is default-deny, and it now lives in scripts/scan-jobs.awk.
-    //    THIS PIN NOW ASSERTS WIRING, NOT THE DECISION — the decision is
+    //    THIS IS STILL A TEXT ASSERTION OVER SOURCE, and the rule settled
+    //    2026-08-20 counts it: pinning a connection rather than a decision is
+    //    not an exemption, because the line can be present and never reached.
+    //    Unconverted, not discharged — and LIVE, so a red here is a real
+    //    signal to convert, not to delete or relax. What the repointing DID
+    //    buy is real but smaller than a conversion: the decision itself is now
     //    fixture-tested in scan-jobs-awk.test.mjs against real conclusions and
     //    real exit codes. P085 predicted this pin's brittleness in terms: the
     //    awk-literal assertions "would hold the property and still break the

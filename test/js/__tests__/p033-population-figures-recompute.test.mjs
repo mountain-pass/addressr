@@ -1,3 +1,10 @@
+// @jtbd JTBD-400 (Ship Releases Reliably From Trunk) — reached via the job
+// statement's anti-erosion clause, not via the release path: this file guards a
+// problem ticket's prose, and P033 names this job in its own "Who is affected"
+// line. Sibling of decisions-invariants.test.mjs, which is the same shape over
+// docs/decisions/. Stated because the reach is one hop further out than the
+// other release-path guards, and a reader should be able to reject it.
+//
 // P033 publishes a predicate for its population, then states figures derived
 // from it. This recomputes the predicate and fails if the ticket disagrees.
 //
@@ -278,7 +285,7 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
 
   it('sums the Step 4 verdict table — ARITHMETIC ONLY; the verdicts are judged, not computed', () => {
     // Scope is in the title deliberately. The objection to this guard was that
-    // it would read as though the wiring/sentinel/decision classification were
+    // it would read as though the sentinel/decision classification were
     // mechanised when it is a hand-read judgement — and the answer is the same
     // device the under-listing check above already uses: say what it covers in
     // the name. It checks that the rows add up, nothing more.
@@ -302,7 +309,7 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
       rows.push(line);
     }
     assert.ok(rows.length >= 8, `expected the verdict table, found ${rows.length} rows`);
-    const tally = { wiring: 0, sentinel: 0, decision: 0 };
+    const tally = { unclassified: 0, sentinel: 0, decision: 0 };
     let pins = 0;
     for (const row of rows) {
       const multiplier = /, x2 \|/.test(row) ? 2 : 1;
@@ -311,7 +318,7 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
         ? 'sentinel'
         : /\| DECISION/.test(row)
           ? 'decision'
-          : 'wiring';
+          : 'unclassified';
       tally[verdict] += multiplier;
     }
     const stated = ticket
@@ -319,7 +326,7 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
       .match(/\*\*(\w+) pins across (\w+) files: (\d+) wiring, (\d+) sentinels, (\d+) decisions/);
     assert.ok(stated, 'the Step 4 conclusion sentence must be present');
     assert.equal(pins, WORDS.indexOf(stated[1].toLowerCase()), `table rows sum to ${pins}`);
-    assert.equal(tally.wiring, Number(stated[3]), `table has ${tally.wiring} wiring rows`);
+    assert.equal(tally.unclassified, Number(stated[3]), `table has ${tally.unclassified} unclassified rows`);
     assert.equal(tally.sentinel, Number(stated[4]), `table has ${tally.sentinel} sentinel rows`);
     assert.equal(tally.decision, Number(stated[5]), `table has ${tally.decision} decision rows`);
 
@@ -350,7 +357,29 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // different repairs and both are named: found 0 means reworded or stale,
     // found 2 means history retained — scope or backtick the quote.
     const occurrencesOf = (phrase) => flat.split(phrase).length - 1;
-    const headline = `of which ${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate`;
+    // The rule was settled by the maintainer on 2026-08-20 in favour of the
+    // strict reading: no wiring exemption. So the range collapsed — every pin
+    // that is not an anti-vacuity sentinel is illegitimate, and the two ends
+    // that used to differ are now the same number. Asserted as one figure,
+    // still derived, and it stays correct if a future pin is added in either
+    // category.
+    // Hard zero on the FALLBACK bucket, which asserts two things at once: the
+    // wiring exemption stays retired, and every row is classifiable. Sum
+    // consistency alone would not give the second — a typo'd verdict cell
+    // lands in the fallback, and the prose gets hand-edited to match, so the
+    // sum balances while a row goes silently uncounted.
+    //
+    // Named `unclassified`, not `wiring`: the message a reader gets on a typo
+    // should not send them to re-litigate a rule the maintainer settled.
+    const unclassifiedRows = rows.filter(
+      (r) => !/\| sentinel/.test(r) && !/\| DECISION/.test(r),
+    );
+    assert.deepEqual(
+      unclassifiedRows,
+      [],
+      `every table row needs a sentinel or DECISION verdict; these have neither:\n${unclassifiedRows.join('\n')}`,
+    );
+    const headline = `of which ${wordOf(pins - tally.sentinel)} are illegitimate`;
     assert.equal(
       occurrencesOf(headline),
       1,
@@ -368,12 +397,8 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // reads "the six plus the three wiring rows" and stays green. A rationale
     // that argued FOR the old value lives nearest the change, which is exactly
     // where it survives a correction.
-    const derivation = `the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows`;
-    assert.equal(
-      occurrencesOf(derivation),
-      1,
-      `expected exactly one "${derivation}", found ${occurrencesOf(derivation)}`,
-    );
+    // The "six plus three wiring rows" derivation clause is retired with the
+    // wiring exemption itself — there is no longer a two-part sum to publish.
   });
 
   it('does not restate a cardinal the predicate contradicts', () => {

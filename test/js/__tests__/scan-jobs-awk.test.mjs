@@ -1,3 +1,4 @@
+// @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 // Fixture test for the watchers' default-deny job scan.
 //
 // WHY THIS EXISTS, and why it replaces source-inspection pins rather than
@@ -13,9 +14,13 @@
 // evidence." So the scan moved to `scripts/scan-jobs.awk`, where its whole
 // contract is an exit code, and exit codes can be asserted against real input.
 //
-// This does not pin the scripts' wiring — that stays with the source pins in
-// release-workflow-deploy-only.test.mjs. It pins the DECISION, which is the
-// part that was wrong five times.
+// This pins what the scan DECIDES, which is the part that was wrong five times.
+// Whether the scripts LOAD it is still pinned as source text in
+// release-workflow-deploy-only.test.mjs — and under the rule settled
+// 2026-08-20 that pin stays in the illegitimate population rather than being
+// discharged from it: pinning a connection is not an exemption, because the
+// line can be present and never reached. Unconverted, not dead — a red there
+// is a real signal, to be converted rather than deleted.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

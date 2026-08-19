@@ -10,8 +10,8 @@
 //
 // WHY THIS IS A FIXTURE TEST AND NOT A GREP. The sibling
 // `release-workflow-deploy-only.test.mjs` records, in its own header, that its
-// shell assertions are "STILL TEXT, deliberately... the right shape there is a
-// fixture test over an extracted predicate". This is the second instance of
+// shell assertions are still text, and that the right shape there is a fixture
+// test over an extracted predicate. This is the second instance of
 // that need, which is what justified building the harness rather than adding a
 // third grep. Version resolution is extracted into `deploy/resolve-version.sh`
 // so it can be RUN, with a stub `npm` on PATH standing in for the registry.
