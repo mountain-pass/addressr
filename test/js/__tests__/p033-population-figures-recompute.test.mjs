@@ -336,9 +336,25 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // reading "six to twelve" above a table summing to nine, which is the
     // authoritative-looking stale pin this is defending against.
     const flat = ticket.replaceAll(/\s+/g, ' ');
-    assert.ok(
-      flat.includes(`of which ${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate`),
-      `headline should read "${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate"`,
+    // Occurrence count, not membership — same reasoning as the intersection
+    // loop above, and it transfers unchanged. The load-bearing direction is not
+    // a numeric collision; it is that this document RETAINS superseded prose
+    // verbatim (a "from 6 to as many as 9" restatement and an "An earlier
+    // version of this limit claimed..." block are both live). So `includes`
+    // finds the old wording in a history block and passes after the live
+    // sentence has been deleted or reworded — and rewording this sentence is
+    // the scheduled next edit.
+    //
+    // `=== 1` does redden on a correct edit that quotes the old sentence in a
+    // supersession note. That cost is accepted because the two failures are
+    // different repairs and both are named: found 0 means reworded or stale,
+    // found 2 means history retained — scope or backtick the quote.
+    const occurrencesOf = (phrase) => flat.split(phrase).length - 1;
+    const headline = `of which ${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate`;
+    assert.equal(
+      occurrencesOf(headline),
+      1,
+      `expected exactly one "${headline}", found ${occurrencesOf(headline)}`,
     );
 
     // The derivation clause carries a THIRD cardinal — the wiring count — and
@@ -352,9 +368,11 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // reads "the six plus the three wiring rows" and stays green. A rationale
     // that argued FOR the old value lives nearest the change, which is exactly
     // where it survives a correction.
-    assert.ok(
-      flat.includes(`the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows`),
-      `the derivation should read "the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows"`,
+    const derivation = `the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows`;
+    assert.equal(
+      occurrencesOf(derivation),
+      1,
+      `expected exactly one "${derivation}", found ${occurrencesOf(derivation)}`,
     );
   });
 
