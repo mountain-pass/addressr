@@ -71,7 +71,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 // js-yaml 5 dropped the default export and reorganised the public API
 // around flat named exports, so this is `{ load }` rather than `yaml`.
@@ -772,12 +772,51 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
       'release-watch.sh must ACT on the captured watch status, not merely capture it',
     );
 
-    // 2. The scan must be default-deny, not an allow-list of failure words.
-    //    Anything that is not success or skipped has to fail.
+    // 2. The scan is default-deny, and it now lives in scripts/lib/scan-jobs.awk.
+    //    THIS PIN NOW ASSERTS WIRING, NOT THE DECISION — the decision is
+    //    fixture-tested in scan-jobs-awk.test.mjs against real conclusions and
+    //    real exit codes. P085 predicted this pin's brittleness in terms: the
+    //    awk-literal assertions "would hold the property and still break the
+    //    pin" under a reimplementation, and that is exactly what extracting the
+    //    filter did. What matters here is that the script loads the shared scan
+    //    rather than growing a private copy that drifts from the tested one.
     assert.match(
       releaseWatch,
+      /awk -F'\\t' -f "\$SCRIPT_DIR\/lib\/scan-jobs\.awk"/,
+      'release-watch.sh must load the shared default-deny scan from scripts/lib/scan-jobs.awk',
+    );
+    // THE IDIOM, not just the path. The first version of this pin matched
+    // `awk … -f "$SCRIPT_DIR/lib/scan-jobs.awk"` and nothing else — which is
+    // identical whether the call site is a bare assignment or a guarded one,
+    // so it could not fail on the defect the extraction actually introduced.
+    //
+    // scan-jobs.awk encodes its verdict in the exit code, so a bare
+    // `VAR=$(… | awk …)` under `set -euo pipefail` takes awk's status and
+    // terminates the script AT THE ASSIGNMENT. Every diagnostic below it
+    // becomes unreachable: the failure banner, the job list, and the
+    // `show_failure_guidance` block carrying the agent-facing routing line. A
+    // loud failure becomes a silent exit 1 — on the release path, after the
+    // publish and the apply. Verified by running it, and this file documents
+    // the same hazard for the deployment-bump detector.
+    assert.match(
+      releaseWatch,
+      /scan-jobs\.awk"\)\s*&&\s*SCAN_STATUS=0\s*\|\|\s*SCAN_STATUS=\$\?/,
+      'release-watch.sh must CAPTURE the scan status, not bare-assign it — a bare assignment under set -e ' +
+        'exits at the assignment and skips every diagnostic below',
+    );
+    // And the status must be READ. Capturing it and then branching only on
+    // whether stdout was non-empty collapses UNKNOWN (2) into the success path,
+    // which is the empty-scan defect reachable by another route.
+    assert.match(
+      releaseWatch,
+      /\[ "\$SCAN_STATUS" -eq 2 \]/,
+      'release-watch.sh must treat an UNKNOWN scan (exit 2) distinctly, not as success',
+    );
+
+    assert.doesNotMatch(
+      releaseWatch,
       /\$1 == "success" \|\| \$1 == "skipped" \{ next \}/,
-      'release-watch.sh must treat any non-success, non-skipped conclusion as failure',
+      'the scan must not be re-inlined here — one copy, fixture-tested, or it drifts again',
     );
     assert.doesNotMatch(
       releaseWatch,
@@ -837,10 +876,12 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
 
     // 4. check-deps stays exempt — advisory per ADR 015, carries
     //    continue-on-error, so a mature-dependency notice must not red a release.
-    assert.match(
-      releaseWatch,
-      /\$2 == "check-deps" \{ next \}/,
-      'check-deps must stay exempt from the failure scan',
+    // The exemption moved with the scan; it is asserted by name and by
+    // non-extension (a `check-deps-strict` must NOT inherit it) in
+    // scan-jobs-awk.test.mjs, which can prove it rather than match it.
+    assert.ok(
+      existsSync(fileURLToPath(new URL('../../../scripts/lib/scan-jobs.awk', import.meta.url))),
+      'the shared scan carrying the ADR-015 check-deps exemption must exist',
     );
 
     // 5. The PR-checks gate must not select a job name that does not exist.
@@ -881,11 +922,44 @@ describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
     // asserts the scan has not been softened to tolerate `pending`.
     assert.match(
       pushWatch,
-      /\$1 == "success" \|\| \$1 == "skipped" \{ next \}/,
-      'must treat any non-success, non-skipped conclusion as failure',
+      /awk -F'\\t' -f "\$SCRIPT_DIR\/lib\/scan-jobs\.awk"/,
+      'push-and-watch.sh must load the shared default-deny scan from scripts/lib/scan-jobs.awk',
     );
-    assert.doesNotMatch(
+    // THE IDIOM, not just the path. The first version of this pin matched
+    // `awk … -f "$SCRIPT_DIR/lib/scan-jobs.awk"` and nothing else — which is
+    // identical whether the call site is a bare assignment or a guarded one,
+    // so it could not fail on the defect the extraction actually introduced.
+    //
+    // scan-jobs.awk encodes its verdict in the exit code, so a bare
+    // `VAR=$(… | awk …)` under `set -euo pipefail` takes awk's status and
+    // terminates the script AT THE ASSIGNMENT. Every diagnostic below it
+    // becomes unreachable: the failure banner, the job list, and the
+    // `show_failure_guidance` block carrying the agent-facing routing line. A
+    // loud failure becomes a silent exit 1 — on the release path, after the
+    // publish and the apply. Verified by running it, and this file documents
+    // the same hazard for the deployment-bump detector.
+    assert.match(
       pushWatch,
+      /scan-jobs\.awk"\)\s*&&\s*SCAN_STATUS=0\s*\|\|\s*SCAN_STATUS=\$\?/,
+      'push-and-watch.sh must CAPTURE the scan status, not bare-assign it — a bare assignment under set -e ' +
+        'exits at the assignment and skips every diagnostic below',
+    );
+    // And the status must be READ. Capturing it and then branching only on
+    // whether stdout was non-empty collapses UNKNOWN (2) into the success path,
+    // which is the empty-scan defect reachable by another route.
+    assert.match(
+      pushWatch,
+      /\[ "\$SCAN_STATUS" -eq 2 \]/,
+      'push-and-watch.sh must treat an UNKNOWN scan (exit 2) distinctly, not as success',
+    );
+
+    // POINTED AT THE FILE THE SCAN NOW LIVES IN. Left aimed at pushWatch this
+    // asserted the absence of a line from a file that could never contain it —
+    // vacuous, and reading as coverage. The property itself is proven against
+    // real input in scan-jobs-awk.test.mjs; this keeps the negative so a
+    // re-inline-and-weaken in one step still reds.
+    assert.doesNotMatch(
+      readFileSync(fileURLToPath(new URL('../../../scripts/lib/scan-jobs.awk', import.meta.url)), 'utf8'),
       /\$1 == "pending" \{ next \}/,
       'the scan must NOT be weakened to let pending jobs pass',
     );

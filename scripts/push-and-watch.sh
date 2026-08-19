@@ -10,6 +10,12 @@
 
 set -euo pipefail
 
+# Resolve this script's own directory so the job scan loads from lib/ regardless
+# of the caller's cwd. `npm run` sets cwd to the package root, but the scripts
+# are also run directly; BASH_SOURCE is the only thing true in both cases.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
@@ -138,13 +144,38 @@ if [ -z "$JOBS_TSV" ]; then
   exit 1
 fi
 
-BAD_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' '
-  $2 == "check-deps" { next }
-  $1 == "success" || $1 == "skipped" { next }
-  { print }
-')
+# THE `&& ... || ...` IS LOAD-BEARING. scripts/release-watch.sh documents why,
+# at its deployment-bump detector (search there for "an assignment IS a simple
+# command") — this comment is a copy of its sibling's and the cross-reference
+# pointed at this file, where that text has never existed. scan-jobs.awk encodes its
+# verdict in the EXIT CODE — 0 green, 1 a job did not succeed, 2 nothing scanned
+# — so a bare `VAR=$(... | awk ...)` under `set -euo pipefail` takes awk's
+# status and terminates the script AT THE ASSIGNMENT, making every diagnostic
+# below unreachable. That defect shipped in this file for one commit on
+# 2026-08-19: the extraction turned a loud failure into a silent exit 1, on the
+# release path, after the publish and the apply. Verified by running it, not by
+# reading it. Do not "tidy" this back into an assignment.
+BAD_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' -f "$SCRIPT_DIR/lib/scan-jobs.awk") && SCAN_STATUS=0 || SCAN_STATUS=$?
 
-if [ -n "$BAD_JOBS" ]; then
+# BRANCH ON THE STATUS, not on whether stdout happened to be non-empty. The
+# scan reports three states and they are epistemically different: 1 is "the run
+# is bad", 2 is "I could not find out". Testing emptiness collapses 2 into the
+# success path — the empty-scan defect this ticket already fixed once, reachable
+# again by a different route the moment the caller stops reading the code.
+#
+# BE ACCURATE ABOUT exit 2: the `[ -z "$JOBS_TSV" ]` guard above already exits
+# on an empty scan, so 2 is UNREACHABLE from here today. This branch is
+# defence-in-depth for the day that guard is refactored away, not a live path —
+# claiming otherwise would be the same overstatement this ticket keeps
+# recording.
+if [ "$SCAN_STATUS" -eq 2 ]; then
+  echo ""
+  echo "Push pipeline status UNKNOWN — $RUN_URL"
+  echo "The job scan returned nothing, so nothing could be verified."
+  exit 1
+fi
+
+if [ "$SCAN_STATUS" -ne 0 ] || [ -n "$BAD_JOBS" ]; then
   echo ""
   echo "Push pipeline failed — $RUN_URL"
   echo "Jobs that did not succeed:"

@@ -51,7 +51,25 @@ Impact × Likelihood _before_ controls.
 - **Empty scan is UNKNOWN, not success — EVIDENCED.** An empty jobs array previously fell through to the green path. Both scripts now exit non-zero on it. This matters most on the release path, where the scan runs after publish and deploy — silence is the worst possible thing to read as success there.
 - **`gh run watch --exit-status`, captured — EVIDENCED.** The code is no longer discarded. The job scan is authoritative, but a non-zero watch exit against an all-green scan also fails, on the grounds that the watcher saw something the scan did not.
 - **Regression-tested against the real failure — EVIDENCED.** Both scripts' predicates were replayed against run `30787856504`, the actual run that reported success while both legs failed. Both now fail it and name both offending legs, ignore advisory `check-deps`, and pass `skipped`. A synthetic `cancelled` leg is caught where it previously passed.
-- **Pinned in CI — EVIDENCED but MECHANISM-COUPLED.** `test/js/__tests__/release-workflow-deploy-only.test.mjs` carries 8 assertions over 5 properties, three of them negative guards naming the exact removed defect strings, and runs under `test:js` on every push. Two of the assertions are awk-literal, so a reimplementation in `jq` would hold the property and still break the pin — it is less brittle than the string pins it replaced, not mechanism-independent. P085 carries the fixture-test remedy as an open task.
+- **Pinned in CI — EVIDENCED, and the mechanism coupling is DISCHARGED 2026-08-19.** The scan is extracted
+  to `scripts/lib/scan-jobs.awk` and its verdict is an exit code — 0 green, 1 a job did not succeed, 2
+  nothing scanned (UNKNOWN, not success). `test/js/__tests__/scan-jobs-awk.test.mjs` feeds it fixtures and
+  asserts those codes across 15 cases: the real run `30787856504` with both matrix legs named; each of
+  `cancelled`, `timed_out`, `startup_failure`, `neutral` and `action_required`, all of which reached the
+  SUCCESS path under the predecessor's failure-word allow-list; each of `pending`, `queued` and
+  `in_progress`; the ADR-015 `check-deps` exemption and its non-extension to a `check-deps-strict`. Four
+  historical defect shapes were reverted in turn and each was caught. The source pins in
+  `release-workflow-deploy-only.test.mjs` are repointed from decision to wiring — what the scan DECIDES is
+  now proven by fixture rather than matched by regex, which is what "mechanism-coupled" named.
+- **A NEW BOUNDARY, opened and closed the same day — recorded because the shape is the entry's own.** The
+  extraction gave the call sites an exit contract they did not have: under `set -euo pipefail` a bare
+  `VAR=$(… | awk …)` takes awk's status, so the script terminated AT THE ASSIGNMENT and every diagnostic
+  below it — the failure banner, the job list, `show_failure_guidance` and its agent-facing routing line —
+  became unreachable. A loud failure became a silent exit 1, on the release path, after the publish and the
+  apply. `release-watch.sh` documents that exact hazard ~100 lines below where it was introduced. Both call
+  sites now use the guarded `&& SCAN_STATUS=0 || SCAN_STATUS=$?` idiom and branch on the status rather than
+  on whether stdout was non-empty, and both properties are pinned and mutation-verified. Direction of the
+  defect was fail-closed-but-mute, not false-green, so this entry's H1 never reopened.
 
 ## Residual Risk
 
@@ -63,7 +81,7 @@ Impact × Likelihood _after_ controls.
 - **Residual Band**: Low
 - **Within appetite?**: Yes
 
-**Not yet exercised in anger.** Both fixes are verified against a REPLAYED run, not against a live failure. Neither has reported on a genuinely red run since landing. That is why this entry stays Active with the treatment marked pending exercise, rather than being retired on the strength of the fix.
+**Partly exercised in anger 2026-08-19: the Monitoring trigger below fired when a release run went red after a successful publish (P108). The watcher reported correctly — but `docker-publish` was `skipped`, which this entry's default-deny scan accepts BY DESIGN, so the run reported green while an artefact was missing. That is inside the declared residual, not a regression of it. Still not exercised against a job that concluded badly.** Both fixes are verified against a REPLAYED run, not against a live failure. Neither has reported on a genuinely red run since landing. That is why this entry stays Active with the treatment marked pending exercise, rather than being retired on the strength of the fix.
 
 ## Treatment
 
@@ -71,7 +89,7 @@ Impact × Likelihood _after_ controls.
 
 The residual sits on two named gaps rather than on the mechanism:
 
-- The CI pin is mechanism-coupled (P085 open task: extract the predicate and fixture-test it).
+- ~~The CI pin is mechanism-coupled~~ — DISCHARGED 2026-08-19, see the Controls entry above: the predicate is extracted to `scripts/lib/scan-jobs.awk` and fixture-tested by exit code.
 - Neither script watches anything but `release.yml`, so a red `docker-image.yml` remains outside both. Ironic given `docker-publish` is what the original hint named; the fix covers every job IN the watched workflow, not every workflow.
 
 **The durable control is the habit, not the script.** Verify a run directly rather than reading a summary line: `gh run view <id> --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'`. That lists matrix-suffixed and newly-added jobs by construction, and it is what caught the failure the scripts missed. Promoted to the briefing's session-start Critical Points on 2026-08-04.
