@@ -229,6 +229,16 @@ A decision moves to `rejected` status when:
 
 Three treatments, ordered by scope: amending a claim inside a decision, replacing a decision with another, and retiring one with nothing in its place. Amendment comes first because it is by far the most frequently exercised of the three.
 
+### What May Be Amended At All: Substance vs Navigation
+
+**MOVED TO A DECISION RECORD 2026-08-18. See [ADR-049 — Amendment scoped by whether a human would ratify it](docs/decisions/049-amendment-scoped-by-whether-a-human-would-ratify-it.proposed.md).**
+
+This section briefly carried the rule itself. It should not have: a rule governing what may be **ratified**, living in a document that carries no `human-oversight` marker and no gate, has no ratification surface of its own. That is precisely the root cause P102 records — a standing direction and this document disagreed for eight days because neither could ratify the other, and a false premise froze into ADR-047 as a result. Restating the rule here would reproduce the defect it exists to close.
+
+**The summary, for orientation only — ADR-049 is authoritative:** amendment is scoped by one question, _would a human need to ratify this edit?_ Substance is prohibited on a ratified decision and routes to a new ADR. Factual corrections — a drifted count, a moved path, a renamed command — are permitted in place under the retain-as-history rule below. Navigational edits, such as a `Related:` cross-reference or an index entry, are permitted at any stage with no retention.
+
+**What was superseded here, retained per the rule below.** This section previously stated the three classes in full, and an earlier version of it contradicted itself: the table said substance routes to a new ADR while a following paragraph said corrections to existing substance take retain-as-history in place. Both readings were live for one turn. ADR-049 carries the resolved form, including the finer cut the contradiction exposed — a stated fact appearing _within_ reasoning is a factual correction; the inferential step itself is substance.
+
 ### Amending a Decision in Place: Retain-as-History vs Rewrite-in-Place
 
 Most corrections are smaller than a supersession — a Confirmation criterion naming a command that no longer exists, a count that has drifted, a justification whose premise expired. Two treatments are available, and the boundary between them is a **lifecycle condition, not a matter of taste**:

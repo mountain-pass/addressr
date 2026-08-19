@@ -92,12 +92,37 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     const oversight = new Map(
       adrFiles.map((f) => [idOf(f), frontmatter(read(f), 'human-oversight')]),
     );
+    // RETAINED HISTORY IS NOT A CURRENT CLAIM, and this exemption was forced by
+    // the rule ADR-049 establishes. Retain-as-history REQUIRES quoting the
+    // superseded wording verbatim — so a correction made under that rule
+    // deliberately reproduces the stale sentence, and a fence that cannot tell a
+    // live claim from a quotation of a dead one fights every such correction.
+    // Both records ratified in the 2026-08-18 drain hit this within minutes.
+    //
+    // SCOPED BY PROXIMITY, NOT BY LINE, and the first version got this wrong.
+    // It required the marker on the same LINE, which sounded narrow and is not:
+    // this corpus writes unwrapped markdown, so a "line" is a whole paragraph —
+    // ADR-048's is 1,367 characters. Worse, it matched case-insensitively, so
+    // the shouty sentinel spellings REPOINTED and AMENDED collapsed into the
+    // ordinary English words "repointed" and "amended", which appear in narrative
+    // prose here 2 and 5 times respectively. A live stale claim sharing a
+    // paragraph with either would have been silently exempted.
+    //
+    // Retain-as-history reads "**Factual correction <date>**, retained per … the
+    // wording was *\"<quote>\"*" — the marker immediately PRECEDES the quote. So
+    // require it within a short window before the match, and require the sentinel
+    // spellings to be literal.
+    const RETAINED = /Factual correction|retained per|the wording was|superseded wording/;
+    const WINDOW = 240;
     const wrong = [];
     for (const f of adrFiles) {
-      const claims = bodyOf(read(f)).matchAll(
+      const body = bodyOf(read(f));
+      const claims = body.matchAll(
         /(ADR[\s-]0*(\d{3}))[^.\n]{0,80}?human-oversight:\s*`?unconfirmed/g,
       );
-      for (const [, id] of claims) {
+      for (const m of claims) {
+        const id = m[2];
+        if (RETAINED.test(body.slice(Math.max(0, m.index - WINDOW), m.index))) continue;
         const target = `ADR-${id.slice(-3)}`;
         if (oversight.get(target) === 'confirmed') {
           wrong.push(
@@ -243,6 +268,56 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
           `ADR-${target}: ADR-${superseding} declares supersedes-clause "${clause}" but ADR-${target}'s badge carries no `
             + `"**Superseded in part by:** ADR-${superseding}" — the supersession is invisible from the superseded end`,
         );
+      }
+    }
+
+    assert.deepStrictEqual(problems, [], problems.join('; '));
+  });
+
+  it('no compendium badge claims a supersession no ADR declares', () => {
+    // THE SYMMETRIC HALF of the check above, and it exists because the asymmetry
+    // bit within a day of the first one shipping. That check walks
+    // scalar -> badge: every `supersedes-clause` must have a matching
+    // `Superseded in part by:` reference. Nothing walked the other way, so a
+    // badge left behind after its scalar is removed is an orphan no test sees —
+    // a compendium asserting a supersession that no decision record makes.
+    //
+    // That is not hypothetical. ADR-048 was drafted as a clause supersession of
+    // ADR-046, got its badge, and was then rewritten as a standalone decision on
+    // review. The scalar went; the badge would have stayed, and the compendium —
+    // which this file's header calls out as trusted precisely because it looks
+    // derived — would have carried a false supersession indefinitely.
+    const compendium = read('README.md');
+    const declared = new Set();
+    for (const f of adrFiles) {
+      const clause = frontmatter(read(f), 'supersedes-clause');
+      if (!clause) continue;
+      const superseding = /^(\d{3})/.exec(f.replace(/^.*\//, ''))?.[1];
+      const target = /^(\d{3})/.exec(clause)?.[1];
+      if (superseding && target) declared.add(`${target}<-${superseding}`);
+    }
+
+    const problems = [];
+    // Every badge claim in the compendium must be backed by a declared scalar.
+    const badgeRe = /^### ADR-(\d{3})\b[^\n]*\n+(\*\*Status:\*\*[^\n]*)$/gm;
+    for (const m of compendium.matchAll(badgeRe)) {
+      const target = m[1];
+      // ALL ids in the field, not just the first. The obvious form —
+      // /Superseded in part by:\*\*[^|]*?ADR-(\d{3})/g — advances lastIndex past
+      // the first id, then needs a second literal marker that is not there, so
+      // `**Superseded in part by:** ADR-047, ADR-050` checks ADR-047 and lets
+      // ADR-050 through unasserted. That fails OPEN, and it arises exactly when
+      // a second clause supersession targets the same parent — which ADR-047's
+      // own reassessment criteria anticipate. Isolate the field first, then scan
+      // every id inside it.
+      const field = /Superseded in part by:\*\*([^|]*)/.exec(m[2])?.[1] ?? '';
+      for (const c of field.matchAll(/ADR-(\d{3})/g)) {
+        if (!declared.has(`${target}<-${c[1]}`)) {
+          problems.push(
+            `ADR-${target}: compendium badge claims "Superseded in part by: ADR-${c[1]}", but ADR-${c[1]} `
+              + 'declares no matching supersedes-clause — an orphaned badge asserting a supersession that no record makes',
+          );
+        }
       }
     }
 

@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 47 (41 in-force, 6 historical)
+**Total ADRs:** 49 (43 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_41 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_43 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -226,14 +226,28 @@ _41 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** confirmed
 **Decides:** `packages/*` holds distributables published to a registry (`packages/addressr` is `@mountainpass/addressr`) and `apps/*` holds what we deploy or host (`apps/addressr-deployment` today, `apps/website` anticipated), because a second deployable is coming and its infrastructure target is explicitly undecided. The root `workspaces` glob `["packages/*", "apps/*"]` is load-bearing — ADR-045's arming mechanism silently stops reaching production if it ever stops matching — and the `-deployment` suffix is deliberate: that tree holds Terraform pointing at an npm package, not the application, while a source-bearing `apps/website` will take no suffix.
 **Confirmation:** `deployment-workspace-membership.test.mjs` asserts the workspaces glob matches the deployment dir, changesets does not ignore it, it stays `private: true`, and `packages/addressr` remains the published distributable; `npx npm@10 ci` resolves the workspace under CI's exact resolver; directory name and package name agree for both workspace packages; no `packages/*` entry is private and no `apps/*` entry is publishable.
-**Related:** ADR-045, ADR-007
+**Related:** ADR-045, ADR-007, ADR-048
 
 ### ADR-047 — Dead conditionals retired by supersession
 
-**Status:** proposed | **Oversight:** confirmed (2026-08-17) | **Supersedes:** ADR-045 (one sentence of confirmation criterion 5 only)
-**Decides:** Retire ADR-045's dead conditional instruction — the one directing the guard's refusal message to name `deploy_only` — via a superseding record that quotes it in full, because its antecedent is permanently unsatisfiable (the dispatch input was deleted at `8199e5b9`, and the guard shipped after the gate repoint, not before). Chosen over relying on the existing negative test, amending in place (prohibited here), or deleting the sentence; scope is that one sentence, and no behaviour changes.
-**Confirmation:** No `deploy_only` apply-route reference in `scripts/`, `.github/workflows/`, `.husky/` (docs excluded deliberately); the "does NOT name `deploy_only`" case in `check-deployment-changeset.test.mjs`, mutation-verified; no `workflow_dispatch` input of that name in `release.yml`, deletion traceable via `git log -S`; supersession reachable from ADR-045 via the compendium listing.
-**Related:** ADR-045, ADR-001, ADR-040
+**Status:** proposed | **Oversight:** confirmed (2026-08-17) | **Supersedes:** ADR-045 (one sentence of confirmation criterion 5 only) | **Superseded in part by:** ADR-049 (the amendment-prohibition premise, ten sites)
+**Decides:** Retire ADR-045's dead conditional instruction — the one directing the guard's refusal message to name `deploy_only` — via a superseding record that quotes it in full, because its antecedent is permanently unsatisfiable (the dispatch input was deleted at `8199e5b9`, and the guard shipped after the gate repoint, not before). Chosen over relying on the existing negative test, amending in place (substance on a ratified decision — see ADR-049; the blanket "prohibited here" premise this record states is superseded), or deleting the sentence; scope is that one sentence, and no behaviour changes.
+**Confirmation:** No `deploy_only` apply-route reference in `scripts/`, `.github/workflows/`, `.husky/` (docs excluded deliberately); the "does NOT name `deploy_only`" case in `check-deployment-changeset.test.mjs`, mutation-verified; no `workflow_dispatch` input of that name in `release.yml`, deletion traceable via `git log -S`; supersession reachable from ADR-045 via the reverse compendium badge, asserted by decisions-invariants (the earlier "via the compendium listing" wording was the false first version of this criterion).
+**Related:** ADR-045, ADR-001, ADR-040, ADR-049
+
+### ADR-048 — Moved-path referrers resolved by executable guard
+
+**Status:** proposed | **Oversight:** confirmed (2026-08-18)
+**Decides:** a tree move is not complete until its referrers resolve, and that is asserted mechanically rather than by inspection — by guards that run in the ordinary unit suite, OUTSIDE the surfaces they protect, so a workflow nobody triggers still cannot carry an unresolvable reference. Standalone and composing with ADR-046 rather than modifying it: a referrer guard confirms a different proposition than the packages/apps split, and its scope outlives and exceeds that decision.
+**Confirmation:** scoped to what the guards actually check, deliberately — every `npm run <script>` in `.github/workflows/**` resolves in the scope it runs in (`workflow-npm-scripts-resolve.test.mjs`, 2/2, mutation-tested against the real six-night `genversion` defect and a bad `-w` target, and asserting a non-empty corpus so it cannot pass by matching nothing); every relative doc link resolves (`doc-links-resolve.test.mjs`). NOT covered: bare script paths, `npx`, `node -e` imports, and referrers that resolve while stale in meaning.
+**Related:** ADR-046, ADR-047, ADR-045
+
+### ADR-049 — Amendment scoped by whether a human would ratify it
+
+**Status:** proposed | **Oversight:** confirmed (2026-08-18) | **Supersedes:** ADR-047 (clause: amendment-prohibition-premise)
+**Decides:** Amendment is scoped by one test — would a human need to ratify this edit? Substance is prohibited on a ratified decision and routes to a new ADR; factual corrections (a drifted count, moved path, renamed command, including inside reasoning) are permitted in place with retain-as-history; navigation edits are permitted freely. The rule lives here rather than in `DECISION-MANAGEMENT.md` because a rule about what may be ratified must itself be ratifiable.
+**Confirmation:** All ten superseded sites in ADR-047 enumerated as an exact set, not a count; the ADR-047 edits add no substance (class test, not a location test); the supersession is mechanically legible from the superseded end via `supersedes-clause` plus the reverse compendium badge; `DECISION-MANAGEMENT.md` § What May Be Amended At All points here rather than restating; the external-citation form shown working by evidence, not assertion.
+**Related:** ADR-047, ADR-048, ADR-046, ADR-045
 
 ---
 

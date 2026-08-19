@@ -63,7 +63,7 @@ Option 4 loses the history. The sentence was correct when written, and the condi
 
 **On the mechanics of a clause-level supersession, because this one deliberately skips most of the documented process.** `DECISION-MANAGEMENT.md` describes only the WHOLE-ADR shape: rename the parent to `.superseded.md`, restatus it, add a "Superseded by" note. None of that is available or correct here — ADR-045 is not superseded, 95% of it is in force, and renaming it would be false. So this performs step 1 of that five-step process and none of steps 2–4, by design. The precedent is ADR-045's own `Related` line, which supersedes "ADR-001's `deploy_only` entry point" while leaving `001-…proposed.md` unrenamed and unrestatused. That makes this the second clause-level supersession in the corpus, not the first — but the shape is still unrecorded in `DECISION-MANAGEMENT.md`, and with two instances it is now worth recording there.
 
-**ADR-045's own oversight marker correctly stays `confirmed`.** ADR-066's re-confirm carve-out fires when a supersession changes a decision's DECISION OUTCOME; this retires a sentence in its Confirmation section, which is not that. Stated because the opposite reading is available and would force a pointless re-ratification.
+**ADR-045's own oversight marker correctly stays `confirmed`.** **wr-architect ADR-066**'s re-confirm carve-out fires when a supersession changes a decision's DECISION OUTCOME; this retires a sentence in its Confirmation section, which is not that. Stated because the opposite reading is available and would force a pointless re-ratification.
 
 **This decision changes no behaviour.** Nothing in the pipeline, the guard, or the refusal message moves. It aligns the written record with what already ships and is already tested.
 
@@ -151,6 +151,7 @@ Option 4 loses the history. The sentence was correct when written, and the condi
 
 - **Supersedes** the single quoted sentence of ADR-045 (`045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md`) confirmation criterion 5's sequencing-constraint paragraph. **Only** that sentence; the remainder of criterion 5 and of ADR-045 stands, and ADR-045 is NOT promoted by this record.
 - **ADR-001** and **ADR-040** — the `deploy_only` entry point they established, which ADR-045 superseded at `8199e5b9`. Their prose still references `deploy_only` as history, correctly.
+- **ADR-049** (`049-amendment-scoped-by-whether-a-human-would-ratify-it.proposed.md`) — supersedes this record's amendment-prohibition premise. **P102** (`docs/problems/open/102-no-amendment-directive-conflicts-with-decision-management.md`) — the conflict that produced it. Both added 2026-08-18 as navigational cross-references only (`DECISION-MANAGEMENT.md` § What May Be Amended At All).
 - **JTBD-400** (Ship Releases Reliably From Trunk), persona `addressr-maintainer` — the job the refusal message serves, and the source of the "checkable artefacts, not memory" outcome that makes a wrong route in that message a real cost.
 - **R020** — the deploy-path precondition risk; its zero-real-applies baseline is untouched by this record.
 - **P039** (`docs/problems/known-error/039-decouple-saas-deployment-from-npm-publish.md`) — carries the changeset guard's implementation notes, including why the refusal deliberately omits `deploy_only`.
