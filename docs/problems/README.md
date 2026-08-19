@@ -1,61 +1,62 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-19 **P104 closed, verified against a dispatched run** — the perf probe's retrieve leg read `links.self.href`, a key no served response carries, so it threw on every iteration, issued zero retrieve requests, and its `p(95)<1000` threshold passed over an empty sample set. Fixed to build the URL from the hit's `pid`, with an `http_reqs` count floor on both legs and an out-of-band validity check that reds the job when a leg measures nothing. Verified by run `32250954868`: every threshold ticked, zero crossings, retrieve at 296 requests avg=3.33ms p(95)=6.95ms where it had issued zero. The floor shipped at `count>500`, calibrated from a request count the defect itself inflated, and breached on the first healthy run — recalibrated to 100. Two residuals carried to P032: the error-path-with-samples subclass, and that nothing pins the floor against attainable throughput
+> Last reviewed: 2026-08-20 **P109 captured** — a gate-blocked Bash invocation executes nothing, so a bundled `git add ; git commit` commits a stale index while the message describes the new work. Confirmed by probe and by the index parent of lint-staged's own backup stash; lint-staged exonerated. Two observed instances plus one attributed, none caught by CI — the lost content was a guard-tightening and a suite cannot redden on a check never added. The two observed alone falsify P011's Fix Strategy item 1, which names the session-memory reminder as the primary defence (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
 
 Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) and Parked (`.parked.md`, multiplier 0) tickets are excluded per ADR-022 — surfaced in their own sections below. Rows render **tier-first** (Tier 0 Critical-bypass [Severity Very High ≥17 OR security-classified OR incident-linked] → Tier 1 Inbound-reported [`**Origin**: inbound-reported`] → Tier 2 Internal), then within each tier by `(WSJF desc, Known-Error-first, Effort-divisor asc, Reported-date asc, ID asc)` so top-to-bottom order matches `/wr-itil:work-problems` Step 3 selection 1:1 (P138 + ADR-076). The `Reported` and `Origin` columns MUST appear. <!-- REPORTED-FIRST-TIER-SOURCE: /wr-itil:work-problems SKILL.md Step 3 (ADR-076) -->
 
-| WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
-| ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
-| 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)     | High (12)    | Open          | S      | 2026-08-03 | internal |
-| 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices  | High (12)    | Open          | S      | 2026-08-10 | internal |
-| 12.0 | P101 | Scheduled workflow's loud failure has no reader                       | High (12)    | Open          | S      | 2026-08-18 | internal |
-| 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md          | High (12)    | Open          | S      | 2026-08-18 | internal |
-| 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable        | High (10)    | Open          | S      | 2026-08-08 | internal |
-| 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
-| 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
-| 9.0  | P100 | Production recovery floor has never been measured                     | Medium (9)   | Open          | S      | 2026-08-18 | internal |
-| 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish      | Medium (9)   | Open          | S      | 2026-08-19 | internal |
-| 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
-| 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
-| 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
-| 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
-| 8.0  | P107 | A verification vouches only for the state it ran against              | High (16)    | Open          | M      | 2026-08-19 | internal |
-| 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
-| 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
-| 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI     | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
-| 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
-| 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission       | High (12)    | Open          | M      | 2026-08-02 | internal |
-| 6.0  | P106 | License compliance gate scans an empty tree and exits 0               | High (12)    | Open          | M      | 2026-08-19 | internal |
-| 5.0  | P098 | Test assertions that never execute — no runner, or no caller          | High (10)    | Open          | M      | 2026-08-09 | internal |
-| 5.0  | P105 | @changesets/cli ships as a production dep of the published package    | High (10)    | Open          | M      | 2026-08-19 | internal |
-| 4.5  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
-| 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
-| 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
-| 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |
-| 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline         | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
-| 4.0  | P041 | `capture-problem` halts on pre-existing README drift                  | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
-| 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                    | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
-| 4.0  | P035 | Read-shadow soak validation has multiple blind spots                  | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
-| 4.0  | P065 | RFC-007 carries `stories: []` — no story map, no story, no reason     | Low (4)      | Open          | S      | 2026-07-26 | internal |
-| 4.0  | P089 | No file-length lint rule; two source files past 1000 lines            | Low (4)      | Open          | S      | 2026-08-07 | internal |
-| 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap       | Medium (8)   | Open          | M      | 2026-07-21 | internal |
-| 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented        | Medium (8)   | Open          | M      | 2026-07-31 | internal |
-| 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set       | Medium (8)   | Open          | M      | 2026-08-02 | internal |
-| 4.0  | P103 | Workflow referrers outside guard coverage rot unseen                  | Medium (8)   | Open          | M      | 2026-08-18 | internal |
-| 3.0  | P092 | CHANGELOG erratum from the P074 changeset                             | Low (3)      | Open          | S      | 2026-08-08 | internal |
-| 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open          | M      | 2026-07-16 | internal |
-| 3.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
-| 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open          | M      | 2026-07-30 | internal |
-| 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
-| 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them   | Medium (6)   | Open          | M      | 2026-08-07 | internal |
-| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
-| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
-| 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |
-| 2.0  | P093 | analyze-context Step 0 halts on a repo-relative path                  | Low (4)      | Open          | M      | 2026-08-08 | internal |
-| 1.0  | P046 | wr-architect oversight-marker discipline blocks multi-agent confirms  | Very Low (2) | Open          | M      | 2026-07-08 | internal |
+| WSJF | ID   | Title                                                                         | Severity     | Status        | Effort | Reported   | Origin   |
+| ---- | ---- | ----------------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
+| 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)             | High (12)    | Open          | S      | 2026-08-03 | internal |
+| 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices          | High (12)    | Open          | S      | 2026-08-10 | internal |
+| 12.0 | P101 | Scheduled workflow's loud failure has no reader                               | High (12)    | Open          | S      | 2026-08-18 | internal |
+| 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                  | High (12)    | Open          | S      | 2026-08-18 | internal |
+| 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                | High (10)    | Open          | S      | 2026-08-08 | internal |
+| 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only            | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
+| 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value            | Medium (9)   | Open          | S      | 2026-07-26 | internal |
+| 9.0  | P100 | Production recovery floor has never been measured                             | Medium (9)   | Open          | S      | 2026-08-18 | internal |
+| 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish              | Medium (9)   | Open          | S      | 2026-08-19 | internal |
+| 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                  | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
+| 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them              | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
+| 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it             | Medium (8)   | Open          | S      | 2026-08-05 | internal |
+| 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase                  | High (16)    | Open          | M      | 2026-04-28 | internal |
+| 8.0  | P107 | A verification vouches only for the state it ran against                      | High (16)    | Open          | M      | 2026-08-19 | internal |
+| 8.0  | P109 | Gate-blocked invocation runs nothing; bundled `git add` commits a stale index | High (16)    | Open          | M      | 2026-08-20 | internal |
+| 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`              | Medium (6)   | Open          | S      | 2026-07-26 | internal |
+| 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears         | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
+| 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI             | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
+| 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                   | High (12)    | Open          | M      | 2026-08-01 | internal |
+| 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission               | High (12)    | Open          | M      | 2026-08-02 | internal |
+| 6.0  | P106 | License compliance gate scans an empty tree and exits 0                       | High (12)    | Open          | M      | 2026-08-19 | internal |
+| 5.0  | P098 | Test assertions that never execute — no runner, or no caller                  | High (10)    | Open          | M      | 2026-08-09 | internal |
+| 5.0  | P105 | @changesets/cli ships as a production dep of the published package            | High (10)    | Open          | M      | 2026-08-19 | internal |
+| 4.5  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address                | Medium (9)   | Open          | M      | 2026-07-31 | internal |
+| 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones           | Medium (9)   | Open          | M      | 2026-08-02 | internal |
+| 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated               | Medium (9)   | Open          | M      | 2026-08-03 | internal |
+| 4.5  | P088 | Assistant manufactures problems and presents them as findings                 | Medium (9)   | Open          | M      | 2026-08-07 | internal |
+| 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline                 | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
+| 4.0  | P041 | `capture-problem` halts on pre-existing README drift                          | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
+| 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                            | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
+| 4.0  | P035 | Read-shadow soak validation has multiple blind spots                          | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
+| 4.0  | P065 | RFC-007 carries `stories: []` — no story map, no story, no reason             | Low (4)      | Open          | S      | 2026-07-26 | internal |
+| 4.0  | P089 | No file-length lint rule; two source files past 1000 lines                    | Low (4)      | Open          | S      | 2026-08-07 | internal |
+| 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap               | Medium (8)   | Open          | M      | 2026-07-21 | internal |
+| 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented                | Medium (8)   | Open          | M      | 2026-07-31 | internal |
+| 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set               | Medium (8)   | Open          | M      | 2026-08-02 | internal |
+| 4.0  | P103 | Workflow referrers outside guard coverage rot unseen                          | Medium (8)   | Open          | M      | 2026-08-18 | internal |
+| 3.0  | P092 | CHANGELOG erratum from the P074 changeset                                     | Low (3)      | Open          | S      | 2026-08-08 | internal |
+| 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check                 | Medium (6)   | Open          | M      | 2026-07-16 | internal |
+| 3.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out                   | Medium (6)   | Open          | M      | 2026-07-29 | internal |
+| 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits                | Medium (6)   | Open          | M      | 2026-07-30 | internal |
+| 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate            | Medium (6)   | Open          | M      | 2026-08-03 | internal |
+| 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them           | Medium (6)   | Open          | M      | 2026-08-07 | internal |
+| 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets              | Low (4)      | Open          | M      | 2026-07-19 | internal |
+| 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat         | Low (4)      | Open          | M      | 2026-07-19 | internal |
+| 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)                  | Low (4)      | Open          | M      | 2026-07-31 | internal |
+| 2.0  | P093 | analyze-context Step 0 halts on a repo-relative path                          | Low (4)      | Open          | M      | 2026-08-08 | internal |
+| 1.0  | P046 | wr-architect oversight-marker discipline blocks multi-agent confirms          | Very Low (2) | Open          | M      | 2026-07-08 | internal |
 
 ## Verification Queue
 

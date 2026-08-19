@@ -60,6 +60,26 @@ Permanent guardrails (ordered by cost):
 
 ## Related
 
+- **2026-08-20, additive note from [P109](../open/109-gate-blocked-invocation-runs-nothing-so-a-bundled-add-commits-a-stale-index.md)**
+  (a gate-blocked invocation runs nothing, so a bundled `git add` commits a stale index). Not a reopen —
+  this ticket's regression test still passes and its exoneration of lint-staged is independently
+  re-confirmed there. Two things recorded here are worth reading against it. Only the Fix Strategy item is falsified — the most-likely-cause note is not:
+  - **Fix Strategy item 1 names the session-memory reminder as "the primary defense".** That defence
+    failed twice consecutively in one session on 2026-08-19/20, with the first catch not preventing the
+    second. Deferred item 3 (a pre-push hook, deferred because "the session memory check is cheaper and
+    already effective") rests on a premise that no longer holds.
+  - **The `git add -u` limb of this ticket's most-likely-cause note is NOT falsified. It survives as the
+    competing cause.** Scoped deliberately: that note has two limbs, and only one competes. The limb P109
+    supplies a mechanism FOR is _the agent did not run `git add` at all_; the limb that stands against it is
+    _the agent ran `git add -u`_, which stages only tracked modifications and so skips a new file in an
+    untracked directory. This says nothing about the confirmed root cause above — never staged, lint-staged
+    did not drop it — which the literal replay settled and P109 does not touch. P109
+    offers a candidate mechanism for what this ticket guessed at — and no more than that. The competing
+    cause recorded here (`git add -u` staging only tracked modifications, so a new file in an untracked
+    directory is skipped) is sufficient on its own, requires no gate, and P109 cannot exclude it. So P109
+    claims neither the mechanism as established here nor `ef66d39` as a confirmed instance; it records that
+    instance as attributed rather than observed.
+
 - [Problem 009](009-upstream-backends-openly-callable-bypassing-rapidapi.md) — discovery context; lost the changeset on commit `ef66d39` during P009 v2.1.4 release.
 - [Problem 003](003-npm-version-lockfile-drift.md) — unrelated lockfile-drift issue, but same class of "commit metadata silently wrong" concern.
 - Memory file `feedback_lint_staged_changeset.md` — session-level reminder to `git show --stat HEAD` after any `.changeset/` commit.

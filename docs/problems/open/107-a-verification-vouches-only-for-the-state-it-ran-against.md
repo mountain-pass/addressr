@@ -102,6 +102,17 @@ only addresses one of those leaves the class open.
 
 ## Related
 
+- **2026-08-20, from [P109](109-gate-blocked-invocation-runs-nothing-so-a-bundled-add-commits-a-stale-index.md)**
+  (a gate-blocked invocation runs nothing, so a bundled `git add` commits a stale index): a hang-off check
+  initially separated P109 from this ticket on the grounds that this ticket's open task (b) is inert on it —
+  the index tree is unchanged between check and commit, so "record the state and compare" returns valid.
+  P109 has since withdrawn that: applied to the CHECK's provenance rather than the index tree, task (b)
+  fires, because the verification never ran and an earlier result was cited. P109 records the two as
+  overlapping and flags that whether it should fold in here deserves a fresh check.
+  P109 also notes that the `find -size +0` footnote below is a blind-predicate instance, which sits oddly
+  with this ticket's Root Cause Analysis about state moving between check and citation. Left here as this
+  ticket's own call, not P109's.
+
 - **P106** ([`106-license-compliance-gate-scans-an-empty-tree-and-exits-zero.md`](106-license-compliance-gate-scans-an-empty-tree-and-exits-zero.md))
   — the context instance 1 arose in, and the ticket whose own new audit exposed it. **Not the parent**: P106's
   defect is a scope assumption inside a licence tool and all its tasks are tool-bound, whereas this applies
