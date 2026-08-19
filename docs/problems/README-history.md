@@ -196,3 +196,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-18 **P100 captured** — the production recovery floor has never been measured, and refusing a manual recovery path makes that gap load-bearing (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-10 **P099 captured** — the assistant pushes interface work onto the user instead of presenting decidable choices in the interface the user actually has (lightweight aside via /wr-itil:capture-problem)
+
+## 2026-08-19
+
+> Last reviewed: 2026-08-18 **P103 captured** — workflow referrers outside guard coverage rot unseen; the same file broke twice, both times found by review rather than by test (lightweight aside via /wr-itil:capture-problem)

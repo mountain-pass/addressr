@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-18 **P103 captured** — workflow referrers outside guard coverage rot unseen; the same file broke twice, both times found by review rather than by test (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-19 **P104 captured, then rescored 12 → 8** — the perf probe's retrieve threshold passes on zero samples; every iteration throws and k6 reports a tick. Rescored the same day: 12 double-counted the harm on Impact and the defect frequency on Likelihood, and put P104 above its own parent P032 (9). Root cause resolved at capture — the probe is the defect, the API is to contract (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -20,6 +20,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
+| 8.0  | P104 | Perf probe's retrieve threshold passes on zero samples                | Medium (8)   | Open          | S      | 2026-08-19 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
