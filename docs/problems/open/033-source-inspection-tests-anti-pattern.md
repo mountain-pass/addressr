@@ -184,9 +184,9 @@ per-file read, which is why that task stays open.
 
 | fact                                                          | count |
 | ------------------------------------------------------------- | ----- |
-| test files that read a repo file and assert on what they read | 32    |
-| of those, files that read `.github/workflows/**`              | 10    |
-| all other file-reading test files                             | 22    |
+| test files that read a repo file and assert on what they read | 30    |
+| of those, files that read `.github/workflows/**`              | 9     |
+| all other file-reading test files                             | 21    |
 
 **The predicate is published so the classification can be rerun, not just the result.** A file is in the
 population if its source matches `readFileSync|readFile\(|readdirSync` and contains `assert.`; it is in the
@@ -195,14 +195,14 @@ workflow group if it contains both `.github` and `workflows`; and
 
 That last clause is not a convenience. That file is the guard which recomputes these figures, and it
 satisfies every clause of the predicate — it reads test files, it asserts, and it quotes the literal
-`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 33 / 11 / 22
+`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 31 / 10 / 21
 and counts the instrument into the sample it measures. It is stated here because the whole claim of this
 paragraph is that a third party can rerun the rule and get the table; a rule published in one form and run
 in another would make the guard green while the record stayed falsifiable, which is the failure this ticket
 is about.
 
-The ten are `deploy-guard-surfaces`, `docker-image-workflow`, `gnaf-source-smoke`,
-`license-audit-runs-in-ci`, `loader-workflow`, `perf-regression-workflow`, `release-pr-plan-workflow`,
+The nine are `deploy-guard-surfaces`, `docker-image-workflow`, `gnaf-source-smoke`,
+`license-audit-runs-in-ci`, `loader-workflow`, `release-pr-plan-workflow`,
 `release-workflow-deploy-only`, `terraform-plan-workflow` and `workflow-npm-scripts-resolve`.
 
 **The first version of this list said nine and omitted `license-audit-runs-in-ci`**, because the predicate
@@ -218,10 +218,10 @@ being a per-file read rather than a better regex.
 whole point of computing these figures rather than asserting them: five rounds of hand-correction never
 once caught a drift at the moment it happened, because nothing was watching.
 
-Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 22 and holds no source pin
+Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 21 and holds no source pin
 at all. File identity is robust enough to route the work, and that is all it is used for.
 
-**The conclusion that survives, and the one that does not.** Those ten files pin YAML consumed by GitHub.
+**The conclusion that survives, and the one that does not.** Those nine files pin YAML consumed by GitHub.
 Nothing in this repo runs a workflow, so extract-and-feed cannot convert those PINS and the honest
 remedy is the note-what-it-cannot-establish task below. Said of the pins, not of the files — three of the
 ten spawn a runtime for something else, so the older wording "there is no runtime in this repo to feed
@@ -285,39 +285,39 @@ a red at one of those pins is still a real signal to convert rather than delete.
       till much later, that we need to think about how we stop that from happening."_
 
       **This is a decision, not a deferral, and the difference matters to how it should be read.** The five
-          sites were legacy — they predate the settlement and were written under the rule it retired. Building an
-          instrument to catch a population that has already been cleaned is spending on the last defect rather
-          than the next one. What would justify the instrument is a NEW pin written under the settled rule and
-          reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
-          were found by adversarial review rather than by any tool, so the current control is a human reading
-          carefully, and that is what a recurrence would falsify.
+              sites were legacy — they predate the settlement and were written under the rule it retired. Building an
+              instrument to catch a population that has already been cleaned is spending on the last defect rather
+              than the next one. What would justify the instrument is a NEW pin written under the settled rule and
+              reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
+              were found by adversarial review rather than by any tool, so the current control is a human reading
+              carefully, and that is what a recurrence would falsify.
 
-          **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
-          and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
-          shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
-          rather than review. That is the maintainer's condition, written as something falsifiable.
+              **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
+              and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
+              shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
+              rather than review. That is the maintainer's condition, written as something falsifiable.
 
-          **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
-          class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
-          than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
-          composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
-          COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
-          reader reaches the ADR question already answered rather than rediscovering it.
+              **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
+              class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
+              than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
+              composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
+              COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
+              reader reaches the ADR question already answered rather than rediscovering it.
 
-          **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
-          passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
-          `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
-          tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
-          phrase list; and say in
-          the test name that it establishes vocabulary only, never that the pins were converted.
-          **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
-          the candidate phrase list against the five sites read it case-sensitively and reported that
-          `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
-          site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
-          lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
-          reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
-          would have reported clean over four live instances. The review was wrong on the fact and right about
-          the spec, which is why the correction is recorded here rather than merely answered.
+              **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
+              passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
+              `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
+              tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
+              phrase list; and say in
+              the test name that it establishes vocabulary only, never that the pins were converted.
+              **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
+              the candidate phrase list against the five sites read it case-sensitively and reported that
+              `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
+              site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
+              lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
+              reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
+              would have reported clean over four live instances. The review was wrong on the fact and right about
+              the spec, which is why the correction is recorded here rather than merely answered.
 
 **`scripts/mutate.sh` makes the practice cheap**, which is the point: the barrier was never disagreement,
 it was six lines of `cp`/`sed`/run/restore per check.
@@ -389,114 +389,117 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       intermediate count are below, because three earlier attempts at a number were wrong and a fourth
       unexplained figure would deserve no more trust than they got.
 
-      **Step 1 — 32 files read a repo file and assert on what they read.** Of those, **15 exercise the
-                      subject** (they import it, statically or dynamically, or spawn it) and **17 read only**. The first
-                      classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
-                      `await import(...)`. Corrected before use.
+      **Step 1 — 30 files read a repo file and assert on what they read.** Of those, **14 exercise the
+                          subject** (they import it, statically or dynamically, or spawn it) and **16 read only**. The first
+                          classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
+                          `await import(...)`. Corrected before use.
 
-                      **Step 2 — of the 17 read-only files, NONE is a source-inspection test of implementation.** Seven
-                      read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
-                      artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
-                      WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
-                      behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
-                      a file` and `pins source text as a stand-in for what the code does` are different populations, and
-                      conflating them is why the figures ran to the hundreds.
+                          **Step 2 — of the 16 read-only files, NONE is a source-inspection test of implementation.** Six
+                          read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
+                          artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
+                          WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
+                          behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
+                          a file` and `pins source text as a stand-in for what the code does` are different populations, and
+                          conflating them is why the figures ran to the hundreds.
 
-                      **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
-                      source and assert on its text, in files that also exercise the subject. Counted three ways and
-                      enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
+                          **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
+                          source and assert on its text, in files that also exercise the subject. Counted three ways and
+                          enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
 
-                      **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
-                      below summed to 12 across five files while the prose above it said 13 across six, and named two live
-                      pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
-                      count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
-                      and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
-                      source text.
+                          **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
+                          below summed to 12 across five files while the prose above it said 13 across six, and named two live
+                          pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
+                          count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
+                          and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
+                          source text.
 
-                      **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
-                      missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
-                      look like source paths. The third counted subprocess output as file contents. Each was caught by
-                      checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
-                      discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
-                      for the population is behavioural exercise and the remedy for the audit is reading.
+                          **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
+                          missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
+                          look like source paths. The third counted subprocess output as file contents. Each was caught by
+                          checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
+                          discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
+                          for the population is behavioural exercise and the remedy for the audit is reading.
 
-                      **So what follows is what was READ, pin by pin. Three files verified in full:**
+                          **So what follows is what was READ, pin by pin. Three files verified in full:**
 
-                      | file | pin | verdict |
-                      | --- | --- | --- |
-                      | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
-                      | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
-                      | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
-                      | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
-                      | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
-                      | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
-                      | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
-                      | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
-                      | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
-                      | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
+                          | file | pin | verdict |
+                          | --- | --- | --- |
+                          | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
+                          | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
+                          | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
+                          | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
+                          | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
+                          | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
+                          | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
+                          | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
+                          | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
+                          | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
 
-                      **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
-                      category the earlier count did not have, and it matters — but not all of them are load-bearing,
-                      which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
-                      counted here, so adding a sentinel does not leave a stale total behind:
+                          **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
+                          category the earlier count did not have, and it matters — but not all of them are load-bearing,
+                          which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
+                          counted here, so adding a sentinel does not leave a stale total behind:
 
-                      - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
-                        and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
-                      - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
-                        slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
-                        proxyAuthMiddleware. **Floor**, and over an auth boundary.
-                      - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
-                        which is TRUE, and the ordering pin passes vacuously. **Floor.**
-                      - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
-                        comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
+                          - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
+                            and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
+                          - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
+                            slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
+                            proxyAuthMiddleware. **Floor**, and over an auth boundary.
+                          - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
+                            which is TRUE, and the ordering pin passes vacuously. **Floor.**
+                          - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
+                            comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
 
-                      Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
-                      session installing everywhere else, and it asserts nothing about the subject at all — which is
-                      why it is a sentinel and not a pin.
+                          Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
+                          session installing everywhere else, and it asserts nothing about the subject at all — which is
+                          why it is a sentinel and not a pin.
 
-                      **Not read, and therefore not counted:** `perf-validity-covers-declared-legs` (asserts over
-                      `test/k6/regression.js` text) and `deploy-artefact-ignores` (asserts over `deploy.sh` text). Both are
-                      candidates by inspection; neither has had the per-pin read the three above got. Stated as pending
-                      rather than folded into the total as an estimate.
+                          **Not read, and therefore not counted:** `deploy-artefact-ignores` (asserts over `deploy.sh` text).
+                          A candidate by inspection; it has not had the per-pin read the three above got. Stated as pending
+                          rather than folded into the total as an estimate. This entry named a second file,
+                          `perf-validity-covers-declared-legs`, until 2026-08-20 — it asserted over `test/k6/regression.js`
+                          text and both files were deleted with the perf probe, so the candidate resolved by removal rather
+                          than by reading.
 
-                      **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
-                      governing rule two incompatible ways: one place exempted pins over wiring, and the
-                      `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
-                      instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
-                      counts whether it pins a decision or a connection, because the line can be present and never
-                      reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
-                      Consequences applied: the three rows previously classed as wiring are now decisions, so the
-                      illegitimate population grows by three, to the figure the audit headline above states and the
-                      guard recomputes — restated here it would be a second uncomputed site, which is the drift this
-                      ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
-                      instance, as first written; and the sites recording the two `server2.js` pins as pending
-                      conversion are correct rather than stale — under this rule they always were.
+                          **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
+                          governing rule two incompatible ways: one place exempted pins over wiring, and the
+                          `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
+                          instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
+                          counts whether it pins a decision or a connection, because the line can be present and never
+                          reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
+                          Consequences applied: the three rows previously classed as wiring are now decisions, so the
+                          illegitimate population grows by three, to the figure the audit headline above states and the
+                          guard recomputes — restated here it would be a second uncomputed site, which is the drift this
+                          ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
+                          instance, as first written; and the sites recording the two `server2.js` pins as pending
+                          conversion are correct rather than stale — under this rule they always were.
 
-                      **What this audit does NOT establish.** Three limits, the third of which was written because the
-                      fourth mechanical count failed while the first two were being written:
+                          **What this audit does NOT establish.** Three limits, the third of which was written because the
+                          fourth mechanical count failed while the first two were being written:
 
-                      1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
-                         The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
-                         did miss.
-                      2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
-                      3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
-                         `p033-population-figures-recompute.test.mjs`: 32 / 15 / 17, the named ten-file list, the
-                         un-excluded triple, the three intersections (seven, ten, three), and the Step 4 table's own
-                         arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
-                         which are a judgement and are deliberately not mechanised — a guard over them would be a check
-                         comparing a judgement to a restatement of itself.
-                         An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
-                         page. That was false when written: seven, ten and three were prose, computable from sets the guard
-                         already held, and the ticket's surviving conclusion below rests on two of them. A limits section
-                         declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
-                         prevent it.
+                          1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
+                             The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
+                             did miss.
+                          2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
+                          3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
+                             `p033-population-figures-recompute.test.mjs`: 32 / 15 / 17, the named ten-file list, the
+                             un-excluded triple, the three intersections (seven, ten, three), and the Step 4 table's own
+                             arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
+                             which are a judgement and are deliberately not mechanised — a guard over them would be a check
+                             comparing a judgement to a restatement of itself.
+                             An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
+                             page. That was false when written: seven, ten and three were prose, computable from sets the guard
+                             already held, and the ticket's surviving conclusion below rests on two of them. A limits section
+                             declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
+                             prevent it.
 
-                      One correction to an earlier claim while these figures are being reconciled: 10 workflow-reading files
-                      minus 7 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
-                      feed them" is true of seven files, not ten. Applied, not just noted: the two sites that carried that
-                      wording are now phrased about the workflow PINS, for which the claim holds of all ten. Recording the
-                      correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
-                      on the first pass.
+                          One correction to an earlier claim while these figures are being reconciled: 9 workflow-reading files
+                          minus 6 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
+                          feed them" is true of six files, not nine. Applied, not just noted: the two sites that carried that
+                          wording are now phrased about the workflow PINS, for which the claim holds of all nine. Recording the
+                          correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
+                          on the first pass. Figures restated 2026-08-20 when the perf probe's deletion removed one
+                          workflow-reading file; the three-spawn-a-runtime finding is unchanged by it.
 
 - [x] **Decide a refactor cadence. DECIDED 2026-08-19: neither of the two options as posed.** A single sweep
       is unjustifiable at this population size with no failing signal, and pure opportunism has visibly not
@@ -505,7 +508,7 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       there passes a defect into a published artefact. That is not hypothetical — `release-watch.sh` was
       converted on 2026-08-19 for exactly that reason (see below), and its predecessor's pin matched a call
       that was commented out.
-- [ ] **Convert the non-workflow population, release and publish paths first.** 22 files, of which the
+- [ ] **Convert the non-workflow population, release and publish paths first.** 21 files, of which the
       guards over `scripts/` are the tractable and highest-value subset: a shell
       predicate can be extracted to a file and fed inputs, which is what `scripts/scan-jobs.awk` now is.
 - [ ] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish.** This is

@@ -10,6 +10,57 @@
 >
 > **2026-08-19 — the first run to reach k6 completed, and it disproved half the probe.** Dispatched manually on `f7936ae6` to verify the repoints; run `32203592902` went green. The repoints work: `Generate version file` and `Prepare OT test fixture` both passed for the first time since 2026-08-12. But reaching k6 is what exposed **P104** — `test/k6/regression.js:119` throws `TypeError: Cannot read property 'self' of undefined` on **every** iteration (21,860 in the measured phase), so the `retrieve` request is never issued and its `p(95)<1000` threshold passes on an empty sample set, printing `✓ p(95)=0s`. This ticket's own recorded residual — _a probe that runs fine but measures the wrong thing_ — is now evidenced rather than predicted. The exit criterion is satisfied for the HARNESS and unsatisfied for the SIGNAL.
 > **WSJF**: 9.0 — (9 × 2.0) / 2 — backfilled 2026-07-29 (review)
+>
+> **2026-08-20 — THE PROBE IS DELETED. The gap this ticket names is now unmitigated by choice, and the
+> reason is not the one this ticket spent four months on.** User-directed after being briefed that the probe
+> measures a rented GitHub runner rather than production, blocks nothing, and had failed six consecutive
+> nights while emailing them each time. Asked whether it should alert at all — options were keep-but-silence,
+> alert-only-if-persistently-broken, make-it-measure-production-first, or delete — the answer was _"Delete
+> it"_. Immediately before that they asked _"what do you want me to do about them? What is the nightly job
+> anyway?"_, which is the finding in one line: the instrument's only consumer did not recognise it.
+>
+> **The governing rule they then stated, which is wider than this ticket:** _"I don't care so much how we
+> check it, I care more about how you monitor it. I'm not going to monitor it."_ So the axis is not
+> runner-versus-production and never was. A check whose only consumer is the maintainer's attention is not a
+> control, however it is measured and however it is delivered. That retires this ticket's own
+> `screens:`-backfill item and its graduation condition (_"a breach becomes actionable-on-arrival and needs
+> its own channel"_) — a new channel aimed at the same reader reproduces the defect. Recorded as an ADR
+> because it governs the other ten scheduled workflows too, not just this one.
+>
+> **What was actually removed, stated precisely so this does not read as removing protection.** The probe
+> never gated at JTBD-001's 200 ms outcome; it gated at `search p95 < 1500 ms` and `retrieve p95 < 1000 ms`,
+> 7.5× and 5× that figure, advisory-only, on a job that stayed green through a breach. Its retrieve leg
+> measured **zero** requests for its entire life (P104) while printing `✓ p(95)=0s`. Exactly one run in the
+> whole record reached k6 and passed (`32203592902`, 2026-08-19). So it never gated at the job's figure,
+> never measured one of its two legs, and had no reader.
+>
+> **What remains, corrected twice in one session — read the second correction, not the first.** The first
+> correction said production monitoring is the only remaining control. The second said there is no automated
+> latency control anywhere, reasoning from `apps/addressr-deployment/main.tf`, where the only two
+> `aws_cloudwatch_metric_alarm` resources watch `SearchableDocuments` and `SearchLatency` p95 appears solely
+> as a dashboard widget in `locals.search_parity_widgets`. That is accurate about AWS and **wrong about the
+> system.** The maintainer supplied the missing half: **the API gateway measures end-to-end latency
+> continuously, across every consumer and region, and carries its own alerting surface.** It is a better
+> measurement than the deleted probe ever produced — real traffic, real clients — and it predates this whole
+> ticket.
+>
+> **The lesson is the one this ticket keeps relearning: a figure derived from the repo is not a figure about
+> the system.** This repo is one component behind a marketplace gateway and a CDN. Twice in one session an
+> absence was asserted from the absence of a file. The remaining gap is therefore not measurement but a
+> **terminus** — whether an alert exists on that signal, and whether it lands somewhere that acts or that an
+> agent reads rather than in an inbox. Unknown rather than absent; it must be settled by looking. Captured
+> separately.
+>
+> **No gateway figures are recorded here.** This repo is public, and traffic volumes and consumer counts are
+> confidential (R004 names exactly this). The shape is recorded; the values are not.
+>
+> **Not retained as a standing workaround: "run `npm run test:performance` before risky changes."** That is
+> the same defect in different clothes — it depends on the maintainer remembering, which is what the rule
+> above rules out. `test/k6/script.js` and `test:performance` survive for a different reason: ADR-031's
+> soak-gate criterion 5 needs a k6 baseline immediately before a cutover, and after this deletion that
+> profile is the only one left. Cost worth recording for whoever runs that gate next: `regression.js` was the
+> better-shaped instrument for _"freshly measured, immediately before cutover"_ — deterministic, 75 s,
+> comparable run-to-run — and the surviving profile is a 38-minute `Math.random` ramp.
 
 ## Description
 
@@ -76,9 +127,12 @@ This is operationally honest but easy to forget — exactly why a CI gate would 
 
 Traced by [RFC-007](../../rfcs/RFC-007-ci-perf-regression-probe.proposed.md) (CI perf-regression probe). Three artefacts, authored together as one atomic change (CI + test infra only, so no changeset per the workflow-only discipline — cf. RFC-002):
 
-1. [`test/k6/regression.js`](../../../test/k6/regression.js) — small deterministic regression profile (warm-up + 60 s / 5 VU measured window, conservative gating thresholds).
+**All three artefacts below were DELETED on 2026-08-20 — see the retirement note at the top of this ticket.
+The paths are retained as plain text rather than links because the files no longer exist.**
+
+1. `test/k6/regression.js` — small deterministic regression profile (warm-up + 60 s / 5 VU measured window, conservative gating thresholds).
 2. `test:perf:regression` npm script in [`package.json`](../../../package.json) (sibling to `test:performance`; also the local pre-merge handle).
-3. [`.github/workflows/perf-regression.yml`](../../../.github/workflows/perf-regression.yml) — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
+3. `.github/workflows/perf-regression.yml` — separate `workflow_dispatch` + nightly workflow: OpenSearch 3.5 service, OT fixture load, API server start, k6 run.
 
 **Status**: fix authored, pushed, and exercised once — the first real nightly run FAILED and reddened master. Repaired 2026-07-25 (see below). Stays **Known Error**: the probe now validates (run 32250954868, 2026-08-19), but the two items carried from P104 below are open.
 
@@ -140,7 +194,7 @@ All three branches were exercised locally against a stub under GitHub's exact sh
   is therefore NOT fully closed** — this is the sharp one. A probe that runs fine but measures the wrong thing (the 2026-07-25 unencoded-URL bug; an empty result set from a fixture or index-name regression; the server dying mid-run) surfaces as a breach of `checks{phase:main}: rate>0.95`, and k6 emits **the same exit 99** for that as for a genuine p95 regression. So a rerun of the incident that motivated all of this would land in the **advisory** branch and report green. Only the harness class (k6 binary missing, script would not parse, panic/OOM, log write failed) actually moved from silent-green to loud. Remedy, in ascending cost: (a) grep the already-tee'd `target/perf-regression.log` in the existing reporting step for `http_reqs` zero / `http_req_failed` at 100% / `checks_succeeded` at 0% and route those to `::error::` + `exit 1`; (b) add `handleSummary` to `test/k6/regression.js` to emit `target/perf-summary.json` and route on its content, which is the better long-term shape. Neither was built here: the user's direction was exit-code discrimination specifically, and widening it autonomously was declined.
 - **Accounting correction.** "Server down" should not be credited to the closed set: server-never-came-up already fails today at the health-wait step (`perf-regression.yml`, no `continue-on-error`). Only server-dies-_mid-run_ is new, and it routes advisory.
 - **Notification split.** GitHub notifies on _failed_ scheduled runs, not on `::warning::` or step summaries. Under the new shape a broken probe fails and therefore notifies; a perf breach stays pull-only. That ordering is defensible while the thresholds are uncalibrated — a broken probe invalidates all subsequent signal and compounds nightly, whereas one threshold crossing is a single point in a series read in aggregate. **Graduation condition**: once enough nightly baselines characterise the runner spread and the thresholds are tightened toward JTBD-001's 200 ms outcome, a breach becomes actionable-on-arrival and needs its own channel (open/update an issue when `steps.k6.outputs.k6_exit == 99`).
-- **`screens:` backfill** — `.github/workflows/perf-regression.yml`, `test/k6/regression.js`, and `test/js/__tests__/perf-regression-workflow.test.mjs` are absent from JTBD-400's `screens:` list, as is the pre-existing `test/js/__tests__/release-workflow-deploy-only.test.mjs`. Forward `@jtbd` annotations are correct; only the reverse index is missing. Deliberately **not** JTBD-001: a CI probe is an instrument defending the job, not a screen where the job is performed. Must route through `/wr-jtbd:confirm-jobs-and-personas` rather than an autonomous edit — `screens:` is frontmatter on an artefact carrying `human-oversight: confirmed`.
+- **`screens:` backfill — STRUCK 2026-08-20, do not action.** It named `.github/workflows/perf-regression.yml`, `test/k6/regression.js`, and `test/js/__tests__/perf-regression-workflow.test.mjs`, all three of which were deleted this date. Actioning it would add `screens:` entries for files that do not exist. The fourth file it named, `test/js/__tests__/release-workflow-deploy-only.test.mjs`, IS now covered: JTBD-400 gained an annotation-keyed test entry on 2026-08-20, and membership is by `@jtbd` marker rather than by path, so that file joined the set by carrying the marker and the deleted one left it by ceasing to exist. The item is discharged by the combination, not abandoned.
 
 **Follow-on (architect, non-blocking)**: record a proposed ADR capturing the standing perf-regression methodology (seeded probe / separate nightly cadence / conservative-threshold philosophy), and fold in the exit-code discrimination rule **and** the wrong-measurement residual as part of that methodology. Direction pinned same-turn per ADR-064, so no user question needed; deferred from the AFK iters because `capture-*` skills are out of iter scope.
 

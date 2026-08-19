@@ -1,7 +1,7 @@
 // The staleness check for scheduled workflows (P101).
 //
 // WHY IT EXISTS AT ALL. A failure notification cannot fire for a workflow that
-// never runs, and nine of eleven scheduled workflows here run quarterly — so
+// never runs, and nine of the ten scheduled workflows here run quarterly — so
 // "stopped firing" has a blind window of months, and GitHub disables scheduled
 // workflows after 60 days of repo inactivity, which a quiet quarter produces.
 import { describe, it } from 'node:test';
@@ -30,7 +30,6 @@ const dailyStaleAfter = (days) =>
 describe('scheduled-workflow staleness (P101)', () => {
   it('classifies the cadences this repo actually uses', () => {
     assert.equal(cadenceOf('23 01 21,28 2,5,8,11 *'), 'quarterly'); // update-*
-    assert.equal(cadenceOf('30 14 * * *'), 'daily'); // perf-regression
     assert.equal(cadenceOf('15 02 * * *'), 'daily'); // gnaf-source-smoke
     assert.equal(cadenceOf('0 3 1 * *'), 'monthly');
     // Day-of-week must be READ, not discarded. An earlier version limited the

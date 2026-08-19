@@ -5,7 +5,9 @@
 //
 // The script logic is tested behaviourally with an injected fetch, per P033.
 // The workflow assertions are deliberately token-level (following the
-// perf-regression-workflow.test.mjs precedent): they pin the few properties
+// release-workflow-deploy-only.test.mjs lineage — the original of that shape;
+// the perf-regression-workflow.test.mjs example this once cited was deleted
+// 2026-08-20 with the probe): they pin the few properties
 // that would silently make the check useless or dangerous if edited away —
 // the absence of id-token, and the acceptance of 206 — never whole lines.
 

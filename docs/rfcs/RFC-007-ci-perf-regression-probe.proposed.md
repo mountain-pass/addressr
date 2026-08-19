@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: rejected
 rfc-id: ci-perf-regression-probe
 reported: 2026-07-24
 human-oversight: unconfirmed
@@ -12,7 +12,18 @@ stories: []
 
 # RFC-007: CI perf-regression probe (small k6 profile + nightly workflow)
 
-**Status**: proposed
+> **REJECTED 2026-08-20. Rejected rather than superseded, because there is no successor record — nothing
+> replaces this probe.** The three artefacts this RFC specified were deleted the same day at the maintainer's
+> direction. Their reason, stated after being asked whether the probe should alert at all: _"I don't care so
+> much how we check it, I care more about how you monitor it. I'm not going to monitor it."_ This RFC's whole
+> shape assumes a nightly signal whose consumer is the maintainer, and that consumer does not exist. See
+> ADR-051 for the rule, and P032 for what the probe did and did not measure while it ran.
+>
+> This record was never ratified (`human-oversight: unconfirmed`) and never accepted, so nothing downstream
+> depended on it. It is retained rather than removed: its threshold-calibration reasoning and its runner-
+> variance measurements are the durable part, and a future production-measuring successor would want them.
+
+**Status**: rejected 2026-08-20 — see the rejection note below
 **Reported**: 2026-07-24
 **Problems**: P032
 **ADRs**: (none — a proposed ADR recording the standing perf-regression methodology is a follow-on; see the architect note in P032)

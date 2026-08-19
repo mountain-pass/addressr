@@ -18,6 +18,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value            | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 9.0  | P100 | Production recovery floor has never been measured                             | Medium (9)   | Open          | S      | 2026-08-18 | internal |
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish              | Medium (9)   | Open          | S      | 2026-08-19 | internal |
+| 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies          | Medium (9)   | Open          | S      | 2026-08-20 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                  | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them              | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it             | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -40,7 +41,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                          | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                            | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                          | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
-| 4.0  | P065 | RFC-007 carries `stories: []` — no story map, no story, no reason             | Low (4)      | Open          | S      | 2026-07-26 | internal |
 | 4.0  | P089 | No file-length lint rule; two source files past 1000 lines                    | Low (4)      | Open          | S      | 2026-08-07 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap               | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented                | Medium (8)   | Open          | M      | 2026-07-31 | internal |

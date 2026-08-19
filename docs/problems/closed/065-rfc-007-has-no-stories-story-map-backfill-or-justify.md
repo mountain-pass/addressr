@@ -1,6 +1,6 @@
 # Problem 065: RFC-007 carries `stories: []` — no story map, no story, no recorded reason
 
-**Status**: Open
+**Status**: Closed — 2026-08-20, no longer applicable
 **Reported**: 2026-07-26
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2) — derived at capture from the description per Step 4a. Impact 2: the harm is a broken governance trace, not a defect in anything running. Likelihood 2: RFC-007's work has already shipped, so the missing trace costs an audit reconstruction rather than misdirecting live work.
 **Origin**: internal
@@ -10,6 +10,15 @@
 **Persona**: addressr-maintainer
 
 > **Anchoring note (2026-07-26)**: captured mid-iter with `persona=plugin-developer, jtbd=JTBD-101` supplied by the orchestrator. Those are the **upstream `agent-plugins` home-repo** enum values; this repo's `JTBD-101` is "normalize messy address data" (data-quality-analyst), which is unrelated, and it has no `plugin-developer` persona. Re-anchored to `addressr-maintainer` / `JTBD-400` per the P383 adopter-portability rule and the P061 precedent (user correction 2026-07-24).
+
+> **CLOSED 2026-08-20 — no longer applicable, not fixed.** This ticket asks whether RFC-007's `stories: []`
+> is a governance gap needing a story map plus a story, or a gap needing a recorded justification. **RFC-007
+> was rejected on 2026-08-20** and the three artefacts it specified were deleted, so there is no work for a
+> story to trace. The question is moot rather than answered: nobody decided that an empty `stories:` list is
+> acceptable, and the next RFC to carry one raises it again. Closing this rather than leaving it open against
+> a withdrawn RFC, because an open ticket pointing at a rejected record reads as live work and is not.
+>
+> See ADR-051 for the rule behind the rejection, and P032 for what the probe measured while it ran.
 
 ## Description
 

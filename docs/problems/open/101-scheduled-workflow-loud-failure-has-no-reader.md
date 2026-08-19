@@ -10,7 +10,25 @@
 
 ## Description
 
-`perf-regression.yml` asserts its own loudness. At its failure branch it emits:
+> **2026-08-20 — the exemplar is DELETED; the class is not.** `perf-regression.yml` was removed at the
+> maintainer's direction (ADR-051, P032). Everything below describes a workflow that no longer exists, and is
+> retained because the finding is about delivery rather than about that probe. **Ten scheduled workflows
+> remain** — `gnaf-source-smoke` daily and nine quarterly `update-*` loaders — every one notifying the same
+> way to the same reader, so nothing here is closed by the deletion.
+>
+> **What IS closed is this ticket's open channel-choice task.** The maintainer answered the question behind
+> it: _"I don't care so much how we check it, I care more about how you monitor it. I'm not going to monitor
+> it."_ So the answer is none of the options that task listed — not a GitHub issue, not the
+> `addressr-search-ops` SNS topic, not a check a human already looks at, if the terminus is still the
+> maintainer's attention. ADR-051 records the rule. The staleness detector this ticket built survives and now
+> has a sanctioned home: an agent-read routine check, not a notification.
+>
+> This ticket's own root-cause section already got halfway there — _"the problem is not an absent channel, it
+> is a channel terminating in an inbox nobody triages. Adding another notification route would reproduce
+> it."_ What it missed is that the inbox is not untriaged by accident. Its owner never agreed to be the
+> monitor.
+
+`perf-regression.yml` asserted its own loudness. At its failure branch it emits:
 
 > `::error::Perf regression probe FAILED TO RUN … the nightly perf signal is invalid until it is fixed`
 
@@ -69,31 +87,31 @@ The repo has a working pattern for exactly this and it is used elsewhere: the se
 
       Two findings from the backfill reshaped it:
 
-          **Nine of eleven run QUARTERLY, which inverts the priority.** A failure notification cannot fire for
-          a workflow that never runs. For a daily job, "stopped running" surfaces within a day or two by
-          absence. For these the blind window is up to three months — and GitHub disables scheduled workflows
-          outright after 60 days of repository inactivity, which is exactly what a quiet quarter produces. So
-          for most of this repo's scheduled surface, staleness is not a complement to failure notification. It
-          is the ONLY thing that can detect the failure mode at all.
+              **Nine of eleven run QUARTERLY, which inverts the priority.** A failure notification cannot fire for
+              a workflow that never runs. For a daily job, "stopped running" surfaces within a day or two by
+              absence. For these the blind window is up to three months — and GitHub disables scheduled workflows
+              outright after 60 days of repository inactivity, which is exactly what a quiet quarter produces. So
+              for most of this repo's scheduled surface, staleness is not a complement to failure notification. It
+              is the ONLY thing that can detect the failure mode at all.
 
-          **A manual dispatch masks schedule health, so the check filters on `event=schedule`.** On 2026-08-19
-          `update-ot`'s two newest runs were both `workflow_dispatch`, sitting over a scheduled run 83 days
-          older. In a default run listing a manual green is indistinguishable from a scheduled green, so "the
-          workflow is fine" reads true while the schedule itself could have stopped firing months earlier. A
-          staleness check that takes the newest run of any kind is green over precisely the case it exists to
-          catch. The filter therefore lives inside the tested unit rather than in whoever calls it, and the
-          live `update-ot` shape is a fixture.
+              **A manual dispatch masks schedule health, so the check filters on `event=schedule`.** On 2026-08-19
+              `update-ot`'s two newest runs were both `workflow_dispatch`, sitting over a scheduled run 83 days
+              older. In a default run listing a manual green is indistinguishable from a scheduled green, so "the
+              workflow is fine" reads true while the schedule itself could have stopped firing months earlier. A
+              staleness check that takes the newest run of any kind is green over precisely the case it exists to
+              catch. The filter therefore lives inside the tested unit rather than in whoever calls it, and the
+              live `update-ot` shape is a fixture.
 
-          Bounds are roughly two to three missed firings: 3 days daily, 21 weekly, 70 monthly, 110 quarterly.
-          One miss is a hiccup; a tighter bound flaps, and a flapping alarm is how the real one gets ignored —
-          which is this ticket's own subject.
+              Bounds are roughly two to three missed firings: 3 days daily, 21 weekly, 70 monthly, 110 quarterly.
+              One miss is a hiccup; a tighter bound flaps, and a flapping alarm is how the real one gets ignored —
+              which is this ticket's own subject.
 
-          **Quarterly was 200 and that was wrong twice over.** `21,28 2,5,8,11` fires TWICE a quarter, a week
-          apart, so the gaps run 7, 7, ~85 — the largest healthy gap is 85 days, not a quarter. 200 encoded
-          four missed firings and sat ninety days past the 60-day inactivity auto-disable this exists to
-          catch. 110 is flap-free against the 85-day gap and alarms after two or three misses depending which
-          of the pair last ran. Re-derived from the cron independently rather than taken on assertion, because
-          the first value came from arithmetic against the wrong interval.
+              **Quarterly was 200 and that was wrong twice over.** `21,28 2,5,8,11` fires TWICE a quarter, a week
+              apart, so the gaps run 7, 7, ~85 — the largest healthy gap is 85 days, not a quarter. 200 encoded
+              four missed firings and sat ninety days past the 60-day inactivity auto-disable this exists to
+              catch. 110 is flap-free against the 85-day gap and alarms after two or three misses depending which
+              of the pair last ran. Re-derived from the cron independently rather than taken on assertion, because
+              the first value came from arithmetic against the wrong interval.
 
 - [ ] **Wire it to something. DELIBERATELY NOT DONE.** The script is complete and tested and reds nothing,
       because which signal a stale schedule should break is a decision about what someone actually reads,

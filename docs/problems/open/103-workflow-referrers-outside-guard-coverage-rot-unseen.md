@@ -10,6 +10,12 @@
 
 ## Description
 
+> **2026-08-20 — `perf-regression.yml` was deleted (ADR-051), so this ticket's worked example no longer
+> exists. The class is untouched.** The referrer-rot gap it describes — a `node -e` import, a bare script
+> path, or prose stale in meaning while resolving fine — is unaffected by which workflow happened to
+> demonstrate it, and ten scheduled workflows plus every other referrer surface remain in scope. Retained
+> rather than re-voiced: the six-night outage is a past event and the record of it stays accurate.
+
 `.github/workflows/perf-regression.yml` has now broken twice at the same site, and **both times it was found by human review rather than by a test**.
 
 1. **2026-08-12 to 2026-08-17** — `npm run genversion` stopped resolving after the ADR-046 restructure moved the script into the `@mountainpass/addressr` workspace. Six consecutive nightly failures, unread. Found by an unrelated `gh run list`.
@@ -122,25 +128,25 @@ opt-in declaration step that someone can forget.
       with that ticket's own Status field and directory.
 
       **Mutate the TARGET, not the prose.** The obvious spec - "restore a known-false sentence and confirm
-          the check catches it" - was written here first and is unusable: its example (P032 recording P104 as closed
-          and verified) became TRUE when P104 closed, so restoring it is a no-op and the mutation cannot fail.
-          A guard whose falsification test cannot fail is the thing this ticket is about.
-          Instead flip `closed/104-*.md`'s `**Status**` to `Verification Pending`, or `git mv` it to
-          `verifying/`, leaving every sibling's prose untouched, and assert the guard names
-          `docs/problems/known-error/032-*.md` and the line. That reproduces the real defect direction - the
-          target moved and the prose did not - and needs no false sentence to be authored.
+              the check catches it" - was written here first and is unusable: its example (P032 recording P104 as closed
+              and verified) became TRUE when P104 closed, so restoring it is a no-op and the mutation cannot fail.
+              A guard whose falsification test cannot fail is the thing this ticket is about.
+              Instead flip `closed/104-*.md`'s `**Status**` to `Verification Pending`, or `git mv` it to
+              `verifying/`, leaving every sibling's prose untouched, and assert the guard names
+              `docs/problems/known-error/032-*.md` and the line. That reproduces the real defect direction - the
+              target moved and the prose did not - and needs no false sentence to be authored.
 
-          **The matcher must survive its own worked example.** Against the live sentence in
-          `known-error/032-*.md`, a literal-phrase list fails four independent ways: the text reads "verified
-          **against**" where the obvious pattern says "verified by"; the state word is wrapped in markdown
-          bold (`is **closed**,`); a 57-character parenthetical sits between `P104` and the claim; and the
-          claim STRADDLES A HARD WRAP, with "verified against dispatched" ending one line and
-          "run 32250954868" beginning the next - so a line-oriented matcher misses it even after the other
-          three are handled. Normalise whitespace before matching, and decide which line a multi-line claim
-          is reported at rather than assuming one.
+              **The matcher must survive its own worked example.** Against the live sentence in
+              `known-error/032-*.md`, a literal-phrase list fails four independent ways: the text reads "verified
+              **against**" where the obvious pattern says "verified by"; the state word is wrapped in markdown
+              bold (`is **closed**,`); a 57-character parenthetical sits between `P104` and the claim; and the
+              claim STRADDLES A HARD WRAP, with "verified against dispatched" ending one line and
+              "run 32250954868" beginning the next - so a line-oriented matcher misses it even after the other
+              three are handled. Normalise whitespace before matching, and decide which line a multi-line claim
+              is reported at rather than assuming one.
 
-          (An earlier version of this paragraph said 47 characters and named three ways. Both were wrong,
-          inside the spec for the guard that would catch exactly this.)
+              (An earlier version of this paragraph said 47 characters and named three ways. Both were wrong,
+              inside the spec for the guard that would catch exactly this.)
 
 ## Related
 

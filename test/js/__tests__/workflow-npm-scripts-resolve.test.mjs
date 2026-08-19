@@ -2,21 +2,27 @@
 // the scope it actually runs in.
 //
 // WHY THIS EXISTS, and it is not hypothetical. `.github/workflows/perf-regression.yml`
-// ran `npm run genversion` for six days after that script moved into the
-// `@mountainpass/addressr` workspace with the ADR-046 restructure. There is no
-// root `genversion`, so the step failed on EVERY scheduled run from 2026-08-12
-// to 2026-08-17. Nobody noticed, because the workflow is `schedule`-triggered:
-// it blocks no push and reds nothing anyone waits on.
+// — since DELETED, 2026-08-20, see ADR-051 — ran `npm run genversion` for six
+// days after that script moved into the `@mountainpass/addressr` workspace with
+// the ADR-046 restructure. There is no root `genversion`, so the step failed on
+// EVERY scheduled run from 2026-08-12 to 2026-08-17. Nobody noticed, because the
+// workflow was `schedule`-triggered: it blocked no push and redded nothing
+// anyone waits on.
+//
+// THE EXEMPLAR IS GONE; THE CLASS IS NOT, and this guard is the highest-value
+// survivor of that deletion. Ten scheduled workflows remain, every one of them
+// able to rot exactly this way. Do not read a deleted worked example as
+// evidence that the guard is vestigial.
 //
 // The root `pretest:js` WAS repointed to `-w @mountainpass/addressr` when the
 // package moved. This workflow was missed. That is the whole failure class —
 // a tree move repoints the referrers someone happens to be looking at, and the
 // rest rot silently until something reads them.
 //
-// SO THE GUARD SITS OUTSIDE THE TIER IT PROTECTS. A check living inside
-// `perf-regression.yml` would only run when that workflow runs, which is the
-// thing that was broken. This runs in the ordinary unit suite on every push, so
-// a workflow nobody executes still cannot carry an unresolvable script.
+// SO THE GUARD SITS OUTSIDE THE TIER IT PROTECTS. A check living inside the
+// workflow it guards would only run when that workflow runs, which is the thing
+// that was broken. This runs in the ordinary unit suite on every push, so a
+// workflow nobody executes still cannot carry an unresolvable script.
 //
 // WHAT IT DOES NOT COVER, stated so the green is not read as wider than it is:
 // only `npm run <script>` invocations. Bare paths (`scripts/foo.sh`), `npx`,

@@ -12,8 +12,9 @@
 #    make it useless. P068 was found by an external reporter, not by us.
 # 2. A third-party availability probe must never be able to redden master or
 #    stall the trunk loop. In its own workflow it cannot.
-# 3. It matches the perf-regression.yml precedent: decoupled cadence, not
-#    per-push, not in the build-and-test matrix.
+# 3. Decoupled cadence: not per-push, not in the build-and-test matrix. This
+#    followed perf-regression.yml, which was deleted 2026-08-20 (ADR-051); the
+#    shape stands on reasons 1 and 2 above, not on that precedent.
 #
 # Deliberately NOT named update-*.yml — that glob is claimed by the quarterly
 # loader runs, and the mapping needs to stay unambiguous.
@@ -27,7 +28,9 @@ on:
   # `type: choice` whose values are strings.
   workflow_dispatch:
   schedule:
-    # 02:15 UTC daily — offset from perf-regression.yml's 14:30 UTC. Daily
+    # 02:15 UTC daily. This was chosen to sit clear of perf-regression.yml's
+    # 14:30 UTC, which was deleted 2026-08-20; no live workflow constrains this
+    # time any more, so it is free to move. Daily
     # rather than weekly: the cost delta is negligible against a quarterly
     # multi-GB download, and it cuts worst-case detection latency from ~3
     # months to ~24 hours.

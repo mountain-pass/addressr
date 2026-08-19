@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 50 (44 in-force, 6 historical)
+**Total ADRs:** 51 (45 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_44 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_45 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -254,7 +254,20 @@ _44 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-040 (four sites, enumerated in the record); also marks the ADR-039 restatements
 **Decides:** The container image follows the npm publish rather than the deploy — `docker-publish` carries `!cancelled()`, so a failure later in the release job (the deploy, the prod smoke) can no longer skip an image whose publish already succeeded. Registry pushes come from the pipeline: the local `docker:push` break-glass is withdrawn as a sanctioned manual route. No recovery is built for a version orphaned before the fix, deliberately — every recovery shape creates a second writer of the bare `:<semver>` tag — so 3.3.2 has no image.
 **Confirmation:** The gate is pinned EXACTLY in release-workflow-deploy-only.test.mjs, with the property assertions beside it as explanation rather than the control, and mutation-verified against four regressions: implicit success(), always(), the negated comparison, and the `||` inversion that would have written the bare tag on every master push. `docker-image.yml`'s workflow_dispatch still declares no inputs, so no second bare-tag writer exists.
+
+### ADR-051 — A check whose only reader is the maintainer is not a control
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** A check whose only consumer is the maintainer's attention is not a control and must not be counted as one in any risk assessment, confirmation criterion, or ticket closure. A check qualifies only if it ACTS (blocks/fails/refuses something already in the flow) or its READER IS AN AGENT rather than the maintainer. Corollaries: routing the same signal to a different inbox, Slack, SNS or a GitHub issue is not a fix; "run X manually before risky changes" is operator memory, not a control; a dashboard is not monitoring. The nightly perf-regression probe was deleted under this rule after failing six consecutive nights while emailing a reader who did not recognise it.
+**Confirmation:** The probe's six files and the `test:perf:regression` script are absent; `test/k6/script.js`, `retrieve-url.js`, `k6-retrieve-url.test.mjs` and `test:performance` survive with the import chain intact, because ADR-031's soak-gate criterion 5 needs that profile and it is the only k6 left; no CloudWatch alarm was added or removed, the absence of a latency alarm being a pre-existing gap this record documents rather than creates; `doc-links-resolve` passes, which is why P032's two links to deleted artefacts became plain text in the same commit.
 **Related:** ADR-040, ADR-039, ADR-049
+
+### ADR-051 — A check whose only reader is the maintainer is not a control
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** A check whose only consumer is the maintainer's attention is not a control and must not be counted as one in any risk assessment, confirmation criterion, or ticket closure — a check qualifies only if it acts (blocks, fails, or refuses in-flow) or is read by an agent that surfaces it only when actionable. Adopted after the nightly `perf-regression.yml` probe failed six unread nights and the maintainer, its only consumer, declined to monitor it; the probe was deleted rather than rerouted, since a different inbox reproduces the same defect.
+**Confirmation:** perf-regression workflow, k6 regression script, perf-validity script, three perf tests and the `test:perf:regression` npm script are absent; `test/k6/script.js`, `retrieve-url.js`, the k6-retrieve-url test and `test:performance` survive and still parse; no `aws_cloudwatch_metric_alarm` added or removed; `npm run test:js` passes including `doc-links-resolve`
+**Related:** ADR-031, ADR-048
 
 ---
 
