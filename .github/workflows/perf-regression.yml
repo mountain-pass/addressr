@@ -145,6 +145,14 @@ jobs:
           echo "server did not become healthy on :6060"; exit 1
       - name: Install k6
         uses: grafana/setup-k6-action@v1
+        # Pinned. The probe exports its summary with `--summary-export`, which
+        # k6 has long deprecated in favour of handleSummary; an unpinned action
+        # installs latest, so the release that finally drops the flag would red
+        # the nightly with no warning. It fails closed rather than silently
+        # (perf-validity exits 1 on an unreadable summary), but a pinned
+        # version turns an unannounced break into a deliberate upgrade.
+        with:
+          k6-version: '0.49.0'
       - name: Run perf regression probe
         id: k6
         # EXIT-CODE DISCRIMINATION (supersedes the blanket step-level failure
@@ -178,10 +186,41 @@ jobs:
           echo "k6_exit=$rc" >> "$GITHUB_OUTPUT"
           case "$rc" in
             0)
-              echo "perf regression probe passed every threshold"
+              # Validity is checked on the CLEAN path too, not only on a
+              # breach. Today the count>500 threshold means a zero-sample leg
+              # cannot reach exit 0 — but that makes this branch's safety a
+              # property of a threshold in another file, and a "passed every
+              # threshold" message is the most believed line the probe emits.
+              # It is the one that most needs to be earned.
+              if node scripts/perf-validity.mjs target/perf-summary.json; then
+                echo "perf regression probe passed every threshold"
+              else
+                echo "::error::Perf regression probe reported a clean run while a leg measured nothing. The thresholds did not catch it; the validity check did."
+                exit 1
+              fi
               ;;
             99)
-              echo "::warning::Perf regression probe crossed a k6 threshold (advisory only — this does not fail the build). See the job summary for threshold detail."
+              # A threshold breach. k6 exits 99 for "got slower" AND for
+              # "measured nothing", so the exit code cannot route them and the
+              # summary is inspected instead. This closes the ZERO-SAMPLE part
+              # of the residual recorded above. A leg that collected nothing is
+              # now loud. A leg whose requests all 404 is NOT covered: it clears
+              # the count floor, so this routes it advisory-green while its p95
+              # measures error latency.
+              #
+              # The distinction is not cosmetic. A latency threshold PASSES on
+              # an empty sample set — p(95) of no requests is 0s — so a probe
+              # that collected nothing reports a tick against the metric it
+              # never gathered. That is a broken instrument, not a slow one,
+              # and it must be as loud as a probe that failed to start.
+              # The check lives in scripts/perf-validity.mjs, fed fixtures by
+              # perf-validity.test.mjs, rather than as a one-liner here — a
+              # decision embedded in YAML can only ever be pinned as text.
+              if node scripts/perf-validity.mjs target/perf-summary.json; then
+                echo "::warning::Perf regression probe crossed a k6 threshold (advisory only — this does not fail the build). Every leg measured samples, so the probe itself is sound. See the job summary for threshold detail."
+              else
+                exit 1
+              fi
               ;;
             *)
               echo "::error::Perf regression probe FAILED TO RUN (k6 exit $rc). This is a broken probe, not a perf regression — the nightly perf signal is invalid until it is fixed."

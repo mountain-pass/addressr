@@ -184,9 +184,9 @@ per-file read, which is why that task stays open.
 
 | fact                                                          | count |
 | ------------------------------------------------------------- | ----- |
-| test files that read a repo file and assert on what they read | 31    |
+| test files that read a repo file and assert on what they read | 32    |
 | of those, files that read `.github/workflows/**`              | 10    |
-| all other file-reading test files                             | 21    |
+| all other file-reading test files                             | 22    |
 
 **The predicate is published so the classification can be rerun, not just the result.** A file is in the
 population if its source matches `readFileSync|readFile\(|readdirSync` and contains `assert.`; it is in the
@@ -195,7 +195,7 @@ workflow group if it contains both `.github` and `workflows`; and
 
 That last clause is not a convenience. That file is the guard which recomputes these figures, and it
 satisfies every clause of the predicate — it reads test files, it asserts, and it quotes the literal
-`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 32 / 11 / 21
+`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 33 / 11 / 22
 and counts the instrument into the sample it measures. It is stated here because the whole claim of this
 paragraph is that a third party can rerun the rule and get the table; a rule published in one form and run
 in another would make the guard green while the record stayed falsifiable, which is the failure this ticket
@@ -212,7 +212,13 @@ list with a stated rule is checkable by rerunning the rule, where a bare count i
 also the fourth miss by a pattern-keyed scan on this ticket, which is the argument for Investigation Task 1
 being a per-file read rather than a better regex.
 
-Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 21 and holds no source pin
+**The guard fired on 2026-08-19, the first time the population moved.** Adding
+`perf-validity-covers-declared-legs.test.mjs` for P104 took the total from 31 to 32, and
+`p033-population-figures-recompute.test.mjs` reddened the suite until this table was updated. That is the
+whole point of computing these figures rather than asserting them: five rounds of hand-correction never
+once caught a drift at the moment it happened, because nothing was watching.
+
+Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 22 and holds no source pin
 at all. File identity is robust enough to route the work, and that is all it is used for.
 
 **The conclusion that survives, and the one that does not.** Those ten files pin YAML consumed by GitHub.
@@ -313,11 +319,11 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
 ### Investigation Tasks
 
 - [ ] **Audit all `test/js/__tests__/*.test.mjs` files. PARTIAL 2026-08-19 — deliberately NOT marked done.**
-      The recount above identifies the population by file — 31 files, 10 of them reading workflow YAML,
+      The recount above identifies the population by file — 32 files, 10 of them reading workflow YAML,
       all named — which is enough to route the work and is what the audit was for. It is NOT enough to call
       the audit complete, and no assertion count is offered, because three attempts at one produced three
       figures and the third moved under this commit's own edits. **What remains is a per-file read of the
-      31, classifying each assertion as pin or not** — the only method that settles it, and cheap at 31
+      32, classifying each assertion as pin or not** — the only method that settles it, and cheap at 32
       files. This item stays open on purpose: the first attempt closed it on a figure that did not survive
       its own arithmetic, and closing it again on a better one would repeat the move rather than the
       mistake.
@@ -328,7 +334,7 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       there passes a defect into a published artefact. That is not hypothetical — `release-watch.sh` was
       converted on 2026-08-19 for exactly that reason (see below), and its predecessor's pin matched a call
       that was commented out.
-- [ ] **Convert the non-workflow population, release and publish paths first.** 21 files, of which the
+- [ ] **Convert the non-workflow population, release and publish paths first.** 22 files, of which the
       guards over `scripts/` are the tractable and highest-value subset: a shell
       predicate can be extracted to a file and fed inputs, which is what `scripts/scan-jobs.awk` now is.
 - [ ] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish.** This is

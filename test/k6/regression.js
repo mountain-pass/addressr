@@ -20,6 +20,7 @@
 // than the hosted runner.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { retrieveUrlFor } from './retrieve-url.js';
 
 const BASE_URL = __ENV.ADDRESSR_BASE_URL || 'http://localhost:6060';
 
@@ -64,6 +65,35 @@ export const options = {
     ],
     'http_req_duration{phase:main,name:retrieve}': [
       { threshold: 'p(95)<1000', abortOnFail: false },
+    ],
+    // A LATENCY THRESHOLD CANNOT FAIL ON AN EMPTY SAMPLE SET. p(95) of nothing
+    // is 0s, which satisfies p(95)<1000, so k6 prints a tick against a metric
+    // it never collected — which is exactly what it did for this probe's whole
+    // life while the retrieve request was never issued at all.
+    //
+    // So the count is gated separately from the latency. This is the floor
+    // that makes "measured nothing" a breach rather than a pass, and it also
+    // catches a throw anywhere before the retrieve call without needing to
+    // detect the throw itself: no requests, no count, breach.
+    //
+    // 500 is deliberately far below the ~21,000 a healthy 60 s window produces
+    // and far above zero. It is a did-this-run-at-all floor, not a throughput
+    // target — tightening it toward observed throughput would make it flap on
+    // runner variance, which is the mistake the latency thresholds already
+    // warn about above.
+    //
+    // BOTH legs are declared, and the declaration is load-bearing beyond the
+    // floor itself: k6 only emits a tagged submetric into --summary-export
+    // when a threshold names it. An undeclared leg is simply ABSENT from the
+    // summary, which scripts/perf-validity.mjs reads as zero — so omitting a
+    // leg here would make the validity check fail every run, including a
+    // healthy one. `perf-validity-covers-declared-legs.test.mjs` ties the two
+    // files together so they cannot drift apart.
+    'http_reqs{phase:main,name:search}': [
+      { threshold: 'count>500', abortOnFail: false },
+    ],
+    'http_reqs{phase:main,name:retrieve}': [
+      { threshold: 'count>500', abortOnFail: false },
     ],
     'checks{phase:main}': [{ threshold: 'rate>0.95', abortOnFail: false }],
   },
@@ -113,10 +143,12 @@ export function probe() {
     const results = JSON.parse(response.body);
     if (results.length > 0) {
       // Retrieve the first hit — deterministic (no random index), so the
-      // retrieve metric measures the same document class each run. Interpolated
-      // raw (unlike the query above) because this href comes back from the
-      // server already encoded; encoding it again would double-escape it.
-      const nextUrl = results[0].links.self.href;
+      // retrieve metric measures the same document class each run. The path is
+      // built from the hit's `pid`, which is what the collection loader
+      // actually returns; the previous `links.self.href` read matched nothing
+      // any response has ever carried and threw on every iteration. Not
+      // re-encoded: a pid is already URL-safe.
+      const nextUrl = retrieveUrlFor(results[0]);
       const retrieve = http.get(`${BASE_URL}${nextUrl}`, {
         tags: { name: 'retrieve' },
       });

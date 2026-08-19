@@ -97,16 +97,58 @@ describe('perf-regression.yml — P032 k6 exit-code discrimination', () => {
     );
   });
 
-  it('treats a threshold breach (99) as advisory — warns, does not fail', () => {
+  it('treats a threshold breach (99) as advisory ONLY when the probe measured something', () => {
+    // The contract sharpened on 2026-08-19, closing P032's named residual that
+    // "content-based routing of the wrong-measurement class" was unresolved.
+    //
+    // k6 exits 99 both for "got slower" and for "measured nothing", so the
+    // exit code alone cannot route them — and conflating them is not a
+    // rounding error. A latency threshold PASSES on an empty sample set: p(95)
+    // of zero requests is 0s, which satisfies p(95)<1000. So the second case
+    // is a broken instrument reporting a tick against a metric it never
+    // gathered, and it must be as loud as a probe that failed to start.
+    //
+    // The arm is therefore allowed to exit 1 — but only behind the validity
+    // check, never unconditionally.
     const advisoryArm = k6Step.slice(advisoryIndex, brokenIndex);
-    assert.match(advisoryArm, /::warning::/);
-    assert.doesNotMatch(advisoryArm, /exit 1/);
+    assert.match(advisoryArm, /::warning::/, 'a valid breach must still warn');
+    assert.match(
+      advisoryArm,
+      /perf-validity\.mjs/,
+      'the breach arm must consult the validity check before choosing a verdict',
+    );
+    // The warning must not be reachable without the check having passed.
+    const warnIndex = advisoryArm.indexOf('::warning::');
+    const checkIndex = advisoryArm.indexOf('perf-validity.mjs');
+    assert.ok(
+      checkIndex < warnIndex,
+      'the validity check must run BEFORE the advisory warning is emitted',
+    );
+  });
+
+  it('checks validity on the clean path too, so "passed every threshold" is earned', () => {
+    // Today a zero-sample leg cannot reach exit 0, because a count threshold
+    // catches it first. That makes this branch's safety a property of a
+    // threshold in another file — and "passed every threshold" is the most
+    // believed line the probe emits, so it is the one that most needs earning.
+    const cleanArm = k6Step.slice(k6Step.indexOf('            0)'), advisoryIndex);
+    assert.match(cleanArm, /perf-validity\.mjs/);
+    assert.match(cleanArm, /exit 1/, 'a clean run that measured nothing must fail');
   });
 
   it('fails loudly on any other nonzero exit — a broken probe', () => {
     const brokenArm = k6Step.slice(brokenIndex);
     assert.match(brokenArm, /::error::/);
     assert.match(brokenArm, /exit 1/);
+  });
+
+  it('pins the k6 version, so an unpin is loud rather than silent', () => {
+    // The probe exports its summary with the deprecated --summary-export. An
+    // unpinned action installs latest, so the release that drops the flag
+    // would red the nightly unannounced — and per P101 a red scheduled run
+    // reaches no reader. Without this assertion a later "unpin to pick up
+    // fixes" reverts that protection with a green suite.
+    assert.match(raw, /k6-version:\s*'[^']+'/, 'the setup-k6 step must pin a version');
   });
 
   it('keys the reporting step on the published exit code, not the step result', () => {

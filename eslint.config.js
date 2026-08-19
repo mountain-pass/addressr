@@ -170,7 +170,31 @@ export default [
   },
   {
     // k6 load testing runtime — modules resolved by k6, not Node.js
-    files: ['test/k6/**'],
+    // NAME-anchored on the directory basename, not on a repo path, matching
+    // the cloudflare-worker block below and for the same reason: two
+    // path-anchored blocks in this file died on 2026-08-10 when their trees
+    // moved. This one would fail loudly rather than silently — `no-undef` has
+    // no autofix — but "loudly" only reaches someone who STAGES a k6 file, and
+    // that is exactly the mechanism that hid these three usages from the day
+    // the rule landed until 2026-08-19. With a tree-wide sweep prohibited,
+    // deferred-loud on this surface is closer to silent than it looks.
+    files: ['**/k6/**'],
+    languageOptions: {
+      globals: {
+        // k6 runtime globals. Injected by the k6 VM, not importable, so
+        // without these `no-undef` reports them as typos.
+        //
+        // These went unreported until 2026-08-19 not because the config was
+        // right but because lint-staged only lints STAGED files and no k6
+        // script had been touched since the rule landed. The first commit to
+        // edit one failed the hook on three pre-existing usages. Declared
+        // rather than silenced: `no-undef` off for this tree would also stop
+        // catching a real typo.
+        __ENV: 'readonly',
+        __VU: 'readonly',
+        __ITER: 'readonly',
+      },
+    },
     rules: {
       'import-x/no-unresolved': 'off',
       'n/no-missing-import': 'off',

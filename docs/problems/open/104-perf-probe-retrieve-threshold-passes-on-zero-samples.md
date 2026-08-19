@@ -87,12 +87,62 @@ claim about a shape no code produces.
 - [x] **Establish which side is wrong. DONE 2026-08-19 — the probe is.** Settled from the response-construction
       code and a live production body, both of which outrank the OpenAPI document the task originally proposed
       distrusting, and neither of which needed a CI run. See the RCA above.
-- [ ] Repoint the retrieve leg to `` `${BASE_URL}/addresses/${results[0].pid}` ``, and drop the stale
+- [x] **DONE 2026-08-19.** Repoint the retrieve leg to `` `${BASE_URL}/addresses/${results[0].pid}` ``, and drop the stale
       already-encoded comment at `:116-118` — a `pid` needs no encoding. Deleting the leg is no longer on the
       table now that the retrieve path is known to be exercisable.
-- [ ] **Add a non-empty floor for every threshold**, so a metric with zero samples fails rather than passes. `handleSummary` in `test/k6/regression.js` can assert `http_reqs` per tag before the thresholds are trusted; P032's residual already proposes `handleSummary` as the better long-term shape.
-- [ ] Route k6 script exceptions to a non-zero exit. 21,860 `level=error` lines produced a green run; the exit-code discrimination P032 shipped distinguishes harness failure from threshold breach but does not see an in-iteration throw.
-- [ ] Re-run and confirm `{phase:main,name:retrieve}` reports real samples.
+- [x] **Add a non-empty floor for every threshold. DONE 2026-08-19, but NOT via `handleSummary`.** The task
+      proposed `handleSummary`; that requires importing k6's `textSummary` from `jslib.k6.io` to keep the
+      human-readable stdout report, which would make a nightly job depend on reaching a third-party host at
+      run time — a new way for the probe to fail, to fix a way it reported falsely. Used
+      `--summary-export=target/perf-summary.json` instead: built in, no network, and it leaves the stdout
+      summary alone. A `count>500` threshold on `http_reqs{phase:main,name:retrieve}` is the floor itself.
+- [x] **Route k6 script exceptions to a non-zero exit. DONE 2026-08-19, by consequence rather than
+      directly.** An in-iteration throw is still invisible to k6's exit code — but a throw before the
+      retrieve call means no retrieve requests, which the count floor and the validity check both catch. The
+      throw is detected by its effect on what was measured, which is the property that actually matters;
+      detecting the throw itself would still leave a probe that measured nothing for any other reason.
+- [x] **Separate an invalid probe from a slow one. DONE 2026-08-19 — this closes the ZERO-SAMPLE subclass
+      of P032's named residual, not the whole of it.** An earlier draft of this task said it closed the
+      residual outright; that overstated what was built and is corrected here. k6 exits 99 for
+      both, so the exit code cannot route them; `scripts/perf-validity.mjs` reads the exported summary and
+      the workflow routes on it. A latency breach with samples stays advisory; a leg that measured nothing
+      is now as loud as a probe that failed to start. The check runs on the CLEAN path too, so "passed every
+      threshold" is earned rather than assumed.
+      **What is closed:** a leg that collected nothing. That covers both historical instances — a rerun of
+      2026-07-25 returns 400s on search, so `results.length > 0` never holds, no retrieve is issued, and the
+      count is zero; an empty-fixture regression takes the same path.
+      **What is NOT closed, and remains a residual:** error-path-with-samples. If search returns 200 with
+      hits and every `/addresses/{pid}` responds 404, the retrieve count clears the floor, validity passes,
+      and the `retrieve is status 200` check drives `checks{phase:main}` under 0.95 — so k6 exits 99 and the
+      run routes advisory-green while the retrieve p95 is measured over 404 latency. That is timing an error
+      path, one leg over from the defect this ticket exists for. Narrow, and it is a real gap.
+- [x] **Declare an `http_reqs` count threshold for BOTH legs. DONE 2026-08-19 — and the first version of
+      this fix was broken in a way its own tests could not see.** k6 emits a tagged submetric into
+      `--summary-export` only when a threshold NAMES it; an undeclared leg is not zero in the summary, it is
+      absent. The first version declared a count threshold for `retrieve` only while `REQUIRED_LEGS` listed
+      both, so `perf-validity.mjs` would have read `search` as zero and failed the nightly on EVERY run,
+      healthy or not — and would have masked the one open task below, because the run would have reddened
+      with "measured NOTHING on: search" and said nothing about whether retrieves worked.
+      The six fixture tests could not catch it: their helper WROTE both metric keys, so they exercised the
+      guard's logic against a shape k6 does not produce. **A guard whose fixtures synthesise their own input
+      contract has not tested the contract.** Confirmed against `target/stress-v1-summary.json`, a real
+      export, which carries only its two threshold-declared submetrics and no `http_reqs` submetric at all.
+      `perf-validity-covers-declared-legs.test.mjs` now ties the two files together so they cannot drift.
+- [x] **Fix the same defect in the stress profile. DONE 2026-08-19.** `test/k6/script.js` read
+      `links.self.href` identically and would have thrown on every iteration against the current server.
+      P032's Workaround and its open ADR-029 Phase 1 one-shot both depend on that profile. Both profiles now
+      call the shared `retrieveUrlFor`, so they cannot diverge again.
+- [x] **Pin the k6 version. DONE 2026-08-19.** `--summary-export` is long deprecated in favour of
+      `handleSummary`, and `grafana/setup-k6-action@v1` installs latest, so the release that drops the flag
+      would red the nightly unannounced. It fails closed rather than silently, but a pin makes the break a
+      deliberate upgrade.
+- [ ] **Re-run and confirm `{phase:main,name:retrieve}` reports real samples.** THE ONE THING NOT YET
+      ESTABLISHED. Everything above is verified by unit tests over extracted pieces —
+      `k6-retrieve-url.test.mjs` proves the URL is built from the field the API returns,
+      `perf-validity.test.mjs` proves a zero-sample leg is rejected, and every guard was mutation-tested.
+      None of that proves the probe now measures retrieves against a running instance: the unit tests would
+      pass identically if k6 failed to import the module, or if `/addresses/{pid}` 404'd. Only a dispatched
+      run settles it, and until one lands this ticket stays open.
 
 ## Dependencies
 

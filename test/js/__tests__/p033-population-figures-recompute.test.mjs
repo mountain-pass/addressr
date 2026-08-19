@@ -18,6 +18,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Spelled cardinals appear in the ticket's prose, so they are read back and
+// required to agree rather than denylisted one at a time.
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+
 const testsDir = fileURLToPath(new URL('.', import.meta.url));
 const ticketPath = fileURLToPath(
   new URL(
@@ -28,7 +32,7 @@ const ticketPath = fileURLToPath(
 
 // The predicate exactly as the ticket publishes it. If this and the ticket's
 // prose ever diverge, that is the defect — change both together.
-function classify() {
+function classify({ excludeSelf = true } = {}) {
   const workflow = [];
   const other = [];
   // This file is excluded from its own population. It reads test files and
@@ -38,7 +42,8 @@ function classify() {
   // is what keeps that from being a silent thumb on the scale.
   const SELF = 'p033-population-figures-recompute.test.mjs';
   for (const file of readdirSync(testsDir)) {
-    if (file === SELF || !file.endsWith('.test.mjs')) continue;
+    if (!file.endsWith('.test.mjs')) continue;
+    if (excludeSelf && file === SELF) continue;
     const source = readFileSync(path.join(testsDir, file), 'utf8');
     if (!/readFileSync|readFile\(|readdirSync/.test(source)) continue;
     if (!source.includes('assert.')) continue;
@@ -102,8 +107,19 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // NEXT paragraph, which names license-audit-runs-in-ci while explaining
     // why the first version of the list omitted it — so deleting the name from
     // the list itself went unnoticed. The window was the guard's blind spot.
-    const start = ticket.indexOf('The ten are');
-    assert.notEqual(start, -1, 'the ticket must carry the named list');
+    // The anchor is DERIVED, not literal. It was `'The ten are'` — so the one
+    // cardinal this guard touches most was the one it verified least: extend
+    // the list to eleven names and the under-listing loop below still passes,
+    // green over a ticket reading "The ten are". Deriving it makes the anchor
+    // track the population and turns the cardinal into an assertion at once.
+    const anchor = `The ${WORDS[workflow.length]} are`;
+    const start = ticket.indexOf(anchor);
+    assert.notEqual(
+      start,
+      -1,
+      `the ticket must introduce the named list as "${anchor}" — if the list is present but ` +
+        `differently worded, the cardinal in that sentence is stale`,
+    );
     const end = ticket.indexOf('\n\n', start);
     // Unguarded, a -1 here makes slice() return the whole remainder of the
     // document minus one character — the wide window restored, silently. The
@@ -116,6 +132,60 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
         `${file} reads workflow YAML but the ticket does not name it`,
       );
     }
+  });
+
+  it('states the WITHOUT-exclusion triple the published predicate would return', () => {
+    // The ticket explains the self-exclusion by saying what the rule returns
+    // without it. That sentence is a live claim about a computation, so it is
+    // computed — it was stale within one commit of being written, and neither
+    // the cardinal assertions nor the denylist could see it.
+    const bare = classify({ excludeSelf: false });
+    const triple = `${bare.workflow.length + bare.other.length} / ${bare.workflow.length} / ${bare.other.length}`;
+    assert.ok(
+      ticket.includes(`run without the exclusion the rule returns ${triple}`),
+      `the ticket should say the un-excluded rule returns ${triple}`,
+    );
+  });
+
+  it('states the right group size in the over-counting note', () => {
+    // Same shape, same reason: a bare cardinal in prose, one restatement away
+    // from the table, with nothing recomputing it.
+    assert.ok(
+      ticket.includes(`is among the ${other.length} and holds no source pin`),
+      `the over-counting note should say ${other.length}`,
+    );
+  });
+
+  it('states the population size wherever the Investigation Tasks restate it', () => {
+    // Two sites in one bullet, and the total was covered by nothing — the
+    // ticket's own shape (the unit of a correction is the claim, not the
+    // locality) reproduced inside its task list.
+    const total = workflow.length + other.length;
+    // Each pattern CAPTURES the population cardinal, and the capture is
+    // compared. An `includes(String(total))` over the whole matched span would
+    // pass on the wrong number whenever the span carries a second cardinal:
+    // at total 10, the stale text "32 files, 10 of them reading" contains
+    // "10" and satisfies it. Matching the number you mean is the difference
+    // between a check and a coincidence.
+    const patterns = [
+      /(\d+) files, \d+ of them reading workflow YAML/g,
+      /cheap at (\d+)\s*\n?\s*files/g,
+      /a per-file read of the\s*\n?\s*(\d+)/g,
+    ];
+    let found = 0;
+    for (const pattern of patterns) {
+      for (const match of ticket.matchAll(pattern)) {
+        found += 1;
+        assert.equal(
+          Number(match[1]),
+          total,
+          `"${match[0].replace(/\s+/g, ' ').trim()}" states ${match[1]}, but the predicate returns ${total}`,
+        );
+      }
+    }
+    // Without this the loops go vacuous the moment the wording moves, and a
+    // guard that matches nothing reports the same green as one that passes.
+    assert.ok(found >= 3, `expected at least 3 restatements of the population size, found ${found}`);
   });
 
   it('does not restate a cardinal the predicate contradicts', () => {
@@ -143,7 +213,6 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     // which would go inert the moment the answer became eleven — and which I
     // then dropped while deriving the others, silently removing the only cover
     // for that phrasing. Mutation testing is what surfaced that.
-    const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
     assert.ok(WORDS[n], `extend WORDS to cover ${n} before this check can speak`);
     const spelled = ticket.match(/Those (\w+) files pin YAML/);
     assert.ok(spelled, 'the ticket must carry the "Those <n> files pin YAML" claim');

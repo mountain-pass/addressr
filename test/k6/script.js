@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { retrieveUrlFor } from './retrieve-url.js';
 
 export const options = {
   stages: [
@@ -55,8 +56,13 @@ export default function runTest() {
   if (response.status === 200) {
     const results = JSON.parse(response.body);
     if (results.length > 0) {
-      const nextUrl =
-        results[randomIntFromInterval(0, results.length - 1)].links.self.href;
+      // Same defect as regression.js carried (P104): `links.self.href` is a
+      // key no served response has ever produced, so this threw on every
+      // iteration and the retrieve leg measured nothing. Shared helper, so the
+      // two profiles cannot drift apart again.
+      const nextUrl = retrieveUrlFor(
+        results[randomIntFromInterval(0, results.length - 1)],
+      );
       http.get(`http://localhost:6060${nextUrl}`, {
         tags: { name: 'retrieve' },
       });
