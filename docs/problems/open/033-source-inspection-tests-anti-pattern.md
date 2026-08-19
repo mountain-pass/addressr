@@ -2,7 +2,7 @@
 
 **Status**: Open
 **Reported**: 2026-04-28
-**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; a population of further source-inspection assertions remains, enumerated in the Remaining population table below — **34 across four files at the time of this re-rating**, since reduced by the conversions recorded under Resolution. The rating is set against the re-rating-date figure and is not re-derived on every conversion; see that table for the live count.
+**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; a population of further source-inspection assertions remains — **34 across four files at the time of this re-rating**, which is the figure the rating was set against. The rating is not re-derived on every conversion. **There is no live count to point at**: every assertion tally on this ticket was withdrawn on 2026-08-19 after three attempts produced three figures by a method that over- and under-counts at once. The population is now identified by file rather than by tally; the rating stands on the demonstrated instance (a production defect hidden for four months), which no recount affects.
 **Origin**: internal
 **Effort**: M — audit of test/js/**tests** assertions + progressive behavioural-test replacement cadence
 **WSJF**: 8.0 — (16 × 1.0) / 2 — re-rated 2026-08-08 on the P091 evidence; was 3.0 (6 × 1.0) / 2, backfilled 2026-07-29 (review)
@@ -49,11 +49,17 @@ The cost was not a wrong number in a test report. It was four months during whic
 
 ### The population that can still fire
 
-Each of these is a claim of coverage that executes no code. **The live count lives in exactly one place — the Remaining population table below** — and this section deliberately does not restate it. Two tables of the same fact is how this ticket came to say 7 and 14 for the same file twenty lines apart; the unit of a correction is the claim, not the locality.
+Each of these is a claim of coverage that executes no code. **There is no live count anywhere on this ticket, by decision** — see the withdrawal below. The single-home rule this section used to state was the right instinct and it was not enough: it kept two tables from disagreeing, but nothing kept the one remaining table from being wrong, and it was, four times. Two tables of the same fact is how this ticket came to say 7 and 14 for the same file twenty lines apart; the unit of a correction is the claim, not the locality — and the unit of a _measurement_ is the method, which is why the method is now published and the numbers are not.
 
-The count at re-rating time, 2026-08-08, was **34 across four files**, which is what the Likelihood-4 rating was set against. That figure is a historical anchor for the rating, not a current measurement. One of its rows was wrong when written: `proxy-auth.test.mjs` was counted at 7 by grepping `assert.match` without separating behavioural matches from source matches — the true figure is 2, and the retraction is recorded below.
+The count at re-rating time, 2026-08-08, was **34 across four files**, which is what the Likelihood-4 rating was set against. That figure is a historical anchor for the rating, not a current measurement. One of its rows was wrong when written: `proxy-auth.test.mjs` was counted at 7 by grepping `assert.match` without separating behavioural matches from source matches — the true figure is 2, and the retraction is recorded below. Of the other rows, one (`release-workflow-deploy-only`) has since been withdrawn rather than recounted and the rest still carry cardinals from the discredited method. So this figure is a dated anchor for the rating and nothing else. **Do not add it up.**
 
-`proxy-auth.test.mjs` is still the one to look at first regardless of its size: ADR-024 proxy authentication is a security boundary, and a source-inspection assertion there is a green light over an unexercised auth path.
+`proxy-auth.test.mjs` was named here as the one to look at first, on the grounds that ADR-024 proxy authentication is a security boundary. **The count that drove that priority was wrong — 2 source pins, not 7 — so it is not the place to start.** The security-boundary reasoning was sound; the count it was applied to was not.
+
+**Its two surviving pins are NOT redundant, and must not be deleted in a conversion sweep.** They read `waycharter-server.js`, slice the region from `buildRest2App` to `app.use(proxyAuthMiddleware())`, and assert no `app.all/get/post/put/delete/patch` is registered in it — no data-method responder mounted ahead of auth, on **any** path. The behavioural cover in `waycharter-server.test.mjs` (unauthenticated `OPTIONS /addresses` → 204, `GET /addresses` → 401, and the CORS-off arm) pins that ordering for **one** path; a responder mounted pre-auth on any other path passes all of it. So these two are sole cover for the wider property.
+
+And they are weak cover for it, on this ticket's own terms: a source-region scan cannot see a terminating `app.use` handler mounted ahead of the middleware — the same limitation recorded for the preflight regexes further down. That is a live gap over an auth boundary, not a discharged one.
+
+**The first version of this withdrawal said the opposite** — that "the auth path is exercised and there is no green light over anything" — which was a coverage claim asserted without opening the file, in the ticket that exists to catch coverage claims asserted without opening the file. It is recorded rather than quietly fixed because the frequency is the evidence: this is the fourth correction to this section, and each one was introduced by the fix to the one before it.
 
 ### What "replace" has to mean
 
@@ -105,7 +111,7 @@ Seven executing assertions replace them, including two properties the regexes co
 - **`close()` is requested BEFORE idle sockets are closed.** Reversed, a new connection can land in the gap. A regex sees both statements and not their order.
 - **`stopServer` resolves — not rejects — when `close()` hands back an error.** The behavioural form of `doesNotMatch(/reject/)`. It runs the drain with a failing callback and asserts the promise settles fulfilled, which is the actual contract: `test/js/world.js` discards the return value, so a rejection there fails teardown.
 
-**Extraction shape, and why it is a factory.** `createServerLifecycle()` closes over the handle and returns the three functions; a process-wide singleton is destructured from one call. Two things fall out. A test gets a genuinely independent handle by calling the factory again rather than defeating the module cache with a query-string import — the first draft did exactly that, and it is a smell. And **the singleton is a `const` initialised once, so `unicorn/no-top-level-assignment-in-function` stops firing**: the suppression granted against that rule on `waycharter-server.js:996` hours earlier is gone from the tree, removed rather than relocated. It was deferred on the grounds that the shutdown lifecycle had no unit cover to catch a mistake; landing the cover dissolved it. Recorded on P084 as the argument for sequencing that ticket behind this one.
+**Extraction shape, and why it is a factory.** `createServerLifecycle()` closes over the handle and returns the three functions; a process-wide singleton is destructured from one call. Two things fall out. A test gets a genuinely independent handle by calling the factory again rather than defeating the module cache with a query-string import — the first draft did exactly that, and it is a smell. And **the singleton is a `const` initialised once, so `unicorn/no-top-level-assignment-in-function` stops firing**: the suppression granted against that rule on the `trackServer` wrapper in `packages/addressr/src/waycharter-server.js` hours earlier is gone from the tree, removed rather than relocated. It was deferred on the grounds that the shutdown lifecycle had no unit cover to catch a mistake; landing the cover dissolved it. Recorded on P084 as the argument for sequencing that ticket behind this one.
 
 **The extraction opened a coverage gap of exactly this ticket's own kind, and the risk gate caught it.** All seven new assertions build a fresh lifecycle via the factory — which is what makes them independent, and is also why, on their own, they prove nothing about the instance production runs. `server2.js` hands `installShutdownHandlers` the _singleton's_ functions and `startRest2Server` calls the _singleton's_ `trackServer`; if those ever stopped referring to one closure, all seven would still pass. Nothing executed the wiring.
 
@@ -119,7 +125,7 @@ Verified after those fixes: unit 339/339, and **all three** Cucumber profiles ag
 
 **What stays a regex here**: the two assertions over `src/server2.js`, which wires `installShutdownHandlers` before the port is bound. **Blocker restated 2026-08-09** — it was recorded as the babel-only import, and ADR-044 retired that. What actually blocks them is that `server2.js` is a top-level side-effecting entry: importing it starts a server and connects a search client, so the honest conversion is a child-process one (spawn, assert exit, assert no port binds), which is a different shape and cost from the in-process conversions and is not blocked on anything but effort.
 
-**One invariant is left unpinned, deliberately and with the reason stated, rather than quietly.** Nothing asserts that `startRest2Server` calls `trackServer` at all. Delete the wrapper at `src/waycharter-server.js:996` and every unit assertion stays green including the new one — the singleton is simply never handed a server, and `stopServer()` returns `Promise.resolve()` on an undefined handle. It is the same silent-no-op failure the eighth case closes, one call site upstream. **Blocker restated 2026-08-09**: `src/waycharter-server.js` imports fine under raw Node ESM now, and the seven assertions that were blocked on that are converted. What keeps this one uncovered is narrower and is not an import problem — reaching the `trackServer` call means letting `startRest2Server` get past its validators and BIND A PORT, and the converted tests deliberately exercise only the paths where it rejects first. Recording it here rather than adding a regex: a text assertion over that line would be a fresh instance of this ticket's anti-pattern, added by this ticket, and would carry the same false-coverage risk the CORS `PREFLIGHT_METHOD` constant did. The honest position is that it is uncovered and enumerated, not that it is guarded.
+**One invariant is left unpinned, deliberately and with the reason stated, rather than quietly.** Nothing asserts that `startRest2Server` calls `trackServer` at all. Delete the `trackServer` wrapper in `packages/addressr/src/waycharter-server.js` and every unit assertion stays green including the new one — the singleton is simply never handed a server, and `stopServer()` returns `Promise.resolve()` on an undefined handle. It is the same silent-no-op failure the eighth case closes, one call site upstream. **Blocker restated 2026-08-09**: `src/waycharter-server.js` imports fine under raw Node ESM now, and the seven assertions that were blocked on that are converted. What keeps this one uncovered is narrower and is not an import problem — reaching the `trackServer` call means letting `startRest2Server` get past its validators and BIND A PORT, and the converted tests deliberately exercise only the paths where it rejects first. Recording it here rather than adding a regex: a text assertion over that line would be a fresh instance of this ticket's anti-pattern, added by this ticket, and would carry the same false-coverage risk the CORS `PREFLIGHT_METHOD` constant did. The honest position is that it is uncovered and enumerated, not that it is guarded.
 
 ### Fourth conversion landed 2026-08-08 — the release workflow, parsed rather than grepped
 
@@ -145,15 +151,136 @@ Mutation-proved rather than asserted, ten ways: `type: boolean`→`string`, `def
 
 ### Remaining population
 
-| file                                    | `assert.match` over source | note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| --------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `release-workflow-deploy-only.test.mjs` | 18 (stale — recount)       | was 45, not 24 — the original count matched only `assert.match`/`doesNotMatch` and missed 23 `assert.ok(x.includes(...))`. The 25 YAML assertions were parsed 2026-08-08. The 18 left read two shell scripts, where the right shape is a fixture test over an extracted predicate (P085), not a parse. Four further regexes remain and are NOT in this count: they match the detection step's `run:` body, which is located by the parse and then regexed because the body genuinely is shell.                                                                                                                                                                                                                                                   |
-| `waycharter-server.test.mjs`            | 0                          | was 14, then 7. **Cleared 2026-08-09**: ADR-044 removed the babel-only import, and all seven became executing assertions driving `buildRest2App` through `light-my-request`. Mutation-proved against four reversions — moving `app.options` after `proxyAuthMiddleware`, dropping the CORS gate, deleting the `validateReadShadowConfig()` call, and removing the debug endpoint from the proxy-auth allowlist. Each fails exactly one case.                                                                                                                                                                                                                                                                                                     |
-| `graceful-shutdown.test.mjs`            | 2                          | was 7; the drain converted 2026-08-08. **The stated blocker was retired 2026-08-09 and replaced, not cleared**: these two read `src/server2.js`, a top-level side-effecting entry — importing it starts a server and connects a search client — so the honest conversion is a child-process one (spawn, assert exit, assert no port binds), a different shape and cost from the in-process conversions. Blocked on entry-point side effects, NOT on the babel-only import.                                                                                                                                                                                                                                                                       |
-| `address-service.test.mjs`              | 5                          | was 7. **No structural blocker as of 2026-08-09** — ADR-044 made the module importable and every remaining assertion covers a path reaching OpenSearch only via the stubbable `globalThis.esClient` global. Unlike `graceful-shutdown.test.mjs`, nothing replaced the retired blocker; what remains is effort. **Owner, so "effort" is not an open-ended exemption**: the P012 progress-logging block is owned by JTBD-203 (self-hosted operator, G-NAF refresh) — its subject is the loader emitting ~60K JSON lines per state reindex and drowning out real errors, which is that persona's documented fail-loud pain, and JTBD-203 binds itself to this ticket's disposition. Read-shadow → JTBD-201, `getAddress` catch → JTBD-003/JTBD-100. |
-| `proxy-auth.test.mjs`                   | 2                          | mostly behavioural already; only the OPTIONS-scoping guard reads source                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| file                                    | `assert.match` over source | note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release-workflow-deploy-only.test.mjs` | WITHDRAWN (see below)      | was 45, not 24 — the original count matched only `assert.match`/`doesNotMatch` and missed 23 `assert.ok(x.includes(...))`. The 25 YAML assertions were parsed 2026-08-08. The 18 left read two shell scripts, where the right shape is a fixture test over an extracted predicate (P085), not a parse. **For the two watcher scripts that extraction has now happened** — `scripts/scan-jobs.awk` exists, `scan-jobs-awk.test.mjs` covers it in 15 fixture cases, and the pins over those scripts were repointed to assert the wiring rather than the decision, which the section below rules legitimate. The remainder of this row is still unconverted. Four further regexes remain and are NOT in this count: they match the detection step's `run:` body, which is located by the parse and then regexed because the body genuinely is shell. |
+| `waycharter-server.test.mjs`            | 0                          | was 14, then 7. **Cleared 2026-08-09**: ADR-044 removed the babel-only import, and all seven became executing assertions driving `buildRest2App` through `light-my-request`. Mutation-proved against four reversions — moving `app.options` after `proxyAuthMiddleware`, dropping the CORS gate, deleting the `validateReadShadowConfig()` call, and removing the debug endpoint from the proxy-auth allowlist. Each fails exactly one case.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `graceful-shutdown.test.mjs`            | 2                          | was 7; the drain converted 2026-08-08. **The stated blocker was retired 2026-08-09 and replaced, not cleared**: these two read `src/server2.js`, a top-level side-effecting entry — importing it starts a server and connects a search client — so the honest conversion is a child-process one (spawn, assert exit, assert no port binds), a different shape and cost from the in-process conversions. Blocked on entry-point side effects, NOT on the babel-only import.                                                                                                                                                                                                                                                                                                                                                                        |
+| `address-service.test.mjs`              | 5                          | was 7. **No structural blocker as of 2026-08-09** — ADR-044 made the module importable and every remaining assertion covers a path reaching OpenSearch only via the stubbable `globalThis.esClient` global. Unlike `graceful-shutdown.test.mjs`, nothing replaced the retired blocker; what remains is effort. **Owner, so "effort" is not an open-ended exemption**: the P012 progress-logging block is owned by JTBD-203 (self-hosted operator, G-NAF refresh) — its subject is the loader emitting ~60K JSON lines per state reindex and drowning out real errors, which is that persona's documented fail-loud pain, and JTBD-203 binds itself to this ticket's disposition. Read-shadow → JTBD-201, `getAddress` catch → JTBD-003/JTBD-100.                                                                                                  |
+| `proxy-auth.test.mjs`                   | 2                          | mostly behavioural already; only the OPTIONS-scoping guard reads source                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
-Earlier notes on this ticket put `proxy-auth.test.mjs` at 7 and implied a security-boundary risk. That was a bad count from grepping `assert.match` without separating behavioural matches from source matches — the file imports and executes the middleware for every auth assertion. Corrected here.
+**Repo-wide recount, 2026-08-19 — this PARTIALLY discharges Investigation Task 1, and it reports NO
+assertion total, on purpose.** Three attempts at one produced three different figures, and the third failed
+while this very amendment was being written. The attempts are recorded because the pattern is the finding:
+
+1. "152 across 18 files" above a table reading 112 + 99 across 9 + 21. Those do not sum. The headline and
+   the table came from two scripts measuring two different populations; the table's had no "reads a repo
+   file" filter at all. Its dependent claim, "roughly three-quarters is workflow pinning", had no valid
+   denominator.
+2. A two-sided bound, 189 to 560, with both rows required to sum. The arithmetic held. The rule did not:
+   the lower bound scored `mutate-helper.test.mjs` at 16 (its assertions are over a subprocess's stdout)
+   and `proxy-auth.test.mjs` at 8, of which 2 are source pins and 6 match an error message. It counts
+   things that are not pins and misses pin shapes nobody has enumerated — in **both** directions at once,
+   so it is not a bound.
+3. The same rule re-run minutes later returned 199, not 189, because tests had been added to this commit
+   in between. A figure that moves under the author's own edits is not a measurement of the codebase.
+
+**So the count is withdrawn rather than corrected again.** A pattern-keyed scan cannot separate "asserts on
+text it read from a file" from "asserts on text a source pin cares about", and every attempt to make it do
+so has produced a number that read as precise and was not. What settles this is Investigation Task 1's
+per-file read, which is why that task stays open.
+
+**What IS established, because it rests on file identity rather than on tallies:**
+
+| fact                                                          | count |
+| ------------------------------------------------------------- | ----- |
+| test files that read a repo file and assert on what they read | 31    |
+| of those, files that read `.github/workflows/**`              | 10    |
+| all other file-reading test files                             | 21    |
+
+**The predicate is published so the classification can be rerun, not just the result.** A file is in the
+population if its source matches `readFileSync|readFile\(|readdirSync` and contains `assert.`; it is in the
+workflow group if it contains both `.github` and `workflows`; and
+`p033-population-figures-recompute.test.mjs` is **excluded**.
+
+That last clause is not a convenience. That file is the guard which recomputes these figures, and it
+satisfies every clause of the predicate — it reads test files, it asserts, and it quotes the literal
+`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 32 / 11 / 21
+and counts the instrument into the sample it measures. It is stated here because the whole claim of this
+paragraph is that a third party can rerun the rule and get the table; a rule published in one form and run
+in another would make the guard green while the record stayed falsifiable, which is the failure this ticket
+is about.
+
+The ten are `deploy-guard-surfaces`, `docker-image-workflow`, `gnaf-source-smoke`,
+`license-audit-runs-in-ci`, `loader-workflow`, `perf-regression-workflow`, `release-pr-plan-workflow`,
+`release-workflow-deploy-only`, `terraform-plan-workflow` and `workflow-npm-scripts-resolve`.
+
+**The first version of this list said nine and omitted `license-audit-runs-in-ci`**, because the predicate
+then matched the literal string `.github/workflows` and that file builds the path with
+`path.join(repoRoot, '.github', 'workflows')`. Publishing the predicate is the fix for that class: a named
+list with a stated rule is checkable by rerunning the rule, where a bare count is checkable by nobody. It is
+also the fourth miss by a pattern-keyed scan on this ticket, which is the argument for Investigation Task 1
+being a per-file read rather than a better regex.
+
+Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 21 and holds no source pin
+at all. File identity is robust enough to route the work, and that is all it is used for.
+
+**The conclusion that survives, and the one that does not.** Those ten files pin YAML consumed by GitHub.
+There is no runtime in this repo to feed them, so extract-and-feed cannot convert them and the honest
+remedy is the note-what-it-cannot-establish task below. That is a claim about what those files ARE, and it
+holds without any assertion count. What does **not** survive is any statement about the proportion —
+"roughly three-quarters", "45 to 70 per cent", and every figure in the three attempts above are withdrawn.
+
+**Superseded first draft of the retraction, kept as history — do NOT read it as the current position.** It
+read: _"Earlier notes on this ticket put `proxy-auth.test.mjs` at 7 and implied a security-boundary risk.
+That was a bad count from grepping `assert.match` without separating behavioural matches from source
+matches — the file imports and executes the middleware for every auth assertion."_ The count correction is
+right and stands. The clause after the dash is **wrong**: the two surviving pins read `waycharter-server.js`
+as text and execute nothing. The current position is stated in full under "What replace has to mean" above,
+including why those two pins are live sole cover and must not be swept.
+
+## 2026-08-19 — the shape that replaces the pin, and the tooling that proves it
+
+**The remedy is now demonstrated, not proposed.** `scripts/push-and-watch.sh` and `scripts/release-watch.sh`
+carried a byte-identical inlined `awk` job scan, pinned by source assertions. P085 records five defects in
+that scan and then five more holes in its own fix — every one a hole about an exit code, every one pinned
+only by an assertion that some text was written. Its conclusion is this ticket's thesis in another voice:
+
+> each new `assert.match` closes one instance and is itself a new instance waiting to rot.
+
+The scan is now `scripts/scan-jobs.awk`, with its verdict in the exit code — 0 all green, 1 a job did not
+succeed, 2 nothing scanned (UNKNOWN, not success). `test/js/__tests__/scan-jobs-awk.test.mjs` feeds it
+fixtures and asserts those codes across 15 cases, including every conclusion that reached the SUCCESS path
+under the predecessor. Four historical defect shapes were reverted in turn and each was caught. The class
+became impossible rather than watched-for.
+
+The source pins over those scripts were **repointed rather than deleted**: they now assert the scripts LOAD
+the shared scan and have not grown a private copy. That is the general shape — a pin is legitimate for
+wiring, and illegitimate for a decision.
+
+**`scripts/mutate.sh` makes the practice cheap**, which is the point: the barrier was never disagreement,
+it was six lines of `cp`/`sed`/run/restore per check.
+
+    scripts/mutate.sh <file> <sed-expression> <test command...>
+      0  CAUGHT  the test failed under the mutation — the guard works
+      1  BLIND   the test passed — the guard does not watch that property
+      2  NO-OP   the expression changed nothing — nothing was tested
+
+**NO-OP is a distinct exit code because the absence of one caused a false result twice in one session.** A
+hand-rolled loop reported all three of its mutations "caught" while the `sed` had matched nothing, so it was
+testing an unmutated file. A mutation that does not apply is not a passing test, it is no test, and it has to
+be louder than a blind guard rather than quieter. The helper is itself tested — trusting it because it
+printed CAUGHT would be this ticket's own failure mode applied to the instrument.
+
+### Evidence from the same session
+
+Six verification checks reported green while unable to fail. Four are one-off session checks rather than
+committed pins, and are recorded here as evidence for the practice rather than as items in the population:
+
+- an `m` flag made `$` mean end-of-LINE in a lookahead, so a compendium check read headings and nothing else;
+- `` inside a JS template literal is the BACKSPACE character, so the repair for that matched nothing and
+  skipped silently — the same fail-open one edit later;
+- a zip64 fixture was "verified" by scanning for `0xFFFFFFFF` byte patterns, where one eight-byte run yields
+  five overlapping matches; the archive was ordinary and the test made an uncovered path look covered;
+- a coverage claim came from a grep for `rel` that matched the letters inside other words.
+
+Two are already owned elsewhere and are cited, not re-derived: the assertion that matched
+`wait_for_completion || exit 1` while it was **commented out** is recorded on **P085**, and `find -size +0`
+reporting every file non-empty (it means blocks, not bytes) is recorded on **P107**.
+
+**Scope note.** This ticket owns source-inspection tests in `test/js/__tests__/`. It does not own ad-hoc
+verification checks generally — that wider family is P107's. The four session instances above are evidence
+that the practice pays, not a widening of this ticket's anchor.
 
 ## Symptoms
 
@@ -185,8 +312,30 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
 
 ### Investigation Tasks
 
-- [ ] Audit all `test/js/__tests__/*.test.mjs` files. Catalog which assertions are source-inspection vs behavioural.
-- [ ] Decide a refactor cadence: replace opportunistically when touching the relevant implementation, OR a single sweep.
+- [ ] **Audit all `test/js/__tests__/*.test.mjs` files. PARTIAL 2026-08-19 — deliberately NOT marked done.**
+      The recount above identifies the population by file — 31 files, 10 of them reading workflow YAML,
+      all named — which is enough to route the work and is what the audit was for. It is NOT enough to call
+      the audit complete, and no assertion count is offered, because three attempts at one produced three
+      figures and the third moved under this commit's own edits. **What remains is a per-file read of the
+      31, classifying each assertion as pin or not** — the only method that settles it, and cheap at 31
+      files. This item stays open on purpose: the first attempt closed it on a figure that did not survive
+      its own arithmetic, and closing it again on a better one would repeat the move rather than the
+      mistake.
+- [x] **Decide a refactor cadence. DECIDED 2026-08-19: neither of the two options as posed.** A single sweep
+      is unjustifiable at this population size with no failing signal, and pure opportunism has visibly not
+      converged — this ticket has been open since 2026-04-28. The cadence is **risk-ordered, and it starts
+      where a blind guard costs most**: the release and publish paths first, because a pin that cannot fail
+      there passes a defect into a published artefact. That is not hypothetical — `release-watch.sh` was
+      converted on 2026-08-19 for exactly that reason (see below), and its predecessor's pin matched a call
+      that was commented out.
+- [ ] **Convert the non-workflow population, release and publish paths first.** 21 files, of which the
+      guards over `scripts/` are the tractable and highest-value subset: a shell
+      predicate can be extracted to a file and fed inputs, which is what `scripts/scan-jobs.awk` now is.
+- [ ] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish.** This is
+      the larger half by count and it is not a lesser task. A workflow pin can prove a string is present in
+      YAML and nothing else — not that the step runs, not that the job is reached, not what GitHub does with
+      it. Stating that in the file is the difference between a known limit and a false sense of coverage,
+      and for the 10 workflow-reading files it is the ONLY remedy available — there is no runtime to feed.
 - [ ] Document the convention in `AGENTS.md` or a new `test/js/__tests__/README.md`: "Tests in this directory MUST exercise the implementation and assert on observable behaviour. Source-inspection tests (assert.match against source text) are forbidden — see P033."
 - [ ] Add a lint rule or CI check that catches `readFile(.*service/.*\.js.*)` followed by `assert.match` patterns and flags them as source-inspection.
 
