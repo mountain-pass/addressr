@@ -772,7 +772,7 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
       'release-watch.sh must ACT on the captured watch status, not merely capture it',
     );
 
-    // 2. The scan is default-deny, and it now lives in scripts/lib/scan-jobs.awk.
+    // 2. The scan is default-deny, and it now lives in scripts/scan-jobs.awk.
     //    THIS PIN NOW ASSERTS WIRING, NOT THE DECISION — the decision is
     //    fixture-tested in scan-jobs-awk.test.mjs against real conclusions and
     //    real exit codes. P085 predicted this pin's brittleness in terms: the
@@ -782,11 +782,11 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
     //    rather than growing a private copy that drifts from the tested one.
     assert.match(
       releaseWatch,
-      /awk -F'\\t' -f "\$SCRIPT_DIR\/lib\/scan-jobs\.awk"/,
-      'release-watch.sh must load the shared default-deny scan from scripts/lib/scan-jobs.awk',
+      /awk -F'\\t' -f "\$SCRIPT_DIR\/scan-jobs\.awk"/,
+      'release-watch.sh must load the shared default-deny scan from scripts/scan-jobs.awk',
     );
     // THE IDIOM, not just the path. The first version of this pin matched
-    // `awk … -f "$SCRIPT_DIR/lib/scan-jobs.awk"` and nothing else — which is
+    // `awk … -f "$SCRIPT_DIR/scan-jobs.awk"` and nothing else — which is
     // identical whether the call site is a bare assignment or a guarded one,
     // so it could not fail on the defect the extraction actually introduced.
     //
@@ -880,7 +880,7 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
     // non-extension (a `check-deps-strict` must NOT inherit it) in
     // scan-jobs-awk.test.mjs, which can prove it rather than match it.
     assert.ok(
-      existsSync(fileURLToPath(new URL('../../../scripts/lib/scan-jobs.awk', import.meta.url))),
+      existsSync(fileURLToPath(new URL('../../../scripts/scan-jobs.awk', import.meta.url))),
       'the shared scan carrying the ADR-015 check-deps exemption must exist',
     );
 
@@ -922,11 +922,11 @@ describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
     // asserts the scan has not been softened to tolerate `pending`.
     assert.match(
       pushWatch,
-      /awk -F'\\t' -f "\$SCRIPT_DIR\/lib\/scan-jobs\.awk"/,
-      'push-and-watch.sh must load the shared default-deny scan from scripts/lib/scan-jobs.awk',
+      /awk -F'\\t' -f "\$SCRIPT_DIR\/scan-jobs\.awk"/,
+      'push-and-watch.sh must load the shared default-deny scan from scripts/scan-jobs.awk',
     );
     // THE IDIOM, not just the path. The first version of this pin matched
-    // `awk … -f "$SCRIPT_DIR/lib/scan-jobs.awk"` and nothing else — which is
+    // `awk … -f "$SCRIPT_DIR/scan-jobs.awk"` and nothing else — which is
     // identical whether the call site is a bare assignment or a guarded one,
     // so it could not fail on the defect the extraction actually introduced.
     //
@@ -959,7 +959,7 @@ describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
     // real input in scan-jobs-awk.test.mjs; this keeps the negative so a
     // re-inline-and-weaken in one step still reds.
     assert.doesNotMatch(
-      readFileSync(fileURLToPath(new URL('../../../scripts/lib/scan-jobs.awk', import.meta.url)), 'utf8'),
+      readFileSync(fileURLToPath(new URL('../../../scripts/scan-jobs.awk', import.meta.url)), 'utf8'),
       /\$1 == "pending" \{ next \}/,
       'the scan must NOT be weakened to let pending jobs pass',
     );

@@ -109,66 +109,66 @@ This lists every job including matrix-suffixed and newly added ones, and `--exit
 
   The two false-green holes were closed; 1, 3 and 5 are false-RED direction and are left, deliberately, because closing them one assertion at a time is the losing game: **each new `assert.match` closes one instance and is itself a new instance waiting to rot.** Five defects in, that rate is the evidence.
 
-  The scorer also corrected the architect's premise that a shell script has no testable surface. It is false for the piece that carries the actual remediation: the awk program at `push-and-watch.sh:141-145` and `release-watch.sh:307-311` is a self-contained filter over a TSV on stdin. Extract it to `scripts/lib/scan-jobs.awk`, feed it a fixture (`success`, `skipped`, `pending`, `cancelled`, `timed_out`, an advisory `check-deps failure`, empty) and assert the exit code. **Every hole listed above is a hole about an exit code, and a fixture asserts exit codes.** That closes the class rather than an instance.
+  The scorer also corrected the architect's premise that a shell script has no testable surface. It is false for the piece that carries the actual remediation: the awk program at `push-and-watch.sh:141-145` and `release-watch.sh:307-311` is a self-contained filter over a TSV on stdin. Extract it to `scripts/scan-jobs.awk`, feed it a fixture (`success`, `skipped`, `pending`, `cancelled`, `timed_out`, an advisory `check-deps failure`, empty) and assert the exit code. **Every hole listed above is a hole about an exit code, and a fixture asserts exit codes.** That closes the class rather than an instance.
 
 - [x] **Replace the source-inspection pin with a fixture test. DONE 2026-08-19, and it closed the class.**
       The awk filter — byte-identical in both watchers — is extracted to
-      `scripts/lib/scan-jobs.awk`, with its verdict in the EXIT CODE: `0` all green, `1` a job did not
+      `scripts/scan-jobs.awk`, with its verdict in the EXIT CODE: `0` all green, `1` a job did not
       succeed (named on stdout), `2` nothing scanned, which is UNKNOWN and not success. Both scripts load
       it via a `SCRIPT_DIR` resolved from `BASH_SOURCE`, so it works under `npm run` and when invoked
       directly.
 
       `test/js/__tests__/scan-jobs-awk.test.mjs` feeds it fixtures and asserts exit codes — 15 cases
-          covering the real red run `30787856504` (both matrix legs named), each of `cancelled`, `timed_out`,
-          `startup_failure`, `neutral` and `action_required` (all of which reached the SUCCESS path under the
-          failure-word allow-list), each of `pending`, `queued` and `in_progress` (which must keep failing —
-          the fifth defect's remedy is a precondition in the callers, never a softer predicate), the ADR-015
-          `check-deps` exemption, that the exemption does **not** extend to a `check-deps-strict`, and that
-          UNKNOWN is a distinct code from FAILED so a caller can tell "the run is bad" from "I could not
-          find out".
+              covering the real red run `30787856504` (both matrix legs named), each of `cancelled`, `timed_out`,
+              `startup_failure`, `neutral` and `action_required` (all of which reached the SUCCESS path under the
+              failure-word allow-list), each of `pending`, `queued` and `in_progress` (which must keep failing —
+              the fifth defect's remedy is a precondition in the callers, never a softer predicate), the ADR-015
+              `check-deps` exemption, that the exemption does **not** extend to a `check-deps-strict`, and that
+              UNKNOWN is a distinct code from FAILED so a caller can tell "the run is bad" from "I could not
+              find out".
 
-          **Mutation-proven against four historical defect shapes**, each reverted in turn and each caught:
-          letting `pending` pass (hole 3), an empty scan reporting success (the fourth defect), widening the
-          `check-deps` exemption to a substring, and reverting to the `conclusion == "failure"` allow-list.
-          The wiring is mutation-proven too — re-inlining the filter into `push-and-watch.sh` reds the pin.
+              **Mutation-proven against four historical defect shapes**, each reverted in turn and each caught:
+              letting `pending` pass (hole 3), an empty scan reporting success (the fourth defect), widening the
+              `check-deps` exemption to a substring, and reverting to the `conclusion == "failure"` allow-list.
+              The wiring is mutation-proven too — re-inlining the filter into `push-and-watch.sh` reds the pin.
 
-          **The source pins are repointed from decision to wiring**, which is the point. They now assert the
-          scripts LOAD the shared scan and have not grown a private copy; what the scan DECIDES is proven by
-          fixture. That is the split this ticket argued for: "each new `assert.match` closes one instance and
-          is itself a new instance waiting to rot."
+              **The source pins are repointed from decision to wiring**, which is the point. They now assert the
+              scripts LOAD the shared scan and have not grown a private copy; what the scan DECIDES is proven by
+              fixture. That is the split this ticket argued for: "each new `assert.match` closes one instance and
+              is itself a new instance waiting to rot."
 
-          Holes 1 and 5 from the audit above (the completion predicate, the derived deadlines) are NOT closed
-          by this — they live in the callers, not the filter, and both fail in the false-RED direction.
+              Holes 1 and 5 from the audit above (the completion predicate, the derived deadlines) are NOT closed
+              by this — they live in the callers, not the filter, and both fail in the false-RED direction.
 
 - [x] **SIXTH DEFECT, introduced by the extraction above and fixed in the same commit.** Recorded rather
       than quietly repaired, because it is the ticket's own shape and the count matters.
 
       Giving the scan an exit code gave both call sites an exit contract they did not have. Under
-          `set -euo pipefail` an assignment is a simple command, so `VAR=$(… | awk …)` takes awk's status and
-          **the script terminated at the assignment** — making the failure banner, the job list and
-          `show_failure_guidance` (which carries the agent-facing routing line) unreachable. A loud failure
-          became a silent exit 1, on the release path, after the publish and the apply.
+              `set -euo pipefail` an assignment is a simple command, so `VAR=$(… | awk …)` takes awk's status and
+              **the script terminated at the assignment** — making the failure banner, the job list and
+              `show_failure_guidance` (which carries the agent-facing routing line) unreachable. A loud failure
+              became a silent exit 1, on the release path, after the publish and the apply.
 
-          `release-watch.sh` documents that precise hazard about 100 lines below where it was introduced:
-          _"an assignment IS a simple command, so a non-zero command substitution trips `set -e` immediately —
-          the status capture and the diagnostic below would be UNREACHABLE … Fail-closed, but mute."_ The fix
-          was written without reading its own file's warning.
+              `release-watch.sh` documents that precise hazard about 100 lines below where it was introduced:
+              _"an assignment IS a simple command, so a non-zero command substitution trips `set -e` immediately —
+              the status capture and the diagnostic below would be UNREACHABLE … Fail-closed, but mute."_ The fix
+              was written without reading its own file's warning.
 
-          Both call sites now use the documented `&& SCAN_STATUS=0 || SCAN_STATUS=$?` idiom and branch on the
-          **status**, not on whether stdout was non-empty.
+              Both call sites now use the documented `&& SCAN_STATUS=0 || SCAN_STATUS=$?` idiom and branch on the
+              **status**, not on whether stdout was non-empty.
 
-          **Stated precisely, because an earlier draft of this entry overstated it:** the exit-2 branch is
-          written and pinned, but it is NOT reachable from either caller today — the `[ -z "$JOBS_TSV" ]`
-          guard above the scan already exits on the empty case, and a non-empty `JOBS_TSV` always yields at
-          least one line, so `seen == 0` never occurs. It is defence-in-depth for the day that guard is
-          refactored away, and it also fires if `scan-jobs.awk` is missing or unreadable. Saying it "gives
-          exit 2 its first consumer" was one level stronger than the code supports. Verified by
-          running a script, not by reading one: before the fix the diagnostic line never printed; after it,
-          it does. Both properties are pinned and mutation-verified — reverting to the bare assignment, and
-          capturing the status but never reading it, each red the suite.
+              **Stated precisely, because an earlier draft of this entry overstated it:** the exit-2 branch is
+              written and pinned, but it is NOT reachable from either caller today — the `[ -z "$JOBS_TSV" ]`
+              guard above the scan already exits on the empty case, and a non-empty `JOBS_TSV` always yields at
+              least one line, so `seen == 0` never occurs. It is defence-in-depth for the day that guard is
+              refactored away, and it also fires if `scan-jobs.awk` is missing or unreadable. Saying it "gives
+              exit 2 its first consumer" was one level stronger than the code supports. Verified by
+              running a script, not by reading one: before the fix the diagnostic line never printed; after it,
+              it does. Both properties are pinned and mutation-verified — reverting to the bare assignment, and
+              capturing the status but never reading it, each red the suite.
 
-          Direction was fail-closed-but-mute rather than false-green, so R023's H1 never reopened. It is still
-          the sixth, and it was found by the risk scorer rather than by the tests just written.
+              Direction was fail-closed-but-mute rather than false-green, so R023's H1 never reopened. It is still
+              the sixth, and it was found by the risk scorer rather than by the tests just written.
 
 - [ ] ~~Replace the source-inspection pin with a fixture test.~~ Superseded by the entry above. `release-workflow-deploy-only.test.mjs` now asserts seven properties of `release-watch.sh`, but two of them are awk-literal, so a reimplementation in `jq` or a `case` statement would hold the property and still break the pin — it is less brittle than the string pins it replaced, not mechanism-independent. The strictly stronger shape is to extract the conclusion predicate from the script and feed it a TSV of conclusions, asserting the exit code and the named jobs. Raised by the risk scorer while reviewing the pin rewrite, along with two holes since closed: nothing asserted `WATCH_STATUS` was ever _read_ (deleting the block passed every assertion), and the empty-scan property pinned the message rather than the exit.
 

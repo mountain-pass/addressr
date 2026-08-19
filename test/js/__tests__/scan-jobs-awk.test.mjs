@@ -10,7 +10,7 @@
 //
 // P085's own conclusion: "each new assert.match closes one instance and is
 // itself a new instance waiting to rot. Five defects in, that rate is the
-// evidence." So the scan moved to `scripts/lib/scan-jobs.awk`, where its whole
+// evidence." So the scan moved to `scripts/scan-jobs.awk`, where its whole
 // contract is an exit code, and exit codes can be asserted against real input.
 //
 // This does not pin the scripts' wiring — that stays with the source pins in
@@ -24,7 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
-const SCAN = path.join(repoRoot, 'scripts', 'lib', 'scan-jobs.awk');
+const SCAN = path.join(repoRoot, 'scripts', 'scan-jobs.awk');
 
 /** Run the scan over a TSV fixture. Returns { code, named }. */
 const scan = (rows) => {

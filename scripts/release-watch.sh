@@ -313,7 +313,7 @@ fi
 # 2026-08-19: the extraction turned a loud failure into a silent exit 1, on the
 # release path, after the publish and the apply. Verified by running it, not by
 # reading it. Do not "tidy" this back into an assignment.
-FAILED_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' -f "$SCRIPT_DIR/lib/scan-jobs.awk") && SCAN_STATUS=0 || SCAN_STATUS=$?
+FAILED_JOBS=$(printf '%s\n' "$JOBS_TSV" | awk -F'\t' -f "$SCRIPT_DIR/scan-jobs.awk") && SCAN_STATUS=0 || SCAN_STATUS=$?
 # BRANCH ON THE STATUS, not on whether stdout happened to be non-empty. The
 # scan reports three states and they are epistemically different: 1 is "the run
 # is bad", 2 is "I could not find out". Testing emptiness collapses 2 into the

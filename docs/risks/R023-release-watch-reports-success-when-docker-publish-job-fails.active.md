@@ -52,7 +52,7 @@ Impact × Likelihood _before_ controls.
 - **`gh run watch --exit-status`, captured — EVIDENCED.** The code is no longer discarded. The job scan is authoritative, but a non-zero watch exit against an all-green scan also fails, on the grounds that the watcher saw something the scan did not.
 - **Regression-tested against the real failure — EVIDENCED.** Both scripts' predicates were replayed against run `30787856504`, the actual run that reported success while both legs failed. Both now fail it and name both offending legs, ignore advisory `check-deps`, and pass `skipped`. A synthetic `cancelled` leg is caught where it previously passed.
 - **Pinned in CI — EVIDENCED, and the mechanism coupling is DISCHARGED 2026-08-19.** The scan is extracted
-  to `scripts/lib/scan-jobs.awk` and its verdict is an exit code — 0 green, 1 a job did not succeed, 2
+  to `scripts/scan-jobs.awk` and its verdict is an exit code — 0 green, 1 a job did not succeed, 2
   nothing scanned (UNKNOWN, not success). `test/js/__tests__/scan-jobs-awk.test.mjs` feeds it fixtures and
   asserts those codes across 15 cases: the real run `30787856504` with both matrix legs named; each of
   `cancelled`, `timed_out`, `startup_failure`, `neutral` and `action_required`, all of which reached the
@@ -89,7 +89,7 @@ Impact × Likelihood _after_ controls.
 
 The residual sits on two named gaps rather than on the mechanism:
 
-- ~~The CI pin is mechanism-coupled~~ — DISCHARGED 2026-08-19, see the Controls entry above: the predicate is extracted to `scripts/lib/scan-jobs.awk` and fixture-tested by exit code.
+- ~~The CI pin is mechanism-coupled~~ — DISCHARGED 2026-08-19, see the Controls entry above: the predicate is extracted to `scripts/scan-jobs.awk` and fixture-tested by exit code.
 - Neither script watches anything but `release.yml`, so a red `docker-image.yml` remains outside both. Ironic given `docker-publish` is what the original hint named; the fix covers every job IN the watched workflow, not every workflow.
 
 **The durable control is the habit, not the script.** Verify a run directly rather than reading a summary line: `gh run view <id> --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'`. That lists matrix-suffixed and newly-added jobs by construction, and it is what caught the failure the scripts missed. Promoted to the briefing's session-start Critical Points on 2026-08-04.
