@@ -214,6 +214,73 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     assert.deepStrictEqual(problems, [], problems.join('; '));
   });
 
+  it('a stated supersession site-count matches the ADR body it summarises', () => {
+    // WHY THIS EXISTS, and it is the exit from a loop rather than another lap of
+    // it. ADR-050's superseded-clause set was enumerated as two, then three,
+    // then four across successive reviews. Each time it was declared closed;
+    // each time a restatement site had been missed. The corrections landed in
+    // the ADR body and left the derived indexes — both compendium badges, the
+    // problems README, the ticket's own task line — still saying "two sites".
+    //
+    // The recurring defect is not carelessness, it is SCOPE: a hand sweep is
+    // correct over the files it chooses, and the file set is what keeps being
+    // wrong. So this asserts the one relationship a machine can hold — the
+    // count a summary CLAIMS against the count the record ENUMERATES — which
+    // would have caught three of those four stale sites on its own.
+    //
+    // LIMIT, stated so the green is not read as wider than it is: this checks
+    // the arithmetic of the claim, never its completeness. If the ADR enumerates
+    // four sites and there is a fifth in the tree, both the body and the badge
+    // are consistently wrong and this passes. P090 owns the wider
+    // hand-maintained-compendium problem.
+    const compendium = read('README.md');
+    const WORD = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+    const problems = [];
+
+    for (const file of adrFiles) {
+      const body = read(file);
+      if (!/^supersedes-clause:/m.test(body)) continue;
+
+      // The record's own enumeration: numbered items under the superseded-clauses heading.
+      const section = /\n##[^\n]*[Ss]uperseded clauses[^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(body);
+      if (!section) continue;
+      const enumerated = [...section[1].matchAll(/^\d+\.\s+\*\*/gm)].length;
+      if (enumerated === 0) continue;
+
+      const id = idOf(file);
+      // Every claim of the form "<n> sites" in this ADR's own compendium entry
+      // and in its body's count line must agree with what it enumerates.
+      // NO `m` FLAG, and that is not incidental. With it, `$` in the lookahead
+      // means end-of-LINE, so the lazy match stopped at the heading and this
+      // check examined the title and nothing else — passing because it had
+      // nothing to read. That is the empty-corpus failure this repo keeps
+      // hitting, committed inside the guard written to end a sweeping loop.
+      // Mutation-tested: a wrong count in either entry now reds.
+      const entry = new RegExp(`\\n### ${id}\\b[\\s\\S]*?(?=\\n### |$)`).exec(compendium);
+      // The claim also lives on the SUPERSEDED ADR's reverse badge, which is a
+      // different entry entirely; check both or half the sites stay invisible.
+      const targetId = `ADR-${/^supersedes-clause:\s*(\d{3})/m.exec(body)[1]}`;
+      const targetEntry = new RegExp(`\\n### ${targetId}\\b[\\s\\S]*?(?=\\n### |$)`).exec(compendium);
+      const claimSites = (text, where) => {
+        for (const [, raw] of text.matchAll(
+          /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:\w+\s+)?sites?\b/gi,
+        )) {
+          const n = WORD[raw.toLowerCase()] ?? Number(raw);
+          if (n !== enumerated) {
+            problems.push(
+              `${id}: ${where} claims "${raw} sites" but the record enumerates ${enumerated}`,
+            );
+          }
+        }
+      };
+      if (entry) claimSites(entry[0], 'its compendium entry');
+      if (targetEntry) claimSites(targetEntry[0], `the reverse badge on ${targetId}`);
+      claimSites(section[1], 'its own superseded-clauses section');
+    }
+
+    assert.deepStrictEqual(problems, [], `\n${problems.join('\n')}\n`);
+  });
+
   it('every supersedes-clause target carries a reverse badge in the compendium', () => {
     // WHY THIS EXISTS. A clause-level supersession — one that retires a single
     // sentence rather than a whole ADR — cannot rename or restatus its parent,

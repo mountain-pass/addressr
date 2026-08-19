@@ -15,6 +15,38 @@ rebuild.
 
 ## Unpublished
 
+### There is no `:3.3.2` image. Pin `:3.3.1`, or wait for `:3.3.3`
+
+**If you pin the bare `:<semver>` tag, 3.3.2 is missing and will not appear.** npm and the hosted API
+are on 3.3.2; this image is not.
+
+Releasing 3.3.2 on 2026-08-19 the npm publish succeeded and the deployment step then failed, which
+skipped the image build — the docker publish was gated on the whole release job rather than on the
+publish itself. Re-running could not recover it, because the gate only holds on the run that consumes
+the changesets.
+
+The cause is fixed ([ADR 050](decisions/050-the-image-follows-the-publish-not-the-deploy.proposed.md)):
+the image now follows the publish rather than the deploy, so a later failure cannot orphan it again.
+Rebuilding 3.3.2's bare tag out of band was **declined deliberately** — it would have meant either a
+second writer of the bare `:<semver>` tag, which is the one thing ADR-040's tag scheme exists to
+prevent, or building 3.3.2's tag from a tree that is not 3.3.2.
+
+What this costs you, precisely:
+
+|                   |                                                               |
+| ----------------- | ------------------------------------------------------------- |
+| `:3.3.2`          | does not exist and will not be created                        |
+| `:3.3.2-<gitsha>` | does not exist — the build never ran                          |
+| `:latest`         | resolves to the 3.3.1 image as at 2026-08-19 — see note below |
+| Next version      | 3.3.3 is already queued; it publishes normally                |
+
+Nothing you have pinned has changed or been re-pointed. If you need 3.3.2's contents specifically, the
+npm package carries them today.
+
+On `:latest` — it tracks the newest **Dockerfile-or-release** build, not the newest release, so the row
+above is a point-in-time statement rather than a standing guarantee. It was accurate on 2026-08-19 because
+no docker-axis change had landed since 3.3.1; an image-only rebuild moves it without any npm release.
+
 ### Package layout moved: `lib/bin/` → `bin/`
 
 **If you override `CMD` or run the loader with an explicit path, that path has changed.** The

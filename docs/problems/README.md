@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-19 **P107 captured** — a verification vouches only for the state it ran against: commit 78253ee4 shipped a lockfile still carrying license-checker because the reconciliation ran before the edit it was cited as validating. Fifth member of the family R023 owns (empty-corpus, never-ran, no-guard, no-reader, stale-state). The mechanical half is already guarded by test/js/**tests**/lockfile-agrees-with-manifests.test.mjs, verified to fail 78253ee4 (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-19 **P108 rescored 6 → 9 and its cause fixed** — a deploy failure after a successful publish orphaned the 3.3.2 container image, unrecoverably. Root cause was GitHub's implicit success() on docker-publish, now `!cancelled()`. ADR-050 records the decision and supersedes four ADR-040 clauses; no recovery mechanism is built, so 3.3.2 gets no image (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -17,6 +17,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 9.0  | P100 | Production recovery floor has never been measured                     | Medium (9)   | Open          | S      | 2026-08-18 | internal |
+| 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish      | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |

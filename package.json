@@ -94,7 +94,7 @@
     "build:docker": "docker build --build-arg PACKAGE_TGZ=mountainpass-addressr-$(node -p \"require('./packages/addressr/package.json').version\").tgz --build-arg PACKAGE=@mountainpass/addressr --build-arg VERSION=$(node -p \"require('./packages/addressr/package.json').version\") --build-arg MAINTAINER=${npm_package_author_email} $(sh scripts/docker-tags.sh -t) .",
     "postpostbuild": "export PRODUCT=@mountainpass/addressr VERSION=$(node -p \"require('./packages/addressr/package.json').version\") COMPANY='Mountain Pass Pty Ltd' YEAR=`date '+%Y'`",
     "dopublish": "npm publish mountainpass-addressr-$(node -p \"require('./packages/addressr/package.json').version\").tgz --access public",
-    "predocker:push": "if [ -n \"$GITHUB_TOKEN\" ]; then echo \"$GITHUB_TOKEN\" | docker login ghcr.io --username \"${GITHUB_ACTOR:-x-access-token}\" --password-stdin; else echo 'GITHUB_TOKEN unset, skipping ghcr login (ADR-040); local break-glass needs a PAT with write:packages'; fi",
+    "predocker:push": "if [ -n \"$GITHUB_TOKEN\" ]; then echo \"$GITHUB_TOKEN\" | docker login ghcr.io --username \"${GITHUB_ACTOR:-x-access-token}\" --password-stdin; else echo 'GITHUB_TOKEN unset, skipping ghcr login. Pushing the image from here is NOT a sanctioned route (ADR-050): registry pushes come from the pipeline. If a release did not publish its image, fix the release rather than pushing by hand'; fi",
     "docker:push": "sh scripts/docker-tags.sh | xargs -n1 docker push",
     "check-licenses": "node scripts/license-audit.mjs",
     "pre-commit": "lint-staged && npm run check-licenses && npm run check:not-cli2-tags && npm run test:js",

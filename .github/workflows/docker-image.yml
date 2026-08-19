@@ -28,8 +28,10 @@
 # pull request. GITHUB_TOKEN is always present in Actions, so the old
 # secret-presence guard is moot; on a fork pull request the token is read-only
 # (no packages: write), which only reinforces the master-only guard. A local
-# `npm run docker:push` break-glass now needs a PAT with write:packages against
-# ghcr.io.
+# `npm run docker:push` break-glass needed a PAT with write:packages against
+# ghcr.io. HISTORICAL: that route is withdrawn (ADR-050, user direction
+# 2026-08-19) — registry pushes come from the pipeline. The credential note is
+# kept only so the amendment reads coherently; it is not an instruction.
 #
 # The bare :<semver> tag is written only when the `publish_semver` input is true,
 # i.e. only by a package release calling this workflow. A docker-only rebuild

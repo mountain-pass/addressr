@@ -705,12 +705,50 @@ jobs:
   # package.json, so a changesets release commit does not match it and this job
   # is the sole publisher on that commit. That is ADR-040 amendment option C.
   #
-  # `needs: release` plus GitHub's implicit success requirement puts this behind
-  # the npm publish AND the deploy and prod smoke. Recorded in ADR-040 as an
-  # accepted Bad consequence: a red prod smoke after a successful npm publish
-  # leaves npm and the GHCR image divergent, recoverable via the documented
-  # `DOCKER_PUBLISH_SEMVER=1 npm run docker:push` break-glass (a local PAT with
-  # write:packages against ghcr.io).
+  # `!cancelled()` REPLACES GitHub's IMPLICIT `success()`, and that is the whole
+  # point of it. ADR-040 recorded a Bad consequence here — the docker axis was
+  # not independent of the deploy axis, because `needs: release` plus the
+  # implicit success requirement put this job behind the npm publish AND the
+  # deploy AND the prod smoke. It was accepted as benign because it "degrades to
+  # today's manual `npm run docker:push`".
+  #
+  # It was realised on 2026-08-19 releasing 3.3.2. The publish succeeded; the
+  # deploy failed on an EB instance npm-install; this job was skipped by the
+  # implicit success(); and re-running could not recover it, because on a re-run
+  # the changesets step has nothing left to consume and `published` is no longer
+  # 'true'. npm and production went to 3.3.2 and the registry stayed on 3.3.1.
+  # And the break-glass that made it benign is withdrawn — registry pushes come
+  # from the pipeline, not a laptop (ADR-050, user direction 2026-08-19).
+  #
+  # `!cancelled()` rather than `always()`: a cancelled run must not publish.
+  #
+  # THE POSITIVE `== 'true'` COMPARISON IS UNCHANGED and still load-bearing —
+  # see the empty-string note below. Relaxing the implicit success() cannot let
+  # this job run on a swallowed publish: the P044 assertion fires only when
+  # `published != 'true'`, and this gate requires `== 'true'`, so the two are
+  # mutually exclusive by construction. A future reader will not re-derive that.
+  #
+  # THE UNPROVEN ASSUMPTION, both branches. This rests on `needs.release.outputs`
+  # remaining readable when the release job fails at a LATER step than the one
+  # that set them.
+  #
+  #   - If it does NOT hold: `published` is the empty string, `'' == 'true'` is
+  #     false, the job skips — exactly today's behaviour. Safe, but SILENT: the
+  #     next post-publish failure orphans another image and nothing says so.
+  #     P108 tracks the missing assertion that would make it loud.
+  #   - If it DOES hold: the image publishes on a failed release job. That is the
+  #     point for a failed deploy. It also means a failed `Smoke test production`
+  #     no longer holds the image back — accepted on ONE ground: `changeset
+  #     publish` has already succeeded by then, so the same defect is already on
+  #     npm under `latest` and already running in production. No substitute
+  #     pre-release control is claimed. (An earlier version of this comment named
+  #     `test:integration:search`; that was false — it resolves to one synthetic
+  #     four-address analysis test and covers neither the rel-completeness nor
+  #     the ranking probes.)
+  #
+  # Confirm on the next post-publish failure rather than assuming. Do NOT restate
+  # this as "can only improve the outcome" — that is true only of the first
+  # branch, and the behavioural delta lives entirely in the second.
   #
   # The gate is the POSITIVE `== 'true'` form, and that is load-bearing. When the
   # changesets step is skipped or publishes nothing this output resolves to the
@@ -721,7 +759,7 @@ jobs:
   # because the package is `private: true`.)
   docker-publish:
     needs: release
-    if: needs.release.outputs.published == 'true'
+    if: "!cancelled() && needs.release.outputs.published == 'true'"
     permissions:
       contents: read
       packages: write

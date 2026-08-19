@@ -533,7 +533,63 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     const publish = release.jobs['docker-publish'];
     assert.ok(publish, 'release.yml must declare a docker-publish job');
     assert.deepStrictEqual([publish.needs].flat(), ['release']);
-    assert.equal(publish.if, "needs.release.outputs.published == 'true'");
+    // THE GATE, pinned BOTH exactly and by property. The exact pin is the
+    // control; the property assertions below exist to tell a reader which parts
+    // are load-bearing and why.
+    //
+    // PROPERTY PINS ALONE WERE NOT ENOUGH, and the gap is worth stating because
+    // it looked like a strengthening. Four property assertions — contains
+    // `!cancelled()`, no `always()`, contains the positive comparison, no
+    // negated form — are satisfied by:
+    //
+    //     !cancelled() || needs.release.outputs.published == 'true'
+    //
+    // On every master push `!cancelled()` is true, so `||` makes the whole gate
+    // true, docker-publish runs with publish_semver: true, and the bare
+    // `:<semver>` tag is written on EVERY push — re-pointing a tag a self-hoster
+    // has pinned. That falsifies ADR-040's Decision Driver "publishing an image
+    // must never silently re-point a tag a self-hoster has already pinned" and
+    // its Confirmation criterion that the bare digest is unchanged by a
+    // docker-axis publish. Verified: that mutation passed all 24 assertions here.
+    //
+    // Property pins bind OPERANDS, not the OPERATOR. `DEPLOY_GATE` in this same
+    // file is pinned by exact string for exactly this reason, with a comment
+    // saying so — moving to properties dropped that control without replacing it.
+    assert.equal(
+      publish.if,
+      "!cancelled() && needs.release.outputs.published == 'true'",
+      'the docker-publish gate is pinned exactly: the CONJUNCTION is load-bearing, ' +
+        'and an || inversion satisfies every property assertion below while publishing ' +
+        'the bare :<semver> tag on every master push',
+    );
+    //
+    // `!cancelled()` REPLACES GitHub's implicit `success()`. ADR-040 accepted a
+    // Bad consequence here — the docker axis was not independent of the deploy
+    // axis — and it was realised releasing 3.3.2: the publish succeeded, the
+    // deploy failed, the implicit success() skipped this job, and a re-run could
+    // not recover it because `published` is only 'true' on the run that consumes
+    // the changesets. npm and production reached 3.3.2 while the registry stayed
+    // on 3.3.1.
+    assert.match(
+      publish.if,
+      /!cancelled\(\)/,
+      'the docker publish must not inherit the implicit success() of the release job — ' +
+        'a deploy failure after a successful publish would orphan the image, unrecoverably',
+    );
+    assert.doesNotMatch(
+      publish.if,
+      /always\(\)/,
+      'must be !cancelled(), not always() — a cancelled run must not publish an image',
+    );
+    // The POSITIVE comparison is retained and is separately load-bearing: when
+    // the changesets step publishes nothing the output is the empty string, and
+    // `'' == 'true'` is false. The NEGATED form is the trap, so assert it is absent.
+    assert.match(publish.if, /needs\.release\.outputs\.published == 'true'/);
+    assert.doesNotMatch(
+      publish.if,
+      /published\s*!=/,
+      "the negated form has an empty-string trap: `'' != 'true'` is TRUE, publishing on a run that released nothing",
+    );
     assert.equal(publish.uses, './.github/workflows/docker-image.yml');
 
     // The bare :<semver> tag is written ONLY on a package release. This is the

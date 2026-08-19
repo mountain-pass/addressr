@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 49 (43 in-force, 6 historical)
+**Total ADRs:** 50 (44 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_43 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_44 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -194,7 +194,7 @@ _43 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-040 — ADR 040: Release Pipeline Decoupled into a Change-Type to Action Matrix
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** proposed | **Oversight:** confirmed | **Superseded in part by:** ADR-050 (four sites: the publish-path coupling consequence, the fail-closed coupling consequence in part, the `docker:push` break-glass standing, and its restatement in the 2026-07-28 GHCR amendment)
 
 ### ADR-041 — Equivalent synonyms with a synonym-free search analyzer
 
@@ -248,6 +248,13 @@ _43 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Amendment is scoped by one test — would a human need to ratify this edit? Substance is prohibited on a ratified decision and routes to a new ADR; factual corrections (a drifted count, moved path, renamed command, including inside reasoning) are permitted in place with retain-as-history; navigation edits are permitted freely. The rule lives here rather than in `DECISION-MANAGEMENT.md` because a rule about what may be ratified must itself be ratifiable.
 **Confirmation:** All ten superseded sites in ADR-047 enumerated as an exact set, not a count; the ADR-047 edits add no substance (class test, not a location test); the supersession is mechanically legible from the superseded end via `supersedes-clause` plus the reverse compendium badge; `DECISION-MANAGEMENT.md` § What May Be Amended At All points here rather than restating; the external-citation form shown working by evidence, not assertion.
 **Related:** ADR-047, ADR-048, ADR-046, ADR-045
+
+### ADR-050 — The image follows the publish, not the deploy
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-040 (four sites, enumerated in the record); also marks the ADR-039 restatements
+**Decides:** The container image follows the npm publish rather than the deploy — `docker-publish` carries `!cancelled()`, so a failure later in the release job (the deploy, the prod smoke) can no longer skip an image whose publish already succeeded. Registry pushes come from the pipeline: the local `docker:push` break-glass is withdrawn as a sanctioned manual route. No recovery is built for a version orphaned before the fix, deliberately — every recovery shape creates a second writer of the bare `:<semver>` tag — so 3.3.2 has no image.
+**Confirmation:** The gate is pinned EXACTLY in release-workflow-deploy-only.test.mjs, with the property assertions beside it as explanation rather than the control, and mutation-verified against four regressions: implicit success(), always(), the negated comparison, and the `||` inversion that would have written the bare tag on every master push. `docker-image.yml`'s workflow_dispatch still declares no inputs, so no second bare-tag writer exists.
+**Related:** ADR-040, ADR-039, ADR-049
 
 ---
 
