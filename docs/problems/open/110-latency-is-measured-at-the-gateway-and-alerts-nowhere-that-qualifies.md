@@ -91,8 +91,9 @@ them, and its absence from the files was read as absence from the world.
 
 - **[ADR-051](../../decisions/051-a-check-with-no-reader-but-the-maintainer-is-not-a-control.proposed.md)** —
   the rule that makes this a real gap rather than a preference. A check qualifies only if it acts or is
-  agent-read; measurement without a qualifying terminus is not a control. Note ADR-051 is `proposed` and its
-  generalisation is not yet ratified, so this ticket's framing moves if that rule does.
+  agent-read; measurement without a qualifying terminus is not a control. **RATIFIED 2026-08-20**, with the
+  scope spelled out at ratification — it binds production alerting, not only CI — so this ticket's framing is
+  settled rather than provisional.
 - **[P032](../known-error/032-no-ci-perf-regression-detection.md)** — the CI-side attempt at this, deleted
   2026-08-20. Its retirement note carries the fuller account of what the probe did and did not measure.
 - **[P101](101-scheduled-workflow-loud-failure-has-no-reader.md)** — the same terminus problem for scheduled

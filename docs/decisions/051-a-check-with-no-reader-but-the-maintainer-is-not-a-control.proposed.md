@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-20
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-20
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent, wr-jtbd:agent]
 informed: []
@@ -12,9 +13,10 @@ reassessment-date: 2026-11-20
 
 > Captured after the maintainer was asked whether a nightly probe should alert them and answered by rejecting
 > the premise of the question. The decision substance is theirs, quoted below in their own words. **The
-> generalisation past this one probe is this record's addition and is NOT yet ratified** — the maintainer
-> stated the rule about a specific job; extending it to every check in the repo, with the corollaries below,
-> is the architect's inference and needs their confirmation before it binds.
+> generalisation past this one probe was this record's addition rather than theirs, and was RATIFIED on
+> 2026-08-20** — presented with the scope spelled out (all scheduled jobs, production alerting, and
+> "the maintainer is notified" scoring zero as a control) against the narrower alternative of scheduled jobs
+> only, they adopted it as written. It binds everywhere.
 
 ## Context and Problem Statement
 
