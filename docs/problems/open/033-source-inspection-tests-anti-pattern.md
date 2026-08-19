@@ -319,109 +319,111 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
 ### Investigation Tasks
 
 - [x] **Audit all `test/js/__tests__/*.test.mjs` files. DONE 2026-08-19: thirteen source pins read
-      individually, of which six to nine are illegitimate depending on an unsettled rule — not the hundreds
+      individually, of which six to nine are illegitimate depending on an unsettled rule (six decisions;
+      nine is everything that is not a sentinel, so it is the six plus the three wiring rows that rule would
+      reclassify) — not the hundreds
       every earlier count implied.** The per-file read this task called for was done. The method and every
       intermediate count are below, because three earlier attempts at a number were wrong and a fourth
       unexplained figure would deserve no more trust than they got.
 
       **Step 1 — 32 files read a repo file and assert on what they read.** Of those, **15 exercise the
-          subject** (they import it, statically or dynamically, or spawn it) and **17 read only**. The first
-          classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
-          `await import(...)`. Corrected before use.
+              subject** (they import it, statically or dynamically, or spawn it) and **17 read only**. The first
+              classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
+              `await import(...)`. Corrected before use.
 
-          **Step 2 — of the 17 read-only files, NONE is a source-inspection test of implementation.** Seven
-          read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
-          artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
-          WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
-          behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
-          a file` and `pins source text as a stand-in for what the code does` are different populations, and
-          conflating them is why the figures ran to the hundreds.
+              **Step 2 — of the 17 read-only files, NONE is a source-inspection test of implementation.** Seven
+              read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
+              artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
+              WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
+              behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
+              a file` and `pins source text as a stand-in for what the code does` are different populations, and
+              conflating them is why the figures ran to the hundreds.
 
-          **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
-          source and assert on its text, in files that also exercise the subject. Counted three ways and
-          enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
+              **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
+              source and assert on its text, in files that also exercise the subject. Counted three ways and
+              enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
 
-          **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
-          below summed to 12 across five files while the prose above it said 13 across six, and named two live
-          pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
-          count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
-          and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
-          source text.
+              **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
+              below summed to 12 across five files while the prose above it said 13 across six, and named two live
+              pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
+              count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
+              and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
+              source text.
 
-          **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
-          missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
-          look like source paths. The third counted subprocess output as file contents. Each was caught by
-          checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
-          discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
-          for the population is behavioural exercise and the remedy for the audit is reading.
+              **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
+              missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
+              look like source paths. The third counted subprocess output as file contents. Each was caught by
+              checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
+              discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
+              for the population is behavioural exercise and the remedy for the audit is reading.
 
-          **So what follows is what was READ, pin by pin. Three files verified in full:**
+              **So what follows is what was READ, pin by pin. Three files verified in full:**
 
-          | file | pin | verdict |
-          | --- | --- | --- |
-          | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | wiring |
-          | `graceful-shutdown` | it is called with `stop:` and `force:` | wiring |
-          | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
-          | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
-          | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
-          | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
-          | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
-          | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | wiring |
-          | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
-          | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
+              | file | pin | verdict |
+              | --- | --- | --- |
+              | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | wiring |
+              | `graceful-shutdown` | it is called with `stop:` and `force:` | wiring |
+              | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
+              | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
+              | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
+              | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
+              | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
+              | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | wiring |
+              | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
+              | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
 
-          **Thirteen pins across three files: 3 wiring, 4 sentinels, 6 decisions.** The sentinel row is a
-          category the earlier count did not have, and it matters — but only three of the four are load-bearing,
-          which is visible only by tracing each one's vacuity direction:
+              **Thirteen pins across three files: 3 wiring, 4 sentinels, 6 decisions.** The sentinel row is a
+              category the earlier count did not have, and it matters — but only three of the four are load-bearing,
+              which is visible only by tracing each one's vacuity direction:
 
-          - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
-            and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
-          - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
-            slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
-            proxyAuthMiddleware. **Floor**, and over an auth boundary.
-          - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
-            which is TRUE, and the ordering pin passes vacuously. **Floor.**
-          - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
-            comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
+              - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
+                and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
+              - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
+                slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
+                proxyAuthMiddleware. **Floor**, and over an auth boundary.
+              - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
+                which is TRUE, and the ordering pin passes vacuously. **Floor.**
+              - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
+                comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
 
-          Three anti-vacuity floors and one diagnostic, then. That is the same floor this repo has spent the
-          session installing everywhere else, and it is neither wiring nor decision.
+              Three anti-vacuity floors and one diagnostic, then. That is the same floor this repo has spent the
+              session installing everywhere else, and it is neither wiring nor decision.
 
-          **Not read, and therefore not counted:** `perf-validity-covers-declared-legs` (asserts over
-          `test/k6/regression.js` text) and `deploy-artefact-ignores` (asserts over `deploy.sh` text). Both are
-          candidates by inspection; neither has had the per-pin read the three above got. Stated as pending
-          rather than folded into the total as an estimate.
+              **Not read, and therefore not counted:** `perf-validity-covers-declared-legs` (asserts over
+              `test/k6/regression.js` text) and `deploy-artefact-ignores` (asserts over `deploy.sh` text). Both are
+              candidates by inspection; neither has had the per-pin read the three above got. Stated as pending
+              rather than folded into the total as an estimate.
 
-          **BLOCKED — this ticket states the governing rule two incompatible ways.** One says a pin is
-          legitimate for wiring and illegitimate for a decision. The `startRest2Server` -> `trackServer` note
-          says a text assertion over wiring would itself be a fresh instance of this anti-pattern. Those give
-          opposite verdicts on the three wiring rows above and on the Description's own `expandRangeAliases`
-          import example. Which rule stands moves the illegitimate population from 6 to as many as 9, so it is
-          not settled here — and three other sites still record the two `server2.js` pins as pending conversion
-          under the older reading.
+              **BLOCKED — this ticket states the governing rule two incompatible ways.** One says a pin is
+              legitimate for wiring and illegitimate for a decision. The `startRest2Server` -> `trackServer` note
+              says a text assertion over wiring would itself be a fresh instance of this anti-pattern. Those give
+              opposite verdicts on the three wiring rows above and on the Description's own `expandRangeAliases`
+              import example. Which rule stands moves the illegitimate population from 6 to as many as 9, so it is
+              not settled here — and three other sites still record the two `server2.js` pins as pending conversion
+              under the older reading.
 
-          **What this audit does NOT establish.** Three limits, the third of which was written because the
-          fourth mechanical count failed while the first two were being written:
+              **What this audit does NOT establish.** Three limits, the third of which was written because the
+              fourth mechanical count failed while the first two were being written:
 
-          1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
-             The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
-             did miss.
-          2. The wiring / sentinel / decision split is judged by reading, not computed.
-          3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
-             `p033-population-figures-recompute.test.mjs`: 32 / 15 / 17, the named ten-file list, the
-             un-excluded triple, the three intersections (seven, ten, three), and the Step 4 table's own
-             arithmetic. Read by hand and NOT computed: the wiring / sentinel / decision verdicts themselves,
-             which are a judgement and are deliberately not mechanised — a guard over them would be a check
-             comparing a judgement to a restatement of itself.
-             An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
-             page. That was false when written: seven, ten and three were prose, computable from sets the guard
-             already held, and the ticket's surviving conclusion below rests on two of them. A limits section
-             declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
-             prevent it.
+              1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
+                 The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
+                 did miss.
+              2. The wiring / sentinel / decision split is judged by reading, not computed.
+              3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
+                 `p033-population-figures-recompute.test.mjs`: 32 / 15 / 17, the named ten-file list, the
+                 un-excluded triple, the three intersections (seven, ten, three), and the Step 4 table's own
+                 arithmetic. Read by hand and NOT computed: the wiring / sentinel / decision verdicts themselves,
+                 which are a judgement and are deliberately not mechanised — a guard over them would be a check
+                 comparing a judgement to a restatement of itself.
+                 An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
+                 page. That was false when written: seven, ten and three were prose, computable from sets the guard
+                 already held, and the ticket's surviving conclusion below rests on two of them. A limits section
+                 declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
+                 prevent it.
 
-          One correction to an earlier claim while these figures are being reconciled: 10 workflow-reading files
-          minus 7 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
-          feed them" is true of seven, not ten.
+              One correction to an earlier claim while these figures are being reconciled: 10 workflow-reading files
+              minus 7 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
+              feed them" is true of seven, not ten.
 
 - [x] **Decide a refactor cadence. DECIDED 2026-08-19: neither of the two options as posed.** A single sweep
       is unjustifiable at this population size with no failing signal, and pure opportunism has visibly not

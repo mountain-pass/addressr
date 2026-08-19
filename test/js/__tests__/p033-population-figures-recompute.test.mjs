@@ -328,13 +328,33 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     const files = new Set(rows.map((r) => r.match(/^\s*\|\s*`([^`]+)`/)?.[1]).filter(Boolean));
     assert.equal(files.size, WORDS.indexOf(stated[2].toLowerCase()), `table names ${files.size} files`);
 
-    // `six` and `nine` are arithmetic over this tally, not judgement: six is
-    // the decisions, nine is decisions plus the wiring rows that the unsettled
-    // rule would reclassify. Guarding them mechanises no verdict.
+    // `six` and `nine` are arithmetic over this tally, not judgement. Six is
+    // the decisions. Nine is written as `pins - tally.sentinel` rather than
+    // `decision + wiring` — identical today at 13-4=9, but it NAMES the claim
+    // being encoded: the unsettled rule can touch everything that is not a
+    // sentinel. Equality, not a range: a range would go green over a headline
+    // reading "six to twelve" above a table summing to nine, which is the
+    // authoritative-looking stale pin this is defending against.
     const flat = ticket.replaceAll(/\s+/g, ' ');
     assert.ok(
-      flat.includes(`of which ${wordOf(tally.decision)} to ${wordOf(tally.decision + tally.wiring)} are illegitimate`),
-      `headline should read "${wordOf(tally.decision)} to ${wordOf(tally.decision + tally.wiring)} are illegitimate"`,
+      flat.includes(`of which ${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate`),
+      `headline should read "${wordOf(tally.decision)} to ${wordOf(pins - tally.sentinel)} are illegitimate"`,
+    );
+
+    // The derivation clause carries a THIRD cardinal — the wiring count — and
+    // the argument that it needs no cover was wrong. `six` and `nine` are
+    // pinned in the sentence above; `three` is pinned only as a numeral, in a
+    // different sentence, fifty lines further down.
+    //
+    // The staleness path is already scheduled. Read the two pending files, land
+    // two wiring rows, and both other sites redden and get fixed — while this
+    // clause, inside the very sentence being edited to satisfy them, still
+    // reads "the six plus the three wiring rows" and stays green. A rationale
+    // that argued FOR the old value lives nearest the change, which is exactly
+    // where it survives a correction.
+    assert.ok(
+      flat.includes(`the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows`),
+      `the derivation should read "the ${wordOf(tally.decision)} plus the ${wordOf(tally.wiring)} wiring rows"`,
     );
   });
 
