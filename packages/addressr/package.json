@@ -56,7 +56,6 @@
   "private": false,
   "dependencies": {
     "@aws-sdk/credential-provider-node": "^3.972.63",
-    "@changesets/cli": "^2.26.2",
     "@mountainpass/waycharter": "^2.0.30",
     "@opensearch-project/opensearch": "^3.5.1",
     "debug": "^4.1.1",
@@ -67,12 +66,10 @@
     "json-ptr": "^3.1.1",
     "keyv": "^5.6.0",
     "keyv-file": "^5.3.3",
-    "node-machine-id": "^1.1.12",
     "papaparse": "^5.0.0",
     "progress": "^2.0.3",
     "semver": "^7.3.2",
     "unzip-stream": "^0.3.0",
-    "uri-template-lite": "^23.4.0",
     "wait-port": "^1.1.0"
   },
   "repository": {

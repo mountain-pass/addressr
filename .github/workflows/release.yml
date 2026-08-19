@@ -89,6 +89,13 @@ jobs:
       - name: Unit tests on the declared engine floor
         run: npm run test:js
 
+      # P106: the licence gate previously lived ONLY in the local pre-commit
+      # hook, which --no-verify bypasses and CI never ran. A compliance control
+      # that exists only on a developer's machine is not a control. It runs here
+      # because this job already installs the tree it audits.
+      - name: Licence audit of the published production tree
+        run: npm run check-licenses
+
   build-and-test:
     runs-on: ubuntu-latest
     strategy:
