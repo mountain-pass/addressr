@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-19 **P104 captured, then rescored 12 → 8** — the perf probe's retrieve threshold passes on zero samples; every iteration throws and k6 reports a tick. Rescored the same day: 12 double-counted the harm on Impact and the defect frequency on Likelihood, and put P104 above its own parent P032 (9). Root cause resolved at capture — the probe is the defect, the API is to contract (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-19 **P105 + P106 captured; six WSJF cells corrected** — two defects from the same ADR-046 restructure commit 8199e5b9: @changesets/cli ships as a production dependency of the published package, and the licence compliance gate scans an empty tree and exits 0 (234 production packages, 0 checked, no CI caller). Risk scoring then found the WSJF column itself wrong: `wr-itil-reconcile-readme` exits 0 without ever doing the arithmetic, so six rows carried undivided Severity. Recomputed every row from the documented (Severity × Status Multiplier) ÷ Effort Divisor and re-sorted; P085 rose from 6.0 to its true 12.0. Now pinned by test/js/**tests**/problems-readme-wsjf-arithmetic.test.mjs (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,6 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                 | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | --------------------------------------------------------------------- | ------------ | ------------- | ------ | ---------- | -------- |
+| 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)     | High (12)    | Open          | S      | 2026-08-03 | internal |
 | 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices  | High (12)    | Open          | S      | 2026-08-10 | internal |
 | 12.0 | P101 | Scheduled workflow's loud failure has no reader                       | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md          | High (12)    | Open          | S      | 2026-08-18 | internal |
@@ -16,20 +17,20 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only    | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value    | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 9.0  | P100 | Production recovery floor has never been measured                     | Medium (9)   | Open          | S      | 2026-08-18 | internal |
-| 8.0  | P103 | Workflow referrers outside guard coverage rot unseen                  | Medium (8)   | Open          | M      | 2026-08-18 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks          | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them      | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
 | 8.0  | P104 | Perf probe's retrieve threshold passes on zero samples                | Medium (8)   | Open          | S      | 2026-08-19 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
-| 6.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
-| 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
-| 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission       | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI     | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
-| 6.0  | P085 | `push:watch` reports success on a red master (3 selector defects)     | High (12)    | Open          | S      | 2026-08-03 | internal |
+| 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)           | High (12)    | Open          | M      | 2026-08-01 | internal |
+| 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission       | High (12)    | Open          | M      | 2026-08-02 | internal |
+| 6.0  | P106 | License compliance gate scans an empty tree and exits 0               | High (12)    | Open          | M      | 2026-08-19 | internal |
 | 5.0  | P098 | Test assertions that never execute — no runner, or no caller          | High (10)    | Open          | M      | 2026-08-09 | internal |
+| 5.0  | P105 | @changesets/cli ships as a production dep of the published package    | High (10)    | Open          | M      | 2026-08-19 | internal |
+| 4.5  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones   | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated       | Medium (9)   | Open          | M      | 2026-08-03 | internal |
 | 4.5  | P088 | Assistant manufactures problems and presents them as findings         | Medium (9)   | Open          | M      | 2026-08-07 | internal |
@@ -42,12 +43,13 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap       | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented        | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set       | Medium (8)   | Open          | M      | 2026-08-02 | internal |
-| 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open          | M      | 2026-07-30 | internal |
+| 4.0  | P103 | Workflow referrers outside guard coverage rot unseen                  | Medium (8)   | Open          | M      | 2026-08-18 | internal |
+| 3.0  | P092 | CHANGELOG erratum from the P074 changeset                             | Low (3)      | Open          | S      | 2026-08-08 | internal |
 | 3.0  | P050 | Stale-Open tickets after fix ships — no transition-fold check         | Medium (6)   | Open          | M      | 2026-07-16 | internal |
-| 3.0  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address        | Medium (9)   | Open          | M      | 2026-07-31 | internal |
+| 3.0  | P071 | Loader pinned to legacy GDA94 datum — coordinates ~1.8m out           | Medium (6)   | Open          | M      | 2026-07-29 | internal |
+| 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits        | Medium (6)   | Open          | M      | 2026-07-30 | internal |
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate    | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them   | Medium (6)   | Open          | M      | 2026-08-07 | internal |
-| 3.0  | P092 | CHANGELOG erratum from the P074 changeset                             | Low (3)      | Open          | S      | 2026-08-08 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets      | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)          | Low (4)      | Open          | M      | 2026-07-31 | internal |
