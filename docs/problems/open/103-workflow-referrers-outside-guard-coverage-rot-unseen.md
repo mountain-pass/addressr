@@ -46,6 +46,16 @@ A workflow is YAML containing shell containing, sometimes, JavaScript. Each nest
 - [ ] Extend to bare script paths (`scripts/*.sh`, `.husky/*`) and `npx` invocations named in `run:` blocks.
 - [ ] Once the general guard lands, **narrow ADR-048's NOT-COVERED list to match** — it currently names `node -e` imports, bare paths and `npx` as uncovered, and that statement must stay true or become false loudly.
 - [ ] Consider whether the same nesting problem exists in `release.yml`'s `node -e` blocks, which are the twins of the ones that broke here.
+- [ ] **Extend the referrer corpus to SOURCE-FILE COMMENTS, a surface nothing currently watches and which
+      ADR-048's NOT-COVERED list does not even enumerate.** Found 2026-08-19: the lint-debt block at the head
+      of `packages/addressr/service/address-service.js` linked P084 as `../docs/problems/open/084-…`, which
+      from `service/` resolves to `packages/addressr/docs/…` and has never existed. `doc-links-resolve` scans
+      `docs/**` plus five named repo-root files, so a `.js` file under `packages/` is outside its corpus
+      entirely. Corrected to `../../../docs/…` in the same commit, but the class is open: this is ADR-048's
+      first Reassessment Criterion firing — _a moved-path referrer rots again in a class the guards do not
+      cover_ — and it is worse than the enumerated gaps because ADR-048's list would let a reader conclude
+      source comments were considered and excluded, when they were never considered at all. The link also
+      carries the mutable `open/` segment (R018), so it breaks again when P084 transitions, silently.
 
 ## Dependencies
 

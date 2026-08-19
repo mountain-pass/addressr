@@ -3,10 +3,20 @@
 /* eslint-disable security/detect-object-injection */
 /* eslint-disable security/detect-non-literal-fs-filename */
 
-// TEMPORARY, and scoped deliberately narrowly. These nine rules account for all
-// 23 pre-existing errors in this file, every one of them predating the change
-// that added this comment. They are the debt recorded in
-// [P084 ESLint 10 and unicorn 72 leave a deliberate lint debt with no CI gate](../docs/problems/open/084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md),
+// TEMPORARY, and scoped deliberately narrowly. These eight rules — nine when
+// this block was written — accounted for all 23 pre-existing errors in this file
+// then, every one of them predating the block.
+//
+// `unicorn/prefer-hoisting-branch-code` was removed on 2026-08-19 when `unzipFile`
+// moved to `./unzip-file.js`, taking the violations it covered with it: eslint then
+// reported the directive as suppressing nothing. That is this block's own
+// instruction below being followed, not an exception to it. The remaining eight were
+// each re-measured on that date and every one still suppresses at least one error,
+// so none is dead. The 23 is left as the historical figure it always was; it is not
+// a running total, and treating it as one is how a count in prose goes stale.
+//
+// They are the debt recorded in
+// [P084 ESLint 10 and unicorn 72 leave a deliberate lint debt with no CI gate](../../../docs/problems/open/084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md),
 // which predicted it would land on whoever next edited `service/`.
 //
 // `lint-staged` runs `eslint --fix` on every staged `.js`, so with these
@@ -19,7 +29,6 @@
 /* eslint-disable unicorn/prefer-number-coercion */
 /* eslint-disable unicorn/operator-assignment */
 /* eslint-disable unicorn/prefer-await */
-/* eslint-disable unicorn/prefer-hoisting-branch-code */
 /* eslint-disable unicorn/consistent-boolean-name */
 /* eslint-disable unicorn/prefer-ternary */
 /* eslint-disable unicorn/no-computed-property-existence-check */
@@ -29,13 +38,10 @@ import {
   attachRangeAliases,
   buildIndexedDocument,
 } from '../src/build-indexed-document.js';
-import directoryExists from 'directory-exists';
 import fs from 'node:fs';
 import LinkHeader from 'http-link-header';
 import Papa from 'papaparse';
 import path from 'node:path';
-import stream from 'node:stream';
-import unzip from 'unzip-stream';
 import {
   initIndex,
   dropIndex as dropESIndex,
@@ -56,6 +62,7 @@ import {
 import { mirrorRequest } from '../src/read-shadow.js';
 import crypto from 'node:crypto';
 import { findGnafDirectory } from './gnaf-directory.js';
+import { unzipFile } from './unzip-file.js';
 
 const fsp = fs.promises;
 
@@ -149,104 +156,6 @@ export async function fetchGnafFile() {
       error('Error downloading G-NAF', error_);
       throw error_;
     }
-  }
-}
-
-export async function unzipFile(file) {
-  const extname = path.extname(file);
-  const basenameWithoutExtention = path.basename(file, extname);
-  const incomplete_path = `${GNAF_DIR}/incomplete/${basenameWithoutExtention}`;
-  const complete_path = `${GNAF_DIR}/${basenameWithoutExtention}`;
-
-  const exists = await directoryExists(complete_path);
-  if (exists) {
-    logger('directory exits. Skipping extract', complete_path);
-    // already extracted. Move along.
-    return complete_path;
-  } else {
-    await new Promise((resolve, reject) => {
-      fs.mkdir(incomplete_path, { recursive: true }, (error_) => {
-        if (error_) reject(error_);
-        else resolve();
-      });
-    });
-    const readStream = fs.createReadStream(file);
-    logger('before pipe');
-    let prom = new Promise((resolve, reject) => {
-      readStream
-        .pipe(unzip.Parse())
-        .pipe(
-          stream.Transform({
-            objectMode: true,
-            transform: function (entry, encoding, callback) {
-              const entryPath = `${incomplete_path}/${entry.path}`;
-              if (entry.isDirectory) {
-                fs.mkdir(entryPath, { recursive: true }, (error_) => {
-                  if (error_) {
-                    entry.autodrain();
-                    callback(error_);
-                  } else {
-                    entry.autodrain();
-                    callback();
-                  }
-                });
-              } else {
-                const dirname = path.dirname(entryPath);
-                fs.mkdir(dirname, { recursive: true }, (error_) => {
-                  if (error_) {
-                    entry.autodrain();
-                    callback(error_);
-                  } else {
-                    fs.stat(entryPath, (error_, stats) => {
-                      if (error_ && error_.code !== 'ENOENT') {
-                        logger('error statting file', error_);
-                        entry.autodrain();
-                        callback(error_);
-                        return;
-                      }
-                      if (stats != undefined && stats.size === entry.size) {
-                        // no need to extract again. Skip
-                        logger('skipping extract for', entryPath);
-                        entry.autodrain();
-                        callback();
-                      } else {
-                        // size is different, so extract the file
-                        logger('extracting', entryPath);
-                        entry
-                          .pipe(fs.createWriteStream(entryPath))
-                          .on('finish', () => {
-                            logger('finished extracting', entryPath);
-                            callback();
-                          })
-                          .on('error', (error) => {
-                            logger('error unzipping entry', error);
-                            callback(error);
-                          });
-                      }
-                    });
-                  }
-                });
-              }
-            },
-          }),
-        )
-        .on('finish', () => {
-          logger('finish');
-          resolve();
-        })
-        .on('error', (error_) => {
-          logger('error unzipping data file', error_);
-          reject(error_);
-        });
-    });
-    await prom;
-
-    return await new Promise((resolve, reject) => {
-      fs.rename(incomplete_path, complete_path, (error_) => {
-        if (error_) reject(error_);
-        else resolve(complete_path);
-      });
-    });
   }
 }
 
@@ -1675,7 +1584,7 @@ export async function loadGnaf({ refresh = false } = {}) {
     logger('Using test fixture dir', mainDirectory);
   } else {
     const file = await fetchGnafFile();
-    const unzipped = await unzipFile(file);
+    const unzipped = await unzipFile(file, GNAF_DIR);
 
     logger('Data dir', unzipped);
     const contents = await fsp.readdir(unzipped);

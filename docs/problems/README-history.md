@@ -199,6 +199,8 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 ## 2026-08-19
 
+> Last reviewed: 2026-08-19 **P105 + P106 captured; six WSJF cells corrected** — two defects from the same ADR-046 restructure commit 8199e5b9: @changesets/cli ships as a production dependency of the published package, and the licence compliance gate scans an empty tree and exits 0 (234 production packages, 0 checked, no CI caller). Risk scoring then found the WSJF column itself wrong: `wr-itil-reconcile-readme` exits 0 without ever doing the arithmetic, so six rows carried undivided Severity. Recomputed every row from the documented (Severity × Status Multiplier) ÷ Effort Divisor and re-sorted; P085 rose from 6.0 to its true 12.0. Now pinned by test/js/**tests**/problems-readme-wsjf-arithmetic.test.mjs (lightweight aside via /wr-itil:capture-problem)
+
 > Last reviewed: 2026-08-19 **P104 captured, then rescored 12 → 8** — the perf probe's retrieve threshold passes on zero samples; every iteration throws and k6 reports a tick. Rescored the same day: 12 double-counted the harm on Impact and the defect frequency on Likelihood, and put P104 above its own parent P032 (9). Root cause resolved at capture — the probe is the defect, the API is to contract (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-18 **P103 captured** — workflow referrers outside guard coverage rot unseen; the same file broke twice, both times found by review rather than by test (lightweight aside via /wr-itil:capture-problem)

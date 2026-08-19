@@ -57,16 +57,16 @@ export const ALLOW = [
  * Packages allowed to fail the rules above, each with a reason and a ticket.
  * NOT an allow-list: every entry is printed on every run, and an entry that
  * stops matching anything fails the audit rather than lingering.
+ *
+ * EMPTY, and it emptied itself. `buffers@0.1.1` — no licence grant of any kind,
+ * reached transitively through `unzip-stream` -> `binary@0.3.0` (published
+ * 2011) — was the only entry. Replacing `unzip-stream` with `yauzl` on
+ * 2026-08-19 removed it from the tree, and the audit immediately went RED
+ * demanding this entry be deleted, which is the behaviour it was written to
+ * have: a permission cannot outlive its subject, so the swap could not land
+ * quietly leaving a stale grant behind.
  */
-export const EXCEPTIONS = {
-  buffers: {
-    reason:
-      'No licence grant of any kind — no license field, no LICENSE file. Reaches the tree ' +
-      'transitively via unzip-stream -> binary@0.3.0 (published 2011). The retired gate hid this ' +
-      'by allow-listing a README hyperlink. Recorded here so it is visible on every run instead.',
-    ticket: 'P106',
-  },
-};
+export const EXCEPTIONS = {};
 
 const normalise = (id) => (id === 'MIT/X11' ? 'MIT' : id);
 

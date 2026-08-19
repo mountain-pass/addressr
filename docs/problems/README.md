@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-19 **P105 + P106 captured; six WSJF cells corrected** — two defects from the same ADR-046 restructure commit 8199e5b9: @changesets/cli ships as a production dependency of the published package, and the licence compliance gate scans an empty tree and exits 0 (234 production packages, 0 checked, no CI caller). Risk scoring then found the WSJF column itself wrong: `wr-itil-reconcile-readme` exits 0 without ever doing the arithmetic, so six rows carried undivided Severity. Recomputed every row from the documented (Severity × Status Multiplier) ÷ Effort Divisor and re-sorted; P085 rose from 6.0 to its true 12.0. Now pinned by test/js/**tests**/problems-readme-wsjf-arithmetic.test.mjs (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-19 **P107 captured** — a verification vouches only for the state it ran against: commit 78253ee4 shipped a lockfile still carrying license-checker because the reconciliation ran before the edit it was cited as validating. Fifth member of the family R023 owns (empty-corpus, never-ran, no-guard, no-reader, stale-state). The mechanical half is already guarded by test/js/**tests**/lockfile-agrees-with-manifests.test.mjs, verified to fail 78253ee4 (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -22,6 +22,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it     | Medium (8)   | Open          | S      | 2026-08-05 | internal |
 | 8.0  | P104 | Perf probe's retrieve threshold passes on zero samples                | Medium (8)   | Open          | S      | 2026-08-19 | internal |
 | 8.0  | P033 | Source-inspection tests are an anti-pattern in this codebase          | High (16)    | Open          | M      | 2026-04-28 | internal |
+| 8.0  | P107 | A verification vouches only for the state it ran against              | High (16)    | Open          | M      | 2026-08-19 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`      | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI     | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
