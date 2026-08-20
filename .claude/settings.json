@@ -6,7 +6,18 @@
     "UserPromptSubmit": [],
     "PreToolUse": [],
     "PostToolUse": [],
-    "Stop": []
+    "Stop": [],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/schedule-report.mjs"
+          }
+        ]
+      }
+    ]
   },
   "enabledPlugins": {
     "wr-architect@windyroad": true,

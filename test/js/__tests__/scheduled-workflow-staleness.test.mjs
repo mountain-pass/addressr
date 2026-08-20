@@ -15,6 +15,7 @@ import {
   scheduledWorkflows,
   lastScheduledRunFrom,
   MAX_AGE_DAYS,
+  verdict,
 } from '../../../scripts/scheduled-workflow-staleness.mjs';
 
 const NOW = new Date('2026-08-19T12:00:00Z');
@@ -66,17 +67,29 @@ describe('scheduled-workflow staleness (P101)', () => {
     assert.match(r.reason, /over the 3d bound/);
   });
 
-  it('flags a workflow that has NEVER had a scheduled run', () => {
+  it('flags a workflow with no scheduled run as UNVERIFIABLE, which outranks stale', () => {
     // Distinct from "ran and failed": a workflow whose schedule never fired at
     // all produces no failure to notify anyone about.
+    //
+    // RECLASSIFIED 2026-08-20 from stale to unverifiable, and it got LOUDER
+    // rather than quieter — `verdict()` maps unverifiable to exit 2 and stale
+    // to exit 1. The reason for the move is that a newly added quarterly
+    // workflow has no scheduled run until it first fires, up to 110 days away,
+    // so the old classification printed a standing correct-to-ignore STALE line
+    // at every session start for three months. A finding that is always there
+    // is one nobody reads, which is this ticket's own subject.
+    //
+    // The property that must not regress is asserted directly rather than
+    // inferred from the label: this case is never reported clean.
     const r = assess({
       workflow: 'never-fired.yml',
       cron: '0 4 * * *',
       lastScheduledRun: undefined,
       now: NOW,
     });
-    assert.equal(r.stale, true);
-    assert.match(r.reason, /never/i);
+    assert.equal(r.unverifiable, true);
+    assert.equal(r.stale, false);
+    assert.equal(verdict({ total: 10, stale: 0, unverifiable: 1 }).code, 2, 'must not read as clean');
   });
 
   it('tolerates one missed firing and catches two', () => {

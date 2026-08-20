@@ -121,3 +121,17 @@ test/perf/*.out
 
 # AFK orchestrator session run-state (P-retro 2026-08-02)
 .afk-run-state/
+
+# Scheduled-workflow staleness stamp (ADR-051 / P101). Written by
+# `scripts/schedule-refresh.mjs`, read by the SessionStart reporter.
+#
+# ANCHORED RULE, so it carries the strip hazard recorded above: this pattern has
+# a mid-pattern separator and is therefore anchored to the repo root. If a move
+# strips it, the stamp gets committed and every clone reads someone else's
+# machine's success timestamp -- so the reporter prints nothing and a stale
+# schedule goes unreported. A silent green produced by an ignore-rule strip,
+# which is the composite this file has already met twice.
+# `schedule-hook-wiring.test.mjs` asserts BOTH that the rule matches and that
+# the path is untracked, because check-ignore proves the rule and says nothing
+# about a path that was tracked before the rule landed.
+.addressr-state/

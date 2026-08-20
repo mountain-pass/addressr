@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 51 (45 in-force, 6 historical)
+**Total ADRs:** 52 (46 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_45 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_46 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -263,6 +263,13 @@ _45 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** A check whose only consumer is the maintainer's attention is not a control and must not be counted as one in any risk assessment, confirmation criterion, or ticket closure — a check qualifies only if it acts (blocks, fails, or refuses in-flow) or is read by an agent that surfaces it only when actionable. Adopted after the nightly `perf-regression.yml` probe failed six unread nights and the maintainer, its only consumer, declined to monitor it; the probe was deleted rather than rerouted, since a different inbox reproduces the same defect.
 **Confirmation:** perf-regression workflow, k6 regression script, perf-validity script, three perf tests and the `test:perf:regression` npm script are absent; `test/k6/script.js`, `retrieve-url.js`, the k6-retrieve-url test and `test:performance` survive and still parse; no `aws_cloudwatch_metric_alarm` added or removed; `npm run test:js` passes including `doc-links-resolve`
 **Related:** ADR-031, ADR-048
+
+### ADR-052 — The stale-schedule terminus is an agent at session start
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Wire the stale-scheduled-workflow check to a `SessionStart` hook that reads a stamp and returns without network, printing findings when there are any and escalating when the last successful verification is older than the tightest cadence bound, while spawning the real 11.29s check detached — because ADR-051 leaves agent-read-at-session-start as the only reachable terminus for a corpus with no in-flow moment to block. The guarantee is that no session proceeds unaware of a stale schedule, NOT detection within N days: the detector's liveness is correlated with the failure it detects, a property of every in-repo detector rather than of this choice.
+**Confirmation:** two pre-existing holes verified present then closed (empty workflow dir now exits 2 below the floor of 5; absent `gh` puts UNKNOWN findings on stdout and exits 2); six mutations of `schedule-report.mjs` all caught; fresh-clone end-to-end emits the never-verified block, exits 0, and the detached refresh writes the stamp; `schedule-hook-wiring.test.mjs` reconciles every hook command and asserts the stamp is both ignored and untracked; OWED — ADR-038's briefing-block emission not re-verified since this hook was registered.
+**Related:** ADR-051, ADR-038, ADR-048
 
 ---
 

@@ -30,7 +30,10 @@ Apply Gall's law in delivery decisions: start from a working simple slice, then 
 
 ## Controls and Safety
 
-- Deterministic controls are enforced via `package.json` scripts, git hooks, and CI.
+- Deterministic controls are enforced via `package.json` scripts, git hooks, CI, and a repo-owned
+  `SessionStart` hook (`.claude/settings.json`, added 2026-08-20 per ADR-052). The fourth surface exists
+  because a scheduled-workflow corpus has no in-flow moment to block, so an agent reading it at session
+  start is the only terminus ADR-051 permits for it.
 - Do not bypass controls; if a control is noisy or ineffective, propose a change traced to risks in:
   - `AGENTIC_RISK_REGISTER.md`
   - `governance/control-traceability.json`

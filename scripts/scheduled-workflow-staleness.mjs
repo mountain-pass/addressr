@@ -2,7 +2,7 @@
 // Is every scheduled workflow still actually firing?
 //
 // WHY THIS IS NOT THE SAME AS A FAILURE NOTIFICATION. A failure notification
-// cannot fire for a workflow that never runs. Nine of this repo's eleven
+// cannot fire for a workflow that never runs. Nine of this repo's ten
 // scheduled workflows run QUARTERLY (21st and 28th of Feb/May/Aug/Nov), so
 // "stopped running entirely" has a blind window of up to three months — and
 // GitHub disables scheduled workflows outright after 60 days of repository
@@ -76,6 +76,55 @@ export function cadenceOf(cron) {
 // 85-day healthy gap and gives back ninety blind days.
 export const MAX_AGE_DAYS = { daily: 3, weekly: 21, monthly: 70, quarterly: 110 };
 
+// The corpus must be believable before "0 stale" means anything. Verified
+// 2026-08-20: over an empty `.github/workflows` this CLI printed "0 stale of 0"
+// and exited 0 — a clean bill of health over nothing, which is P106's shape.
+// The test tier had a floor; the RUNTIME did not, and the runtime is what a
+// session-start reporter believes.
+//
+// Five is INCLUSIVE — five workflows is believable, four is not. Stated as a
+// boundary rather than as "floor 5" because the two sibling guards in this repo
+// disagree with each other on exactly that (`>= 5` here, `> 5` in
+// workflow-npm-scripts-resolve), and this repo has already been bitten by the
+// same off-by-one in prose. schedule-verdict.test.mjs pins both sides.
+//
+// What it CANNOT do, stated so the guarantee is not overread: it detects the
+// corpus COLLAPSING, not the corpus ERODING. With ten workflows a floor of five
+// tolerates losing half of them silently. That is the deliberate trade against
+// a hardcoded expected list, which would not cover an eleventh workflow on the
+// day it lands (P101 task 3).
+export const WORKFLOW_FLOOR = 5;
+
+// How long a successful verification stays good, DERIVED rather than chosen.
+// The reporter prints from a stamp that may itself be up to this old, so a free
+// -standing constant here silently adds to whatever the tightest cadence bound
+// is. Taking the minimum bounds the additive latency at 2x the tightest bound
+// and moves automatically if MAX_AGE_DAYS moves.
+export const VERIFICATION_WINDOW_DAYS = Math.min(...Object.values(MAX_AGE_DAYS));
+
+/**
+ * Three states, not two: clean / stale / unverifiable.
+ *
+ * The code is SEVERITY FOR A CALLER, and is deliberately not the message. A
+ * determined stale finding must still be printed when something else was
+ * unverifiable — keying output off this code alone would suppress three known
+ * stale workflows behind one unread one, which is the exit-1-conflates-
+ * stale-with-crashed defect in mirror image.
+ */
+export function verdict({ total, stale, unverifiable }) {
+  if (total < WORKFLOW_FLOOR) {
+    return {
+      code: 2,
+      why: `only ${total} scheduled workflows found, below the floor of ${WORKFLOW_FLOOR} — the corpus itself is not believable, so "0 stale" cannot be`,
+    };
+  }
+  if (unverifiable > 0) {
+    return { code: 2, why: `${unverifiable} of ${total} could not be read` };
+  }
+  if (stale > 0) return { code: 1, why: `${stale} of ${total} stale` };
+  return { code: 0, why: `0 stale of ${total}` };
+}
+
 /**
  * The newest SCHEDULE-triggered run from a run listing, or null.
  *
@@ -101,8 +150,13 @@ export function assess({ workflow, cron, lastScheduledRun, now }) {
   const cadence = cadenceOf(cron);
   const limit = MAX_AGE_DAYS[cadence];
   if (!lastScheduledRun) {
-    return { workflow, cadence, limit, ageDays: undefined, stale: true,
-      reason: 'this workflow has never had a schedule-triggered run' };
+    // UNVERIFIABLE, not stale. A newly added quarterly workflow has no
+    // scheduled run until it first fires, which can be 110 days away — calling
+    // that STALE prints a standing, correct-to-ignore finding at every session
+    // start for three months, and a finding that is always there is one nobody
+    // reads. "I cannot tell yet" is the honest state and it is not silence.
+    return { workflow, cadence, limit, ageDays: undefined, stale: false, unverifiable: true,
+      reason: 'no schedule-triggered run in the fetched window — either it has never fired, or the window is too short' };
   }
   const ageDays = Math.floor((now - new Date(lastScheduledRun)) / 86_400_000);
   // An unparseable timestamp must fail CLOSED. `NaN > limit` is false, so
@@ -140,33 +194,51 @@ export function scheduledWorkflows(dir) {
 // One line per workflow, exit 1 if any is stale. The `gh` call is here rather
 // than in the exported functions above so the decision logic stays testable
 // without a network.
-async function main() {
+export async function run({ dir = '.github/workflows', now = new Date() } = {}) {
   const { execFileSync } = await import('node:child_process');
-  const now = new Date();
-  let stale = 0;
-  for (const w of scheduledWorkflows('.github/workflows')) {
+  const workflows = scheduledWorkflows(dir);
+  const findings = [];
+  for (const w of workflows) {
     let runs = [];
     try {
       runs = JSON.parse(
         execFileSync(
           'gh',
-          ['run', 'list', '--workflow', w.workflow, '--limit', '30', '--json', 'event,createdAt'],
-          { encoding: 'utf8' },
+          // `--event schedule` so the window is scheduled runs ONLY. Without it
+          // the `--limit` window is shared with dispatches and PR runs, so 30
+          // manual runs evict the scheduled evidence and a healthy workflow
+          // reports as having never fired. That fails loud rather than silent,
+          // but a flapping alarm is how the real one gets ignored (P101).
+          ['run', 'list', '--workflow', w.workflow, '--event', 'schedule',
+            '--limit', '30', '--json', 'event,createdAt'],
+          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
         ),
       );
     } catch (error) {
-      // An unreadable listing is NOT a pass. It is the empty-corpus shape:
-      // no runs found reads identically to no runs existing.
-      console.error(`ERROR  ${w.workflow}: could not read run history (${error.message.split('\n', 1)[0]})`);
-      stale += 1;
+      findings.push({
+        workflow: w.workflow, unverifiable: true, stale: false,
+        reason: `could not read run history (${error.message.split('\n', 1)[0]})`,
+      });
       continue;
     }
-    const r = assess({ ...w, lastScheduledRun: lastScheduledRunFrom(runs), now });
-    if (r.stale) stale += 1;
-    console.log(`${r.stale ? 'STALE ' : 'ok    '}${r.workflow.padEnd(26)}${r.reason}`);
+    findings.push(assess({ ...w, lastScheduledRun: lastScheduledRunFrom(runs), now }));
   }
-  console.log(`\n${stale} stale of ${scheduledWorkflows('.github/workflows').length} scheduled workflows`);
-  return stale > 0 ? 1 : 0;
+  const stale = findings.filter((f) => f.stale).length;
+  const unverifiable = findings.filter((f) => f.unverifiable).length;
+  return { findings, verdict: verdict({ total: workflows.length, stale, unverifiable }) };
+}
+
+async function main() {
+  const { findings, verdict: v } = await run();
+  for (const f of findings) {
+    // The union, NOT the verdict's winner. Keying the output off the severity
+    // code would hide three determined-stale workflows behind one unreadable
+    // one — the same conflation this change exists to remove, inverted.
+    const tag = f.unverifiable ? 'UNKNOWN ' : f.stale ? 'STALE   ' : 'ok      ';
+    console.log(`${tag}${f.workflow.padEnd(26)}${f.reason}`);
+  }
+  console.log(`\n${v.why}`);
+  return v.code;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
