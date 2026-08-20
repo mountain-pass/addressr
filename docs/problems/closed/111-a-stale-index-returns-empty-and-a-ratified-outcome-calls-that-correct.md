@@ -1,12 +1,40 @@
 # Problem 111: A stale index returns empty, and a ratified outcome calls that correct
 
-**Status**: Open
+**Status**: Closed — 2026-08-20, not a defect
 **Reported**: 2026-08-20
 **Priority**: 12 (High) — Impact: 4 × Likelihood: 3. Impact 4: the failure writes real addresses into downstream systems marked invalid, with a confidence score and an audit trail attesting it, so the bad record outlives the staleness that produced it. Likelihood 3: the loaders run quarterly and their silent-stop is undetected (P101); no instance is on record, and nothing exists that would have surfaced one.
 **Origin**: internal
 **Effort**: S — the remedy is a wording repair to one Desired Outcome plus a persona pain point, both requiring human ratification rather than an autonomous edit.
 **JTBD**: JTBD-100
 **Persona**: data-quality-analyst
+
+> **CLOSED 2026-08-20 by the maintainer: the promise is correct as written, and this ticket's premise is
+> wrong.** Their ruling, verbatim: _"The promise is correct. It's an address we don't know about. There are
+> always going to be addresses we don't know about and that's ok. Users have that understanding and will
+> allow manual entry for that case."_
+>
+> **Why that defeats the finding rather than merely overruling it.** G-NAF is itself a quarterly snapshot of
+> a country that builds houses continuously. So "addresses Addressr does not know about" is a NON-EMPTY set
+> at perfect freshness — it is a property of the dataset, not a symptom of a broken loader. A stale index
+> changes the SIZE of that set; it does not create it, and it does not create a distinction the API could
+> meaningfully draw. An empty result has always meant "not in the data we hold", consumers already read it
+> that way, and the documented fallback is manual entry.
+>
+> **What this ticket got wrong, recorded because the error is reusable.** It treated a known and accepted
+> product limitation as a concealed defect, on the strength of a wording analysis that never asked whether
+> the distinction it wanted was one the system could draw. "Outcome X licenses failure Y" is a real class —
+> it is why the ticket was worth raising — but it needs the further question of whether X and Y are
+> separable at all. Here they are not.
+>
+> **The reviewer finding that produced this ticket is therefore not actionable either.** A JTBD review
+> recommended adding an index-currency Desired Outcome to JTBD-001 and JTBD-100 and a false-negative pain
+> point to two personas. Routing that to ratification rather than editing the ratified documents directly is
+> what allowed the decision-maker to reject the premise instead of inheriting it — which is the case for the
+> routing rule, made by an instance where the autonomous edit would have been wrong.
+>
+> **What survives, and it is already owned elsewhere.** Staleness still matters as MAGNITUDE: a loader
+> stopped for a year grows the unknown set far beyond what the quarterly cadence implies. That is detection,
+> which is P101's, and the session-start terminus landed 2026-08-20 (ADR-052). Nothing here is left open.
 
 ## Description
 
@@ -111,7 +139,7 @@ neighbouring guarantee papers over.
 
 ## Related
 
-- **[P101](101-scheduled-workflow-loud-failure-has-no-reader.md)** — the detection half. Its staleness
+- **[P101](../open/101-scheduled-workflow-loud-failure-has-no-reader.md)** — the detection half. Its staleness
   detector covers the quarterly loaders whose silent stop produces the stale index this ticket is about.
 - **[ADR-051](../../decisions/051-a-check-with-no-reader-but-the-maintainer-is-not-a-control.proposed.md)** —
   constrains what any remedy for the last task may look like.
