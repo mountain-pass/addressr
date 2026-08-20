@@ -14,6 +14,8 @@ Re-derived 2026-08-09. Terse by design — 2 KB budget. See Curation rules below
 - **Never trust a pipeline summary line.** Both watchers reported success on a red master. Verify: `gh run view <id> --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'`. `ci-observability-and-perf.md`.
 - **Passing tests is not shipping.** The published artefact breaks in ways local tests cannot see — a moved Docker `CMD` path, a generated file a clean checkout lacks. Pack the tarball and start it. `babel-esm-and-toolchain.md`, `testing-tdd-and-code.md`.
 - **A test that exists may never run**, and a note explaining why something is impossible is a hypothesis, not a finding. Mutation-test new tests. `cucumber-profiles-and-tags.md`, `agent-and-workflow-patterns.md`.
+- **The repo is not the system.** A capability audit reading only these files finds gaps that are not there and misses controls that are — twice in one hour on 2026-08-20, in opposite directions. Look at the console before declaring a control absent. `what-you-need-to-know.md`.
+- **The k6 harness cannot resolve better than ~2x, measured** — so any non-flapping latency gate sits above the 200 ms the product promises. It killed a proposed release-time gate on 2026-08-20. `ci-observability-and-perf.md`.
 - **Never commit an absolute request or read count** — traffic volumes are confidential in commits and comments alike. Ratios only. `external-comms-content-rules.md`.
 
 ## Curation rules for Critical Points

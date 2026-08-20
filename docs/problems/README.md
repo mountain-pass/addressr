@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-20 **P109 captured** — a gate-blocked Bash invocation executes nothing, so a bundled `git add ; git commit` commits a stale index while the message describes the new work. Confirmed by probe and by the index parent of lint-staged's own backup stash; lint-staged exonerated. Two observed instances plus one attributed, none caught by CI — the lost content was a guard-tightening and a suite cannot redden on a check never added. The two observed alone falsify P011's Fix Strategy item 1, which names the session-memory reminder as the primary defence (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-20 **P069 closed** — partial-prefix search recall, closed by the prior-session evidence drain (P282): the Verification Queue cell carried durable `yes — observed:` evidence from a prior session that no later session's tool-call scan could see. Upstream #365 verified already CLOSED with the fix-released comment posted, so the lifecycle dispatch was skipped on evidence rather than run as a no-op
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -28,6 +28,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`              | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears         | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI             | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
+| 6.0  | P113 | Lifecycle transition breaks relative links; the repair is manual              | Medium (6)   | Open          | S      | 2026-08-20 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                   | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission               | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                       | High (12)    | Open          | M      | 2026-08-19 | internal |
@@ -42,6 +43,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                            | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                          | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
 | 4.0  | P089 | No file-length lint rule; two source files past 1000 lines                    | Low (4)      | Open          | S      | 2026-08-07 | internal |
+| 4.0  | P115 | Nothing counts compendium entries per ADR; a duplicate passes every check     | Low (4)      | Open          | S      | 2026-08-20 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap               | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented                | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set               | Medium (8)   | Open          | M      | 2026-08-02 | internal |
@@ -52,6 +54,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P072 | Architect ISSUES FOUND writes no marker, deadlocking ADR edits                | Medium (6)   | Open          | M      | 2026-07-30 | internal |
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate            | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them           | Medium (6)   | Open          | M      | 2026-08-07 | internal |
+| 3.0  | P114 | Three governance checks that cannot fail (shape / evidence / wrong tree)      | Medium (6)   | Open          | M      | 2026-08-20 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets              | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat         | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P073 | ADR-041 flips one street-level-first case (not a regression)                  | Low (4)      | Open          | M      | 2026-07-31 | internal |
@@ -62,15 +65,14 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off the dual-tolerant glob `docs/problems/*.verifying.md docs/problems/verifying/*.md` per ADR-022 + RFC-002 migration window). Sorted by `Released date ASC` (oldest at row 1; same-day releases tiebreak by ID ASC). <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` column carries an **evidence-first** cell per P186 — three canonical values: `yes — observed: <evidence>`, `no — not observed` (default for newly-released tickets), `no — observed regression`. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 --> Age is preserved separately via the `Released` column.
 
-| ID   | Title                                                          | Released           | Likely verified?                                                                                                   |
-| ---- | -------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18         | no — not observed                                                                                                  |
-| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20         | no — not observed                                                                                                  |
-| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2  | no — not observed                                                                                                  |
-| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3  | no — not observed                                                                                                  |
-| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4  | no — not observed                                                                                                  |
-| P069 | Partial-prefix search drops results a shorter query returns    | 2026-08-02 33e6c04 | yes — observed: `55 Pyrmont Bri` returns 4 results with the target at #1 on the live endpoint (was 0); #365 closed |
-| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0  | no — not observed                                                                                                  |
+| ID   | Title                                                          | Released          | Likely verified?  |
+| ---- | -------------------------------------------------------------- | ----------------- | ----------------- |
+| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18        | no — not observed |
+| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20        | no — not observed |
+| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2 | no — not observed |
+| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
+| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
+| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
 
 ## Inbound Upstream Reports
 

@@ -1,15 +1,39 @@
 # Problem 069: Partial-prefix search drops results a shorter query returns
 
-**Status**: Verification Pending
-**Released**: 2026-08-02 (ADR-041 blue/green cutover, commit `33e6c04`)
-**Verified in production**: 2026-08-02 — `55 Pyrmont Bri` returns 4 results with `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` at #1 (previously 0); `55 Harris S` returns 8 (previously 0); control `55 Pyrmont` unchanged. Reporter notified and issue #365 closed.
-**Reported**: 2026-07-29
-**Origin**: inbound-reported (#365)
-**Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4) — derived at capture. Impact 4 per RISK-POLICY § Impact: live RapidAPI search/autocomplete returns missing results for a valid, more-specific query, so paid and free-tier consumers get degraded results. Likelihood 4: reproduced by an external reporter and confirmed still present by the maintainer on 2026-07-29 (ADR-076 inbound-report evidence — honest field risk).
-**Effort**: L — derived at capture: search-relevance / query-construction tuning in the `/addresses?q=` path (bool_prefix + fuzziness interaction), needs a live reproduction, a query-shape fix, and a behavioural regression test. Non-trivial relevance work — cf. P007 (search-scoring), P026 (numeric ranking).
-**WSJF**: 4.0 — (16 × 1.0) / 4
-**JTBD**: JTBD-202
-**Persona**: web-app-developer
+**Status**: Closed — 2026-08-20
+
+> **Closed 2026-08-20 by the prior-session evidence drain** (run-retro Step 4a sub-step 9 / P282). The
+> closure consumed durable on-disk evidence rather than this session's activity: the Verification Queue cell
+> read `yes — observed: 55 Pyrmont Bri returns 4 results with the target at #1 on the live endpoint (was 0);
+#365 closed`, written in a prior session and structurally invisible to any later session's tool-call scan.
+> Without that drain the ticket stays in verification forever, which is exactly the gap P282 records.
+>
+> **Upstream lifecycle update SKIPPED — a recorded skill-contract deviation, not a silent one.** Step 7b's
+> grep pre-check MATCHED (`**Origin**: inbound-reported (#365)` is present), so the contract says dispatch
+> `/wr-itil:update-upstream`. It was not dispatched. What was verified, stated no wider than the evidence
+> supports: `gh issue view 365` reports `state: CLOSED, closedAt: 2026-08-02T01:33:00Z`, and the last comment
+> (2026-08-02T01:32:52Z) is the fix-released notification. **Upstream is already at the target state.** An
+> earlier draft of this note claimed the dispatch "would have been a proven no-op against its own idempotency
+> guard" — that asserts guard behaviour never read, and is withdrawn.
+>
+> **One seam, named rather than papered over.** That 2026-08-02 comment corresponds to the Open →
+> Verification Pending transition, not this one. So the _previous_ transition's notification was verified and
+> the _current_ one judged unnecessary. That holds — an issue cannot be more closed than CLOSED, and a second
+> comment telling an external reporter that an internal ticket changed state carries nothing for them — but
+> it holds on that reasoning, not on the reasoning first recorded.
+>
+> **Context cost is deliberately NOT part of this justification.** An earlier draft cited a ~14 KB skill load
+> as a reason. That is not a governance reason, it would licence skipping any dispatch, and leaving it here
+> would make it citable precedent. The reason is upstream-already-at-target-state, and nothing else.
+> **Released**: 2026-08-02 (ADR-041 blue/green cutover, commit `33e6c04`)
+> **Verified in production**: 2026-08-02 — `55 Pyrmont Bri` returns 4 results with `55 PYRMONT BRIDGE RD, PYRMONT NSW 2009` at #1 (previously 0); `55 Harris S` returns 8 (previously 0); control `55 Pyrmont` unchanged. Reporter notified and issue #365 closed.
+> **Reported**: 2026-07-29
+> **Origin**: inbound-reported (#365)
+> **Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4) — derived at capture. Impact 4 per RISK-POLICY § Impact: live RapidAPI search/autocomplete returns missing results for a valid, more-specific query, so paid and free-tier consumers get degraded results. Likelihood 4: reproduced by an external reporter and confirmed still present by the maintainer on 2026-07-29 (ADR-076 inbound-report evidence — honest field risk).
+> **Effort**: L — derived at capture: search-relevance / query-construction tuning in the `/addresses?q=` path (bool_prefix + fuzziness interaction), needs a live reproduction, a query-shape fix, and a behavioural regression test. Non-trivial relevance work — cf. P007 (search-scoring), P026 (numeric ranking).
+> **WSJF**: 4.0 — (16 × 1.0) / 4
+> **JTBD**: JTBD-202
+> **Persona**: web-app-developer
 
 ## Description
 
@@ -137,8 +161,8 @@ Next concrete step needs backend access this session did not have (prod is SigV4
 - [x] Validate a fix direction — equivalent synonyms plus a synonym-free `search_analyzer`; every keystroke resolves.
 - [x] Implement the analyzer/mapping change — landed in `1084ce7`, with the extraction into `src/init-index-config.js` so the config is testable in raw Node ESM.
 - [x] Add a behavioural regression test for the "longer prefix ⊇ shorter prefix" property — `test/integration/search-analysis.test.mjs`, 6 tests against a real engine on both CI legs, including a control asserting the OLD config still fails so the suite provably discriminates.
-- [ ] Plan and execute the reindex blue/green per ADR-029, with a rollback path.
-- [ ] Re-check relevance scoring after the change — two tokens at one position alters term statistics.
+- [x] Plan and execute the reindex blue/green per ADR-029, with a rollback path. **DONE 2026-08-02, commit `33e6c04`** — rollback exercised in both directions (6m36s, recorded on R010). Ticked at closure 2026-08-20: it read unticked on a ticket whose own CUTOVER COMPLETE section below records it done, which leaves a reader unable to tell a closed-with-outstanding-work governance defect from ordinary drift.
+- [x] Re-check relevance scoring after the change — two tokens at one position alters term statistics. **DONE at the step-5 relevance gate**: 73/145 blue vs 71/145 green. Ticked at closure 2026-08-20; the residue is not dropped but FORWARDED, and owned by P073, P074, P075 and P078.
 - [x] Decide whether `sla_range_expanded` needs the same `search_analyzer` treatment — yes, necessarily. `search_analyzer` is per-field, so missing it would leave the ADR-028 phrase_prefix clause rewriting the query while the bool_prefix clause does not. Applied, and asserted in `test/js/__tests__/elasticsearch.test.mjs`.
 
 ## Fix Strategy
@@ -205,7 +229,7 @@ SEARCH "55 Harris S"         : 55@0 HARRIS@1 S@2
 - Watch `_stats` `indexing.index_total`, not the `_cat/indices` doc count. Refresh is throttled under heavy indexing, so the doc count lags by ~15 minutes and looks stalled when it is not. This cost an unnecessary investigation.
 - The SNS subscription for `addressr-search-ops` was still `PendingConfirmation` throughout the load, so the doc-count trip-wire alarms reached nobody during a ~9.5h unattended window. Confirm the subscription before the next long-running step.
 - The loader runs `x64` node under Rosetta on Apple Silicon (see `reference_env_arch_and_skill_tool`), which is why throughput was ~20-100k/min rather than better.
-- `addressr6` is now the PRODUCTION domain as of 2026-08-02. `addressr5` is the warm rollback target and is still costing money: do not tear either down. P073 was resolved by measurement rather than by a fix, and did not block the cutover.
+- `addressr6` is now the PRODUCTION domain as of 2026-08-02. **As at 2026-08-02** `addressr5` was the warm rollback target and still costing money: do not tear either down. P073 was resolved by measurement rather than by a fix, and did not block the cutover.
 
 ## Cutover runbook (written 2026-07-31 while the soak ran; EXECUTED 2026-08-02, commit `33e6c04`)
 

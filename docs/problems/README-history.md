@@ -2,6 +2,10 @@
 
 > Forward-chronology archive of displaced "Last reviewed" fragments per P134 truncation discipline.
 
+## 2026-08-20
+
+> Last reviewed: 2026-08-20 **P109 captured** — a gate-blocked Bash invocation executes nothing, so a bundled `git add ; git commit` commits a stale index while the message describes the new work. Confirmed by probe and by the index parent of lint-staged's own backup stash; lint-staged exonerated. Two observed instances plus one attributed, none caught by CI — the lost content was a guard-tightening and a suite cannot redden on a check never added. The two observed alone falsify P011's Fix Strategy item 1, which names the session-memory reminder as the primary defence (lightweight aside via /wr-itil:capture-problem)
+
 ## 2026-05-03
 
 Last reviewed: 2026-05-03 — P035 opened (read-shadow soak validation has multiple blind spots — silent failures across creds, deletion, and firing). Backlog has accumulated tickets since 2026-04-19 (P027–P035 not yet ranked); next `/wr-itil:review-problems` invocation will perform a full re-rank and proper render. Last full WSJF review: 2026-04-19.
