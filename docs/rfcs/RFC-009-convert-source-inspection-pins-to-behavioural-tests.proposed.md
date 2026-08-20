@@ -180,19 +180,128 @@ loaded at session start and its reader is an agent. Because it is an **instructi
 finding, so there is nothing for any reader to surface and nothing that can fail. ADR-051's corollary is
 directly on point: _"Run X manually before risky changes" is not a control. It is operator memory._
 
+## Classification — measured 2026-08-20 (STORY-001)
+
+**Two mutation directions were run. They give opposite answers, and only one of them is informative.**
+
+| direction                                                       | what it does                                    | verdict              |
+| --------------------------------------------------------------- | ----------------------------------------------- | -------------------- |
+| **negate the pin's own proposition** — delete the text it greps | breaks the code AND the string                  | **all 7 sole cover** |
+| **preserve the text, break the behaviour** — the P091 shape     | the pin's regex still matches; the code is dead | **all BLIND**        |
+
+**Both rows are load-bearing, and reading either alone is dangerous.**
+
+- **Direction 2 answers the coverage question** — does anything notice the behaviour dying? Its answer here
+  is _everything is blind_, and that is what justifies the conversion.
+- **Direction 1 answers two different questions**: is the pin vacuous (does its own regex match anything at
+  all), and **is it the only thing that catches a deletion**. The carve-outs forbidding deletion of the
+  `proxy-auth` and `graceful-shutdown` pins are derived entirely from direction 1. Read direction 2 alone and
+  "all blind" licenses deleting every pin — **including the sole cover over the ADR-024 auth boundary**. That
+  is the symmetric error and the more dangerous one.
+
+The trap was narrower than "direction 1 is useless": it was reading direction 1's _sole cover_ as a
+**coverage** verdict. It is a **deletion-safety** verdict. A pin needs both probes.
+
+A mutation defined as "negate this text pin's proposition" edits exactly the bytes the pin matches, so the
+pin catches it _by construction_. Run only in that direction, the classification can return "blind" only when
+a pin's regex is defective — a vacuity result, and a useful one, but not a coverage result. An earlier
+revision of this section reported "all 7 sole cover, not one is blind" and read it as a coverage finding. It
+was a deletion-safety finding wearing the wrong label. Recorded rather than quietly replaced, because the trap is subtle and the next person to
+classify a text pin will meet it.
+
+### The informative direction, per row
+
+Every mutation below leaves the pinned text **present and matching** and kills the behaviour. Whole suite,
+640 tests. Every file restored byte-clean.
+
+| #   | pin                                                               | text-preserving mutation                                                                                                              | verdict   |
+| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });`                                               | **BLIND** |
+| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers({ stop: stopServer, force: forceCloseConnections });` — both `indexOf` markers intact | **BLIND** |
+| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's `(all\|get\|post\|put\|delete\|patch)` list                                        | **BLIND** |
+| 5   | P012 progress logging (`address-service.test.mjs`)                | `logger('mapped', JSON.stringify(d, …))` — a DIFFERENT variable, so the pinned string stays absent                                    | **BLIND** |
+| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body; every pinned guard string still present below it                                                   | **BLIND** |
+
+**So the mirror can be dead, the shutdown handlers can be uninstalled, the auth exemption can be widened and
+the error mapping can be unreachable — with every pin green and the suite green.** That is P091 restated as
+a re-runnable result, and it is the whole justification for the conversion.
+
+### Row 4 is a live coverage gap, stated with the bound P033 already had
+
+An earlier revision of this section said the auth boundary is "guarded by a text assertion and by nothing
+else". That is wrong in one direction and silent in the worse one. The accurate position, which P033 states
+correctly and this RFC must not narrow:
+
+- **Covered behaviourally on `/addresses`** — `waycharter-server.test.mjs`'s _401s an unauthenticated data
+  GET on the same path_ drives `buildRest2App` and catches a pre-auth responder mounted there.
+- **Sole-covered by the text pin** for a data-method registration on any other path. Measured: inserting
+  `app.get('/leak', …)` reddens exactly one test, the pin.
+- **UNCOVERED by either** for a path-scoped `app.use('/leak', …)`. The pin's method list does not include
+  `use`; no behavioural test requests an unrouted path, so the bypass is unobservable by construction.
+  Measured BLIND above. **This row has no guard at all today.**
+
+The replacement is one test and it discharges all three shapes: with proxy auth enabled, `GET /leak` must
+return 401. That catches a pre-auth `app.get`, a pre-auth `app.use`, a router mount, and a responder
+registered outside `buildRest2App` — none of which a text pin can see.
+
+### Negative pins admit a dual after all — and it is the easiest one to miss
+
+An earlier revision of this section claimed rows 4 and 5 were a **fourth class** for which "a text-preserving
+dual does not exist: there is no way to keep 'the string is absent' true while making the behaviour wrong."
+**Measured 2026-08-20: false, in both rows.** A negative pin greps a _specific_ string, so its dual is to
+break the behaviour using a string it does not grep:
+
+- Row 5 asserts no `JSON.stringify(rval` in `mapAddressDetails`. Logging `JSON.stringify(d, …)` — a different
+  variable — restores the entire per-row cost the pin exists to prevent, keeps the pinned string absent, and
+  is **BLIND**.
+- Row 4 asserts no `app.(all|get|post|put|delete|patch)(` ahead of auth. Mounting `app.use('/leak', …)` is a
+  live bypass, keeps the pinned pattern absent, and is **BLIND**.
+
+There is no fourth class. The claim is withdrawn rather than deleted because it was the sole argument for
+one. **A negative pin is in fact the weakest shape here, not a special one**: it constrains a finite list of
+spellings and says nothing about behaviour, so evading it needs no cleverness — only a spelling outside the
+list. Its conversion technique is still distinct (assert the _observable_ absence: capture `debug` output
+over one fixture row, assert no payload appears), but that is a difference of technique, not a class of pin
+that resists measurement.
+
+### Population — what was and was not classified
+
+Seven numbered **rows** over five table lines — adjacent pins sharing one mutation are merged — nine **pins**, three files — the two numbers differ, and the difference is stated rather than
+left to be reconciled: `address-service.test.mjs` (read-shadow ×2 = row 1, P012 = row 5, P014 ×2 = rows 6/7),
+`graceful-shutdown.test.mjs` (×2 = rows 2/3), `proxy-auth.test.mjs` (×2 = row 4 — one row because both pins
+scan the same pre-auth region and one mutation settles both).
+
+**Not classified, and named rather than left implied:**
+
+- The read-shadow **import** pin (`assert.match(source, /import { mirrorRequest } …/)`). Its own proposition
+  was never mutated. P033's Step 4 read enumerates **13** pins across these files against the 7 here; the
+  difference is sentinel pins and presence pins (`app.options(` must appear), which assert a precondition of
+  another pin rather than a property of the code.
+- `release-workflow-deploy-only.test.mjs` — pins over two shell scripts, in P033's declarative-artefact
+  carve-out.
+
+The 7 are the decision-bearing pins. The remainder is enumerated in P033 Step 4 and is not discharged here.
+
 ## Stories
 
 Ordered execution sequence; array position is the sequence.
 
 1. **STORY-001** — A test that passes no matter what the code does is found and made able to fail
-   (`docs/stories/draft/STORY-001-a-test-that-cannot-fail-is-made-able-to-fail.md`, `draft`, effort S).
-   Classifies every pin in the population as blind / sole cover / redundant using `scripts/mutate.sh`, under
-   the rule that a CAUGHT verdict discharges a pin only when the catching test is not itself a member of the
-   source-inspection population. Deliberately first: every later conversion depends on knowing which bucket a
-   pin is in, and it writes no behavioural tests and changes no production code.
+   (`docs/stories/in-progress/STORY-001-a-test-that-cannot-fail-is-made-able-to-fail.md`, `in-progress`,
+   effort S). Classifies every pin in the population using `scripts/mutate.sh`. Deliberately first: every
+   later conversion depends on knowing which bucket a pin is in, and it writes no behavioural tests and
+   changes no production code.
 
-   It is **draft**, so it is not implementable. It must reach `accepted` first, where the INVEST and
-   RFC-trace gates run and a human ratifies it.
+   **All seven acceptance criteria ticked 2026-08-20**; the result is the Classification section above. It
+   stays `in-progress` rather than `done` because a story closes only when its RFC closes, and this RFC is
+   still `proposed`.
+
+   **Its own rule needed correcting in the doing.** The story said a CAUGHT verdict discharges a pin only
+   when the catching test is not itself a source pin. True, and insufficient: run in the direction the story
+   implies — negate the pin's own proposition — the catcher is ALWAYS the pin, so the rule resolves every
+   pin to "sole cover" and the blind bucket is unreachable. The discharging question is not _who caught it_
+   but _which mutation was run_. The downstream conversion stories inherit the corrected rule: **a pin is
+   discharged when the text-PRESERVING mutation is CAUGHT.**
 
 **The story tier was adopted 2026-08-20**, at the maintainer's direction, while working this RFC. Before that
 this repository ran none — all eight prior RFCs carried an empty list, and P065 had left the open question of
@@ -217,9 +326,10 @@ commits yet.)
 - **P116** — the workflow-pin note task, split out of P033 the same day. Sibling scope, deliberately not a
   dependency: the notes can land whether or not this conversion starts.
 - **P091** — the realised instance. Its recurrence is what this RFC makes impossible rather than watched-for.
-- **P065** — closed 2026-08-20; its standing instruction is why the `## Stories` section above names an open
-  question instead of answering it.
-- **wr-itil ADR-089** — every RFC has at least one story; its gate is at `accepted`, which is why an empty list is
+- **P065** — closed 2026-08-20. Its standing instruction was that the next RFC carrying an empty
+  `stories:` list raises the adopt-or-deviate question again. That question is now **answered**, not
+  merely named: the `## Stories` section above records the tier's adoption at the maintainer's direction.
+- **wr-itil ADR-089** — every RFC has at least one story; its gate is at `accepted`, which is why an empty list was
   legitimate at `proposed` and is not legitimate as a terminal shape.
 - **`scripts/mutate.sh`** — the acceptance instrument. CAUGHT / BLIND / NO-OP, where NO-OP means the mutation
   did not apply and therefore nothing was tested.

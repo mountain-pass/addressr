@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: in-progress
 story-id: a-test-that-cannot-fail-is-made-able-to-fail
 reported: 2026-08-20
 decision-makers: [Tom Howard]
@@ -12,7 +12,7 @@ estimated-effort: S
 
 # STORY-001: A test that passes no matter what the code does is found and made able to fail
 
-**Status**: accepted
+**Status**: in-progress
 **Reported**: 2026-08-20
 **Problem**: P033
 **RFC**: RFC-009
@@ -43,7 +43,9 @@ is only correct once something else covers the same ground.
 
 **This is ordinary work, not a cleanup project.** Ineffective tests turn up from time to time and the
 response is always the same shape — find out whether the test can fail, and if it cannot, make it able to.
-The batch found under P033 is roughly thirty of them, which is unusual in size and not in kind.
+The batch found under P033 is unusual in size and not in kind. **No cardinal is stated here on purpose**:
+P033 withdrew every tally on 2026-08-19 after three methods gave three answers, and its surviving headline
+count now inflates in the wrong direction as governance guards are added. Route work by file identity.
 
 **Sorting them first is the method, not the point.** Before a test can be made effective it has to be known
 which kind it is: one that catches nothing (make it able to fail), one that is the only thing guarding a
@@ -56,33 +58,70 @@ and a replacement nearly written for something already covered under a different
 
 Observable, and each one fails if the work is not done.
 
-- [ ] Every pin in the RFC-009 population has a recorded verdict from `scripts/mutate.sh` against a mutation
-      that negates **the pin's own proposition** — not merely one that disables its subject.
-- [ ] Each verdict records the **failure list**, not just the exit code. A CAUGHT verdict names which test
+- [x] Every pin in the RFC-009 population has a recorded verdict from `scripts/mutate.sh`, in **both**
+      directions. **CORRECTED 2026-08-20**: this criterion originally required only a mutation that negates
+      **the pin's own proposition**. Necessary but not sufficient — that direction is caught by the pin by
+      construction, so it can never return blind. It remains the **vacuity and deletion-safety** probe: it is
+      what establishes that a pin is the sole cover for a property and therefore must not be deleted. The
+      **coverage** question needs the other direction — text preserved, behaviour broken, the P091 shape. A
+      pin needs both.
+- [x] Each verdict records the **failure list**, not just the exit code. A CAUGHT verdict names which test
       reddened.
-- [ ] Each pin is classified into exactly one of: **blind** (nothing caught it), **sole cover** (only the pin
-      itself, or only other members of the source-inspection population, caught it), or **redundant** (a test
-      that executes the subject caught it).
-- [ ] The classification is recorded where the conversion work will read it, not in a session transcript.
-- [ ] No pin classified **sole cover** is deleted or repointed by this story. The classification is the
+- [x] Each pin is classified in **both** directions: sole cover / redundant from the text-negating probe
+      (who else catches a deletion), and blind / covered from the text-preserving probe (does anything notice
+      the behaviour dying). Measured 2026-08-20: all seven rows (nine pins) are sole cover in the first
+      direction and BLIND in the second — including the two negative pins, whose dual is to break the
+      behaviour with a spelling the pin does not grep.
+- [x] The classification is recorded where the conversion work will read it, not in a session transcript.
+- [x] No pin classified **sole cover** is deleted or repointed by this story. The classification is the
       deliverable; conversion is downstream.
-- [ ] The three verdicts measured on 2026-08-20 are **re-derived, not carried in**. They are recorded as the
+- [x] The three verdicts measured on 2026-08-20 are **re-derived, not carried in**. They are recorded as the
       _expected_ result and the run either reproduces them or the discrepancy is investigated: the ADR-031
       read-shadow pin (expect blind), the `server2.js` shutdown-handler pins (expect sole cover — caught only
       by a sibling source pin), and the `proxy-auth.test.mjs` pre-auth-responder pins (expect sole cover —
       caught only by themselves). Re-deriving costs three `scripts/mutate.sh` runs; P033 records that the
       instrument is what made the practice cheap, so cost is not a reason to restate. A story written to
       discharge "figures restated rather than recomputed" must not open by restating three figures.
-- [ ] Every file mutated during the exercise is restored byte-clean, verified by `git diff --stat` returning
+
+      **The first result recorded here was wrong and was superseded the same day — see _Superseded result_ below.**
+
+- [x] Every file mutated during the exercise is restored byte-clean, verified by `git diff --stat` returning
       empty for it.
+
+## Superseded result — retained because the error is this story's own subject
+
+**What was written here first. Do NOT read this as the current position:**
+
+> Two of the three reproduced; the ADR-031 one did not. The read-shadow pin is NOT blind — deleting the call
+> site it asserts is caught by the pins themselves, so it is sole cover. The earlier BLIND reading came from a
+> different mutation, disabling `mirrorRequest` behaviourally, which 16 behavioural tests in
+> `read-shadow.test.mjs` catch. Carrying the seed in would have propagated a wrong verdict.
+
+**That was wrong, and it was wrong because of the direction the mutation was run in.** Negating a text pin's
+own proposition edits the exact bytes the pin greps, so the pin catches it by construction — the run could
+only ever return "sole cover". Re-run in the text-preserving direction
+(`if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });`, every pinned string
+still matching), the verdict is **BLIND**, at whole-suite scope.
+
+**The seed was right. The "correction" was the error**, and it came within one commit of landing as an
+amendment to two records that already had it right.
+
+The causal account was wrong too: it credited `read-shadow.test.mjs`'s 16 tests with catching the earlier
+mutation. Those tests exercise `src/read-shadow.js` directly and never reach the `address-service.js` call
+site, so they cannot. The corrected per-row table is in RFC-009's Classification section.
 
 ## Implementation notes
 
 **`scripts/mutate.sh` is the instrument** and already exists: exit 0 CAUGHT, 1 BLIND, 2 NO-OP. A NO-OP means
 the mutation did not apply, so nothing was tested — it must never be recorded as a verdict.
 
-**The classification rule that makes this non-trivial**, from RFC-009: a whole-suite CAUGHT discharges a pin
-only when the catching test is **not itself a member of the source-inspection population**. Pins vouching for
+**The classification rule — CORRECTED 2026-08-20, and the original is the trap.** The rule this story was
+written with: a whole-suite CAUGHT discharges a pin only when the catching test is not itself a member of the
+source-inspection population. **True, and insufficient.** Run in the direction this story originally
+specified — negate the pin's own proposition — the catching test is ALWAYS the pin, so the rule resolves
+every pin to "sole cover" and the blind bucket is unreachable. The discharging question is not _who caught
+it_ but _which mutation was run_. **A pin is discharged when the text-PRESERVING mutation is CAUGHT.**
+The original rule still governs the other direction, where it decides deletion-safety rather than coverage. Pins vouching for
 pins is a quorum of the same assumption, not cover. The `server2.js` case is the worked example — three
 sibling pins over the same two `indexOf` results, each of which reddens when another's proposition is
 mutated, while nothing behavioural reaches that file at all.

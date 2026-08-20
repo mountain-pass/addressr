@@ -5,8 +5,7 @@ observable — a criterion that cannot fail is not a criterion.
 
 **An active story** — anything in `draft/`, `accepted/` or `in-progress/` — also traces to at least one
 problem and at least one RFC. The retrospective records under `## Done` do not, and deliberately so; see the
-note there. Stating the rule as universal would make this document contradict its own table twelve lines
-below.
+note there. Stating the rule as universal would make this document contradict its own `## Done` table.
 
 **Adopted 2026-08-20** alongside `docs/story-maps/`. See that README for the adoption context.
 
@@ -30,9 +29,9 @@ Active stories — `draft`, `accepted`, `in-progress`. Reconciled against the fi
 `wr-itil-reconcile-stories docs/stories`. **No WSJF column**: stories are sequenced by their position in the
 parent RFC's `stories:` array, not ranked independently (ADR-060's I11 invariant).
 
-| Story     | Status   | Title                                                                          | RFC     | Map           |
-| --------- | -------- | ------------------------------------------------------------------------------ | ------- | ------------- |
-| STORY-001 | accepted | A test that passes no matter what the code does is found and made able to fail | RFC-009 | STORY-MAP-001 |
+| Story     | Status      | Title                                                                          | RFC     | Map           |
+| --------- | ----------- | ------------------------------------------------------------------------------ | ------- | ------------- |
+| STORY-001 | in-progress | A test that passes no matter what the code does is found and made able to fail | RFC-009 | STORY-MAP-001 |
 
 ## Done
 

@@ -5,7 +5,7 @@ Each map is a journey-context lens over stories in `docs/stories/`; a map may re
 than one RFC.
 
 **Adopted 2026-08-20** at the maintainer's direction, working P033. Before that this repository ran no story
-tier at all — all nine RFCs carried `stories: []` — and the question of whether to adopt one or record a
+tier at all — all nine RFCs carried `stories: []` at that moment (eight still do; RFC-009 has since acquired STORY-001) — and the question of whether to adopt one or record a
 deliberate deviation had been left open since P065.
 
 ## Lifecycle

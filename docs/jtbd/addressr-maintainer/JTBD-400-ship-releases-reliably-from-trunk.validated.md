@@ -133,11 +133,11 @@ the duration of one plan, not a feature branch.
 
 ## Stories
 
-| ID        | Title                                                                                     | Status   |
-| --------- | ----------------------------------------------------------------------------------------- | -------- |
-| STORY-001 | STORY-001: A test that passes no matter what the code does is found and made able to fail | accepted |
-| STORY-002 | STORY-002: A change is argued and written down before it is built                         | done     |
-| STORY-003 | STORY-003: A change is made until its test passes                                         | done     |
-| STORY-004 | STORY-004: A change is reviewed against the rules before it lands                         | done     |
-| STORY-005 | STORY-005: A change reaches production without hand-run steps                             | done     |
-| STORY-006 | STORY-006: A fix is confirmed working in production before it is closed                   | done     |
+| ID        | Title                                                                                     | Status      |
+| --------- | ----------------------------------------------------------------------------------------- | ----------- |
+| STORY-002 | STORY-002: A change is argued and written down before it is built                         | done        |
+| STORY-003 | STORY-003: A change is made until its test passes                                         | done        |
+| STORY-004 | STORY-004: A change is reviewed against the rules before it lands                         | done        |
+| STORY-005 | STORY-005: A change reaches production without hand-run steps                             | done        |
+| STORY-006 | STORY-006: A fix is confirmed working in production before it is closed                   | done        |
+| STORY-001 | STORY-001: A test that passes no matter what the code does is found and made able to fail | in-progress |
