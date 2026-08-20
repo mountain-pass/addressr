@@ -21,8 +21,12 @@ A map is one file containing a `<script id="story-map-data" type="application/js
 rewrites the presentation around that island in place:
 
 ```
-node "$(dirname "$(command -v wr-itil-reconcile-story-maps)")/../scripts/render-story-map.mjs" <map.html>
+npm run render:story-maps
 ```
+
+That runs the renderer from `node_modules/@windyroad/itil`, so it works with no plugin on `$PATH` —
+including in CI. The script loops per file deliberately: the renderer takes ONE path, so a bare glob would
+render the first map and leave the rest stale without saying so.
 
 **Do not hand-edit the HTML around the island** — the next render discards it. To change a map, edit the
 island and re-render. Rendering is idempotent, so a no-op render leaves the file byte-identical.
@@ -30,10 +34,24 @@ island and re-render. Rendering is idempotent, so a no-op render leaves the file
 **Styling lives in `story-map.css`, one shared copy for the whole corpus**, installed beside the maps by the
 renderer. Do not add a `<style>` block to a map.
 
-`story-map.css` is **vendored verbatim from `@windyroad/itil` 1.1.1** and is byte-identical to the upstream
-copy. `.prettierignore` excludes it so `lint-staged` cannot reformat it — without that, every commit would
-rewrite it and the next renderer upgrade would emit a 195-line whitespace diff with any real change (a
-contrast fix, a focus-ring change) invisible inside it. Do not edit it here; edit upstream and re-render. The shared sheet carries the light and dark palettes, the
+`story-map.css` is **vendored verbatim from `@windyroad/itil`**, pinned to an exact version in
+`devDependencies`, and byte-identical to the installed copy. Two things hold that up, and both are checks
+rather than intentions:
+
+- `.prettierignore` excludes it so `lint-staged` cannot reformat it. Without that, every commit rewrites it
+  and the next upgrade emits a 195-line whitespace diff with any real change — a contrast fix, a focus-ring
+  change — invisible inside it.
+- `test/js/__tests__/vendored-story-map-assets.test.mjs` compares it byte-for-byte against
+  `node_modules/@windyroad/itil/templates/story-map.css`, and asserts the version pin is exact so a range
+  cannot introduce a skew that reads like drift. **This sentence used to be prose that nothing could check**
+  — there was no installed copy to compare against until the package became a dependency.
+
+Do not edit it here; edit upstream, bump the pin, and re-render.
+
+**A story transition goes stale in four places**, three caught by `story-tier-invariants` and the fourth —
+the slice `href`, which embeds the story's state directory — by `doc-links-resolve`. Repairing that fourth
+one needs the renderer, which is why it is a dependency rather than only a plugin: CI can now both detect
+the staleness and produce the fix. The shared sheet carries the light and dark palettes, the
 focus ring, and the contrast tokens; a per-map override would drift from it and would be discarded anyway.
 
 **This replaced a hand-authored map on 2026-08-20, the same day the tier was adopted.** The first version of
