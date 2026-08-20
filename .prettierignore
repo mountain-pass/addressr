@@ -1,0 +1,16 @@
+# Vendored, and byte-identity is the point.
+#
+# docs/story-maps/story-map.css is installed verbatim by the upstream
+# @windyroad/itil story-map renderer. It is committed because the maps are
+# committed artefacts and render unstyled without it.
+#
+# lint-staged runs `prettier --write` over `*.{json,css,md}`, and this file is
+# NOT in prettier's output shape (it packs several declarations per line), so
+# without this entry every commit would rewrite it. That matters at the next
+# plugin upgrade: a reformatted local copy turns each re-render into a 195-line
+# whitespace diff, and a real upstream change — a contrast fix, a focus-ring
+# change — becomes invisible inside it. Byte-identical means an unchanged
+# upstream emits an EMPTY diff and a changed one emits a readable diff.
+#
+# Do not edit the file. Edit it upstream and re-render.
+docs/story-maps/story-map.css

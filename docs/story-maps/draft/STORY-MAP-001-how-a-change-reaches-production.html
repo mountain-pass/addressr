@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STORY-MAP-001: How a change reaches production</title>
+  <meta name="story-map-id" content="STORY-MAP-001">
+  <meta name="status" content="draft">
+  <meta name="persona" content="addressr-maintainer">
+  <meta name="problems" content="P033">
+  <meta name="rfcs" content="RFC-009">
+  <meta name="jtbd" content="JTBD-400">
+  <meta name="reported" content="2026-08-20">
+  <meta name="decision-makers" content="Tom Howard">
+  <meta name="human-oversight" content="confirmed">
+  <meta name="oversight-hash" content="94ddbea3154085823677093768ef29b762e470d321f64dfbf0101e17026d8b57">
+  <link rel="stylesheet" href="../story-map.css">
+</head>
+<body>
+  <main>
+    <h1 id="story-map-title">How a change reaches production</h1>
+    <p class="orient"><strong>Agreed.</strong> 2 releases, 6 stories, one release per row.</p>
+    <div id="story-map"><div class="scroll" tabindex="0" role="region" aria-label="Story map grid"><table class="map"><caption>How a change reaches production — 6 journey activities across 2 releases</caption><thead><tr><td class="corner"></td><th class="act" scope="col">Decide what to change <span class="jtbd">problem, then decision</span></th><th class="act" scope="col">Write the failing test first <span class="jtbd">TDD is the house rule</span></th><th class="act" scope="col">Make it pass</th><th class="act" scope="col">Get it past the gates <span class="jtbd">architect, jobs, risk</span></th><th class="act" scope="col">Release it <span class="jtbd">trunk, then pipeline</span></th><th class="act" scope="col">Confirm it works in production</th></tr></thead><tbody><tr><th class="slice" scope="row"><span class="badge b-live"><span class="b-glyph" aria-hidden="true">✓</span>Delivered, pre-RFC</span> <span class="s-name">Already working</span> <span class="s-note">shipped before this repo had story maps</span></th><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-002" data-jtbd="JTBD-400" data-status="done"><div class="t-status ts-done"><span class="ts-glyph" aria-hidden="true">✓</span>Done</div><a href="../../stories/done/STORY-002-decisions-are-written-down-before-the-work.md" class="ref-link"><span class="t-title">A change is argued and written down before it is built</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>know why the code is the way it is a year from now</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>each change argued and recorded before it is built.</div></div></div></li></ul></td><td class="cell empty"><span class="vh">No stories for Write the failing test first in Already working.</span></td><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-003" data-jtbd="JTBD-400" data-status="done"><div class="t-status ts-done"><span class="ts-glyph" aria-hidden="true">✓</span>Done</div><a href="../../stories/done/STORY-003-a-change-is-made-to-pass-its-test.md" class="ref-link"><span class="t-title">A change is made until its test passes</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>ship a change that does what it claims</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>the work to continue until its test passes.</div></div></div></li></ul></td><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-004" data-jtbd="JTBD-400" data-status="done"><div class="t-status ts-done"><span class="ts-glyph" aria-hidden="true">✓</span>Done</div><a href="../../stories/done/STORY-004-a-change-is-reviewed-before-it-lands.md" class="ref-link"><span class="t-title">A change is reviewed against the rules before it lands</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>catch a bad change before it reaches trunk rather than after</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer working without a second reviewer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>every change checked against the recorded rules automatically.</div></div></div></li></ul></td><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-005" data-jtbd="JTBD-400" data-status="done"><div class="t-status ts-done"><span class="ts-glyph" aria-hidden="true">✓</span>Done</div><a href="../../stories/done/STORY-005-a-change-reaches-production-without-hand-steps.md" class="ref-link"><span class="t-title">A change reaches production without hand-run steps</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>release without remembering a sequence of manual steps</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>a push to trunk to carry the change to production on its own.</div></div></div></li></ul></td><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-006" data-jtbd="JTBD-400" data-status="done"><div class="t-status ts-done"><span class="ts-glyph" aria-hidden="true">✓</span>Done</div><a href="../../stories/done/STORY-006-a-fix-is-confirmed-in-production-before-it-is-closed.md" class="ref-link"><span class="t-title">A fix is confirmed working in production before it is closed</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>avoid closing a ticket on a fix that never worked</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>a fix confirmed in production before it counts as done.</div></div></div></li></ul></td></tr><tr><th class="slice" scope="row"><span class="badge b-next"><span class="b-glyph" aria-hidden="true">→</span>RFC-009</span> <span class="s-name">Make the ineffective tests effective</span> <span class="s-note">found during P033</span><span class="s-problems">closes <a href="../../problems/known-error/033-source-inspection-tests-anti-pattern.md" class="ref-link">P033</a></span></th><td class="cell empty"><span class="vh">No stories for Decide what to change in Make the ineffective tests effective.</span></td><td class="cell"><ul class="tasks" role="list"><li><div class="task" data-story-id="STORY-001" data-jtbd="JTBD-400" data-status="draft"><div class="t-status ts-draft">Draft</div><a href="../../stories/draft/STORY-001-a-test-that-cannot-fail-is-made-able-to-fail.md" class="ref-link"><span class="t-title">A test that passes no matter what the code does is found and made able to fail</span></a><div class="t-value"><div class="v-line v-inorder"><span class="v-lead">In order to </span>trust a green test run</div><div class="v-line v-asa"><span class="v-lead">as </span>the maintainer</div><div class="v-line v-iwant"><span class="v-lead">I want </span>a test that cannot fail to be found and made able to fail.</div></div></div></li></ul></td><td class="cell empty"><span class="vh">No stories for Make it pass in Make the ineffective tests effective.</span></td><td class="cell empty"><span class="vh">No stories for Get it past the gates in Make the ineffective tests effective.</span></td><td class="cell empty"><span class="vh">No stories for Release it in Make the ineffective tests effective.</span></td><td class="cell empty"><span class="vh">No stories for Confirm it works in production in Make the ineffective tests effective.</span></td></tr></tbody></table></div></div>
+<p class="traces" id="story-map-traces"><span class="tr-group"><strong>Jobs:</strong> <a href="../../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md" class="ref-link">JTBD-400</a></span></p>
+  </main>
+
+
+  <script id="story-map-data" type="application/json">
+{
+  "humanOversight": "confirmed",
+  "oversightHash": "94ddbea3154085823677093768ef29b762e470d321f64dfbf0101e17026d8b57",
+  "storyMapId": "STORY-MAP-001",
+  "title": "How a change reaches production",
+  "status": "draft",
+  "persona": "addressr-maintainer",
+  "reported": "2026-08-20",
+  "decisionMakers": "Tom Howard",
+  "traces": {
+    "problems": [
+      "P033"
+    ],
+    "rfcs": [
+      "RFC-009"
+    ],
+    "jtbd": [
+      "JTBD-400"
+    ]
+  },
+  "backbone": [
+    {
+      "id": "decide",
+      "title": "Decide what to change",
+      "note": "problem, then decision"
+    },
+    {
+      "id": "test",
+      "title": "Write the failing test first",
+      "note": "TDD is the house rule"
+    },
+    {
+      "id": "build",
+      "title": "Make it pass",
+      "note": ""
+    },
+    {
+      "id": "gates",
+      "title": "Get it past the gates",
+      "note": "architect, jobs, risk"
+    },
+    {
+      "id": "release",
+      "title": "Release it",
+      "note": "trunk, then pipeline"
+    },
+    {
+      "id": "verify",
+      "title": "Confirm it works in production",
+      "note": ""
+    }
+  ],
+  "releases": [
+    {
+      "id": "live",
+      "name": "Already working",
+      "preRfc": true,
+      "note": "shipped before this repo had story maps"
+    },
+    {
+      "id": "r1",
+      "name": "Make the ineffective tests effective",
+      "rfc": "RFC-009",
+      "note": "found during P033"
+    }
+  ],
+  "tasks": [
+    {
+      "activity": "decide",
+      "release": "live",
+      "title": "A change is argued and written down before it is built",
+      "storyId": "STORY-002",
+      "jtbd": "JTBD-400"
+    },
+    {
+      "activity": "build",
+      "release": "live",
+      "title": "A change is made until its test passes",
+      "storyId": "STORY-003",
+      "jtbd": "JTBD-400"
+    },
+    {
+      "activity": "gates",
+      "release": "live",
+      "title": "A change is reviewed against the rules before it lands",
+      "storyId": "STORY-004",
+      "jtbd": "JTBD-400"
+    },
+    {
+      "activity": "release",
+      "release": "live",
+      "title": "A change reaches production without hand-run steps",
+      "storyId": "STORY-005",
+      "jtbd": "JTBD-400"
+    },
+    {
+      "activity": "verify",
+      "release": "live",
+      "title": "A fix is confirmed working in production before it is closed",
+      "storyId": "STORY-006",
+      "jtbd": "JTBD-400"
+    },
+    {
+      "activity": "test",
+      "release": "r1",
+      "title": "A test that passes no matter what the code does is found and made able to fail",
+      "storyId": "STORY-001",
+      "jtbd": "JTBD-400"
+    }
+  ]
+}
+  </script>
+  <script id="story-map-status" type="application/json">
+{
+  "rows": {
+    "live": "delivered",
+    "r1": "proposed"
+  },
+  "rowProblems": {
+    "r1": [
+      "P033"
+    ]
+  },
+  "mapProblems": [
+    "P033"
+  ],
+  "status": {
+    "STORY-002": "done",
+    "STORY-003": "done",
+    "STORY-004": "done",
+    "STORY-005": "done",
+    "STORY-006": "done",
+    "STORY-001": "draft"
+  },
+  "values": {
+    "STORY-002": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "know why the code is the way it is a year from now"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer"
+        }
+      ],
+      "want": [
+        {
+          "t": "each change argued and recorded before it is built."
+        }
+      ]
+    },
+    "STORY-003": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "ship a change that does what it claims"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer"
+        }
+      ],
+      "want": [
+        {
+          "t": "the work to continue until its test passes."
+        }
+      ]
+    },
+    "STORY-004": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "catch a bad change before it reaches trunk rather than after"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer working without a second reviewer"
+        }
+      ],
+      "want": [
+        {
+          "t": "every change checked against the recorded rules automatically."
+        }
+      ]
+    },
+    "STORY-005": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "release without remembering a sequence of manual steps"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer"
+        }
+      ],
+      "want": [
+        {
+          "t": "a push to trunk to carry the change to production on its own."
+        }
+      ]
+    },
+    "STORY-006": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "avoid closing a ticket on a fix that never worked"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer"
+        }
+      ],
+      "want": [
+        {
+          "t": "a fix confirmed in production before it counts as done."
+        }
+      ]
+    },
+    "STORY-001": {
+      "leads": [
+        "In order to",
+        "as",
+        "I want"
+      ],
+      "value": [
+        {
+          "t": "trust a green test run"
+        }
+      ],
+      "who": [
+        {
+          "t": "the maintainer"
+        }
+      ],
+      "want": [
+        {
+          "t": "a test that cannot fail to be found and made able to fail."
+        }
+      ]
+    }
+  },
+  "hrefs": {
+    "STORY-002": "../../stories/done/STORY-002-decisions-are-written-down-before-the-work.md",
+    "STORY-003": "../../stories/done/STORY-003-a-change-is-made-to-pass-its-test.md",
+    "STORY-004": "../../stories/done/STORY-004-a-change-is-reviewed-before-it-lands.md",
+    "STORY-005": "../../stories/done/STORY-005-a-change-reaches-production-without-hand-steps.md",
+    "STORY-006": "../../stories/done/STORY-006-a-fix-is-confirmed-in-production-before-it-is-closed.md",
+    "STORY-001": "../../stories/draft/STORY-001-a-test-that-cannot-fail-is-made-able-to-fail.md",
+    "JTBD-400": "../../jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md",
+    "P033": "../../problems/known-error/033-source-inspection-tests-anti-pattern.md"
+  }
+}
+  </script>
+
+</body>
+</html>

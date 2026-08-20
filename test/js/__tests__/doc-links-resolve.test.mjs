@@ -64,14 +64,56 @@ const EXCLUDED = new Set([path.join(DOCS, 'adrs/template.md')]);
 
 const LINK_RE = /\]\(([^)"#\s]+)(#[^)]*)?\)/g;
 
-async function markdownFiles(dir) {
+// HTML joined the corpus 2026-08-20 with docs/story-maps/, which the upstream
+// framework encodes as HTML because the spatial layout is the artefact. Both
+// quote forms are matched deliberately: lint-staged formats `*.{js,jsx}` and
+// `*.{json,css,md}`, so nothing normalises attribute quoting in `.html` and a
+// single-quoted href would otherwise go unmatched while the floors below stayed
+// satisfied by the double-quoted ones already present.
+const HREF_RE = /href=(?:"([^"#]+)(?:#[^"]*)?"|'([^'#]+)(?:#[^']*)?')/g;
+
+const isHtml = (f) => f.endsWith('.html');
+
+// Fenced-code stripping is a markdown concept and is not applied to HTML: an
+// href in an HTML file is a live reference, never an illustration.
+const linkTargets = (file, text) =>
+  isHtml(file)
+    ? [...text.matchAll(HREF_RE)].map((m) => m[1] ?? m[2])
+    : [...stripFences(file, text).prose.matchAll(LINK_RE)].map((m) => m[1]);
+
+// A target this guard can actually resolve — the others are skipped, so
+// counting matches rather than resolvable targets would let the floor pass on
+// links that never reach existsSync.
+const isResolvable = (target) =>
+  !path.isAbsolute(target) && !/^[a-z][a-z0-9+.-]*:/i.test(target);
+
+async function docFiles(dir) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await markdownFiles(p)));
-    else if (entry.name.endsWith('.md') && !EXCLUDED.has(p)) out.push(p);
+    if (entry.isDirectory()) out.push(...(await docFiles(p)));
+    else if ((entry.name.endsWith('.md') || isHtml(entry.name)) && !EXCLUDED.has(p)) out.push(p);
   }
   return out;
+}
+
+// Strip fenced blocks. Line-based rather than regex over the whole text, so an
+// unterminated fence degrades to "skip the rest" rather than silently swallowing
+// the file's remaining links via a greedy match — under-reporting is the
+// direction that hides a real break.
+function stripFences(file, text) {
+  let inFence = false;
+  const prose = text
+    .split('\n')
+    .filter((line) => {
+      if (line.trimStart().startsWith('```')) {
+        inFence = !inFence;
+        return false;
+      }
+      return !inFence;
+    })
+    .join('\n');
+  return { prose, unbalanced: inFence };
 }
 
 describe('relative links in docs/** and repo-root markdown (R018)', () => {
@@ -82,43 +124,54 @@ describe('relative links in docs/** and repo-root markdown (R018)', () => {
     // corpus satisfies having checked nothing. The sibling workflow guard
     // carried four floors; this carried none, and the criterion counted them as
     // a pair. Cheaper to make the claim true than to amend a ratified record.
-    const files = [...(await markdownFiles(DOCS)), ...ROOT_DOCS];
-    assert.ok(files.length > 20, `only ${files.length} markdown files found — the corpus has rotted`);
+    const files = [...(await docFiles(DOCS)), ...ROOT_DOCS];
+    assert.ok(files.length > 20, `only ${files.length} doc files found — the corpus has rotted`);
     assert.ok(ROOT_DOCS.length > 0, 'no repo-root markdown resolved — the ROOT_DOCS list has rotted');
+
     let links = 0;
-    for (const f of files) links += [...(await readFile(f, 'utf8')).matchAll(LINK_RE)].length;
+    let htmlFiles = 0;
+    let htmlTargets = 0;
+    for (const f of files) {
+      const text = await readFile(f, 'utf8');
+      const targets = linkTargets(f, text);
+      links += targets.length;
+      if (isHtml(f)) {
+        htmlFiles += 1;
+        htmlTargets += targets.filter(isResolvable).length;
+      }
+    }
     assert.ok(links > 100, `only ${links} links found across ${files.length} files — LINK_RE has rotted`);
+
+    // HTML NEEDS ITS OWN FLOORS, and the reason is the whole point of this test.
+    // The three floors above are all satisfied by the ~200-file markdown corpus
+    // alone. Widening the walker to `.html` without floors of its own would
+    // produce a guard that LOOKS like it covers the story-map tier while a typo
+    // in HREF_RE silently reduced its HTML coverage to nothing — green, and
+    // blind, which is exactly the defect the 2026-08-18 commit closed for
+    // markdown. Measured on 2026-08-20: pointing STORY-MAP-001's STORY-001 href
+    // at a non-existent `stories/accepted/` left this suite at 2 pass / 0 fail.
+    assert.ok(htmlFiles > 0, 'no HTML files found under docs/ — the .html walker branch has rotted');
+    assert.ok(
+      htmlTargets > 0,
+      `${htmlFiles} HTML file(s) found but 0 resolvable link targets — HREF_RE has rotted`,
+    );
   });
 
   it('every relative link target exists on disk', async () => {
     const broken = [];
     const unbalanced = [];
 
-    for (const file of [...(await markdownFiles(DOCS)), ...ROOT_DOCS]) {
+    for (const file of [...(await docFiles(DOCS)), ...ROOT_DOCS]) {
       const text = await readFile(file, 'utf8');
-      // Strip fenced blocks before matching. Line-based rather than regex over
-      // the whole text, so an unterminated fence degrades to "skip the rest"
-      // rather than silently swallowing the file's remaining links via a greedy
-      // match — under-reporting is the direction that hides a real break.
-      let inFence = false;
-      const prose = text
-        .split('\n')
-        .filter((line) => {
-          if (line.trimStart().startsWith('```')) {
-            inFence = !inFence;
-            return false;
-          }
-          return !inFence;
-        })
-        .join('\n');
-      // A file whose fences do not balance has had its tail silently dropped by
-      // the filter above — which under-reports, and under-reporting is how a real
-      // break hides. Report it rather than trusting the parity.
-      if (inFence) unbalanced.push(path.relative(REPO, file));
-      for (const [, target] of prose.matchAll(LINK_RE)) {
+      // A file whose fences do not balance has had its tail silently dropped —
+      // which under-reports, and under-reporting is how a real break hides.
+      // Report it rather than trusting the parity. HTML has no fences.
+      if (!isHtml(file) && stripFences(file, text).unbalanced) {
+        unbalanced.push(path.relative(REPO, file));
+      }
+      for (const target of linkTargets(file, text)) {
         // Skip absolute paths, URLs (http:, mailto:) and in-page anchors.
-        if (path.isAbsolute(target) || /^[a-z][a-z0-9+.-]*:/i.test(target))
-          continue;
+        if (!isResolvable(target)) continue;
         if (!existsSync(path.resolve(path.dirname(file), target))) {
           broken.push(`${path.relative(REPO, file)} -> ${target}`);
         }

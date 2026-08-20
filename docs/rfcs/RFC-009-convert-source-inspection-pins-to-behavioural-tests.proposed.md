@@ -7,7 +7,7 @@ decision-makers: [Tom Howard]
 problems: [P033]
 adrs: [ADR-031, ADR-051]
 jtbd: [JTBD-400, JTBD-001]
-stories: []
+stories: [STORY-001]
 ---
 
 # RFC-009: Convert the source-inspection pin population to behavioural tests, release and publish paths first
@@ -182,14 +182,28 @@ directly on point: _"Run X manually before risky changes" is not a control. It i
 
 ## Stories
 
-`stories: []` — pending the wr-itil ADR-089 disposition. The empty list is a back-fill state, not a shape, and this
-repository operates no story tier (`docs/stories/` and `docs/story-maps/` do not exist; all eight prior RFCs
-carry an empty list). **No rationale is recorded here deliberately**: a standing local deviation from wr-itil ADR-089
-would be a decision, and wr-itil ADR-070 forbids RFCs holding decisions — recorded in RFC prose it would also be
-invisible to the wr-itil ADR-066 oversight detector, which reads only `docs/decisions/`. P065 closed 2026-08-20 with
-the standing instruction that the next RFC carrying an empty list raises the question again; this is that RFC.
-The question is owed before the `accepted` transition, where wr-itil ADR-089's gate sits — not before this lands at
-`proposed`.
+Ordered execution sequence; array position is the sequence.
+
+1. **STORY-001** — A test that passes no matter what the code does is found and made able to fail
+   (`docs/stories/draft/STORY-001-a-test-that-cannot-fail-is-made-able-to-fail.md`, `draft`, effort S).
+   Classifies every pin in the population as blind / sole cover / redundant using `scripts/mutate.sh`, under
+   the rule that a CAUGHT verdict discharges a pin only when the catching test is not itself a member of the
+   source-inspection population. Deliberately first: every later conversion depends on knowing which bucket a
+   pin is in, and it writes no behavioural tests and changes no production code.
+
+   It is **draft**, so it is not implementable. It must reach `accepted` first, where the INVEST and
+   RFC-trace gates run and a human ratifies it.
+
+**The story tier was adopted 2026-08-20**, at the maintainer's direction, while working this RFC. Before that
+this repository ran none — all eight prior RFCs carried an empty list, and P065 had left the open question of
+whether to adopt one or record a deliberate deviation. It was put to the maintainer as the blocker to
+progressing P033 and they chose adoption, so the earlier note here recording an empty list as a pending
+question is superseded by that decision.
+
+`docs/story-maps/` and `docs/stories/` are new as of it. STORY-MAP-001 is the first map, and its style rules
+were derived from a WCAG AA review rather than inherited from the framework template — that template ships a
+`#ccc` slice border at 1.61:1 against white, which fails SC 1.4.11 in a layout where the border is the only
+cue that a slice is a link.
 
 ## Commits
 

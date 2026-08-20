@@ -1,0 +1,195 @@
+/* Story-map presentation. One copy, shared by every map.
+   Generated into a repo beside the maps by wr-itil-render-story-map;
+   edit the copy shipped in @windyroad/itil, not this one. */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #565656; --line: #767676;
+  --card: #f6f6f6; --card-line: #767676;
+  --live-fg: #0b5d1e; --live-bg: #e4f4e8; --live-line: #0b5d1e;
+  --next-fg: #0b3a66; --next-bg: #e2eefb; --next-line: #0b3a66;
+  --later-fg: #6b3a00; --later-bg: #f6ead6; --later-line: #6b3a00;
+  --defect-fg: #8c1d18; --defect-bg: #fdecea; --defect-line: #8c1d18;
+  --focus: #0b3a66;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181c; --fg: #f2f3f5; --muted: #b6bac2; --line: #8a919c;
+    --card: #1f2228; --card-line: #8a919c;
+    --live-fg: #7fe0a0; --live-bg: #123020; --live-line: #7fe0a0;
+    --next-fg: #97c6f5; --next-bg: #10263c; --next-line: #97c6f5;
+    --later-fg: #f0c58a; --later-bg: #33260f; --later-line: #f0c58a;
+    --defect-fg: #ffb4ab; --defect-bg: #3b1512; --defect-line: #ffb4ab;
+    --focus: #97c6f5;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #565656; --line: #767676;
+  --card: #f6f6f6; --card-line: #767676;
+  --live-fg: #0b5d1e; --live-bg: #e4f4e8; --live-line: #0b5d1e;
+  --next-fg: #0b3a66; --next-bg: #e2eefb; --next-line: #0b3a66;
+  --later-fg: #6b3a00; --later-bg: #f6ead6; --later-line: #6b3a00;
+  --defect-fg: #8c1d18; --defect-bg: #fdecea; --defect-line: #8c1d18;
+  --focus: #0b3a66;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16181c; --fg: #f2f3f5; --muted: #b6bac2; --line: #8a919c;
+  --card: #1f2228; --card-line: #8a919c;
+  --live-fg: #7fe0a0; --live-bg: #123020; --live-line: #7fe0a0;
+  --next-fg: #97c6f5; --next-bg: #10263c; --next-line: #97c6f5;
+  --later-fg: #f0c58a; --later-bg: #33260f; --later-line: #f0c58a;
+    --defect-fg: #ffb4ab; --defect-bg: #3b1512; --defect-line: #ffb4ab;
+  --focus: #97c6f5;
+}
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; color: var(--fg); background: var(--bg);
+       max-width: 1500px; margin: 0 auto; padding: 1.5rem 1rem 3rem; line-height: 1.5; }
+h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+p { max-width: 74ch; }
+a { color: var(--focus); }
+/* Required on every interactive element, not just links: the theme toggle
+   (if a host adds one) and the scroll region both take focus. */
+/* :focus first as a fallback for engines without :focus-visible. The two rules
+   are deliberately IDENTICAL — the fallback exists so the only focusable
+   element on the page is never left without an indicator on older WebKit, not
+   to give keyboard and pointer focus different treatment. Do not "complete"
+   the pair by weakening the :focus rule; that would break 2.4.7 on those
+   engines.
+   No border-radius here — it clips the content of the overflow:auto
+   scroll region for as long as it holds focus. */
+a:focus, button:focus, [tabindex]:focus { outline: 3px solid var(--focus); outline-offset: 2px; }
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.badge { display: inline-flex; align-items: center; gap: .3rem; font-size: .75rem; font-weight: 700;
+         padding: .1rem .45rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+/* Release state is carried by the badge's text label and by a glyph in real
+   markup (see .b-glyph). The glyph is aria-hidden — it is a second VISUAL
+   channel so colour is never the sole one, and assistive tech already has
+   the label. It must not be generated content: in forced-colors mode the
+   badge backgrounds all collapse to Canvas, and the glyph becomes the only
+   thing distinguishing the three states. */
+.b-live  { color: var(--live-fg);  background: var(--live-bg);  border-color: var(--live-line); }
+.b-next  { color: var(--next-fg);  background: var(--next-bg);  border-color: var(--next-line); }
+.b-later { color: var(--later-fg); background: var(--later-bg); border-color: var(--later-line); }
+/* A row with no RFC identity, or whose stories close no problem. Deliberately
+   red rather than the amber `.b-later` used for scheduled-later work: this is
+   not "later", it is wrong, and it needs an edit before the map is ratified.
+   7.97:1 light, 9.50:1 dark; the glyph carries it as a second channel. */
+.b-defect { color: var(--defect-fg); background: var(--defect-bg); border-color: var(--defect-line); }
+
+.scroll { overflow-x: auto; padding-bottom: .5rem; }
+table.map { border-collapse: collapse; width: 100%; min-width: 940px; }
+table.map caption { text-align: left; color: var(--muted); font-size: .85rem; margin-bottom: .5rem; }
+/* Activity headers across the top are the backbone: the user journey. */
+thead th.act { text-align: left; vertical-align: bottom; padding: .5rem .6rem; font-size: .9rem;
+               border-bottom: 3px solid var(--fg); width: 18%; }
+thead th.act .jtbd { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; margin-top: .2rem; }
+thead td.corner { border-bottom: 3px solid var(--fg); }
+/* Each row is one release slice. A row read left to right is everything
+   that ships together. */
+th.slice { text-align: left; vertical-align: top; padding: .7rem .6rem; width: 10%; min-width: 96px;
+           border-bottom: 2px solid var(--fg); position: sticky; left: 0; background: var(--bg); }
+th.slice .s-name { font-size: .95rem; display: block; margin-top: .35rem; margin-bottom: .35rem; }
+th.slice .s-note { font-weight: 400; color: var(--muted); font-size: .75rem; display: block; margin-top: .35rem; }
+td.cell { vertical-align: top; padding: .5rem; border-bottom: 2px solid var(--fg); border-left: 1px solid var(--line); }
+/* An empty cell is meaningful — it says this activity ships nothing in this
+   release — so the hatch is drawn in the 3:1 border tone, not a tint. */
+td.cell.empty { background: repeating-linear-gradient(45deg, transparent, transparent 7px, var(--line) 7px, var(--line) 8px); }
+.task { border: 1px solid var(--card-line); border-radius: 6px; background: var(--card); padding: .5rem .55rem; }
+.task .t-title { font-size: .85rem; }
+.task .t-value { display: block; font-size: .75rem; color: var(--muted); margin-top: .35rem; }
+/* Three clauses, three lines. Run together they are a wall of text at card
+   width; the shape that makes the statement scannable is the shape it was
+   written in. */
+.task .v-line { display: block; margin-top: .2rem; }
+.task .v-line:first-child { margin-top: 0; }
+/* The connectives carry no information once you know the pattern, so they
+   recede and let the three payloads read as a list. The italic IS the channel —
+   there is deliberately no opacity. At .75 over --card this composited to
+   #7e7e7e for 3.76:1, under the 4.5:1 that 12px text needs; the muted token
+   alone is 6.79:1. Receding must not mean unreadable. */
+.task .v-lead { font-style: italic; }
+/* Whose journey this is, is the thing you scan a map for — so the line carries
+   the body colour rather than the muted value tone. Structural prominence, not
+   fabricated emphasis: bold here belongs to whatever the STORY marked. */
+.task .v-asa { color: var(--fg); }
+/* Author emphasis, rendered as written. */
+.task .t-value strong { font-weight: 700; color: var(--fg); }
+/* A card's own lifecycle state. Subordinate to the row badge by four axes at
+   once — no pill, no fill, smaller and lighter, on its own line, and only the
+   three states worth colouring get colour. Twenty-four cards would otherwise
+   put twenty-four coloured markers against five row badges.
+
+   No `forced-color-adjust: none` here, unlike `.badge`: that opts out because
+   its state lives in its fill; this marker's lives in its text, so letting the
+   UA force the colours is correct. */
+.task .t-status {
+  display: block;
+  font-size: .7rem;
+  font-weight: 600;
+  margin-bottom: .15rem;
+  letter-spacing: .01em;
+}
+.task .ts-glyph { font-weight: 700; margin-right: .25rem; }
+
+/* Coloured: the states worth picking out of a wall of cards. Border-only —
+   a fill on a data-bearing element is prohibited, and the row badge's own
+   fill is 1.14:1 anyway, so its loudness was never coming from the fill. */
+.task .ts-done { color: var(--live-fg); }
+.task .ts-prog { color: var(--later-fg); }
+/* `--muted`, NOT `--line`. Read literally, "archived = light gray" lands on
+   --line, which is 4.20:1 on --card in light mode — under the 4.5:1 that .7rem
+   text needs, and passing in dark at 5.02:1, so it fails in exactly one theme.
+   Same shape as the 3.76:1 .v-lead miss. */
+.task .ts-arch { color: var(--muted); }
+
+/* Achromatic: the common states, kept as texture so the coloured ones read. */
+.task .ts-acc,
+.task .ts-draft { color: var(--muted); font-weight: 400; }
+
+.task .t-ref { display: block; font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+.slice .s-problems { display: block; font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+.traces { margin-top: 1.5rem; border-top: 1px solid var(--line); padding-top: .75rem;
+          font-size: .8rem; color: var(--muted); }
+.traces .tr-group { display: inline-block; margin-right: 1.25rem; }
+/* The caption is the table's accessible name — a screen-reader user gets it,
+   and the dimensions in it, before entering the grid. On screen it repeated
+   the h1 immediately above, so it is hidden rather than deleted. */
+table.map > caption { position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.tasks { list-style: none; margin: 0; padding: 0; }
+.tasks li + li { margin-top: .5rem; }
+.b-glyph { font-weight: 900; }
+.genfrom { color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
+@media (forced-colors: active) {
+  /* background-image is not part of the forced-colors UA cascade, so the
+     hatch would paint literal #767676 over the user's chosen Canvas in
+     Chromium and vanish entirely in Firefox. Restate it in system colours. */
+  td.cell.empty { background-image: repeating-linear-gradient(45deg, Canvas, Canvas 7px, GrayText 7px, GrayText 8px); }
+  .badge { forced-color-adjust: none; border: 1px solid CanvasText; }
+}
+/* What the reader is being asked. Sits between the title and the grid, so it
+   is read before any scrolling and cannot be missed by not scrolling back. */
+.orient { max-width: 62ch; margin: .5rem 0 1rem; font-size: .95rem; line-height: 1.5; }
+.orient + .orient { color: var(--muted); }
+
+/* The column header is the journey step a card belongs to, and rows run taller
+   than a screen — so without this it scrolls away inside the first row and
+   never comes back, leaving horizontal scroll position as the only clue to
+   which activity you are looking at. The row header outranks it at the corner
+   intersection: it is pinned on the axis that moves further. */
+thead th.act { position: sticky; top: 0; z-index: 1; background: var(--bg); }
+th.slice { z-index: 2; }
+
+/* Sticky row headers are kept at narrow widths: this is exactly where the
+   table scrolls furthest, so losing the orientation anchor costs most. The
+   column is narrowed and its note dropped rather than unpinned. */
+@media (max-width: 640px) {
+  th.slice { min-width: 72px; padding: .5rem .35rem; font-size: .85rem; }
+  th.slice .s-note { display: none; }
+}
