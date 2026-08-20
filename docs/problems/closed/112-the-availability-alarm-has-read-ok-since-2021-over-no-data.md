@@ -1,12 +1,44 @@
 # Problem 112: The availability alarm has read OK since 2021, over no data at all
 
-**Status**: Open
+**Status**: Closed — 2026-08-20, deleted
 **Reported**: 2026-08-20
 **Priority**: 12 (High) — Impact: 4 × Likelihood: 3. Impact 4: the subject is production availability of a revenue-generating API, and the failure direction is a monitor that reports health while measuring nothing — the worst direction for a monitor. Likelihood 3: the false-OK is REALISED and has been for five years; the 3 rates the chance of an availability incident during a window where this is the control someone believes in.
 **Origin**: internal
 **Effort**: S — the decision is delete-or-revive; either is small. Establishing which is the work.
 **JTBD**: JTBD-001
 **Persona**: web-app-developer
+
+> **CLOSED 2026-08-20. The canary and its alarm are DELETED, and availability monitoring is confirmed
+> working by the other route.**
+>
+> **Uptime Robot verified live by the maintainer this date**, in their words: _"Uptime Robot is actually
+> running. Sometimes we get false alarms, but otherwise it's good."_ That discharges this ticket's second
+> task and makes the first one easy — the canary duplicated nothing, because it measured nothing.
+>
+> **What was removed**, after its configuration was captured so it is reconstructable: the CloudWatch alarm
+> `Synthetics-Alarm-addressr-1`, and the Synthetics canary `addressr` together with its underlying Lambda
+> (`--delete-lambda`, so no orphaned function is left behind — an unowned leftover is how this defect was
+> created in the first place). Verified after deletion: `describe-canaries` returns `[]` for that name, and no
+> alarm matching `Synthetics` remains. Four alarms survive — the two `SearchableDocuments` trip-wires and the
+> two Elastic Beanstalk auto-scaling triggers.
+>
+> The canary's shape, for reconstruction: runtime `syn-nodejs-puppeteer-3.1`, handler
+> `apiCanaryBlueprint.handler`, schedule `rate(1 minute)`, retention 31 days for both success and failure,
+> with an execution role and an S3 artifact location. **Deliberately not recorded here: the artifact bucket
+> name, which embeds the AWS account ID, and this repository is public.** The S3 artifacts themselves were
+> left in place; deleting a bucket of historical results is a wider action than was asked for.
+>
+> **Deletion was the right call rather than merely the cheap one**, and the reasoning is ADR-051's own: an
+> instrument that measures nothing and alerts nobody is not protection, so removing it removes nothing. What
+> it did do was answer "is availability monitored?" with a misleading yes to anyone reading the console — a
+> false green is worse than an absence, because an absence prompts the question.
+>
+> **One thing carried forward rather than closed with the ticket.** The maintainer noted Uptime Robot
+> _"sometimes"_ produces false alarms. That matters more than it sounds: false alarms are the mechanism that
+> destroyed the value of the deleted nightly perf emails — not that they failed to arrive, but that they
+> stopped being worth opening. Uptime Robot is now the only availability control, and it works because its
+> alerts are rare and real. Every false one spends a little of that. Not acted on, not urgent, and recorded
+> so it is a known quantity rather than a shrug.
 
 ## Description
 
@@ -94,7 +126,7 @@ Three causes compound, and separating them matters because they have different f
 
 ## Related
 
-- **[P110](110-latency-is-measured-at-the-gateway-and-alerts-nowhere-that-qualifies.md)** — its lesson,
+- **[P110](../open/110-latency-is-measured-at-the-gateway-and-alerts-nowhere-that-qualifies.md)** — its lesson,
   realised again: a capability audit that reads only the repository finds gaps that are not there and misses
   controls that are.
 - **[ADR-051](../../decisions/051-a-check-with-no-reader-but-the-maintainer-is-not-a-control.proposed.md)** —
@@ -104,5 +136,5 @@ Three causes compound, and separating them matters because they have different f
   this finding the only one. Its own reassessment criteria are already triggered by this work.
 - **ADR-030** (OpenSearch domain under Terraform management) — the precedent for bringing an unmanaged
   production resource under Terraform, and the reasoning that applies here.
-- **[P103](103-workflow-referrers-outside-guard-coverage-rot-unseen.md)** — the correction-reaches-only-the-
+- **[P103](../open/103-workflow-referrers-outside-guard-coverage-rot-unseen.md)** — the correction-reaches-only-the-
   site-in-view class, of which the unfixed `AlarmActions: []` here is an instance.
