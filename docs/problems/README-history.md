@@ -4,6 +4,8 @@
 
 ## 2026-08-20
 
+> Last reviewed: 2026-08-20 **P069 closed** — partial-prefix search recall, closed by the prior-session evidence drain (P282): the Verification Queue cell carried durable `yes — observed:` evidence from a prior session that no later session's tool-call scan could see. Upstream #365 verified already CLOSED with the fix-released comment posted, so the lifecycle dispatch was skipped on evidence rather than run as a no-op
+
 > Last reviewed: 2026-08-20 **P109 captured** — a gate-blocked Bash invocation executes nothing, so a bundled `git add ; git commit` commits a stale index while the message describes the new work. Confirmed by probe and by the index parent of lint-staged's own backup stash; lint-staged exonerated. Two observed instances plus one attributed, none caught by CI — the lost content was a guard-tightening and a suite cannot redden on a check never added. The two observed alone falsify P011's Fix Strategy item 1, which names the session-memory reminder as the primary defence (lightweight aside via /wr-itil:capture-problem)
 
 ## 2026-05-03

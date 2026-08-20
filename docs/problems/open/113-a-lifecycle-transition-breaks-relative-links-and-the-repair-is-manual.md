@@ -11,8 +11,8 @@
 ## Description
 
 **`git mv`-ing a ticket between `open/`, `verifying/` and `closed/` invalidates relative links in BOTH
-directions, and nothing in the transition flow repoints them.** Three instances on 2026-08-20, none
-anticipated:
+directions, and nothing in the transition flow repoints them.** Four instances on 2026-08-20, none
+anticipated. The first three:
 
 - **Outbound** (the moved ticket's own links go stale): P111 and P112 each linked to sibling tickets by bare
   filename. Moving them into `closed/` meant those targets needed an `../open/` prefix.
@@ -23,10 +23,22 @@ anticipated:
 The inbound direction is the more surprising of the two: a transition can redden the suite through a file
 the author never opened.
 
-**The detector works; the repair does not exist.** `doc-links-resolve.test.mjs` caught all three, named the
-exact offending link each time, and is mutation-tested. So this is not a detection gap — R018 already prices
-the residual as "not zero, because the repair is still manual once the test points at it". Three instances in
-one day argues for automating the repair, NOT for tightening detection. Recording that distinction
+**Fourth instance, same day, and an order of magnitude larger.** P033's Open → Known Error transition on
+2026-08-20 broke **nine** links across **eight** files: two outbound (P033's own references to siblings still
+in `open/`) and seven inbound — from an ADR (`docs/decisions/044-native-esm-without-a-build-step.proposed.md`),
+from a ticket already closed (`closed/094`), and from five open siblings (`089`, `091`, `098`, `114`, `115`).
+Two of the inbound breaks were in tickets **filed earlier the same day by this very ticket's author**, which
+is the clearest possible demonstration that the class does not depend on the referring file being old or
+forgotten — it depends only on something pointing at the moved ticket.
+
+The count scales with how well cross-referenced a ticket is, so the tickets most worth linking are the most
+expensive to transition. P033 has 110 siblings and is the most-referenced ticket in the backlog; a
+peripheral ticket breaks one or two links, a hub breaks nine.
+
+**The detector works; the repair does not exist.** `doc-links-resolve.test.mjs` caught all four, named every
+offending link each time, and is mutation-tested. So this is not a detection gap — R018 already prices the
+residual as "not zero, because the repair is still manual once the test points at it". Four instances in one
+day, twelve broken links between them, argues for automating the repair, NOT for tightening detection. Recording that distinction
 explicitly, because the naive reading of "it broke three times" is that the control is weak, and it is not.
 
 **A repointing tool must inherit one exemption from day one.** The first repair attempt was a blanket
@@ -61,9 +73,9 @@ in another — and inbound references live in arbitrary files that no transition
       machine-readable repair input.
 - [ ] **Carry the dated-record exemption from day one.** Repoint markdown links only; never a backticked path,
       and never inside `docs/retros/**`, where a path is a measurement of where a file was on a date.
-- [ ] Confirm the fix handles the inbound direction, not just the moved file's own links — the inbound case
-      is the one that surprises, and a fix that only repoints the moved file would pass all three of today's
-      instances only by luck (two were outbound).
+- [ ] Confirm the fix handles the inbound direction, not just the moved file's own links. The fourth
+      instance settles this: a fix that only repointed the moved file would have left SEVEN of P033's nine
+      broken links unrepaired, including one in an ADR and one in an already-closed ticket.
 - [ ] This is an upstream `wr-itil` surface (`transition-problem` owns the rename). Decide local script vs
       upstream report; see P060 for the precedent of an upstream-blocked `update-upstream` defect.
 
@@ -76,8 +88,9 @@ in another — and inbound references live in arbitrary files that no transition
 in both directions and nothing repoints them. **Edit summary**: consume `doc-links-resolve`'s existing
 `<file> -> <target>` output to repoint markdown links only, excluding backticked paths and `docs/retros/**`.
 
-**Evidence**: three instances on 2026-08-20 (P111 outbound, P112 outbound, P069 inbound); one falsified
-dated record from a naive blanket-rewrite repair, reverted.
+**Evidence**: four instances on 2026-08-20 — P111 outbound, P112 outbound, P069 inbound, and P033 BOTH
+directions at nine links across eight files; plus one falsified dated record from a naive blanket-rewrite
+repair, caught by reading the diff and reverted.
 
 ## Related
 

@@ -1,11 +1,11 @@
 # Problem 033: Source-inspection tests are an anti-pattern in this codebase
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-04-28
 **Priority**: 16 (High) — Impact: Significant (4) × Likelihood: Likely (4). **Re-rated 2026-08-08 on confirmed evidence, not on judgement.** Impact 4: this ticket's own failure mode 2 hid a production defect for four months, and that defect falsified two ADRs and the closure of a problem ticket — the harm is to the trustworthiness of the record, not just to a code path. Likelihood 4: no longer hypothetical. It has fired once, demonstrably, on the exact example this ticket names in its Description; a population of further source-inspection assertions remains — **34 across four files at the time of this re-rating**, which is the figure the rating was set against. The rating is not re-derived on every conversion. **There is no live count to point at**: every assertion tally on this ticket was withdrawn on 2026-08-19 after three attempts produced three figures by a method that over- and under-counts at once. The population is now identified by file rather than by tally; the rating stands on the demonstrated instance (a production defect hidden for four months), which no recount affects.
 **Origin**: internal
-**Effort**: M — audit of test/js/**tests** assertions + progressive behavioural-test replacement cadence
-**WSJF**: 8.0 — (16 × 1.0) / 2 — re-rated 2026-08-08 on the P091 evidence; was 3.0 (6 × 1.0) / 2, backfilled 2026-07-29 (review)
+**Effort**: XL — **re-rated M → XL 2026-08-20 at the Open → Known Error transition (P047).** M was set when the fix was believed to be "audit + progressive replacement cadence". The audit is now DONE and it sized the actual fix: converting the non-workflow population is 22 files, each needing a real behavioural test written, which is multi-day work. The note-what-it-cannot-establish task adds nine more files. Multi-day ⇒ XL per the effort table. **This LOWERS WSJF from 8.0 to 4.0 even though the Known Error multiplier doubles**, because effort quadruples — and that is the formula being honest rather than a demotion. The ticket sat at 8.0 on an estimate that predated knowing what the fix was.
+**WSJF**: 4.0 — (16 × 2.0) / 8 — re-rated 2026-08-20 at the Known Error transition (status multiplier 1.0 → 2.0, effort M → XL). Was 8.0 — (16 × 1.0) / 2, re-rated 2026-08-08 on the P091 evidence; was 3.0 (6 × 1.0) / 2, backfilled 2026-07-29 (review)
 
 ## Description
 
@@ -31,7 +31,7 @@ This problem was surfaced 2026-04-28 when authoring a User-Agent fix for `servic
 
 **This ticket predicted a specific defect by name and then that defect happened.** The Description above lists, as an illustration, _"attaches rval.sla_range_expanded using expandRangeAliases — greps the assignment expression"_. Failure mode 2 above reads: _"a behavioural regression that doesn't change the source pattern passes the test even though the contract is broken."_
 
-That is precisely what occurred. See [P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md).
+That is precisely what occurred. See [P091](../open/091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md).
 
 `sla_range_expanded` has been indexed one level too deep — at `_source.structured.sla_range_expanded` rather than the top-level path the mapping declares and every query targeted — since **2026-04-20**, eight days before this ticket was filed. Measured against production 2026-08-08: the field is populated on **0 of 16,905,824** documents, while **349,540** range-form documents should carry it.
 
@@ -45,7 +45,7 @@ Three layers of tests were green throughout:
 
 **No test at any level asserted that a range document is retrievable by its alias.** The one assertion that named the feature was the source-inspection regex, and it is structurally incapable of detecting the defect: the code it greps for is present and correct.
 
-The cost was not a wrong number in a test report. It was four months during which [ADR-026](../../decisions/026-range-number-address-expansion.superseded.md) and [ADR-028](../../decisions/028-range-number-endpoint-only.proposed.md) recorded an index-side mechanism as working when it had never executed, [P015](../closed/015-range-number-addresses-not-searchable-by-base-number.md) was closed on it, and [P075](075-adr041-inverts-exact-vs-range-on-one-address.md) attributed a live ranking inversion to an alias that is not in the index.
+The cost was not a wrong number in a test report. It was four months during which [ADR-026](../../decisions/026-range-number-address-expansion.superseded.md) and [ADR-028](../../decisions/028-range-number-endpoint-only.proposed.md) recorded an index-side mechanism as working when it had never executed, [P015](../closed/015-range-number-addresses-not-searchable-by-base-number.md) was closed on it, and [P075](../open/075-adr041-inverts-exact-vs-range-on-one-address.md) attributed a live ranking inversion to an alias that is not in the index.
 
 ### The population that can still fire
 
@@ -73,7 +73,7 @@ The extraction follows the path this repo already uses to escape the babel-only 
 
 **Two findings from doing it, both of which sharpen this ticket's thesis.**
 
-**1. The assertion was watching the wrong site.** The regex greps `mapAddressDetails` for `rval.sla_range_expanded = expandRangeAliases(`. It matched for four months while the field reached 0 of 16.9M documents ([P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md)), because the code it matches is **correct**. The defect is seventy lines away at the document-assembly site, which had no test of any kind. A test named after a feature was covering the half that worked, and its name is what made the other half look covered.
+**1. The assertion was watching the wrong site.** The regex greps `mapAddressDetails` for `rval.sla_range_expanded = expandRangeAliases(`. It matched for four months while the field reached 0 of 16.9M documents ([P091](../open/091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md)), because the code it matches is **correct**. The defect is seventy lines away at the document-assembly site, which had no test of any kind. A test named after a feature was covering the half that worked, and its name is what made the other half look covered.
 
 That is a sharper claim than the ticket's original framing. The risk is not only that a source regex can pass while behaviour is broken; it is that **naming a test after a feature transfers apparent coverage to every part of that feature**, including parts nothing touches.
 
@@ -285,39 +285,39 @@ a red at one of those pins is still a real signal to convert rather than delete.
       till much later, that we need to think about how we stop that from happening."_
 
       **This is a decision, not a deferral, and the difference matters to how it should be read.** The five
-                  sites were legacy — they predate the settlement and were written under the rule it retired. Building an
-                  instrument to catch a population that has already been cleaned is spending on the last defect rather
-                  than the next one. What would justify the instrument is a NEW pin written under the settled rule and
-                  reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
-                  were found by adversarial review rather than by any tool, so the current control is a human reading
-                  carefully, and that is what a recurrence would falsify.
+                      sites were legacy — they predate the settlement and were written under the rule it retired. Building an
+                      instrument to catch a population that has already been cleaned is spending on the last defect rather
+                      than the next one. What would justify the instrument is a NEW pin written under the settled rule and
+                      reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
+                      were found by adversarial review rather than by any tool, so the current control is a human reading
+                      carefully, and that is what a recurrence would falsify.
 
-                  **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
-                  and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
-                  shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
-                  rather than review. That is the maintainer's condition, written as something falsifiable.
+                      **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
+                      and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
+                      shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
+                      rather than review. That is the maintainer's condition, written as something falsifiable.
 
-                  **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
-                  class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
-                  than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
-                  composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
-                  COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
-                  reader reaches the ADR question already answered rather than rediscovering it.
+                      **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
+                      class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
+                      than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
+                      composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
+                      COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
+                      reader reaches the ADR question already answered rather than rediscovering it.
 
-                  **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
-                  passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
-                  `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
-                  tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
-                  phrase list; and say in
-                  the test name that it establishes vocabulary only, never that the pins were converted.
-                  **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
-                  the candidate phrase list against the five sites read it case-sensitively and reported that
-                  `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
-                  site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
-                  lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
-                  reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
-                  would have reported clean over four live instances. The review was wrong on the fact and right about
-                  the spec, which is why the correction is recorded here rather than merely answered.
+                      **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
+                      passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
+                      `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
+                      tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
+                      phrase list; and say in
+                      the test name that it establishes vocabulary only, never that the pins were converted.
+                      **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
+                      the candidate phrase list against the five sites read it case-sensitively and reported that
+                      `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
+                      site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
+                      lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
+                      reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
+                      would have reported clean over four live instances. The review was wrong on the fact and right about
+                      the spec, which is why the correction is recorded here rather than merely answered.
 
 **`scripts/mutate.sh` makes the practice cheap**, which is the point: the barrier was never disagreement,
 it was six lines of `cp`/`sed`/run/restore per check.
@@ -353,6 +353,35 @@ reporting every file non-empty (it means blocks, not bytes) is recorded on **P10
 verification checks generally — that wider family is P107's. The four session instances above are evidence
 that the practice pays, not a widening of this ticket's anchor.
 
+## MECHANICALLY DEMONSTRATED 2026-08-20 — the pin is BLIND, and so is its whole file
+
+The Known Error transition rested on P091, a documented production instance. That is strong causal evidence
+but it is a historical narrative. This is the re-runnable version, and it postdates the change:
+
+```
+scripts/mutate.sh packages/addressr/service/address-service.js \
+  "s|  mirrorRequest({ method: 'search', params: searchParameters });|  if (false) mirrorRequest(...);|" \
+  npx --no-install node --test test/js/__tests__/address-service.test.mjs
+→ BLIND  the guard PASSED under this mutation — it does not watch this property
+```
+
+**What the mutation does**: makes ADR-031's read-shadow mirror unreachable. The call is dead code; no shadow
+request is ever issued. The import statement is untouched, so
+`/import\s+\{\s*mirrorRequest\s*\}\s+from .../` still matches and the pin stays green — the line is
+present and never reached, which is this ticket's thesis stated as an executable result rather than a claim.
+
+**The stronger half, which was not the target.** The verdict is BLIND for the ENTIRE
+`address-service.test.mjs` file, not just the import pin. Running the whole file under the same mutation also
+passes. So the read-shadow mirror — the mechanism ADR-031 exists to provide, the one that de-risks a search
+backend cutover — can be disabled outright and nothing in its dedicated test file notices.
+
+The file was restored byte-clean afterwards (`git diff --stat` empty).
+
+**Why this belongs in the record rather than in a session log**: it converts the Known Error reproduction
+criterion from "a documented instance from four months ago" to "a demonstration anyone can re-run in under a
+minute". It also gives the conversion work in Task 1 its first concrete acceptance test — a converted pin is
+one where this same mutation reports CAUGHT.
+
 ## Symptoms
 
 - Tests pass when the implementation is structurally similar but behaviourally broken.
@@ -368,7 +397,7 @@ For the existing tests: they continue to provide some value (they catch coarse-g
 
 ## Impact Assessment
 
-- **Who is affected**: Addressr Contributor/Maintainer (JTBD-400 — Ship releases reliably from trunk) — false-green tests undermine the trunk-based release determinism. Indirectly, end-user personas (J1/J3/J4) when a behavioural regression slips past tests that look like coverage but aren't.
+- **Who is affected**: Addressr Contributor/Maintainer (JTBD-400 — Ship releases reliably from trunk) — false-green tests undermine the trunk-based release determinism. Indirectly, `web-app-developer` via JTBD-001 (Search and Autocomplete Addresses) — its outcome "Correct address appears in the first page of results for reasonable queries" is what P091 degraded — and `data-quality-analyst` via JTBD-003 (Geocode Addresses to Coordinates). **Repointed 2026-08-20**: this line read `(J1/J3/J4)`, which are pre-migration IDs from the retired `docs/JOBS_TO_BE_DONE.md` and resolve to nothing in `docs/jtbd/`, so the consumer-side hop this ticket claims was unanchored in the corpus. The hop is real but narrower than the wording implied: P091's own Impact Assessment records it as ranking degradation, not lost results.
 - **Frequency**: continuous risk surface — every commit touching the implementations covered by source-inspection tests is exposed to false-green/false-red. The most-impacted files are `service/address-service.js` and `client/elasticsearch.js` (also has source-inspection tests).
 - **Severity**: Moderate — production correctness depends on real behavioural coverage. The existing CI Cucumber suite catches integration-level regressions, so the source-inspection tests aren't the only line of defence; but they create maintainer friction and cognitive overhead.
 - **Analytics**: N/A.
@@ -390,116 +419,125 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       unexplained figure would deserve no more trust than they got.
 
       **Step 1 — 31 files read a repo file and assert on what they read.** Of those, **15 exercise the
-                              subject** (they import it, statically or dynamically, or spawn it) and **16 read only**. The first
-                              classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
-                              `await import(...)`. Corrected before use.
+                                  subject** (they import it, statically or dynamically, or spawn it) and **16 read only**. The first
+                                  classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
+                                  `await import(...)`. Corrected before use.
 
-                              **Step 2 — of the 16 read-only files, NONE is a source-inspection test of implementation.** Six
-                              read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
-                              artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
-                              WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
-                              behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
-                              a file` and `pins source text as a stand-in for what the code does` are different populations, and
-                              conflating them is why the figures ran to the hundreds.
+                                  **Step 2 — of the 16 read-only files, NONE is a source-inspection test of implementation.** Six
+                                  read `.github/workflows/**`, where there is no runtime to exercise. The other ten check declarative
+                                  artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
+                                  WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
+                                  behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
+                                  a file` and `pins source text as a stand-in for what the code does` are different populations, and
+                                  conflating them is why the figures ran to the hundreds.
 
-                              **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
-                              source and assert on its text, in files that also exercise the subject. Counted three ways and
-                              enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
+                                  **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
+                                  source and assert on its text, in files that also exercise the subject. Counted three ways and
+                                  enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
 
-                              **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
-                              below summed to 12 across five files while the prose above it said 13 across six, and named two live
-                              pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
-                              count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
-                              and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
-                              source text.
+                                  **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
+                                  below summed to 12 across five files while the prose above it said 13 across six, and named two live
+                                  pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
+                                  count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
+                                  and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
+                                  source text.
 
-                              **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
-                              missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
-                              look like source paths. The third counted subprocess output as file contents. Each was caught by
-                              checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
-                              discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
-                              for the population is behavioural exercise and the remedy for the audit is reading.
+                                  **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
+                                  missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
+                                  look like source paths. The third counted subprocess output as file contents. Each was caught by
+                                  checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
+                                  discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
+                                  for the population is behavioural exercise and the remedy for the audit is reading.
 
-                              **So what follows is what was READ, pin by pin. Three files verified in full:**
+                                  **So what follows is what was READ, pin by pin. Three files verified in full:**
 
-                              | file | pin | verdict |
-                              | --- | --- | --- |
-                              | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
-                              | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
-                              | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
-                              | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
-                              | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
-                              | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
-                              | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
-                              | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
-                              | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
-                              | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
+                                  | file | pin | verdict |
+                                  | --- | --- | --- |
+                                  | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
+                                  | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
+                                  | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
+                                  | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
+                                  | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
+                                  | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
+                                  | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
+                                  | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
+                                  | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
+                                  | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
 
-                              **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
-                              category the earlier count did not have, and it matters — but not all of them are load-bearing,
-                              which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
-                              counted here, so adding a sentinel does not leave a stale total behind:
+                                  **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
+                                  category the earlier count did not have, and it matters — but not all of them are load-bearing,
+                                  which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
+                                  counted here, so adding a sentinel does not leave a stale total behind:
 
-                              - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
-                                and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
-                              - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
-                                slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
-                                proxyAuthMiddleware. **Floor**, and over an auth boundary.
-                              - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
-                                which is TRUE, and the ordering pin passes vacuously. **Floor.**
-                              - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
-                                comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
+                                  - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
+                                    and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
+                                  - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
+                                    slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
+                                    proxyAuthMiddleware. **Floor**, and over an auth boundary.
+                                  - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
+                                    which is TRUE, and the ordering pin passes vacuously. **Floor.**
+                                  - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
+                                    comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
 
-                              Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
-                              session installing everywhere else, and it asserts nothing about the subject at all — which is
-                              why it is a sentinel and not a pin.
+                                  Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
+                                  session installing everywhere else, and it asserts nothing about the subject at all — which is
+                                  why it is a sentinel and not a pin.
 
-                              **Not read, and therefore not counted:** `deploy-artefact-ignores` (asserts over `deploy.sh` text).
-                              A candidate by inspection; it has not had the per-pin read the three above got. Stated as pending
-                              rather than folded into the total as an estimate. This entry named a second file,
-                              `perf-validity-covers-declared-legs`, until 2026-08-20 — it asserted over `test/k6/regression.js`
-                              text and both files were deleted with the perf probe, so the candidate resolved by removal rather
-                              than by reading.
+                                  **Not read, and therefore not counted:** `deploy-artefact-ignores` (asserts over `deploy.sh` text).
+                                  A candidate by inspection; it has not had the per-pin read the three above got. Stated as pending
+                                  rather than folded into the total as an estimate. This entry named a second file,
+                                  `perf-validity-covers-declared-legs`, until 2026-08-20 — it asserted over `test/k6/regression.js`
+                                  text and both files were deleted with the perf probe, so the candidate resolved by removal rather
+                                  than by reading.
 
-                              **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
-                              governing rule two incompatible ways: one place exempted pins over wiring, and the
-                              `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
-                              instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
-                              counts whether it pins a decision or a connection, because the line can be present and never
-                              reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
-                              Consequences applied: the three rows previously classed as wiring are now decisions, so the
-                              illegitimate population grows by three, to the figure the audit headline above states and the
-                              guard recomputes — restated here it would be a second uncomputed site, which is the drift this
-                              ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
-                              instance, as first written; and the sites recording the two `server2.js` pins as pending
-                              conversion are correct rather than stale — under this rule they always were.
+                                  **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
+                                  governing rule two incompatible ways: one place exempted pins over wiring, and the
+                                  `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
+                                  instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
+                                  counts whether it pins a decision or a connection, because the line can be present and never
+                                  reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
+                                  Consequences applied: the three rows previously classed as wiring are now decisions, so the
+                                  illegitimate population grows by three, to the figure the audit headline above states and the
+                                  guard recomputes — restated here it would be a second uncomputed site, which is the drift this
+                                  ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
+                                  instance, as first written; and the sites recording the two `server2.js` pins as pending
+                                  conversion are correct rather than stale — under this rule they always were.
 
-                              **What this audit does NOT establish.** Three limits, the third of which was written because the
-                              fourth mechanical count failed while the first two were being written:
+                                  **What this audit does NOT establish.** Three limits, the third of which was written because the
+                                  fourth mechanical count failed while the first two were being written:
 
-                              1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
-                                 The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
-                                 did miss.
-                              2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
-                              3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
-                                 `p033-population-figures-recompute.test.mjs`: 32 / 15 / 17, the named ten-file list, the
-                                 un-excluded triple, the three intersections (seven, ten, three), and the Step 4 table's own
-                                 arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
-                                 which are a judgement and are deliberately not mechanised — a guard over them would be a check
-                                 comparing a judgement to a restatement of itself.
-                                 An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
-                                 page. That was false when written: seven, ten and three were prose, computable from sets the guard
-                                 already held, and the ticket's surviving conclusion below rests on two of them. A limits section
-                                 declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
-                                 prevent it.
+                                  1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
+                                     The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
+                                     did miss.
+                                  2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
+                                  3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
+                                     `p033-population-figures-recompute.test.mjs`: the 31 / 15 / 16 Step 1 split, the named nine-file list, the
+                                     un-excluded triple (32 / 10 / 22), the three intersections (six, ten, three), and the Step 4 table's own
 
-                              One correction to an earlier claim while these figures are being reconciled: 9 workflow-reading files
-                              minus 6 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
-                              feed them" is true of six files, not nine. Applied, not just noted: the two sites that carried that
-                              wording are now phrased about the workflow PINS, for which the claim holds of all nine. Recording the
-                              correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
-                              on the first pass. Figures restated 2026-08-20 when the perf probe's deletion removed one
-                              workflow-reading file; the three-spawn-a-runtime finding is unchanged by it.
+                                     **Corrected 2026-08-20, and the correction is the limit's own subject.** This clause read
+                                     `32 / 15 / 17, the named ten-file list, … (seven, ten, three)`. All three were stale after the
+                                     perf probe's deletion took the workflow group 10 → 9, and the first also conflated two
+                                     populations under one headline — 32 is the WITHOUT-exclusion total, 15 / 17 was the
+                                     WITH-exclusion split, and neither pair is 32 / 15 / 17. The restatement pass that ran two lines
+                                     below ("Figures restated 2026-08-20 …") missed this paragraph. A limits section is the one place
+                                     a reader trusts to say what is unguarded, and it was itself unguarded: the guard computes the
+                                     cardinals but nothing anchors the META-claim about which cardinals are computed.
+                                     arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
+                                     which are a judgement and are deliberately not mechanised — a guard over them would be a check
+                                     comparing a judgement to a restatement of itself.
+                                     An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
+                                     page. That was false when written: seven, ten and three were prose, computable from sets the guard
+                                     already held, and the ticket's surviving conclusion below rests on two of them. A limits section
+                                     declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
+                                     prevent it.
+
+                                  One correction to an earlier claim while these figures are being reconciled: 9 workflow-reading files
+                                  minus 6 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
+                                  feed them" is true of six files, not nine. Applied, not just noted: the two sites that carried that
+                                  wording are now phrased about the workflow PINS, for which the claim holds of all nine. Recording the
+                                  correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
+                                  on the first pass. Figures restated 2026-08-20 when the perf probe's deletion removed one
+                                  workflow-reading file; the three-spawn-a-runtime finding is unchanged by it.
 
 - [x] **Decide a refactor cadence. DECIDED 2026-08-19: neither of the two options as posed.** A single sweep
       is unjustifiable at this population size with no failing signal, and pure opportunism has visibly not
@@ -511,19 +549,9 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
 - [ ] **Convert the non-workflow population, release and publish paths first.** 22 files, of which the
       guards over `scripts/` are the tractable and highest-value subset: a shell
       predicate can be extracted to a file and fed inputs, which is what `scripts/scan-jobs.awk` now is.
-- [ ] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish.** This is
-      the larger half by count and it is not a lesser task. A workflow pin can prove a string is present in
-      YAML and nothing else — not that the step runs, not that the job is reached, not what GitHub does with
-      it. Stating that in the file is the difference between a known limit and a false sense of coverage,
-      and for the workflow-reading pins it is the ONLY remedy available — nothing here runs a workflow. Voiced
-      about the pins rather than the files, because three of those files do spawn a runtime for other work.
-- [ ] Document the convention in `AGENTS.md` or a new `test/js/__tests__/README.md`: "Tests in this directory MUST exercise the implementation and assert on observable behaviour. Source-inspection tests (assert.match against source text) are forbidden — see P033."
-- [ ] Add a lint rule or CI check that catches `readFile(.*service/.*\.js.*)` followed by `assert.match` patterns and flags them as source-inspection.
-
-## Related
-
-- [P091](091-sla-range-expanded-indexed-at-wrong-path-never-searchable.md) — the confirmed instance. This ticket's failure mode 2, on this ticket's own named example, costing four months.
-
-- Surfaced during ADR 029 Phase 1 step 5 fix-forward for the data.gov.au CKAN WAF compatibility (User-Agent header missing on `fetch()`).
-- ADR 014 (governance commits) — tests should be a meaningful gate, not a ceremonial pass.
-- JTBD-400 (Ship releases reliably from trunk) — false-green tests undermine the release determinism the job asserts.
+- [x] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish. SPLIT OUT
+      2026-08-20 to P116, not dropped.** The work is unchanged and is still owed; only its ranking moved. It
+      is S — nine files, one comment each — and this ticket is XL, so leaving it here priced a one-comment-
+      per-file task at an 8x divisor and sank it from roughly rank 11 to rank 34. P116 carries it at WSJF
+      12.0. The grain argument is this ticket's own, used a few lines above to reject a file-level ratchet
+      for an assertion-level defect, and it applies to an effort rating just as well.

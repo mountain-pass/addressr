@@ -78,7 +78,7 @@ body's own Related section, so a line can migrate between entries undetected.
 
 - **ADR-077** — the compendium as the architect agent's routine load surface. A duplicate is read as two
   decisions by the agent this surface exists to serve.
-- **[P033](033-source-inspection-tests-anti-pattern.md)** — a check that cannot fail on the case it looks
+- **[P033](../known-error/033-source-inspection-tests-anti-pattern.md)** — a check that cannot fail on the case it looks
   most likely to cover. The filesystem-derived counts here are that shape.
 - **[P114](114-governance-checks-that-cannot-fail-pre-check-on-shape-drain-on-unbounded-evidence-measure-the-wrong-tree.md)**
   — the upstream siblings of this class, found the same day.

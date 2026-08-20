@@ -30,7 +30,7 @@ Two things kept it invisible.
 
 **The pair was cheap to cover before it wasn't.** Until ADR-044 the published package was the Babel build output, `files` listed `lib/`, and `babel . -d lib` compiled the entire tree into it — so "is the module in the package?" could not be answered wrongly, because everything was. With `files` now an explicit list of source directories, a module reachable only on the geo branch could legitimately be missing.
 
-**And `test:cli2:geo` looks like coverage.** It exists, it is correctly named, and it is complete. A reader scanning `package.json` would reasonably conclude the pair is tested. It is reachable from no chain, which is [P033](../open/033-source-inspection-tests-anti-pattern.md)'s reviewer-trap shape wearing an npm script instead of a test name.
+**And `test:cli2:geo` looks like coverage.** It exists, it is correctly named, and it is complete. A reader scanning `package.json` would reasonably conclude the pair is tested. It is reachable from no chain, which is [P033](../known-error/033-source-inspection-tests-anti-pattern.md)'s reviewer-trap shape wearing an npm script instead of a test name.
 
 ### The residue is narrower than the table suggests
 
@@ -121,7 +121,7 @@ Fix, in two halves that ship by different vehicles:
 ## Dependencies
 
 - **Blocked by**: (none)
-- **Composes with**: [P033](../open/033-source-inspection-tests-anti-pattern.md) — the in-no-chain script is the same false-coverage shape as a test named after a feature it does not exercise.
+- **Composes with**: [P033](../known-error/033-source-inspection-tests-anti-pattern.md) — the in-no-chain script is the same false-coverage shape as a test named after a feature it does not exercise.
 
 ## Related
 

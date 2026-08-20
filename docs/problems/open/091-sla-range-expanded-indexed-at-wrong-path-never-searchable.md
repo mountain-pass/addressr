@@ -62,7 +62,7 @@ None required at the API surface. Endpoint recall is unaffected: the whitecomma 
 
 ### Why nothing caught it
 
-Three layers of green over a field that does not work. This is tracked as its own problem — [P033](033-source-inspection-tests-anti-pattern.md), which **named this exact example when it was filed on 2026-04-28**, eight days after the defect landed:
+Three layers of green over a field that does not work. This is tracked as its own problem — [P033](../known-error/033-source-inspection-tests-anti-pattern.md), which **named this exact example when it was filed on 2026-04-28**, eight days after the defect landed:
 
 1. `test/js/__tests__/address-service.test.mjs` asserts `/rval\.sla_range_expanded\s*=\s*expandRangeAliases\(/` **against the source text**. The assignment does exist. The test passes and proves nothing about the indexed document.
 2. `test/js/__tests__/elasticsearch.test.mjs` asserts the **mapping declares** the field. It does. Declaration is not population.
@@ -175,7 +175,7 @@ So the alias contributes **nothing to recall** where it is the only candidate, a
   **In code comments, superseded text was DELETED rather than retained as labelled history**, reversing the convention this sweep's first draft used. Retaining the false strings verbatim in quotes keeps the bare-token grep this task prescribes hitting them forever, and leaves a future sweeper unable to mechanically separate a live stale claim from a retained historical one — retention costs this task its own instrument. Git holds the history. The precedent is ADR-031's Soak Gate, which chose rewrite-in-place after being burned by corrections appended somewhere other than the site. The superseded task text is DESCRIBED rather than quoted, for the same reason: it named two already-corrected sites, asserted that `build-indexed-document.test.mjs` was still carrying the false claim (it no longer is), and gave the bare-token-not-phrase grep rule — which is the one part worth keeping and is restated live above. Quoting it verbatim would have left a false present-tense sentence greppable inside the paragraph that declares the convention against exactly that.
 
 - [x] ~~**Extend the documented-vs-served join to `api/swagger-2.yaml`.**~~ **Done 2026-08-09 — see the ticked entry above.** The split was worth doing: it was a trailing clause on the derivation task, so ticking the derivation would have silently closed it.
-- [ ] Add the test that would have caught this: index a range document and assert what the query can actually find. End-to-end, not a return-value check and not a source-inspection regex — see [P033](033-source-inspection-tests-anti-pattern.md).
+- [ ] Add the test that would have caught this: index a range document and assert what the query can actually find. End-to-end, not a return-value check and not a source-inspection regex — see [P033](../known-error/033-source-inspection-tests-anti-pattern.md).
 - [ ] Amend ADR-028 to Option D, and correct ADR-026, ADR-043 and [P015](../closed/015-range-number-addresses-not-searchable-by-base-number.md)'s closure once the decision lands.
 - [x] ~~**If** the decision instead goes to keeping the field~~ — **moot as of 2026-08-09**: the decision is deprecate-then-remove, so the hoist-versus-map-the-real-path question does not arise. Kept because the ETag reasoning in it is the same reasoning the removal will need. Original text:
 - [x] ~~If the decision instead goes to keeping the field, the fix shape matters.~~ Do NOT hoist it in the loader: `getAddress` builds its response as `{ ..._source.structured, sla }`, so hoisting removes a served field and flips every range address's ETag. Map the path the data already occupies (`structured.sla_range_expanded`) instead — no loader change, no response change, no ETag change, and an in-place `_update_by_query` rather than a full load.
@@ -188,7 +188,7 @@ So the alias contributes **nothing to recall** where it is the only candidate, a
 
 ## Related
 
-- [P033](033-source-inspection-tests-anti-pattern.md) — the test class that let this stay green for four months, and which named this exact example in its Description eight days after the defect landed. Re-rated on this evidence.
+- [P033](../known-error/033-source-inspection-tests-anti-pattern.md) — the test class that let this stay green for four months, and which named this exact example in its Description eight days after the defect landed. Re-rated on this evidence.
 - [ADR-028 — Range-number address expansion, endpoint-only](../../decisions/028-range-number-endpoint-only.proposed.md) — its index-side mechanism has never run.
 - [ADR-026 — Range-number address expansion](../../decisions/026-range-number-address-expansion.superseded.md) — the originator of the field.
 - [ADR-043 — Keyword-prefix anchor for street-level-first ranking](../../decisions/043-keyword-prefix-anchor-for-street-level-first-ranking.accepted.md) — corrected 2026-08-08: its `sla_range_expanded` cost is recorded as nil, and the two places that wrongly credited the field with the `108 GAZE RD` fix are corrected.

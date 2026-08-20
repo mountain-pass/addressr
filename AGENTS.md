@@ -52,6 +52,30 @@ _Codifies the prompt-layer expectations that back ADR-001 (Risk-Gated Release Pr
 - Do not ask the user to run commands unless they require credentials or resources you lack (1Password, production consoles, interactive auth).
 - If a command could be constructed and run safely, construct it and run it; don't offload the shell to the user.
 
+## Writing Tests
+
+- **A test in `test/js/__tests__/` MUST exercise its subject and assert on observable behaviour.** Import the
+  function and call it, or spawn the process and read its exit code — do not `readFile` the implementation
+  and `assert.match` against the source text. A source-inspection test passes whenever the line is present,
+  including when the line is never reached, so it reports coverage it does not have. See P033.
+- **The rule turns on what is being read, not on what the assertion pins.** Settled 2026-08-20: a text
+  assertion over SOURCE counts whether it pins a decision or a connection, because the line can be present
+  and never reached. There is no wiring exemption.
+- **The carve-out that survives: declarative artefacts.** A lockfile agreeing with its manifests, a workflow
+  YAML, a decisions index, a WSJF table — for these the artefact IS the subject, so reading it is not a proxy
+  for behaviour. Asserting over a `.github/workflows/**` file is fine; asserting over `packages/**` source is
+  not.
+- **When a pin genuinely cannot be converted, say what it cannot establish, in the file.** A workflow pin
+  proves a string is present in YAML and nothing else — not that the step runs, not that the job is reached,
+  not what GitHub does with it. Stating that is the difference between a known limit and a false sense of
+  coverage.
+- **This convention is NOT a control, and must not be cited as one.** Nothing enforces it. A lint rule
+  cannot: `lint-staged` is scoped to `*.js` / `*.jsx` per ADR-014, so ESLint would never run on the
+  `*.test.mjs` files it would police. A CI check was designed on 2026-08-20 and declined — its catch rate
+  against the one demonstrated instance was zero. Per ADR-051, a discipline aimed at a human reader is not a
+  control and scores no risk reduction; this bullet exists so that nothing here reads as one. The maintainer's
+  stated trigger for revisiting is a new bad pin reaching master unnoticed. See P033.
+
 ## Completion Protocol (Default)
 
 - Unless explicitly told otherwise, when a task is complete:
