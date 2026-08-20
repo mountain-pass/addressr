@@ -1,5 +1,5 @@
 ---
-status: draft
+status: accepted
 story-id: a-test-that-cannot-fail-is-made-able-to-fail
 reported: 2026-08-20
 decision-makers: [Tom Howard]
@@ -12,7 +12,7 @@ estimated-effort: S
 
 # STORY-001: A test that passes no matter what the code does is found and made able to fail
 
-**Status**: draft
+**Status**: accepted
 **Reported**: 2026-08-20
 **Problem**: P033
 **RFC**: RFC-009

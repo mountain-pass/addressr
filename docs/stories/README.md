@@ -30,9 +30,9 @@ Active stories — `draft`, `accepted`, `in-progress`. Reconciled against the fi
 `wr-itil-reconcile-stories docs/stories`. **No WSJF column**: stories are sequenced by their position in the
 parent RFC's `stories:` array, not ranked independently (ADR-060's I11 invariant).
 
-| Story     | Status | Title                                                                          | RFC     | Map           |
-| --------- | ------ | ------------------------------------------------------------------------------ | ------- | ------------- |
-| STORY-001 | draft  | A test that passes no matter what the code does is found and made able to fail | RFC-009 | STORY-MAP-001 |
+| Story     | Status   | Title                                                                          | RFC     | Map           |
+| --------- | -------- | ------------------------------------------------------------------------------ | ------- | ------------- |
+| STORY-001 | accepted | A test that passes no matter what the code does is found and made able to fail | RFC-009 | STORY-MAP-001 |
 
 ## Done
 
