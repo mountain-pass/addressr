@@ -122,7 +122,7 @@ exists: the two `proxy-auth.test.mjs` pins over the pre-auth-responder property,
 **The proxy-auth half of that carve-out is LIFTED as of 2026-08-21** — the condition it names was met, not
 waived. Cover now exists and is structural rather than behavioural-by-request: a guard over the built
 Express middleware stack, proved CAUGHT on seven mutations **with the pins already deleted**, including the
-two the pins were blind to. The `graceful-shutdown.test.mjs` half stands: nothing reaches `server2.js` yet.
+two the pins were blind to. **The `graceful-shutdown.test.mjs` half was LIFTED 2026-08-21** — the child-process conversion landed. It is a PARTIAL lift: the ordering property is covered, the `stop:` / `force:` wiring is not, and that is recorded below rather than treated as discharged.
 
 ### Measured baselines, 2026-08-20
 
@@ -219,13 +219,13 @@ classify a text pin will meet it.
 Every mutation below leaves the pinned text **present and matching** and kills the behaviour. Whole suite,
 640 tests. Every file restored byte-clean.
 
-| #   | pin                                                               | text-preserving mutation                                                                                                              | verdict                            |
-| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });`                                               | **BLIND**                          |
-| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers({ stop: stopServer, force: forceCloseConnections });` — both `indexOf` markers intact | **BLIND**                          |
-| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's method list                                                                        | ~~BLIND~~ **CONVERTED 2026-08-21** |
-| 5   | P012 progress logging (`address-service.test.mjs`)                | `logger('mapped', JSON.stringify(d, …))` — a DIFFERENT variable, so the pinned string stays absent                                    | **BLIND**                          |
-| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body; every pinned guard string still present below it                                                   | **BLIND**                          |
+| #   | pin                                                               | text-preserving mutation                                       | verdict                            |
+| --- | ----------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------- |
+| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest(…)`                      | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers(…)`            | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's method list | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 5   | P012 progress logging (`address-service.test.mjs`)                | `JSON.stringify(d, …)` — a different variable                  | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body                              | ~~BLIND~~ **CONVERTED 2026-08-21** |
 
 **So the mirror can be dead, the shutdown handlers can be uninstalled, the auth exemption can be widened and
 the error mapping can be unreachable — with every pin green and the suite green.** That is P091 restated as
@@ -272,6 +272,113 @@ negative space the day something routed it.
 The population fell 33 → 32: with its last file-read gone, `proxy-auth.test.mjs` left the population. First
 decrease; every prior move was an increase from adding a guard.
 
+### Rows 1, 5 and 6/7 — CONVERTED 2026-08-21
+
+All three lived in `address-service.test.mjs`, which has now left the population entirely: 32 → 31.
+
+**Row 1 — read-shadow wiring.** The observable is the WIRE, not an app-side counter. A first attempt asserted
+`getShadowStatus().attempts > 0`; that counter increments **before** dispatch, so it proves the call site ran
+and nothing more — and everything between the increment and the send sits in a swallow path, which is P035's
+recorded blind spot (any app-reported figure can read healthy while nothing leaves the process). Replaced by
+a stub HTTP server on an ephemeral port — the automated form of the target-side observation ADR-031's own
+Confirmation already names. Five mutations CAUGHT: call gated behind a false condition; call deleted; method
+`search` → `get`; a rebuilt body; the import replaced by a local no-op. **The method and body mutations were
+uncatchable by the counter version**, and the body one was never covered by anything.
+
+An earlier draft set `ADDRESSR_SHADOW_HOST` to a URL. That var is a HOSTNAME — protocol and port are separate
+— so it produced `https://http://127.0.0.1:9:443`, failed DNS on the hostname `http`, and never reached a
+port. The test passed anyway, because the counter it asserted moves before dispatch. Recorded because a test
+that passes for a reason its own comment misdescribes is this ticket's subject.
+
+**Row 5 — progress logging.** The pin asserted the absence of one spelling, `JSON.stringify(rval`. Replaced by
+capturing what `debug` actually emits and asserting the progress line is a percentage carrying no payload.
+Three mutations CAUGHT, including `JSON.stringify(d, …)` — a different variable, which the pin was blind to.
+
+**Rows 6/7 — getAddress error mapping.** The pins asserted the catch block's TEXT. Replaced by driving each
+branch through the exported function with a stubbed client: no-body error → 500 (P014's actual crash),
+not-found → 404, missing index → 503, timeout → 504, anything else → 500. Four mutations CAUGHT, including an
+early return that makes the whole catch body dead code — which both pins were blind to.
+
+### Rows 2/3 — CONVERTED 2026-08-21, and PARTIALLY
+
+The blocker was real: importing `server2.js` starts a server and connects a search client, so nothing could
+exercise it in-process. The conversion is the child-process shape P033 predicted — spawn the entry point and
+observe what the process does.
+
+**The ordering property is covered.** A bad `ADDRESSR_SHUTDOWN_TIMEOUT_MS` makes `shutdownTimeoutMs` throw,
+so install-before-listen means the process dies before binding. Both mutations CAUGHT: the install gated
+behind a never-true check, and the install moved after `startRest2Server()`.
+
+**Picking the observable took three attempts, and the two failures are the useful part:**
+
+1. The success banner, asserted absent — **vacuous**. It prints only after `esConnect()` resolves, and no
+   search backend runs in this tier, so it never prints on any path. A run with a VALID timeout produced no
+   banner either.
+2. The backend-wait line, asserted absent — **blind to the mutation that matters**. It is printed downstream
+   of where a moved install sits, so moving the install after startup still produced no wait line.
+3. The LISTEN log, asserted absent — correct, because binding the port is the event the property is about.
+   Requires `DEBUG=api` in the spawned environment or there is no bind signal at all. Measured both
+   directions before relying on it.
+
+**NOT covered, and the pins did cover it.** The deleted pins also asserted `stop: stopServer` and
+`force: forceCloseConnections`. Measured BLIND to every behavioural case: `installShutdownHandlers` defaults
+`force` to `() => {}`, so dropping it is silent, and the bad-timeout throw happens inside the default
+parameter `timeoutMs = shutdownTimeoutMs(env)` — evaluated before `stop` or `force` is ever read. A SIGTERM
+drain case was added and proves `stop` reaches a working drain and that the configured timeout arrives from
+the environment, but a no-op `stop` still exits 0 with nothing in flight, and `force` only fires when a
+request outlives the deadline, which needs a live backend. **A held keep-alive connection drains in 4ms.**
+
+The honest fix is to make `force` a required option — a silent default that disables force-close is a latent
+defect in its own right — which is a production change and outside this conversion. Recorded, not lost.
+
+### What rows 1, 5 and 6/7 do NOT establish
+
+P116 attaches a what-this-cannot-establish note to pins that stay. The same discipline belongs on pins that
+go, or "CONVERTED" quietly transfers coverage the replacement never had.
+
+- **Row 1 — the single build is NOT pinned.** The production comment calls it load-bearing: _"Calling
+  buildAddressSearchBody twice would satisfy every existing assertion while quietly voiding this."_ The
+  replacement compares the mirrored body to the primary's, so a FAITHFUL rebuild is deep-equal and passes.
+  The CAUGHT verdict recorded for "a rebuilt body" used a body built from **different** inputs
+  (`{ query: { match_all: {} } }`), so it establishes that the mirror sends the primary's query and not that
+  one object is shared. Nothing outside the module can prove shared-reference.
+- **Row 1 covers the SEARCH leg only, and the other leg does not exist.** `getAddress`
+  (`address-service.js:1622-1663`) contains no `mirrorRequest` call at all — verified by reading, not
+  assumed. Yet ADR-031's Behaviour and Where-the-code-lives sections, and `read-shadow.js`'s own header,
+  all claim `/addresses/{id}` is mirrored. So a describe block titled "read-shadow WIRING (ADR 031)" would
+  otherwise transfer apparent coverage over a mechanism half of which was never built. The ADR correction is
+  its own ticket; the non-establishment note belongs in the commit that creates the coverage claim.
+- **Rows 6/7 — the 504 case characterises a branch that cannot fire.** Production selects it with
+  `error_.displayName === 'RequestTimeout'`, and no `@opensearch-project/opensearch` error carries
+  `displayName` — measured, and the string appears nowhere in that package. A real timeout returns 500.
+  **The conversion found this; the pins could not, and neither could the first behavioural replacement,
+  which drove the branch with a fabricated error carrying the field the source reads.** Tracked as P117.
+- **Row 5 — frequency is NOT pinned, only payload.** P012's subject is volume, and volume is payload times
+  rate. Delete the `index % Math.ceil(count / 100)` throttle and the mapper logs every row; the test still
+  passes, because it logs at index 0 either way. The deleted pin did not cover this either.
+- **Rows 6/7 — the fixture is not the production shape.** Papa.parse with `header: true` yields `''` for
+  absent fields; the test fixture leaves them `undefined`, so every `!== ''` guard takes the opposite branch
+  and the mapper builds a maximal record. Conservative for these assertions, but it is not the production
+  path.
+
+**Mutation expressions, published so the verdicts are re-runnable** — content-addressed, never positional,
+per P033's own rule:
+
+```
+row 1  s|  mirrorRequest({ method: 'search', params: searchParameters });|  if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });|
+row 1  s|mirrorRequest({ method: 'search', params: searchParameters })|mirrorRequest({ method: 'get', params: searchParameters })|
+row 1  s|mirrorRequest({ method: 'search', params: searchParameters })|mirrorRequest({ method: 'search', params: { index: ES_INDEX_NAME, body: { query: { match_all: {} } } } })|
+row 5  insert  logger("m", JSON.stringify(d, undefined, 2));    above the progress log
+row 5  insert  logger("m", JSON.stringify(rval, undefined, 2)); above the progress log
+row 6  insert  if (error_) return { statusCode: 500, json: { error: "dead" } }; at the head of the catch
+row 7  s|statusCode: 504|statusCode: 500|
+6/7    hoist the RequestTimeout branch above the body branches   (precedence)
+6/7    s|json: { error: 'not found' }|json: { error: 'service unavailable' }|  (payload swap)
+```
+
+The last two were BLIND when first measured and are the reason rows 6/7 gained a precedence case and
+per-branch payload assertions before being called converted.
+
 ### The gap this closed, stated with the bound P033 already had
 
 An earlier revision of this section said the auth boundary is "guarded by a text assertion and by nothing
@@ -280,15 +387,33 @@ correctly and this RFC must not narrow:
 
 - **Covered behaviourally on `/addresses`** — `waycharter-server.test.mjs`'s _401s an unauthenticated data
   GET on the same path_ drives `buildRest2App` and catches a pre-auth responder mounted there.
-- **Sole-covered by the text pin** for a data-method registration on any other path. Measured: inserting
+- ~~**Sole-covered by the text pin** for a data-method registration on any other path.~~ **As at
+  2026-08-20.** That pin was deleted 2026-08-21; the structural guard covers this. Measured: inserting
   `app.get('/leak', …)` reddens exactly one test, the pin.
 - **UNCOVERED by either** for a path-scoped `app.use('/leak', …)`. The pin's method list does not include
   `use`; no behavioural test requests an unrouted path, so the bypass is unobservable by construction.
-  Measured BLIND above. **This row has no guard at all today.**
+  Measured BLIND above. ~~**This row has no guard at all today.**~~ **As at 2026-08-20 — closed
+  2026-08-21**: row 4's table records `app.use('/leak', …)` pre-auth as CAUGHT by the structural guard.
 
-The replacement is a structural guard over the built app, and it discharges all three shapes: with proxy auth enabled, `GET /leak` must
-return 401. That catches a pre-auth `app.get`, a pre-auth `app.use`, a router mount, and a responder
-registered outside `buildRest2App` — none of which a text pin can see.
+**What discharges all three shapes is the structural guard over the BUILT APP** — it locates the auth layer
+by name and asserts the exact shape of everything registered ahead of it, so a responder mounted anywhere, by
+any mechanism, shows up as an extra layer. It needs no path enumeration, which is the whole point.
+
+**It is NOT the `GET /leak` probe, and this paragraph said it was.** An earlier revision read "with proxy
+auth enabled, `GET /leak` must return 401 — that catches a pre-auth `app.get`, a pre-auth `app.use`, a
+router mount…". That describes the REJECTED first attempt, and it credits it with catching the very shape
+this RFC records it measured BLIND against, a hundred lines above: a pre-auth `app.get('/mutation-probe', …)`
+passed it, because the probe only ever reaches the path it names.
+
+Recorded rather than quietly replaced, because it is **another instance of one shape: a record crediting
+an instrument its own measurements found blind.** No count is given — an earlier draft said "the third
+instance today", an ordinal nothing computes, written one paragraph after a tally was removed for being
+exactly that. A reader who took this paragraph at face value
+would retire a pin on the strength of a path probe, which is exactly the mistake it took a measurement to
+catch the first time.
+
+The generated-path request probes remain, and they are worth having — but as a check on the auth decision
+being reached at all, not as the any-path guard.
 
 ### Negative pins admit a dual after all — and it is the easiest one to miss
 

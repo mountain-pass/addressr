@@ -29,6 +29,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears           | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI               | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
 | 6.0  | P113 | Lifecycle transition breaks relative links; the repair is manual                | Medium (6)   | Open          | S      | 2026-08-20 | internal |
+| 6.0  | P117 | A search timeout returns 500, not 504 — `displayName` is a legacy client field  | Medium (6)   | Open          | S      | 2026-08-21 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                     | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                 | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                         | High (12)    | Open          | M      | 2026-08-19 | internal |

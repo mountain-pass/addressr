@@ -11,12 +11,18 @@
 
 `test/js/__tests__/address-service.test.mjs` and other test files in this directory follow a **source-inspection** style: they `readFile()` the implementation source and `assert.match()` regex patterns against the source text rather than calling the implementation and asserting on its observable behaviour.
 
-Examples currently in tree (`test/js/__tests__/address-service.test.mjs`):
+**Examples as first recorded. ALL FOUR ARE NOW DISCHARGED — none is in tree as a source pin, as of
+2026-08-21.** Retained because they are this ticket's defining illustration and because "what it looked like"
+is the thing a reader needs; the list is history, not inventory:
 
-- "mapAddressDetails does not JSON.stringify the address in progress logging" — greps `JSON.stringify(rval` out of the source.
-- "fuzziness MUST be `AUTO:5,8`" — greps `fuzziness: "AUTO:5,8"` out of the source.
-- "imports expandRangeAliases from ./range-expansion" — greps the import statement.
-- "attaches rval.sla_range_expanded using expandRangeAliases" — greps the assignment expression.
+- ~~"mapAddressDetails does not JSON.stringify the address in progress logging"~~ — **converted 2026-08-21
+  (RFC-009 row 5)**, replaced by capturing what the logger emits. Greped `JSON.stringify(rval` out of the source.
+- ~~"fuzziness MUST be `AUTO:5,8`"~~ — **now behavioural**: it calls `buildAddressSearchBody` and asserts on
+  `bool.fuzziness` in the returned object. Formerly greped `fuzziness: "AUTO:5,8"` out of the source.
+- ~~"imports expandRangeAliases from ./range-expansion"~~ — **converted** with the `attachRangeAliases`
+  extraction. Formerly greped the import statement.
+- ~~"attaches rval.sla_range_expanded using expandRangeAliases"~~ — **converted** with the same extraction.
+  Formerly greped the assignment expression.
 
 These tests **pin the literal source text**, not the contract. Failure modes:
 
@@ -66,7 +72,7 @@ including the two the pins could not see — a path-scoped `app.use`, and a regi
 the source text says nothing about whether it executes. The paragraph below, that a source-region scan cannot
 see a terminating `app.use`, is the reason the replacement had to inspect the app rather than the file.
 
-And they are weak cover for it, on this ticket's own terms: a source-region scan cannot see a terminating `app.use` handler mounted ahead of the middleware — the same limitation recorded for the preflight regexes further down. That is a live gap over an auth boundary, not a discharged one.
+And they are weak cover for it, on this ticket's own terms: a source-region scan cannot see a terminating `app.use` handler mounted ahead of the middleware — the same limitation recorded for the preflight regexes further down. That was a live gap over an auth boundary, not a discharged one — **as at 2026-08-20. Discharged 2026-08-21**; see the paragraph above.
 
 **The first version of this withdrawal said the opposite** — that "the auth path is exercised and there is no green light over anything" — which was a coverage claim asserted without opening the file, in the ticket that exists to catch coverage claims asserted without opening the file. It is recorded rather than quietly fixed because the frequency is the evidence: this is the fourth correction to this section, and each one was introduced by the fix to the one before it.
 
@@ -76,7 +82,13 @@ Deleting these tests is not the fix, and neither is rewriting them one-for-one. 
 
 ## First conversion landed 2026-08-08 — the `sla_range_expanded` block
 
-Three of the assertions this ticket names by example are now behavioural. `attachRangeAliases` and `buildIndexedDocument` are extracted to `src/build-indexed-document.js` as clean ESM and covered by 11 executing assertions in `test/js/__tests__/build-indexed-document.test.mjs`. The `assert.match` count in `address-service.test.mjs` drops 7 → 5.
+**All four** of the assertions this ticket names by example are now behavioural — **two** with the
+`attachRangeAliases` / `buildIndexedDocument` extraction (2026-08-08), one via the `src/build-search-body.js`
+extraction (2026-08-07, the fuzziness example), and the fourth (progress logging) on 2026-08-21. An earlier
+revision said "three with the `attachRangeAliases` extraction": the count was corrected to four and the
+attribution clause kept the old three, which is this ticket's own recurring shape.
+This sentence read "three" until then; it is the ticket's own opening illustration and it goes stale every
+time a conversion lands, which is why the list above is now labelled history rather than inventory. `attachRangeAliases` and `buildIndexedDocument` are extracted to `src/build-indexed-document.js` as clean ESM and covered by 11 executing assertions in `test/js/__tests__/build-indexed-document.test.mjs`. The `assert.match` count in `address-service.test.mjs` drops 7 → 5.
 
 The extraction follows the path this repo already uses to escape the babel-only constraint that forced source-inspection in the first place: `src/build-search-body.js`, `src/init-index-config.js`, `service/gnaf-package-fetch.js` and `utils/stream-down.js` were all moved out for the same reason.
 
@@ -160,13 +172,13 @@ Mutation-proved rather than asserted, ten ways: `type: boolean`→`string`, `def
 
 ### Remaining population
 
-| file                                    | `assert.match` over source | note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `release-workflow-deploy-only.test.mjs` | WITHDRAWN (see below)      | was 45, not 24 — the original count matched only `assert.match`/`doesNotMatch` and missed 23 `assert.ok(x.includes(...))`. The 25 YAML assertions were parsed 2026-08-08. The 18 left read two shell scripts, where the right shape is a fixture test over an extracted predicate (P085), not a parse. **For the two watcher scripts that extraction has now happened** — `scripts/scan-jobs.awk` exists, `scan-jobs-awk.test.mjs` covers it in 15 fixture cases, and the pins over those scripts were repointed to assert the wiring rather than the decision, which the settled rule counts as illegitimate too — better than asserting a private copy's contents, but still a text assertion. The remainder of this row is still unconverted. Four further regexes remain and are NOT in this count: they match the detection step's `run:` body, which is located by the parse and then regexed because the body genuinely is shell. |
-| `waycharter-server.test.mjs`            | 0                          | was 14, then 7. **Cleared 2026-08-09**: ADR-044 removed the babel-only import, and all seven became executing assertions driving `buildRest2App` through `light-my-request`. Mutation-proved against four reversions — moving `app.options` after `proxyAuthMiddleware`, dropping the CORS gate, deleting the `validateReadShadowConfig()` call, and removing the debug endpoint from the proxy-auth allowlist. Each fails exactly one case.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `graceful-shutdown.test.mjs`            | 2                          | was 7; the drain converted 2026-08-08. **The stated blocker was retired 2026-08-09 and replaced, not cleared**: these two read `src/server2.js`, a top-level side-effecting entry — importing it starts a server and connects a search client — so the honest conversion is a child-process one (spawn, assert exit, assert no port binds), a different shape and cost from the in-process conversions. Blocked on entry-point side effects, NOT on the babel-only import.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `address-service.test.mjs`              | 5                          | was 7. **No structural blocker as of 2026-08-09** — ADR-044 made the module importable and every remaining assertion covers a path reaching OpenSearch only via the stubbable `globalThis.esClient` global. Unlike `graceful-shutdown.test.mjs`, nothing replaced the retired blocker; what remains is effort. **Owner, so "effort" is not an open-ended exemption**: the P012 progress-logging block is owned by JTBD-203 (self-hosted operator, G-NAF refresh) — its subject is the loader emitting ~60K JSON lines per state reindex and drowning out real errors, which is that persona's documented fail-loud pain, and JTBD-203 binds itself to this ticket's disposition. Read-shadow → JTBD-201, `getAddress` catch → JTBD-003/JTBD-100.                                                                                                                                                                                         |
-| `proxy-auth.test.mjs`                   | 0 (was 2)                  | **CONVERTED 2026-08-21.** The OPTIONS-scoping guard was replaced by a structural guard over the built app in `waycharter-server.test.mjs` and deleted; with its last file-read gone the file left the population entirely, taking the headline 33 → 32.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| file                                    | `assert.match` over source | note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release-workflow-deploy-only.test.mjs` | WITHDRAWN (see below)      | was 45, not 24 — the original count matched only `assert.match`/`doesNotMatch` and missed 23 `assert.ok(x.includes(...))`. The 25 YAML assertions were parsed 2026-08-08. The 18 left read two shell scripts, where the right shape is a fixture test over an extracted predicate (P085), not a parse. **For the two watcher scripts that extraction has now happened** — `scripts/scan-jobs.awk` exists, `scan-jobs-awk.test.mjs` covers it in 15 fixture cases, and the pins over those scripts were repointed to assert the wiring rather than the decision, which the settled rule counts as illegitimate too — better than asserting a private copy's contents, but still a text assertion. The remainder of this row is still unconverted. Four further regexes remain and are NOT in this count: they match the detection step's `run:` body, which is located by the parse and then regexed because the body genuinely is shell.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `waycharter-server.test.mjs`            | 0                          | was 14, then 7. **Cleared 2026-08-09**: ADR-044 removed the babel-only import, and all seven became executing assertions driving `buildRest2App` through `light-my-request`. Mutation-proved against four reversions — moving `app.options` after `proxyAuthMiddleware`, dropping the CORS gate, deleting the `validateReadShadowConfig()` call, and removing the debug endpoint from the proxy-auth allowlist. Each fails exactly one case.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `graceful-shutdown.test.mjs`            | 0 (was 2)                  | **CONVERTED 2026-08-21 (RFC-009 rows 2/3).** The blocker was real and the conversion is the child-process shape this row predicted: spawn the entry point with a bad ADDRESSR_SHUTDOWN_TIMEOUT_MS and assert it dies WITHOUT binding the port, plus a SIGTERM drain case. **NOT fully replaced**: the `stop:` / `force:` wiring the pins also asserted is measured BLIND to every behavioural case, because `force` defaults to a no-op and the validation throws before either option is read. Recorded in the test file and in RFC-009 rather than lost. **Superseded blocker text, retained:** was 7; the drain converted 2026-08-08. **The stated blocker was retired 2026-08-09 and replaced, not cleared**: these two read `src/server2.js`, a top-level side-effecting entry — importing it starts a server and connects a search client — so the honest conversion is a child-process one (spawn, assert exit, assert no port binds), a different shape and cost from the in-process conversions. Blocked on entry-point side effects, NOT on the babel-only import.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `address-service.test.mjs`              | 0 (was 5)                  | **CONVERTED 2026-08-21 (RFC-009 rows 1, 5, 6/7).** Read-shadow wiring is asserted against a stub HTTP target — the method and body on the wire, because an app-side counter increments before dispatch and can see neither. P012 by capturing what the logger emits. P014 by driving each catch branch, plus a precedence case (an error satisfying two branches, which no single-predicate fixture can see) and per-branch payload assertions. Every mutation CAUGHT; the per-row verdicts and the content-addressed expressions behind them live in RFC-009's Classification section, cited rather than restated — a tally here would be a further site of a number nothing computes, which is what this ticket withdrew every tally over. The file left the population: 32 → 31. **Superseded blocker text, retained as history:** was 7. **No structural blocker as of 2026-08-09** — ADR-044 made the module importable and every remaining assertion covers a path reaching OpenSearch only via the stubbable `globalThis.esClient` global. Unlike `graceful-shutdown.test.mjs`, nothing replaced the retired blocker; what remains is effort. **Owner, so "effort" is not an open-ended exemption**: the P012 progress-logging block is owned by JTBD-203 (self-hosted operator, G-NAF refresh) — its subject is the loader emitting ~60K JSON lines per state reindex and drowning out real errors, which is that persona's documented fail-loud pain, and JTBD-203 binds itself to this ticket's disposition. Read-shadow → JTBD-201, `getAddress` catch → JTBD-003/JTBD-100. |
+| `proxy-auth.test.mjs`                   | 0 (was 2)                  | **CONVERTED 2026-08-21.** The OPTIONS-scoping guard was replaced by a structural guard over the built app in `waycharter-server.test.mjs` and deleted; with its last file-read gone the file left the population entirely, taking the headline 33 → 32.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 **Repo-wide recount, 2026-08-19 — this PARTIALLY discharges Investigation Task 1, and it reports NO
 assertion total, on purpose.** Three attempts at one produced three different figures, and the third failed
@@ -193,9 +205,9 @@ per-file read, which is why that task stays open.
 
 | fact                                                          | count |
 | ------------------------------------------------------------- | ----- |
-| test files that read a repo file and assert on what they read | 32    |
+| test files that read a repo file and assert on what they read | 30    |
 | of those, files that read `.github/workflows/**`              | 9     |
-| all other file-reading test files                             | 23    |
+| all other file-reading test files                             | 21    |
 
 **The predicate is published so the classification can be rerun, not just the result.** A file is in the
 population if its source matches `readFileSync|readFile\(|readdirSync` and contains `assert.`; it is in the
@@ -204,7 +216,7 @@ workflow group if it contains both `.github` and `workflows`; and
 
 That last clause is not a convenience. That file is the guard which recomputes these figures, and it
 satisfies every clause of the predicate — it reads test files, it asserts, and it quotes the literal
-`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 33 / 10 / 23
+`.github/workflows` while explaining the rule — so run without the exclusion the rule returns 31 / 10 / 21
 and counts the instrument into the sample it measures. It is stated here because the whole claim of this
 paragraph is that a third party can rerun the rule and get the table; a rule published in one form and run
 in another would make the guard green while the record stayed falsifiable, which is the failure this ticket
@@ -227,7 +239,7 @@ being a per-file read rather than a better regex.
 whole point of computing these figures rather than asserting them: five rounds of hand-correction never
 once caught a drift at the moment it happened, because nothing was watching.
 
-Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 23 and holds no source pin
+Even now this over-counts the other group: `mutate-helper.test.mjs` is among the 21 and holds no source pin
 at all. File identity is robust enough to route the work, and that is all it is used for.
 
 **This headline now has a mechanical inflator attached, and it inflates in the WRONG DIRECTION.** The figure
@@ -241,14 +253,13 @@ The number stays arithmetically true and becomes a worse proxy for the size of t
 work by file identity, never by this cardinal.** The Step 1 / Step 2 split below is the figure that means what a
 reader expects the headline to mean.
 
-**It went DOWN for the first time on 2026-08-21: 33 → 32**, because RFC-009 row 4 converted — the
-OPTIONS-scoping source pins in `proxy-auth.test.mjs` were replaced by a structural guard over the built app
-and deleted, and with its last file-read gone that file left the population. **That is what caused THIS
-move.** No general rule is drawn from it: a first draft of this paragraph said "a decrease means the work
-happened, an increase means nothing", and both halves are false against this page. The 2026-08-20 perf-probe
-deletion moved the workflow group 10 → 9 by deleting files, not converting them; and an increase caused by a
-new source pin in a new file is precisely the reassessment trigger recorded below, which a rule calling
-increases meaningless would suppress.
+**It has gone DOWN three times on 2026-08-21: 33 → 32 → 31 → 30**, both times because a conversion landed. First
+`proxy-auth.test.mjs` (RFC-009 row 4), then `address-service.test.mjs` (rows 1, 5 and 6/7). Each left the
+population when its last file-read went. **That is what caused these moves.** No general rule is drawn from
+it: a first draft said "a decrease means the work happened, an increase means nothing", and both halves are
+false against this page — the 2026-08-20 perf-probe deletion moved the workflow group 10 → 9 by deleting
+files rather than converting them, and an increase caused by a new source pin in a new file is precisely the
+reassessment trigger recorded below, which a rule calling increases meaningless would suppress.
 
 **The conclusion that survives, and the one that does not.** Those nine files pin YAML consumed by GitHub.
 Nothing in this repo runs a workflow, so extract-and-feed cannot convert those PINS and the honest
@@ -317,39 +328,39 @@ a red at one of those pins is still a real signal to convert rather than delete.
       till much later, that we need to think about how we stop that from happening."_
 
       **This is a decision, not a deferral, and the difference matters to how it should be read.** The five
-                                                                          sites were legacy — they predate the settlement and were written under the rule it retired. Building an
-                                                                          instrument to catch a population that has already been cleaned is spending on the last defect rather
-                                                                          than the next one. What would justify the instrument is a NEW pin written under the settled rule and
-                                                                          reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
-                                                                          were found by adversarial review rather than by any tool, so the current control is a human reading
-                                                                          carefully, and that is what a recurrence would falsify.
+                                                                                                                  sites were legacy — they predate the settlement and were written under the rule it retired. Building an
+                                                                                                                  instrument to catch a population that has already been cleaned is spending on the last defect rather
+                                                                                                                  than the next one. What would justify the instrument is a NEW pin written under the settled rule and
+                                                                                                                  reaching master unnoticed, and none has been observed. The residual is accepted knowingly: the sites
+                                                                                                                  were found by adversarial review rather than by any tool, so the current control is a human reading
+                                                                                                                  carefully, and that is what a recurrence would falsify.
 
-                                                                          **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
-                                                                          and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
-                                                                          shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
-                                                                          rather than review. That is the maintainer's condition, written as something falsifiable.
+                                                                                                                  **Reassessment trigger, so this does not get re-litigated on the next sighting.** One stale site found
+                                                                                                                  and fixed promptly is not the trigger and does not reopen this. The trigger is the pair: the retired
+                                                                                                                  shape is REINTRODUCED after 2026-08-20, **and** it survives long enough that the finding is archaeology
+                                                                                                                  rather than review. That is the maintainer's condition, written as something falsifiable.
 
-                                                                          **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
-                                                                          class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
-                                                                          than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
-                                                                          composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
-                                                                          COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
-                                                                          reader reaches the ADR question already answered rather than rediscovering it.
+                                                                                                                  **ADR-048's first reassessment criterion fired and is answered by this entry.** It names this exact
+                                                                                                                  class ("prose that is stale in meaning while resolving fine") and prescribes widening the guard rather
+                                                                                                                  than the claim. The disposition is: not now, on the reasoning above. The route it points at — a new
+                                                                                                                  composing ADR rather than an amendment to ADR-048, whose ratified Confirmation names this class as NOT
+                                                                                                                  COVERED — remains the correct route **if** the trigger fires. It is recorded here so that a future
+                                                                                                                  reader reaches the ADR question already answered rather than rediscovering it.
 
-                                                                          **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
-                                                                          passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
-                                                                          `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
-                                                                          tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
-                                                                          phrase list; and say in
-                                                                          the test name that it establishes vocabulary only, never that the pins were converted.
-                                                                          **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
-                                                                          the candidate phrase list against the five sites read it case-sensitively and reported that
-                                                                          `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
-                                                                          site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
-                                                                          lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
-                                                                          reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
-                                                                          would have reported clean over four live instances. The review was wrong on the fact and right about
-                                                                          the spec, which is why the correction is recorded here rather than merely answered.
+                                                                                                                  **Spec retained for that event, because the cost of losing it is another audit.** Assert a non-zero floor on BOTH the scan set and the phrase list, or an empty listing
+                                                                                                                  passes green; ban the retired position asserted in the PRESENT TENSE rather than the token, because
+                                                                                                                  `docs/problems/` retains superseded prose by design and this ticket's own guard requires the Step 4
+                                                                                                                  tally sentence — which names `wiring` as a bucket — to survive verbatim; exclude the file holding the
+                                                                                                                  phrase list; and say in
+                                                                                                                  the test name that it establishes vocabulary only, never that the pins were converted.
+                                                                                                                  **Match CASE-INSENSITIVELY, and treat that as load-bearing rather than a nicety.** A reviewer checking
+                                                                                                                  the candidate phrase list against the five sites read it case-sensitively and reported that
+                                                                                                                  `scan-jobs-awk.test.mjs` matched nothing — it matches on `it pins the decision`, but only because the
+                                                                                                                  site writes `It pins the DECISION`. Measured against the pre-fix tree rather than reasoned about: a
+                                                                                                                  lower-case list matched case-sensitively reaches **one of the five sites**, and case-insensitively
+                                                                                                                  reaches all five. Four of the five shout the retired position in capitals, so a case-sensitive guard
+                                                                                                                  would have reported clean over four live instances. The review was wrong on the fact and right about
+                                                                                                                  the spec, which is why the correction is recorded here rather than merely answered.
 
 **`scripts/mutate.sh` makes the practice cheap**, which is the point: the barrier was never disagreement,
 it was six lines of `cp`/`sed`/run/restore per check.
@@ -493,126 +504,126 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       intermediate count are below, because three earlier attempts at a number were wrong and a fourth
       unexplained figure would deserve no more trust than they got.
 
-      **Step 1 — 32 files read a repo file and assert on what they read.** Of those, **14 exercise the
-                                                                                      subject** (they import it, statically or dynamically, or spawn it) and **18 read only**. The first
-                                                                                      classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
-                                                                                      `await import(...)`. Corrected before use.
+      **Step 1 — 30 files read a repo file and assert on what they read.** Of those, **12 exercise the
+                                                                                                                              subject** (they import it, statically or dynamically, or spawn it) and **18 read only**. The first
+                                                                                                                              classifier missed `proxy-auth.test.mjs` entirely because it matched `from '...'` and that file uses
+                                                                                                                              `await import(...)`. Corrected before use.
 
-                                                                                      **Step 2 — of the 18 read-only files, NONE is a source-inspection test of implementation.** Six
-                                                                                      read `.github/workflows/**`, where there is no runtime to exercise. The other twelve check declarative
-                                                                                      artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
-                                                                                      WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
-                                                                                      behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
-                                                                                      a file` and `pins source text as a stand-in for what the code does` are different populations, and
-                                                                                      conflating them is why the figures ran to the hundreds.
+                                                                                                                              **Step 2 — of the 18 read-only files, NONE is a source-inspection test of implementation.** Six
+                                                                                                                              read `.github/workflows/**`, where there is no runtime to exercise. The other twelve check declarative
+                                                                                                                              artefacts — a lockfile agreeing with its manifests, doc links resolving, the decisions index, the
+                                                                                                                              WSJF arithmetic. **For those the artefact IS the subject**, so reading it is not a proxy for
+                                                                                                                              behaviour and not this anti-pattern. That distinction is the one every earlier count missed: `reads
+                                                                                                                              a file` and `pins source text as a stand-in for what the code does` are different populations, and
+                                                                                                                              conflating them is why the figures ran to the hundreds.
 
-                                                                                      **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
-                                                                                      source and assert on its text, in files that also exercise the subject. Counted three ways and
-                                                                                      enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
+                                                                                                                              **Step 3 — the real population hides INSIDE behavioural files.** Assertions that read implementation
+                                                                                                                              source and assert on its text, in files that also exercise the subject. Counted three ways and
+                                                                                                                              enumerated by reading in Step 4, because the counts disagreed. A file-level audit cannot see these, which is why this task asked for a per-assertion read.
 
-                                                                                      **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
-                                                                                      below summed to 12 across five files while the prose above it said 13 across six, and named two live
-                                                                                      pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
-                                                                                      count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
-                                                                                      and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
-                                                                                      source text.
+                                                                                                                              **Step 4 — the per-pin enumeration, and a fourth failed mechanical count.** Review found the table
+                                                                                                                              below summed to 12 across five files while the prose above it said 13 across six, and named two live
+                                                                                                                              pins the table omitted. Both omissions were real. Fixing the arithmetic was not enough: re-running the
+                                                                                                                              count with a predicate broadened to catch offset-derived assertions returned 29 across seven files —
+                                                                                                                              and spot-reading two of those seven showed it was counting subprocess stdout (`out`, `stdout`) as
+                                                                                                                              source text.
 
-                                                                                      **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
-                                                                                      missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
-                                                                                      look like source paths. The third counted subprocess output as file contents. Each was caught by
-                                                                                      checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
-                                                                                      discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
-                                                                                      for the population is behavioural exercise and the remedy for the audit is reading.
+                                                                                                                              **Three mechanical classifiers, three different wrong answers.** The first matched `from '...'` and
+                                                                                                                              missed dynamic `await import(...)`. The second flagged `package.json`, because script PATHS inside it
+                                                                                                                              look like source paths. The third counted subprocess output as file contents. Each was caught by
+                                                                                                                              checking it against a single file. **This is the ticket's own thesis arriving inside the audit that
+                                                                                                                              discharges it**: a pattern over source text is unreliable in both directions, which is why the remedy
+                                                                                                                              for the population is behavioural exercise and the remedy for the audit is reading.
 
-                                                                                      **So what follows is what was READ, pin by pin. Three files verified in full:**
+                                                                                                                              **So what follows is what was READ, pin by pin. Three files verified in full:**
 
-                                                                                      | file | pin | verdict |
-                                                                                      | --- | --- | --- |
-                                                                                      | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
-                                                                                      | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
-                                                                                      | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
-                                                                                      | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
-                                                                                      | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
-                                                                                      | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
-                                                                                      | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
-                                                                                      | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
-                                                                                      | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
-                                                                                      | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
+                                                                                                                              | file | pin | verdict |
+                                                                                                                              | --- | --- | --- |
+                                                                                                                              | `graceful-shutdown` | `server2.js` imports `installShutdownHandlers` | DECISION, wiring |
+                                                                                                                              | `graceful-shutdown` | it is called with `stop:` and `force:` | DECISION, wiring |
+                                                                                                                              | `graceful-shutdown` | `installIndex` / `startIndex` sentinels, x2 | sentinel |
+                                                                                                                              | `graceful-shutdown` | `installIndex < startIndex` — handlers installed before the port binds | DECISION, ordering |
+                                                                                                                              | `proxy-auth` | `buildRest2App` and `app.use(proxyAuthMiddleware())` sentinels, x2 | sentinel |
+                                                                                                                              | `proxy-auth` | `app.options(` present in the pre-auth region | DECISION |
+                                                                                                                              | `proxy-auth` | no data-method registration in that region | DECISION, and the sharp one |
+                                                                                                                              | `address-service` | imports `mirrorRequest` from `../src/read-shadow` | DECISION, wiring |
+                                                                                                                              | `address-service` | `mirrorRequest({ method: 'search'` | DECISION, pins an argument value |
+                                                                                                                              | `address-service` | the two `error_.body` guard-clause shapes, x2 | DECISION, asserts the catch block LOOKS right |
 
-                                                                                      **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
-                                                                                      category the earlier count did not have, and it matters — but not all of them are load-bearing,
-                                                                                      which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
-                                                                                      counted here, so adding a sentinel does not leave a stale total behind:
+                                                                                                                              **Thirteen pins across three files: 0 wiring, 4 sentinels, 9 decisions.** The sentinel row is a
+                                                                                                                              category the earlier count did not have, and it matters — but not all of them are load-bearing,
+                                                                                                                              which is visible only by tracing each one's vacuity direction. Each is labelled below rather than
+                                                                                                                              counted here, so adding a sentinel does not leave a stale total behind:
 
-                                                                                      - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
-                                                                                        and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
-                                                                                      - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
-                                                                                        slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
-                                                                                        proxyAuthMiddleware. **Floor**, and over an auth boundary.
-                                                                                      - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
-                                                                                        which is TRUE, and the ordering pin passes vacuously. **Floor.**
-                                                                                      - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
-                                                                                        comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
+                                                                                                                              - `proxy-auth` `start !== -1`: without it, a missing `buildRest2App` makes `slice(-1, N)` return `''`
+                                                                                                                                and the sharp `doesNotMatch` passes over an EMPTY region. **Floor.**
+                                                                                                                              - `proxy-auth` `proxyAuth !== -1`: without it, a missing `app.use(proxyAuthMiddleware())` widens the
+                                                                                                                                slice to the whole file, so the pin reports "registered before proxyAuthMiddleware" when there is no
+                                                                                                                                proxyAuthMiddleware. **Floor**, and over an auth boundary.
+                                                                                                                              - `graceful-shutdown` `installIndex !== -1`: without it, deleting the install call gives `-1 < start`,
+                                                                                                                                which is TRUE, and the ordering pin passes vacuously. **Floor.**
+                                                                                                                              - `graceful-shutdown` `startIndex !== -1`: `installIndex < -1` is already false, so the ordering
+                                                                                                                                comparison fails closed without it. **Diagnostic** — it improves the message, it closes no vacuity.
 
-                                                                                      Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
-                                                                                      session installing everywhere else, and it asserts nothing about the subject at all — which is
-                                                                                      why it is a sentinel and not a pin.
+                                                                                                                              Floors, then, except the last, which closes no vacuity. That is the same floor this repo has spent the
+                                                                                                                              session installing everywhere else, and it asserts nothing about the subject at all — which is
+                                                                                                                              why it is a sentinel and not a pin.
 
-                                                                                      **Not read, and therefore not counted:** `deploy-artefact-ignores` (asserts over `deploy.sh` text).
-                                                                                      A candidate by inspection; it has not had the per-pin read the three above got. Stated as pending
-                                                                                      rather than folded into the total as an estimate. This entry named a second file,
-                                                                                      `perf-validity-covers-declared-legs`, until 2026-08-20 — it asserted over `test/k6/regression.js`
-                                                                                      text and both files were deleted with the perf probe, so the candidate resolved by removal rather
-                                                                                      than by reading.
+                                                                                                                              **Not read, and therefore not counted:** `deploy-artefact-ignores` (asserts over `deploy.sh` text).
+                                                                                                                              A candidate by inspection; it has not had the per-pin read the three above got. Stated as pending
+                                                                                                                              rather than folded into the total as an estimate. This entry named a second file,
+                                                                                                                              `perf-validity-covers-declared-legs`, until 2026-08-20 — it asserted over `test/k6/regression.js`
+                                                                                                                              text and both files were deleted with the perf probe, so the candidate resolved by removal rather
+                                                                                                                              than by reading.
 
-                                                                                      **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
-                                                                                      governing rule two incompatible ways: one place exempted pins over wiring, and the
-                                                                                      `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
-                                                                                      instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
-                                                                                      counts whether it pins a decision or a connection, because the line can be present and never
-                                                                                      reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
-                                                                                      Consequences applied: the three rows previously classed as wiring are now decisions, so the
-                                                                                      illegitimate population grows by three, to the figure the audit headline above states and the
-                                                                                      guard recomputes — restated here it would be a second uncomputed site, which is the drift this
-                                                                                      ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
-                                                                                      instance, as first written; and the sites recording the two `server2.js` pins as pending
-                                                                                      conversion are correct rather than stale — under this rule they always were.
+                                                                                                                              **RULE SETTLED 2026-08-20 by the maintainer — the strict reading.** This ticket had stated the
+                                                                                                                              governing rule two incompatible ways: one place exempted pins over wiring, and the
+                                                                                                                              `startRest2Server` -> `trackServer` note said a text assertion over wiring is itself a fresh
+                                                                                                                              instance of this anti-pattern. **There is no wiring exemption.** A text assertion over source
+                                                                                                                              counts whether it pins a decision or a connection, because the line can be present and never
+                                                                                                                              reached — which is exactly what the `trackServer` note observed and declined to add a regex for.
+                                                                                                                              Consequences applied: the three rows previously classed as wiring are now decisions, so the
+                                                                                                                              illegitimate population grows by three, to the figure the audit headline above states and the
+                                                                                                                              guard recomputes — restated here it would be a second uncomputed site, which is the drift this
+                                                                                                                              ticket keeps producing; the Description's `expandRangeAliases` import example stands as an
+                                                                                                                              instance, as first written; and the sites recording the two `server2.js` pins as pending
+                                                                                                                              conversion are correct rather than stale — under this rule they always were.
 
-                                                                                      **What this audit does NOT establish.** Three limits, the third of which was written because the
-                                                                                      fourth mechanical count failed while the first two were being written:
+                                                                                                                              **What this audit does NOT establish.** Three limits, the third of which was written because the
+                                                                                                                              fourth mechanical count failed while the first two were being written:
 
-                                                                                      1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
-                                                                                         The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
-                                                                                         did miss.
-                                                                                      2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
-                                                                                      3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
-                                                                                         `p033-population-figures-recompute.test.mjs`: the 32 / 14 / 18 Step 1 split, the named nine-file list, the
-                                                                                         un-excluded triple (33 / 10 / 23), the three intersections (six, twelve, three), and the Step 4 table's own
+                                                                                                                              1. An assertion over a differently-derived VALUE is missed, not merely a differently-derived string.
+                                                                                                                                 The live instance is the `indexOf`-offset ordering pin above — an integer — which the first count
+                                                                                                                                 did miss.
+                                                                                                                              2. The sentinel / decision split, and what each pin covers, are judged by reading, not computed.
+                                                                                                                              3. **Which cardinals here are computed, and which are read.** Computed and mutation-proved by
+                                                                                                                                 `p033-population-figures-recompute.test.mjs`: the 30 / 12 / 18 Step 1 split, the named nine-file list, the
+                                                                                                                                 un-excluded triple (31 / 10 / 21), the three intersections (six, twelve, three), and the Step 4 table's own
 
-                                                                                         **Corrected 2026-08-20, and the correction is the limit's own subject.** This clause read
-                                                                                         `32 / 15 / 17, the named ten-file list, … (seven, ten, three)`. All three were stale after the
-                                                                                         perf probe's deletion took the workflow group 10 → 9, and the first also conflated two
-                                                                                         populations under one headline — 32 is the WITHOUT-exclusion total, 15 / 17 was the
-                                                                                         WITH-exclusion split, and neither pair is 32 / 15 / 17. The restatement pass that ran two lines
-                                                                                         below ("Figures restated 2026-08-20 …") missed this paragraph. A limits section is the one place
-                                                                                         a reader trusts to say what is unguarded, and it was itself unguarded: the guard computes the
-                                                                                         cardinals but nothing anchors the META-claim about which cardinals are computed.
-                                                                                         arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
-                                                                                         which are a judgement and are deliberately not mechanised — a guard over them would be a check
-                                                                                         comparing a judgement to a restatement of itself.
-                                                                                         An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
-                                                                                         page. That was false when written: seven, ten and three were prose, computable from sets the guard
-                                                                                         already held, and the ticket's surviving conclusion below rests on two of them. A limits section
-                                                                                         declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
-                                                                                         prevent it.
+                                                                                                                                 **Corrected 2026-08-20, and the correction is the limit's own subject.** This clause read
+                                                                                                                                 `32 / 15 / 17, the named ten-file list, … (seven, ten, three)`. All three were stale after the
+                                                                                                                                 perf probe's deletion took the workflow group 10 → 9, and the first also conflated two
+                                                                                                                                 populations under one headline — 32 is the WITHOUT-exclusion total, 15 / 17 was the
+                                                                                                                                 WITH-exclusion split, and neither pair is 32 / 15 / 17. The restatement pass that ran two lines
+                                                                                                                                 below ("Figures restated 2026-08-20 …") missed this paragraph. A limits section is the one place
+                                                                                                                                 a reader trusts to say what is unguarded, and it was itself unguarded: the guard computes the
+                                                                                                                                 cardinals but nothing anchors the META-claim about which cardinals are computed.
+                                                                                                                                 arithmetic. Read by hand and NOT computed: the sentinel / decision verdicts themselves,
+                                                                                                                                 which are a judgement and are deliberately not mechanised — a guard over them would be a check
+                                                                                                                                 comparing a judgement to a restatement of itself.
+                                                                                                                                 An earlier version of this limit claimed the pin figures were the only unguarded cardinals on the
+                                                                                                                                 page. That was false when written: seven, ten and three were prose, computable from sets the guard
+                                                                                                                                 already held, and the ticket's surviving conclusion below rests on two of them. A limits section
+                                                                                                                                 declaring an empty complement is this ticket's failure mode 4 landing in the paragraph written to
+                                                                                                                                 prevent it.
 
-                                                                                      One correction to an earlier claim while these figures are being reconciled: 9 workflow-reading files
-                                                                                      minus 6 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
-                                                                                      feed them" is true of six files, not nine. Applied, not just noted: the two sites that carried that
-                                                                                      wording are now phrased about the workflow PINS, for which the claim holds of all nine. Recording the
-                                                                                      correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
-                                                                                      on the first pass. Figures restated 2026-08-20 when the perf probe's deletion removed one
-                                                                                      workflow-reading file; the three-spawn-a-runtime finding is unchanged by it.
+                                                                                                                              One correction to an earlier claim while these figures are being reconciled: 9 workflow-reading files
+                                                                                                                              minus 6 read-only means **three already spawn a runtime**, so "there is no runtime in this repo to
+                                                                                                                              feed them" is true of six files, not nine. Applied, not just noted: the two sites that carried that
+                                                                                                                              wording are now phrased about the workflow PINS, for which the claim holds of all nine. Recording the
+                                                                                                                              correction and leaving the sites standing is this ticket's failure mode 4, and it is what happened
+                                                                                                                              on the first pass. Figures restated 2026-08-20 when the perf probe's deletion removed one
+                                                                                                                              workflow-reading file; the three-spawn-a-runtime finding is unchanged by it.
 
 - [x] **Decide a refactor cadence. DECIDED 2026-08-19: neither of the two options as posed.** A single sweep
       is unjustifiable at this population size with no failing signal, and pure opportunism has visibly not
@@ -621,9 +632,25 @@ The file path `test/js/__tests__/address-service.test.mjs` is consistent with a 
       there passes a defect into a published artefact. That is not hypothetical — `release-watch.sh` was
       converted on 2026-08-19 for exactly that reason (see below), and its predecessor's pin matched a call
       that was commented out.
-- [ ] **Convert the non-workflow population, release and publish paths first.** 22 files, of which the
-      guards over `scripts/` are the tractable and highest-value subset: a shell
-      predicate can be extracted to a file and fed inputs, which is what `scripts/scan-jobs.awk` now is.
+- [ ] **Convert the remaining shell-predicate pins.** **The decision-bearing pins are DONE as of
+      2026-08-21** — RFC-009 rows 1 through 7, across `address-service.test.mjs`, `graceful-shutdown.test.mjs`
+      and `proxy-auth.test.mjs`. All three files have left the population; the headline moved 33 → 30 in three
+      steps, each one a conversion.
+
+      **No cardinal is restated here** — an earlier revision said "22 files" and went stale within a day. The
+                  live figure is whatever `p033-population-figures-recompute.test.mjs` computes; what remains is
+                  identified by shape, which does not rot:
+
+                  Five files still read a production **shell script** and assert on its text:
+                  `deploy-artefact-ignores`, `deploy-version-resolution`, `docker-tags`, `release-workflow-deploy-only`
+                  and `terraform-plan-workflow`. The first three already execute the script as well, so their conversion
+                  is subtractive — delete the text half once the executing half is proved to cover it. The last two are
+                  pure text assertion and need the shell-predicate extraction: pull the predicate into a file, feed it
+                  inputs, assert the exit code, which is what `scripts/scan-jobs.awk` already is.
+
+                  **Workflow YAML in those same files is NOT in scope** — it is the declarative-artefact carve-out, where
+                  the artefact IS the subject. The nine files that pin only YAML are P116.
+
 - [x] **Give every pin that CANNOT be converted an explicit note saying what it cannot establish. SPLIT OUT
       2026-08-20 to P116, not dropped.** The work is unchanged and is still owed; only its ranking moved. It
       is S — nine files, one comment each — and this ticket is XL, so leaving it here priced a one-comment-
