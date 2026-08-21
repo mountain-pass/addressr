@@ -77,6 +77,25 @@ set is closed. A second use needs its own argument, and "STORY-MAP-001 did it" i
 What it buys: the row renders `delivered`. Without it the five stages that demonstrably work would render
 `proposed`, understating what the repo has — the opposite of the inaccuracy the row exists to correct.
 
+## Known accessibility issues, reported upstream
+
+Both were found by an accessibility review on 2026-08-21 and **neither can be fixed in this repository**.
+The page is generated and the stylesheet is vendored and guarded by a byte-identity test, so a local edit
+either fails that test or is overwritten on the next `npm run render:story-maps`.
+
+- **[windyroad/agent-plugins#444](https://github.com/windyroad/agent-plugins/issues/444)** — `story-map.css`
+  sets link colour and never sets `text-decoration`, so links are underlined only because nothing switched
+  the browser default off. Colour alone could not carry it: link against body text is 1.50:1 in light and
+  1.62:1 in dark, where SC 1.4.1 needs 3:1. It passes today by inheritance, and a CSS reset landing later
+  would turn that into a real failure with no local declaration to point at.
+- **[windyroad/agent-plugins#445](https://github.com/windyroad/agent-plugins/issues/445)** — the renderer
+  emits each reference link with the bare identifier as its text, so a screen reader's link list reads
+  `P033`, `JTBD-400`, `RFC-009` between full sentences. SC 2.4.4 is a marginal pass where a row header
+  supplies context; SC 2.4.9 fails.
+
+Recorded here rather than only in the upstream tracker, because the next person to touch these assets works
+in this repository and would otherwise re-derive both findings from scratch.
+
 ## Ratification
 
 A map is born `human-oversight: unconfirmed` and is ratified with
