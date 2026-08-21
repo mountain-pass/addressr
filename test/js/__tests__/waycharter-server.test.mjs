@@ -41,6 +41,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { inject } from 'light-my-request';
+import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
@@ -162,6 +163,180 @@ describe('CORS preflight ordering (P023 / ADR-037) — answered before authentic
       response.statusCode,
       401,
       'if this is not 401 the preflight 204 proves nothing — authentication is not enforced on this path at all',
+    );
+  });
+
+  // CONVERTED FROM A SOURCE PIN (RFC-009 row 4). STORY-001 measured that pin
+  // BLIND to the bypass it existed to prevent.
+  //
+  // The pin read `src/waycharter-server.js` as text and asserted that no
+  // `app.(all|get|post|put|delete|patch)(` appeared between `buildRest2App` and
+  // `app.use(proxyAuthMiddleware())`. Two things follow, and BOTH shaped these
+  // tests:
+  //
+  //   - The pin was BLIND IN SHAPE. `app.use('/leak', h)` mounted pre-auth is a
+  //     live unauthenticated responder, keeps the pinned pattern absent, and the
+  //     whole suite passed.
+  //   - The pin was BROAD IN PATH. It scanned a source region, so it caught a
+  //     pre-auth responder on ANY path.
+  //
+  // A first version of this replacement probed one hardcoded path and claimed to
+  // dominate the pin. It did not: the mutation used to "prove" it was placed on
+  // that same path, so it showed coverage of that path, not of the property.
+  // A pre-auth `app.get('/mutation-probe', …)` was measured BLIND against it.
+  // Broad in shape, narrow in path — incomparable to the pin, not stronger.
+  //
+  // So the probe is TABLE-DRIVEN over every path this app actually routes, plus
+  // one that it does not. The unrouted path is generated, not spelled: a literal
+  // would silently stop testing negative space the day something routes it,
+  // which is the zero-match class this conversion exists to remove.
+  //
+  // 401 NOT 404 is load-bearing. A 404 means the request reached routing, i.e.
+  // passed the auth gate. Authentication decides before the router does, so an
+  // unknown path and a known one are indistinguishable to an unauthenticated
+  // caller — which also denies an attacker a route oracle. The `secretPresented`
+  // case below is the oracle that keeps the generated path honest: WITH the
+  // secret it must 404, proving it really is negative space.
+  const ROUTED_PATHS = [
+    '/',
+    '/addresses?q=x',
+    '/addresses/GAOT_1',
+    '/localities',
+    '/postcodes',
+    '/states',
+  ];
+
+  // Methods the auth decision must treat identically. OPTIONS is deliberately
+  // ABSENT: `app.options` is registered ahead of proxyAuthMiddleware by design
+  // when CORS is opted in (ADR-037), and the preflight-204 case above asserts
+  // exactly that exemption. Claiming "auth never depends on method" would
+  // contradict it in the same describe block.
+  const NON_PREFLIGHT_METHODS = [
+    'GET',
+    'HEAD',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+  ];
+
+  for (const url of ROUTED_PATHS) {
+    it(`401s an unauthenticated request to ${url}`, async () => {
+      const app = appWithCors();
+      enableAuth();
+      const response = await inject(app, { method: 'GET', url });
+      assert.equal(
+        response.statusCode,
+        401,
+        `${url} answered without authentication — a responder is registered ahead of proxyAuthMiddleware`,
+      );
+    });
+  }
+
+  it('401s an unauthenticated request to a path the app does not route, under every non-preflight method', async () => {
+    const unrouted = `/unrouted-${randomUUID()}`;
+    for (const method of NON_PREFLIGHT_METHODS) {
+      const app = appWithCors();
+      enableAuth();
+      const response = await inject(app, { method, url: unrouted });
+      assert.equal(
+        response.statusCode,
+        401,
+        `${method} ${unrouted} answered without authentication — the auth decision must not depend on the method, apart from the documented OPTIONS preflight exemption`,
+      );
+    }
+  });
+
+  it('the unrouted probe really is unrouted — 404 once the secret is presented', async () => {
+    // The anti-vacuity oracle. Without it, the 401s above are satisfied by the
+    // path being routed, and the negative-space coverage silently evaporates.
+    const app = appWithCors();
+    const secret = enableAuth();
+    const response = await inject(app, {
+      method: 'GET',
+      url: `/unrouted-${randomUUID()}`,
+      headers: { 'x-gateway-secret': secret },
+    });
+    assert.equal(
+      response.statusCode,
+      404,
+      'the probe path resolved to a real route — the unauthenticated assertions above are no longer testing negative space',
+    );
+  });
+
+  // THE ANY-PATH GUARD, and the one that actually replaces the source pin.
+  //
+  // The pin in `proxy-auth.test.mjs` scanned `src/waycharter-server.js` as TEXT
+  // for `app.(all|get|post|put|delete|patch)(` between `buildRest2App` and
+  // `app.use(proxyAuthMiddleware())`. It was broad in PATH — a source-region
+  // scan sees a registration on any path — and blind in SHAPE, because
+  // `app.use('/leak', h)` is a terminating responder its method list omits.
+  //
+  // The behavioural probes above are the mirror image: broad in shape, narrow in
+  // path. They cannot reach a pre-auth responder on a path they do not name, and
+  // a test cannot enumerate paths that do not exist yet. Measured: a pre-auth
+  // `app.get('/mutation-probe', …)` is BLIND to all of them.
+  //
+  // This asserts the property on the BUILT APP instead of on either. Express
+  // exposes the middleware stack, so the question "can anything answer before
+  // authentication?" is decidable directly, with no path enumeration and no text
+  // matching. It is strictly stronger than the pin: it sees registrations made
+  // conditionally, made outside `buildRest2App`, and made by any mechanism —
+  // none of which a source scan can distinguish from a comment.
+  //
+  // The auth layer is located by NAME (`proxyAuth`), so renaming the middleware
+  // reddens this rather than silently emptying the region it checks. The
+  // anti-vacuity floor is the assertion that the layer is found at all.
+  it('registers nothing that can answer a request ahead of proxy-auth, except the OPTIONS preflight', () => {
+    const app = appWithCors();
+    enableAuth();
+    const stack = app._router?.stack ?? app.router?.stack;
+    assert.ok(
+      Array.isArray(stack) && stack.length > 0,
+      'express did not expose a middleware stack — this guard is checking nothing',
+    );
+
+    const authIndex = stack.findIndex((layer) => layer.name === 'proxyAuth');
+    assert.notEqual(
+      authIndex,
+      -1,
+      'no layer named proxyAuth in the stack — either auth is not registered or the middleware was renamed; this guard cannot locate the boundary',
+    );
+    assert.ok(
+      authIndex > 0,
+      'proxy-auth is the first layer — nothing precedes it, so this guard is vacuous',
+    );
+
+    // A layer terminates a request only if it carries a route. Plain middleware
+    // (no .route) calls next() and cannot answer on its own.
+    // Express 5 does not expose a layer's path regexp, so a path-scoped
+    // `app.use('/leak', h)` is indistinguishable from catch-all middleware by
+    // its own properties — it is visible only as an EXTRA layer. So assert the
+    // exact pre-auth shape rather than trying to classify each entry:
+    // one non-terminating middleware (CORS), then the OPTIONS preflight route.
+    //
+    // This is deliberately strict. Adding ANY layer ahead of authentication
+    // reddens it — which is correct: a new pre-auth layer is exactly the change
+    // that needs a human to look, and the failure says so.
+    // A layer terminates a request only if it carries a route; plain middleware
+    // calls next(). Routes are described by their method set so the OPTIONS
+    // exemption is identifiable, and middleware by a bare marker.
+    const beforeAuth = stack.slice(0, authIndex).map((layer) =>
+      layer.route
+        ? `route:${Object.keys(layer.route.methods ?? {})
+            .toSorted((a, b) => a.localeCompare(b))
+            .join(',')}`
+        : 'middleware',
+    );
+
+    assert.deepEqual(
+      beforeAuth,
+      ['middleware', 'route:options'],
+      'the middleware registered ahead of proxyAuthMiddleware has changed. Only two things may precede it: ' +
+        'non-terminating CORS middleware, and the OPTIONS preflight route exempted by design (ADR-037). ' +
+        'Anything else can answer a request without authentication, on whatever path it was mounted — ' +
+        'including an app.use(path, handler), which Express 5 reports with no route and no regexp and so ' +
+        'is detectable only as an extra layer here.',
     );
   });
 

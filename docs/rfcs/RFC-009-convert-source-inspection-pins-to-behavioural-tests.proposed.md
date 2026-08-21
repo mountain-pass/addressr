@@ -115,9 +115,14 @@ all three and leaves SIGTERM drain wiring unguarded.
 **The operational test, then**: the catching test must not itself be a member of the source-inspection
 population. Pins vouching for pins is not cover, it is a quorum of the same assumption.
 
-**Explicit carve-outs**, both sole cover, both excluded from delete-or-repoint until behavioural cover exists:
-the two `proxy-auth.test.mjs` pins over the pre-auth-responder property, and the three
+**Explicit carve-outs**, both sole cover, both excluded from delete-or-repoint until behavioural cover
+exists: the two `proxy-auth.test.mjs` pins over the pre-auth-responder property, and the three
 `graceful-shutdown.test.mjs` pins over the `server2.js` wiring.
+
+**The proxy-auth half of that carve-out is LIFTED as of 2026-08-21** — the condition it names was met, not
+waived. Cover now exists and is structural rather than behavioural-by-request: a guard over the built
+Express middleware stack, proved CAUGHT on seven mutations **with the pins already deleted**, including the
+two the pins were blind to. The `graceful-shutdown.test.mjs` half stands: nothing reaches `server2.js` yet.
 
 ### Measured baselines, 2026-08-20
 
@@ -214,19 +219,60 @@ classify a text pin will meet it.
 Every mutation below leaves the pinned text **present and matching** and kills the behaviour. Whole suite,
 640 tests. Every file restored byte-clean.
 
-| #   | pin                                                               | text-preserving mutation                                                                                                              | verdict   |
-| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });`                                               | **BLIND** |
-| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers({ stop: stopServer, force: forceCloseConnections });` — both `indexOf` markers intact | **BLIND** |
-| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's `(all\|get\|post\|put\|delete\|patch)` list                                        | **BLIND** |
-| 5   | P012 progress logging (`address-service.test.mjs`)                | `logger('mapped', JSON.stringify(d, …))` — a DIFFERENT variable, so the pinned string stays absent                                    | **BLIND** |
-| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body; every pinned guard string still present below it                                                   | **BLIND** |
+| #   | pin                                                               | text-preserving mutation                                                                                                              | verdict                            |
+| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest({ method: 'search', params: searchParameters });`                                               | **BLIND**                          |
+| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers({ stop: stopServer, force: forceCloseConnections });` — both `indexOf` markers intact | **BLIND**                          |
+| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's method list                                                                        | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 5   | P012 progress logging (`address-service.test.mjs`)                | `logger('mapped', JSON.stringify(d, …))` — a DIFFERENT variable, so the pinned string stays absent                                    | **BLIND**                          |
+| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body; every pinned guard string still present below it                                                   | **BLIND**                          |
 
 **So the mirror can be dead, the shutdown handlers can be uninstalled, the auth exemption can be widened and
 the error mapping can be unreachable — with every pin green and the suite green.** That is P091 restated as
 a re-runnable result, and it is the whole justification for the conversion.
 
-### Row 4 is a live coverage gap, stated with the bound P033 already had
+### Row 4 — CONVERTED 2026-08-21. The first row to close.
+
+A structural guard over the **built app** replaced two source pins, and the pins are deleted. The route there
+was not straight, and the wrong turn is recorded because it is the more useful half.
+
+**First attempt, and why it failed.** Two behavioural tests probing a hardcoded `/leak`. They caught the
+shape the pin was blind to (`app.use` pre-auth) and the shape it caught (`app.get`) — but the `app.get`
+mutation had been placed on `/leak`, the very path the tests probe. That proved coverage of one path, not of
+the property. A pre-auth `app.get('/mutation-probe', …)` was measured **BLIND** against them. The pin was
+_broad in path, blind in shape_; the replacement was _broad in shape, narrow in path_. Incomparable, not
+stronger — and a test cannot enumerate paths that do not exist yet, so no amount of table-driving closes it.
+
+**What worked.** Express exposes its middleware stack, so the question "can anything answer before
+authentication?" is decidable on the built app directly — no path enumeration, no text matching. The guard
+locates the auth layer **by name** and asserts the exact shape of what precedes it: one non-terminating
+middleware, then the OPTIONS preflight route. Anything else, mounted anywhere, by any mechanism, is an extra
+layer and reddens it.
+
+**Seven mutations, all CAUGHT, all re-run with the pins already deleted:**
+
+| mutation                                     | the pin               | the guard                                              |
+| -------------------------------------------- | --------------------- | ------------------------------------------------------ |
+| `app.get('/mutation-probe', …)` pre-auth     | CAUGHT                | **CAUGHT**                                             |
+| `app.get('/localities', …)` pre-auth         | CAUGHT                | **CAUGHT**                                             |
+| `app.use('/leak', …)` pre-auth               | BLIND                 | **CAUGHT**                                             |
+| `app.all(/.*/, …)` pre-auth                  | CAUGHT                | **CAUGHT**                                             |
+| conditional registration behind an env check | CAUGHT (text present) | **CAUGHT** (it inspects what registered)               |
+| auth middleware renamed                      | n/a                   | **CAUGHT** — the guard cannot silently lose its anchor |
+| OPTIONS preflight removed                    | CAUGHT                | **CAUGHT**                                             |
+
+Row 5 of the two-direction table is where the pin loses outright: the source text is present and says nothing
+about whether the registration executes. The built app knows.
+
+**401 not 404 is load-bearing** in the accompanying request-level probes: a 404 would mean the request
+reached routing, i.e. passed the auth gate. An unrouted probe path is generated per-run rather than spelled,
+with an oracle asserting it 404s once the secret is presented — a literal would silently stop testing
+negative space the day something routed it.
+
+The population fell 33 → 32: with its last file-read gone, `proxy-auth.test.mjs` left the population. First
+decrease; every prior move was an increase from adding a guard.
+
+### The gap this closed, stated with the bound P033 already had
 
 An earlier revision of this section said the auth boundary is "guarded by a text assertion and by nothing
 else". That is wrong in one direction and silent in the worse one. The accurate position, which P033 states
@@ -240,7 +286,7 @@ correctly and this RFC must not narrow:
   `use`; no behavioural test requests an unrouted path, so the bypass is unobservable by construction.
   Measured BLIND above. **This row has no guard at all today.**
 
-The replacement is one test and it discharges all three shapes: with proxy auth enabled, `GET /leak` must
+The replacement is a structural guard over the built app, and it discharges all three shapes: with proxy auth enabled, `GET /leak` must
 return 401. That catches a pre-auth `app.get`, a pre-auth `app.use`, a router mount, and a responder
 registered outside `buildRest2App` — none of which a text pin can see.
 
