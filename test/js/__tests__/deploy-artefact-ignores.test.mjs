@@ -30,13 +30,11 @@
 // guard that does not.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 const deployDir = 'apps/addressr-deployment';
-const deploySh = readFileSync(`${repoRoot}${deployDir}/deploy.sh`, 'utf8');
 
 // The artefacts deploy.sh creates in its own directory, and the derived worker
 // bundle build:worker emits beside the worker source.
@@ -64,28 +62,17 @@ const ARTEFACTS = [
 ];
 
 describe('deploy artefacts are git-ignored (public repo, cleartext secrets)', () => {
-  it('deploy.sh still writes the artefacts this test claims it does', () => {
-    // Guards the derivation itself: if deploy.sh stops writing tfplan.json the
-    // list above is stale, and a stale list passes vacuously.
-    assert.match(
-      deploySh,
-      /terraform plan[^\n]*-out=tfplan/,
-      'deploy.sh must still write tfplan — otherwise this test guards nothing',
-    );
-    assert.match(
-      deploySh,
-      /terraform show -json tfplan > tfplan\.json/,
-      'deploy.sh must still write tfplan.json, the cleartext-secret artefact',
-    );
-    // Added with `deployment/` 2026-08-10. This one is written on EVERY run,
-    // not only on a plan, so it is the artefact most likely to be offered for
-    // commit if its ignore rule is ever stripped by a move.
-    assert.match(
-      deploySh,
-      /mkdir -p deployment/,
-      'deploy.sh must still create the deployment/ bundle directory',
-    );
-  });
+  // The floor that stood here read deploy.sh and asserted it still CONTAINED
+  // the writes this list is derived from. Converted 2026-08-21 per RFC-009: a
+  // text match cannot tell a write that happens from a write that is merely
+  // coded, and it goes stale the moment the script's paths move. The
+  // behavioural floor now lives in `deploy-sh-plan-only.test.mjs` — it RUNS the
+  // script and asserts every artefact the run actually leaves on disk is
+  // ignored, so it derives the list from the deploy instead of describing it.
+  //
+  // This file keeps the rule-level loop below: it covers artefacts a PLAN_ONLY
+  // run does not produce (plan.out, the task-definition JSON), which the
+  // behavioural floor cannot reach.
 
   for (const artefact of ARTEFACTS) {
     it(`${artefact} is ignored`, () => {

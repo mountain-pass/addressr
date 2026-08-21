@@ -139,7 +139,10 @@ describe('terraform-plan.yml', () => {
     assert.ok(guard !== -1, 'the fail-closed ref guard must exist');
     assert.ok(plan !== -1);
     assert.ok(guard < plan, 'the guard must run before terraform does');
-    assert.match(steps()[guard].run, /grep -q 'PLAN_ONLY' apps\/addressr-deployment\/deploy\.sh/);
+    assert.match(
+      steps()[guard].run,
+      /grep -q 'PLAN_ONLY' apps\/addressr-deployment\/deploy\.sh/,
+    );
   });
 
   it('cannot reach apply — the single gated path stays single', () => {
@@ -163,45 +166,11 @@ describe('terraform-plan.yml', () => {
   });
 });
 
-describe('deploy.sh PLAN_ONLY branch', () => {
-  const sh = readFileSync('apps/addressr-deployment/deploy.sh', 'utf8');
-
-  it('exits before the apply branch', () => {
-    // JTBD-400's single-gated-path outcome, as a checkable artefact rather than
-    // prose. This is the assertion that carries the weight: deploy.sh is the
-    // only place the PLAN_ONLY early exit and the apply branch coexist, so it
-    // is the only place the invariant can actually break. The workflow-side
-    // absence checks would not catch a reordering here.
-    const planOnly = sh.indexOf('PLAN_ONLY:-');
-    const apply = sh.indexOf('terraform apply');
-    assert.ok(planOnly !== -1 && apply !== -1);
-    assert.ok(
-      planOnly < apply,
-      'PLAN_ONLY branch must precede the apply branch',
-    );
-    assert.match(sh, /PLAN_ONLY[\s\S]{0,600}?exit 0/);
-  });
-
-  it('treats a changes-present plan (exit 2) as success', () => {
-    // -detailed-exitcode returns 2 when the plan HAS changes. Propagating that
-    // would fail the job in exactly the case the workflow exists to serve, and
-    // would skip the caller's assertion step, which is the real verdict.
-    assert.match(sh, /\[ "\$retVal" -eq 1 \] && exit 1/);
-  });
-
-  it('refuses to derive a workspace under PLAN_ONLY', () => {
-    assert.match(sh, /PLAN_ONLY requires an explicit TF_WORKSPACE/);
-  });
-
-  it('clears any stale plan before planning', () => {
-    assert.match(sh, /rm -f tfplan tfplan\.json/);
-  });
-
-  it('leaves deploy:prod behaviour unchanged', () => {
-    assert.match(
-      sh,
-      /TF_WORKSPACE="\$\{TF_WORKSPACE:-\$\{npm_lifecycle_event#deploy:\}\}"/,
-    );
-    assert.match(sh, /terraform apply -auto-approve -input=false/);
-  });
-});
+// The `deploy.sh PLAN_ONLY branch` describe block that stood here read the
+// script as text and asserted it CONTAINED a PLAN_ONLY early exit, an
+// exit-code branch and a workspace guard. Converted 2026-08-21 per RFC-009 to
+// `deploy-sh-plan-only.test.mjs`, which RUNS the script against a recording
+// terraform stub. Measured: the deleted pins were blind to six of eight
+// behaviour-breaking mutations the replacement catches — including the
+// PLAN_ONLY guard being made unreachable and the apply exit code being
+// swallowed, both of which leave every pinned string intact.

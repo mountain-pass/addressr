@@ -219,13 +219,14 @@ classify a text pin will meet it.
 Every mutation below leaves the pinned text **present and matching** and kills the behaviour. Whole suite,
 640 tests. Every file restored byte-clean.
 
-| #   | pin                                                               | text-preserving mutation                                       | verdict                            |
-| --- | ----------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------- |
-| 1   | read-shadow integration (`address-service.test.mjs`)              | `if (process.env.NEVER) mirrorRequest(…)`                      | ~~BLIND~~ **CONVERTED 2026-08-21** |
-| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`) | `if (process.env.NEVER) installShutdownHandlers(…)`            | ~~BLIND~~ **CONVERTED 2026-08-21** |
-| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                | pre-auth `app.use('/leak', …)` — outside the pin's method list | ~~BLIND~~ **CONVERTED 2026-08-21** |
-| 5   | P012 progress logging (`address-service.test.mjs`)                | `JSON.stringify(d, …)` — a different variable                  | ~~BLIND~~ **CONVERTED 2026-08-21** |
-| 6/7 | P014 catch guards (`address-service.test.mjs`)                    | early return above the catch body                              | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| #   | pin                                                                                                              | text-preserving mutation                                                  | verdict                            |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------- |
+| 1   | read-shadow integration (`address-service.test.mjs`)                                                             | `if (process.env.NEVER) mirrorRequest(…)`                                 | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 2/3 | server2 shutdown ordering + wiring (`graceful-shutdown.test.mjs`)                                                | `if (process.env.NEVER) installShutdownHandlers(…)`                       | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 4   | proxy-auth OPTIONS scoping (`proxy-auth.test.mjs`)                                                               | pre-auth `app.use('/leak', …)` — outside the pin's method list            | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 5   | P012 progress logging (`address-service.test.mjs`)                                                               | `JSON.stringify(d, …)` — a different variable                             | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 6/7 | P014 catch guards (`address-service.test.mjs`)                                                                   | early return above the catch body                                         | ~~BLIND~~ **CONVERTED 2026-08-21** |
+| 8   | `deploy.sh` PLAN_ONLY / workspace guard (`terraform-plan-workflow.test.mjs`, `deploy-artefact-ignores.test.mjs`) | PLAN_ONLY branch made unreachable; guard relocated below `terraform init` | ~~BLIND~~ **CONVERTED 2026-08-21** |
 
 **So the mirror can be dead, the shutdown handlers can be uninstalled, the auth exemption can be widened and
 the error mapping can be unreachable — with every pin green and the suite green.** That is P091 restated as
@@ -330,6 +331,63 @@ request outlives the deadline, which needs a live backend. **A held keep-alive c
 
 The honest fix is to make `force` a required option — a silent default that disables force-close is a latent
 defect in its own right — which is a production change and outside this conversion. Recorded, not lost.
+
+### Row 8 — CONVERTED 2026-08-21. The shell-predicate shape, and the first row where running the subject was the risk.
+
+Six pins in `terraform-plan-workflow.test.mjs` and three in `deploy-artefact-ignores.test.mjs` read
+`apps/addressr-deployment/deploy.sh` and asserted it CONTAINED a PLAN_ONLY early exit, an exit-code branch,
+a workspace guard, a stale-plan removal and an apply invocation. Replaced by
+`test/js/__tests__/deploy-sh-plan-only.test.mjs`, which runs the script.
+
+**Running the deploy script is the obvious hazard, and the standing rule is that terraform runs only from
+CI.** The test is safe by construction rather than by care: a recording `terraform` stub is placed earlier
+on `PATH`, so every invocation is captured and none reaches the real binary — which IS installed on a
+developer machine. The stub's call list is then the assertion surface, which is what makes "PLAN_ONLY never
+applies" a statement about behaviour rather than about source. No AWS credentials are exercised, because the
+script exits before any apply.
+
+**Eight text-preserving mutations, measured with the pins in place and again with them deleted:**
+
+| #   | mutation over `deploy.sh` (or `.gitignore`)                                     | pins   | replacement |
+| --- | ------------------------------------------------------------------------------- | ------ | ----------- |
+| 1   | `PLAN_ONLY` branch condition changed to `= "0"` — every pinned string intact    | BLIND  | CAUGHT      |
+| 2   | workspace guard inverted `-z` → `-n`; its message text untouched                | BLIND  | CAUGHT      |
+| 3   | plan-failure exit relocated below the success exit                              | BLIND  | CAUGHT      |
+| 4   | plan exit 2 turned into a job failure                                           | BLIND  | CAUGHT      |
+| 5   | guard block relocated below `terraform init` — same lines, same order otherwise | BLIND  | CAUGHT      |
+| 6   | `rm -f tfplan tfplan.json` deleted                                              | CAUGHT | CAUGHT      |
+| 7   | `.terraform/environment` written before the workspace is derived                | BLIND  | CAUGHT      |
+| 8   | `terraform apply`'s exit code swallowed                                         | BLIND  | CAUGHT      |
+
+Six of eight BLIND. Number 6 is the direction-1 case the Classification section already explains — the
+mutation edits the exact bytes the pin greps, so the pin catches it by construction and the result carries
+no information about coverage.
+
+**Two of these were not pinned by anything, in either instrument.** A swallowed `terraform apply` exit code
+(number 8) means CI reads a broken production deploy as a successful one — found only because the mutation
+set was run against the replacement rather than derived from what the pins already said. The guard's
+position relative to `terraform init` (number 5) is the same class.
+
+**Two defects in the harness itself are recorded, because both are this ticket's own failure mode:**
+
+1. The first version of "PLAN_ONLY never applies" ran with the stub's default plan exit of 0. Exit 2 is the
+   only plan result that reaches the apply branch at all, so the assertion passed against a script with the
+   guard removed entirely. It was a vacuous test of the exact shape being converted, written while
+   converting it. Caught by mutation 1; the input is now `TF_PLAN_EXIT=2` with a comment saying why.
+2. A mutation probe whose `perl` expression failed to compile wrote an EMPTY `deploy.sh` through its output
+   redirect. The file differed from the original, so the NO-OP guard passed it, and CAUGHT was measured
+   against a zero-byte script — a meaningless result that reads as a real one. The probe now requires the
+   mutant to be non-empty, to still parse under `sh -n`, and to differ, before any verdict is taken. This is
+   the positional-`sed` lesson in a new costume: a mutation harness that cannot tell "mutated" from
+   "destroyed" silently answers a different question.
+
+The `deploy-artefact-ignores.test.mjs` half is subtractive in a different way. Its three pins were an
+**anti-vacuity floor** — read the script, assert it still writes the artefacts the ignore list is derived
+from — which is a legitimate purpose served by an instrument that cannot serve it: a text match cannot
+distinguish a write that happens from a write that is merely coded, and the paths it names moved twice on
+this repo. The floor is now derived from the run: execute the script, then assert `git status
+--untracked-files=all` reports nothing under the deployment directory. This repo is public and `tfplan.json`
+carries cleartext secrets, so the floor is load-bearing; it was mutation-proved by stripping ignore rules.
 
 ### What rows 1, 5 and 6/7 do NOT establish
 
@@ -448,8 +506,12 @@ scan the same pre-auth region and one mutation settles both).
   was never mutated. P033's Step 4 read enumerates **13** pins across these files against the 7 here; the
   difference is sentinel pins and presence pins (`app.options(` must appear), which assert a precondition of
   another pin rather than a property of the code.
-- `release-workflow-deploy-only.test.mjs` — pins over two shell scripts, in P033's declarative-artefact
-  carve-out.
+- `release-workflow-deploy-only.test.mjs` — 22 assertions over two shell scripts and the shared awk scan.
+  **An earlier revision of this line filed these under P033's declarative-artefact carve-out. That was
+  wrong and is corrected rather than quietly rewritten**: the carve-out covers workflow YAML, where the
+  artefact IS the subject; a shell script is code, and asserting on its text is the population this RFC
+  exists to convert. P033 has always named it as owed work. It is not discharged here — see row 8 for the
+  shape its conversion takes.
 
 The 7 are the decision-bearing pins. The remainder is enumerated in P033 Step 4 and is not discharged here.
 
