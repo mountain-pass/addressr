@@ -104,7 +104,7 @@ never true — the defect class P033 exists for, and P091's shape exactly.
 
 ## Related
 
-- **[P033](../known-error/033-source-inspection-tests-anti-pattern.md)** — the conversion that surfaced this.
+- **[P033](../closed/033-source-inspection-tests-anti-pattern.md)** — the conversion that surfaced this.
   Its remaining-population row for `address-service.test.mjs` records rows 6/7 as converted; this ticket is
   what the conversion found underneath.
 - **RFC-009** — the conversion plan. Its "what rows do NOT establish" list records that the 504 case

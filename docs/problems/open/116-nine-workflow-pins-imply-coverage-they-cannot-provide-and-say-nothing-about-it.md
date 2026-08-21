@@ -91,7 +91,7 @@ opening any of the nine learns, without leaving the file, that a green result me
 
 ## Related
 
-- **[P033](../known-error/033-source-inspection-tests-anti-pattern.md)** — parent. Carries the settled rule,
+- **[P033](../closed/033-source-inspection-tests-anti-pattern.md)** — parent. Carries the settled rule,
   the published predicate that derives the nine-file list, the audit that sized both halves, and the
   mechanically demonstrated BLIND verdict. This ticket is its Investigation Task 2, split out at the risk
   scorer's recommendation on 2026-08-20 because an S task ranked at an XL divisor is a task that does not get

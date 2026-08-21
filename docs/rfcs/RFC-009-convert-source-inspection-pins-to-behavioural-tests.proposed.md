@@ -4,7 +4,7 @@ rfc-id: convert-source-inspection-pins-to-behavioural-tests
 reported: 2026-08-20
 human-oversight: unconfirmed
 decision-makers: [Tom Howard]
-problems: [P033]
+problems: [P033, P116, P119]
 adrs: [ADR-031, ADR-051]
 jtbd: [JTBD-400, JTBD-001]
 stories: [STORY-001]
@@ -14,7 +14,7 @@ stories: [STORY-001]
 
 **Status**: proposed
 **Reported**: 2026-08-20
-**Problems**: P033
+**Problems**: P033 (closed 2026-08-21), P116, P119
 **ADRs**: ADR-031 (read-shadow for search-backend migrations — the mechanism whose pin is BLIND today and the first conversion target), ADR-051 (a check whose only reader is the maintainer is not a control)
 **JTBD**: JTBD-400 (Ship Releases Reliably From Trunk — the anti-erosion clause), JTBD-001 (Search and Autocomplete — the outcome P091 degraded while three green instruments watched)
 
@@ -32,8 +32,14 @@ unreachable while their own test file stays green.
 
 ## Driving problem trace
 
-- **P033** (Source-inspection tests are an anti-pattern in this codebase): root cause identified, workaround
-  documented, conversion outstanding. Its confirmed instance is **P091** — `sla_range_expanded` indexed one
+- **P033** (Source-inspection tests are an anti-pattern in this codebase): **CLOSED 2026-08-21** with the
+  decision-bearing conversion done. This clause read "conversion outstanding" in the present tense until
+  that closure, and correcting it is why the trace list above now carries three problems rather than one:
+  an RFC whose only driving problem is closed reads as finished work, and nothing checks the STATE of a
+  `problems:` target — every link still resolves, so `doc-links-resolve.test.mjs` stays green. The
+  conversion that IS outstanding lives in **P116** (nine workflow files need a note saying what they cannot
+  establish) and **P119** (23 assertions over the two release watchers, needing a stubbed `gh`), both open
+  and both carrying their own priority. Its confirmed instance is **P091** — `sla_range_expanded` indexed one
   level too deep, populated on **0 of 16,905,824** documents for four months, while the assertion naming that
   feature stayed green because the source line it matched was present and correct.
 

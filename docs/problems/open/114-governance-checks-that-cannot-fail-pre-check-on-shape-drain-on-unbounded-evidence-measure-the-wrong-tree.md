@@ -98,7 +98,7 @@ byte counts in `docs/retros/2026-08-20-context-analysis.md`.
   **[P110](110-latency-is-measured-at-the-gateway-and-alerts-nowhere-that-qualifies.md)** — the same
   repo-is-not-the-system error, in production rather than in tooling. Item 3 is that error inside the
   instrument built to measure it.
-- **[P033](../known-error/033-source-inspection-tests-anti-pattern.md)** — the anti-vacuity class this repo has spent the
+- **[P033](../closed/033-source-inspection-tests-anti-pattern.md)** — the anti-vacuity class this repo has spent the
   most effort on. All three items here are instances.
 - **[P106](106-license-compliance-gate-scans-an-empty-tree-and-exits-zero.md)** — a gate that scans
   an empty tree and exits zero; item 3 is the measurement analogue.

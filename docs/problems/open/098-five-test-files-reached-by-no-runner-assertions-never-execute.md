@@ -52,7 +52,7 @@ And the exclusion is narrower than "decides its non-invocation deliberately", wh
 
 ### This is a distinct class from P033, and only P033 is tracked
 
-[P033](../known-error/033-source-inspection-tests-anti-pattern.md) is about tests that **run but assert on source text**. This ticket is about tests that **assert behaviourally but never run**. Both manufacture false coverage and both survive review for the same reason — the file path and the `describe()` titles imply the contract is exercised. P033 has a 16-priority rating and an active conversion programme; this class had no ticket at all until now.
+[P033](../closed/033-source-inspection-tests-anti-pattern.md) is about tests that **run but assert on source text**. This ticket is about tests that **assert behaviourally but never run**. Both manufacture false coverage and both survive review for the same reason — the file path and the `describe()` titles imply the contract is exercised. P033 has a 16-priority rating and an active conversion programme; this class had no ticket at all until now.
 
 ### Why it bites now
 
@@ -135,7 +135,7 @@ The remainder were then resolved by reading each source on 2026-08-09: P020's Pr
 
   **Why this is a new ticket rather than a reopen, and the argument is SCOPE, not count.** P020 scoped itself to `test/js/*.test.js` — its title says so and its first investigation task reads "Inventory all `test/js/**/*.test.js`". Two of the five files here, `service/address-service.test.js` and `client/__tests__/elasticsearch.test.mjs`, were never in that search space at all. Reopening would silently retro-widen P020's scope and make its completed inventory tick false in retrospect. It would also put a released, correct fix back into an unreleased state: P020 really did take `test:js` from 1 test / 1 suite to 12 / 4. And keeping both preserves the most useful thing the pair says — the class was rated `3 (Low) — Impact: Negligible (1) x Likelihood: Possible (3)` in April (P020 line 6, quoted) and is rated 10 in August, which is itself the evidence for prioritising the mechanised check.
 
-- [P033](../known-error/033-source-inspection-tests-anti-pattern.md) — the sibling false-coverage class (runs but asserts on source text). Distinct mechanism, same reviewer trap.
+- [P033](../closed/033-source-inspection-tests-anti-pattern.md) — the sibling false-coverage class (runs but asserts on source text). Distinct mechanism, same reviewer trap.
 - [P076](076-adr-confirmation-items-can-be-prescribed-and-never-implemented.md) — ADR Confirmation items prescribed and never bound to an instrument; ADR-033 Confirmation 2 is an instance.
 - [P084](084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md) — the lint debt `test/lint/all-rules.test.js` would fail on.
 - ADR-025 (symmetric `ssla` search ranking) — its Confirmation criterion 1 names an orphaned file; the ADR body now says so.

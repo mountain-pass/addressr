@@ -75,5 +75,5 @@ The rule set was chosen at function granularity and file granularity was never a
 Captured via `/wr-itil:capture-problem` on maintainer prompt.
 
 - [P084 ESLint 10 and unicorn 72 leave a deliberate lint debt with no CI gate](084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md) — the lint-debt ticket; its worst concentration is in the largest file here.
-- [P033 Source-inspection tests are an anti-pattern in this codebase](../known-error/033-source-inspection-tests-anti-pattern.md) — `service/address-service.js` being babel-only and very large is why its tests were written as source regexes; the 2026-08-07 extraction of the query body to `src/build-search-body.js` is the shape a split would take.
+- [P033 Source-inspection tests are an anti-pattern in this codebase](../closed/033-source-inspection-tests-anti-pattern.md) — `service/address-service.js` being babel-only and very large is why its tests were written as source regexes; the 2026-08-07 extraction of the query body to `src/build-search-body.js` is the shape a split would take.
 - `eslint.config.js` lines 103 to 109 — the four existing function-scoped size rules.

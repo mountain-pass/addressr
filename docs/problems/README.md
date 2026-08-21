@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-21 **P119 captured** — the last 23 source-inspection assertions (21 pattern pins plus 2 offset comparisons the first count missed), over the two release watchers, split out of P033 because converting them needs a canned GitHub surface rather than one shadowed binary; HTTP-mocking measured and ruled out (gh forces TLS and ignores SSL_CERT_FILE on macOS) (lightweight aside via /wr-itil:capture-problem)
+> Last reviewed: 2026-08-21 **P033 CLOSED** — source-inspection tests. Zero open investigation tasks: the audit published a rerunnable predicate, the convention is in AGENTS.md, and every decision-bearing pin converted with mutation proof in both directions, which turned up two live defects nothing else had (a timeout mapping that never fires, and a swallowed terraform apply exit code). What remains is NOT closed with it — nine workflow files needing a note (P116) and 23 watcher assertions still pinned as text (P119), both split out because an XL divisor was mispricing S and L work
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -44,7 +44,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                             | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                               | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                             | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |
-| 4.0  | P033 | Source-inspection tests are an anti-pattern in this codebase                     | High (16)    | Known Error   | XL     | 2026-04-28 | internal |
 | 4.0  | P089 | No file-length lint rule; two source files past 1000 lines                       | Low (4)      | Open          | S      | 2026-08-07 | internal |
 | 4.0  | P115 | Nothing counts compendium entries per ADR; a duplicate passes every check        | Low (4)      | Open          | S      | 2026-08-20 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap                  | Medium (8)   | Open          | M      | 2026-07-21 | internal |

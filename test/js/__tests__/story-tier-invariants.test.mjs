@@ -19,7 +19,7 @@
 //   docs/stories/README.md          ## Story Rankings   and   ## Done
 //   docs/story-maps/README.md       ## Index
 //   each map's data island          tasks[].title on the slice cards
-//   docs/problems/known-error/033   ## Stories + ## Story Maps
+//   docs/problems/<state>/033      ## Stories + ## Story Maps   (state is DERIVED, see below)
 //   JTBD-400 (this job's own file)  ## Stories + ## Story Maps   <- the largest
 //   each story's frontmatter        story-id, which IS the filename slug
 //
@@ -87,10 +87,43 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../');
+const REPO = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../',
+);
 const STORIES = path.join(REPO, 'docs/stories');
 const MAPS = path.join(REPO, 'docs/story-maps');
-const P033 = path.join(REPO, 'docs/problems/known-error/033-source-inspection-tests-anti-pattern.md');
+// Lifecycle-agnostic, adopting the resolver its sibling
+// `p033-population-figures-recompute.test.mjs` already proved. This constant was
+// hardcoded to `known-error/` and was repointed to `closed/` when P033 closed on
+// 2026-08-21 — a repoint that fixes today and rots on the next transition. A
+// hardcoded lifecycle segment in EXECUTABLE code is worse than one in prose:
+// `doc-links-resolve.test.mjs` does not scan JS string constants, so instead of a
+// named broken link this throws ENOENT and reds the whole unit suite with a
+// failure that names the wrong cause. The upstream wr-itil directory migration is
+// live, so this is not hypothetical.
+const P033 = (() => {
+  const problems = path.join(REPO, 'docs/problems');
+  const found = [];
+  // States DERIVED, not listed — `parked/` exists and a listed set would miss it.
+  const states = readdirSync(problems, { withFileTypes: true });
+  for (const entry of states) {
+    if (!entry.isDirectory()) continue;
+    const stateDir = path.join(problems, entry.name);
+    const entries = readdirSync(stateDir);
+    for (const f of entries) {
+      if (f.startsWith('033-')) found.push(path.join(stateDir, f));
+    }
+  }
+  // Exactly one, so a half-finished move is loud rather than silently resolving
+  // to whichever copy the directory happened to list first.
+  assert.equal(
+    found.length,
+    1,
+    `expected exactly one 033-* ticket, found ${found.length}`,
+  );
+  return found[0];
+})();
 const JTBD400 = path.join(
   REPO,
   'docs/jtbd/addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md',
@@ -103,8 +136,14 @@ const ACTIVE_STORY_STATES = ['draft', 'accepted', 'in-progress'];
 const DONE_STORY_STATES = ['done'];
 const MAP_STATES = ['draft', 'accepted', 'in-progress', 'completed'];
 
-const fm = (text, key) => text.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'))?.[1]?.trim();
-const listOf = (v) => (v ?? '').replace(/[[\]]/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+const fm = (text, key) =>
+  text.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'))?.[1]?.trim();
+const listOf = (v) =>
+  (v ?? '')
+    .replace(/[[\]]/g, '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 // The reverse-trace generators prefix the ID into the Title cell; the READMEs
 // and the island do not. Strip it so a legitimate state cannot red the build.
 const bare = (s) => (s ?? '').replace(/^STORY(?:-MAP)?-\d{3}:\s*/, '').trim();
@@ -114,7 +153,9 @@ function storiesOnDisk(states) {
   for (const state of states) {
     const dir = path.join(STORIES, state);
     if (!existsSync(dir)) continue;
-    for (const name of readdirSync(dir).filter((n) => /^STORY-\d{3}-.*\.md$/.test(n))) {
+    for (const name of readdirSync(dir).filter((n) =>
+      /^STORY-\d{3}-.*\.md$/.test(n),
+    )) {
       const text = readFileSync(path.join(dir, name), 'utf8');
       out.push({
         id: name.match(/^(STORY-\d{3})-/)[1],
@@ -145,15 +186,23 @@ function mapsOnDisk() {
     for (const name of readdirSync(dir).filter((n) => n.endsWith('.html'))) {
       const text = readFileSync(path.join(dir, name), 'utf8');
       const open = text.indexOf('<script id="story-map-data"');
-      assert.notEqual(open, -1, `${state}/${name} has no data island — not produced by the renderer`);
+      assert.notEqual(
+        open,
+        -1,
+        `${state}/${name} has no data island — not produced by the renderer`,
+      );
       const s = text.indexOf('>', open) + 1;
-      const island = JSON.parse(text.slice(s, text.indexOf('</script>', s)).replace(/\\u003c/g, '<'));
+      const island = JSON.parse(
+        text.slice(s, text.indexOf('</script>', s)).replace(/\\u003c/g, '<'),
+      );
       out.push({
         id: island.storyMapId,
         title: bare(island.title),
         status: island.status,
         dir: state,
-        h1: bare(text.match(/<h1[^>]*id="story-map-title"[^>]*>([^<]*)<\/h1>/)?.[1]),
+        h1: bare(
+          text.match(/<h1[^>]*id="story-map-title"[^>]*>([^<]*)<\/h1>/)?.[1],
+        ),
         tasks: island.tasks ?? [],
       });
     }
@@ -168,23 +217,38 @@ function mapsOnDisk() {
 function table(file, heading, idRe) {
   const lines = readFileSync(file, 'utf8').split('\n');
   const start = lines.findIndex((l) => l.trim() === heading);
-  assert.notEqual(start, -1, `${path.relative(REPO, file)} has no "${heading}" section`);
+  assert.notEqual(
+    start,
+    -1,
+    `${path.relative(REPO, file)} has no "${heading}" section`,
+  );
   const cells = (l) =>
-    l.split('|').map((c) => c.trim()).filter((c, i, a) => !(c === '' && (i === 0 || i === a.length - 1)));
+    l
+      .split('|')
+      .map((c) => c.trim())
+      .filter((c, i, a) => !(c === '' && (i === 0 || i === a.length - 1)));
   let header = null;
   const rows = [];
   for (const line of lines.slice(start + 1)) {
     if (line.startsWith('## ')) break;
     if (!line.trimStart().startsWith('|')) continue;
     const c = cells(line);
-    if (!header) { header = c.map((h) => h.toLowerCase()); continue; }
+    if (!header) {
+      header = c.map((h) => h.toLowerCase());
+      continue;
+    }
     if (c.every((x) => /^:?-+:?$/.test(x))) continue; // separator row
     if (!c.some((x) => idRe.test(x))) continue;
     const row = {};
-    header.forEach((h, i) => { row[h] = c[i]; });
+    header.forEach((h, i) => {
+      row[h] = c[i];
+    });
     rows.push(row);
   }
-  assert.ok(header, `${path.relative(REPO, file)} "${heading}" has no table header row`);
+  assert.ok(
+    header,
+    `${path.relative(REPO, file)} "${heading}" has no table header row`,
+  );
   return { header, rows };
 }
 
@@ -201,34 +265,81 @@ describe('story tier restatements agree with the story files', () => {
     const active = storiesOnDisk(ACTIVE_STORY_STATES);
     const done = storiesOnDisk(DONE_STORY_STATES);
     const maps = mapsOnDisk();
-    assert.ok(active.length > 0, 'no active stories on disk — the tier or the walker has rotted');
-    assert.ok(done.length > 0, 'no done stories on disk — the tier or the walker has rotted');
-    assert.ok(maps.length > 0, 'no story maps on disk — the tier or the walker has rotted');
-    assert.ok(maps.some((m) => m.tasks.length > 0), 'no slice cards on any map — the island walker has rotted');
+    assert.ok(
+      active.length > 0,
+      'no active stories on disk — the tier or the walker has rotted',
+    );
+    assert.ok(
+      done.length > 0,
+      'no done stories on disk — the tier or the walker has rotted',
+    );
+    assert.ok(
+      maps.length > 0,
+      'no story maps on disk — the tier or the walker has rotted',
+    );
+    assert.ok(
+      maps.some((m) => m.tasks.length > 0),
+      'no slice cards on any map — the island walker has rotted',
+    );
 
     // Every story naming a parent must appear in that parent's table, so the
     // floors are the parents' own claim counts rather than a frozen number.
     const everyStory = [...active, ...done];
     const jtbdStories = everyStory.filter((s) => s.jtbd.includes('JTBD-400'));
     const p033Stories = everyStory.filter((s) => s.problems.includes('P033'));
-    assert.ok(jtbdStories.length > 0, 'no story claims JTBD-400 — the frontmatter walker has rotted');
+    assert.ok(
+      jtbdStories.length > 0,
+      'no story claims JTBD-400 — the frontmatter walker has rotted',
+    );
 
     const floors = [
-      [table(path.join(STORIES, 'README.md'), '## Story Rankings', STORY_ID).rows.length, 1, 'Story Rankings'],
-      [table(path.join(STORIES, 'README.md'), '## Done', STORY_ID).rows.length, 1, 'Done'],
-      [table(path.join(MAPS, 'README.md'), '## Index', MAP_ID).rows.length, 1, 'story-map Index'],
+      [
+        table(path.join(STORIES, 'README.md'), '## Story Rankings', STORY_ID)
+          .rows.length,
+        1,
+        'Story Rankings',
+      ],
+      [
+        table(path.join(STORIES, 'README.md'), '## Done', STORY_ID).rows.length,
+        1,
+        'Done',
+      ],
+      [
+        table(path.join(MAPS, 'README.md'), '## Index', MAP_ID).rows.length,
+        1,
+        'story-map Index',
+      ],
       // DERIVED, never a literal. An exact `6` here is exact today and stale the
       // moment STORY-007 lands — after which the largest restatement in the
       // corpus could lose a row and still pass. A hardcoded cardinal inside the
       // guard written to close hardcoded cardinals is the defect in the
       // instrument. Both counts come from disk.
-      [table(JTBD400, '## Stories', STORY_ID).rows.length, jtbdStories.length, 'JTBD-400 ## Stories'],
-      [table(JTBD400, '## Story Maps', MAP_ID).rows.length, 1, 'JTBD-400 ## Story Maps'],
-      [table(P033, '## Stories', STORY_ID).rows.length, p033Stories.length, 'P033 ## Stories'],
-      [table(P033, '## Story Maps', MAP_ID).rows.length, 1, 'P033 ## Story Maps'],
+      [
+        table(JTBD400, '## Stories', STORY_ID).rows.length,
+        jtbdStories.length,
+        'JTBD-400 ## Stories',
+      ],
+      [
+        table(JTBD400, '## Story Maps', MAP_ID).rows.length,
+        1,
+        'JTBD-400 ## Story Maps',
+      ],
+      [
+        table(P033, '## Stories', STORY_ID).rows.length,
+        p033Stories.length,
+        'P033 ## Stories',
+      ],
+      [
+        table(P033, '## Story Maps', MAP_ID).rows.length,
+        1,
+        'P033 ## Story Maps',
+      ],
     ];
     for (const [got, min, name] of floors) {
-      assert.ok(got >= min, `${name} parsed to ${got} rows, expected at least ${min} — the table has rotted`);
+      assert.ok(
+        got >= min,
+        `${name} parsed to ${got} rows, expected at least ${min} — the table has rotted`,
+      );
     }
   });
 
@@ -237,68 +348,130 @@ describe('story tier restatements agree with the story files', () => {
     // slugs are not a restatement site), but `story-id` IS the slug — five of
     // six were byte-equal when this landed and the sixth had drifted, left
     // behind by a rename in the very pass that was fixing title drift.
-    const wrong = [...storiesOnDisk(ACTIVE_STORY_STATES), ...storiesOnDisk(DONE_STORY_STATES)]
+    const wrong = [
+      ...storiesOnDisk(ACTIVE_STORY_STATES),
+      ...storiesOnDisk(DONE_STORY_STATES),
+    ]
       .filter((s) => s.storyId !== s.slug)
-      .map((s) => `${s.id}: story-id "${s.storyId}" but filename slug "${s.slug}"`);
-    assert.deepEqual(wrong, [], `story-id drifted from the filename:\n  ${wrong.join('\n  ')}`);
+      .map(
+        (s) => `${s.id}: story-id "${s.storyId}" but filename slug "${s.slug}"`,
+      );
+    assert.deepEqual(
+      wrong,
+      [],
+      `story-id drifted from the filename:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('a story frontmatter status matches the directory it sits in', () => {
-    const wrong = [...storiesOnDisk(ACTIVE_STORY_STATES), ...storiesOnDisk(DONE_STORY_STATES)]
+    const wrong = [
+      ...storiesOnDisk(ACTIVE_STORY_STATES),
+      ...storiesOnDisk(DONE_STORY_STATES),
+    ]
       .filter((s) => s.status !== s.dir)
       .map((s) => `${s.id}: in ${s.dir}/ but frontmatter says "${s.status}"`);
-    assert.deepEqual(wrong, [], `story status disagrees with its directory:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `story status disagrees with its directory:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('Story Rankings lists exactly the active stories, with matching status and title', () => {
-    const expected = storiesOnDisk(ACTIVE_STORY_STATES).map((s) => `${s.id}|${s.status}|${s.title}`).sort();
-    const actual = table(path.join(STORIES, 'README.md'), '## Story Rankings', STORY_ID).rows
-      .map((r) => `${idOf(r)}|${r.status}|${bare(r.title)}`).sort();
-    assert.deepEqual(actual, expected, 'docs/stories/README.md Story Rankings disagrees with the story files');
+    const expected = storiesOnDisk(ACTIVE_STORY_STATES)
+      .map((s) => `${s.id}|${s.status}|${s.title}`)
+      .sort();
+    const actual = table(
+      path.join(STORIES, 'README.md'),
+      '## Story Rankings',
+      STORY_ID,
+    )
+      .rows.map((r) => `${idOf(r)}|${r.status}|${bare(r.title)}`)
+      .sort();
+    assert.deepEqual(
+      actual,
+      expected,
+      'docs/stories/README.md Story Rankings disagrees with the story files',
+    );
   });
 
   it('the Done table lists exactly the done stories, with matching title', () => {
     // No Status column here — that is the table's shape, not an omission.
-    const expected = storiesOnDisk(DONE_STORY_STATES).map((s) => `${s.id}|${s.title}`).sort();
-    const actual = table(path.join(STORIES, 'README.md'), '## Done', STORY_ID).rows
-      .map((r) => `${idOf(r)}|${bare(r.title)}`).sort();
-    assert.deepEqual(actual, expected, 'docs/stories/README.md Done disagrees with the story files');
+    const expected = storiesOnDisk(DONE_STORY_STATES)
+      .map((s) => `${s.id}|${s.title}`)
+      .sort();
+    const actual = table(path.join(STORIES, 'README.md'), '## Done', STORY_ID)
+      .rows.map((r) => `${idOf(r)}|${bare(r.title)}`)
+      .sort();
+    assert.deepEqual(
+      actual,
+      expected,
+      'docs/stories/README.md Done disagrees with the story files',
+    );
   });
 
   it('the story-map Index row matches the map — including its TITLE', () => {
     // The title half is the whole point: the upstream reconciler exited 0 over a
     // stale title on 2026-08-20 because it compares IDs and status only.
-    const expected = mapsOnDisk().map((m) => `${m.id}|${m.status}|${m.title}`).sort();
-    const actual = table(path.join(MAPS, 'README.md'), '## Index', MAP_ID).rows
-      .map((r) => `${idOf(r)}|${r.status}|${bare(r.title)}`).sort();
-    assert.deepEqual(actual, expected, 'docs/story-maps/README.md Index disagrees with the map');
+    const expected = mapsOnDisk()
+      .map((m) => `${m.id}|${m.status}|${m.title}`)
+      .sort();
+    const actual = table(path.join(MAPS, 'README.md'), '## Index', MAP_ID)
+      .rows.map((r) => `${idOf(r)}|${r.status}|${bare(r.title)}`)
+      .sort();
+    assert.deepEqual(
+      actual,
+      expected,
+      'docs/story-maps/README.md Index disagrees with the map',
+    );
   });
 
   it("a map's rendered heading matches the data island its ratification covers", () => {
     // The oversight fingerprint is scoped to the island, so a hand-edited <h1>
     // would carry an approval it never received.
     const wrong = mapsOnDisk().flatMap((m) => [
-      ...(m.h1 !== m.title ? [`${m.id}: <h1> "${m.h1}" vs island "${m.title}"`] : []),
-      ...(m.status !== m.dir ? [`${m.id}: island status "${m.status}" but sits in ${m.dir}/`] : []),
+      ...(m.h1 !== m.title
+        ? [`${m.id}: <h1> "${m.h1}" vs island "${m.title}"`]
+        : []),
+      ...(m.status !== m.dir
+        ? [`${m.id}: island status "${m.status}" but sits in ${m.dir}/`]
+        : []),
     ]);
-    assert.deepEqual(wrong, [], `map heading/status drift:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `map heading/status drift:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('every slice card names a story that exists, and every story names a map that carries it', () => {
-    const all = [...storiesOnDisk(ACTIVE_STORY_STATES), ...storiesOnDisk(DONE_STORY_STATES)];
+    const all = [
+      ...storiesOnDisk(ACTIVE_STORY_STATES),
+      ...storiesOnDisk(DONE_STORY_STATES),
+    ];
     const byId = Object.fromEntries(all.map((s) => [s.id, s]));
     const maps = mapsOnDisk();
     const wrong = [];
     for (const m of maps) {
       for (const t of m.tasks) {
-        if (!byId[t.storyId]) wrong.push(`${m.id} card "${t.title}" names ${t.storyId}, not on disk`);
+        if (!byId[t.storyId])
+          wrong.push(
+            `${m.id} card "${t.title}" names ${t.storyId}, not on disk`,
+          );
         else if (bare(t.title) !== byId[t.storyId].title) {
-          wrong.push(`${m.id} card for ${t.storyId}: "${bare(t.title)}" vs story "${byId[t.storyId].title}"`);
+          wrong.push(
+            `${m.id} card for ${t.storyId}: "${bare(t.title)}" vs story "${byId[t.storyId].title}"`,
+          );
         }
       }
     }
     for (const s of all) {
-      if (!s.maps.length) { wrong.push(`${s.id} names no story map — its approval derives from one`); continue; }
+      if (!s.maps.length) {
+        wrong.push(
+          `${s.id} names no story map — its approval derives from one`,
+        );
+        continue;
+      }
       for (const id of s.maps) {
         const m = maps.find((x) => x.id === id);
         if (!m) wrong.push(`${s.id} names ${id}, which does not exist`);
@@ -307,28 +480,56 @@ describe('story tier restatements agree with the story files', () => {
         }
       }
     }
-    assert.deepEqual(wrong, [], `story/map trace disagrees:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `story/map trace disagrees:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it('the reverse-trace tables on the parent problem and job match the story files', () => {
-    const all = [...storiesOnDisk(ACTIVE_STORY_STATES), ...storiesOnDisk(DONE_STORY_STATES)];
+    const all = [
+      ...storiesOnDisk(ACTIVE_STORY_STATES),
+      ...storiesOnDisk(DONE_STORY_STATES),
+    ];
     const maps = mapsOnDisk();
     const wrong = [];
-    for (const [file, label] of [[JTBD400, 'JTBD-400'], [P033, 'P033']]) {
+    for (const [file, label] of [
+      [JTBD400, 'JTBD-400'],
+      [P033, 'P033'],
+    ]) {
       for (const r of table(file, '## Stories', STORY_ID).rows) {
         const s = all.find((x) => x.id === idOf(r));
-        if (!s) { wrong.push(`${label} ## Stories names ${idOf(r)}, not on disk`); continue; }
-        if (bare(r.title) !== s.title) wrong.push(`${label} ${s.id} title "${bare(r.title)}" vs "${s.title}"`);
-        if (r.status !== s.status) wrong.push(`${label} ${s.id} status "${r.status}" vs "${s.status}"`);
+        if (!s) {
+          wrong.push(`${label} ## Stories names ${idOf(r)}, not on disk`);
+          continue;
+        }
+        if (bare(r.title) !== s.title)
+          wrong.push(
+            `${label} ${s.id} title "${bare(r.title)}" vs "${s.title}"`,
+          );
+        if (r.status !== s.status)
+          wrong.push(`${label} ${s.id} status "${r.status}" vs "${s.status}"`);
       }
       for (const r of table(file, '## Story Maps', MAP_ID).rows) {
         const m = maps.find((x) => x.id === idOf(r));
-        if (!m) { wrong.push(`${label} ## Story Maps names ${idOf(r)}, not on disk`); continue; }
-        if (bare(r.title) !== m.title) wrong.push(`${label} ${m.id} title "${bare(r.title)}" vs "${m.title}"`);
-        if (r.status !== m.status) wrong.push(`${label} ${m.id} status "${r.status}" vs "${m.status}"`);
+        if (!m) {
+          wrong.push(`${label} ## Story Maps names ${idOf(r)}, not on disk`);
+          continue;
+        }
+        if (bare(r.title) !== m.title)
+          wrong.push(
+            `${label} ${m.id} title "${bare(r.title)}" vs "${m.title}"`,
+          );
+        if (r.status !== m.status)
+          wrong.push(`${label} ${m.id} status "${r.status}" vs "${m.status}"`);
       }
     }
-    assert.deepEqual(wrong, [], `reverse-trace drift:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `reverse-trace drift:\n  ${wrong.join('\n  ')}`,
+    );
   });
 
   it("the README's trace carve-out holds: active stories trace, retrospective records declare that they do not", () => {
@@ -338,17 +539,26 @@ describe('story tier restatements agree with the story files', () => {
     // backfilled record cannot slip in looking earned.
     const wrong = [];
     for (const s of storiesOnDisk(ACTIVE_STORY_STATES)) {
-      if (!s.problems.length) wrong.push(`${s.id} is active but traces no problem`);
+      if (!s.problems.length)
+        wrong.push(`${s.id} is active but traces no problem`);
       if (!s.rfcs.length) wrong.push(`${s.id} is active but traces no RFC`);
     }
     for (const s of storiesOnDisk(DONE_STORY_STATES)) {
       if (s.retrospective && (s.problems.length || s.rfcs.length)) {
-        wrong.push(`${s.id} is a retrospective record but claims a problem/RFC trace it did not earn`);
+        wrong.push(
+          `${s.id} is a retrospective record but claims a problem/RFC trace it did not earn`,
+        );
       }
       if (!s.retrospective && !s.problems.length) {
-        wrong.push(`${s.id} traces no problem and does not declare itself a retrospective record`);
+        wrong.push(
+          `${s.id} traces no problem and does not declare itself a retrospective record`,
+        );
       }
     }
-    assert.deepEqual(wrong, [], `the README's trace carve-out is not holding:\n  ${wrong.join('\n  ')}`);
+    assert.deepEqual(
+      wrong,
+      [],
+      `the README's trace carve-out is not holding:\n  ${wrong.join('\n  ')}`,
+    );
   });
 });

@@ -3,7 +3,7 @@ status: in-progress
 story-id: a-test-that-cannot-fail-is-made-able-to-fail
 reported: 2026-08-20
 decision-makers: [Tom Howard]
-problems: [P033]
+problems: [P033, P116, P119]
 rfcs: [RFC-009]
 jtbd: [JTBD-400]
 story-maps: [STORY-MAP-001]
@@ -14,7 +14,7 @@ estimated-effort: S
 
 **Status**: in-progress
 **Reported**: 2026-08-20
-**Problem**: P033
+**Problems**: P033 (closed 2026-08-21), P116, P119
 **RFC**: RFC-009
 **Story map**: STORY-MAP-001
 **JTBD**: JTBD-400 — on its **anti-erosion clause**, not the release path. The job statement asks that
@@ -135,6 +135,14 @@ knowing which bucket a pin is in. It is also the cheapest — it writes no behav
 production code.
 
 ## Related
+
+**Its driving problem closed on 2026-08-21 while this story is still `in-progress`, and that is recorded
+rather than left to be noticed.** P033 closed with the decision-bearing conversion done; this story's own
+deliverable — the classification — was complete and ticked well before it. The conversion work that remains
+is P116 and P119, which is why they now appear in this story's `problems:` trace alongside the closed P033.
+A story tracing only to a closed problem reads as finished, and no check catches it: the link resolves, so
+the doc-link guard stays green. That gap is R018's documented ceiling and it is now realised twice, here and
+on RFC-009.
 
 - **RFC-009** — the parent plan; carries the population predicate, the ordering, and the five measured
   baselines this story extends.

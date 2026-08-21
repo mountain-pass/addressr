@@ -221,6 +221,8 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 
 ## 2026-08-21
 
+> Last reviewed: 2026-08-21 **P119 captured** — the last 23 source-inspection assertions (21 pattern pins plus 2 offset comparisons the first count missed), over the two release watchers, split out of P033 because converting them needs a canned GitHub surface rather than one shadowed binary; HTTP-mocking measured and ruled out (gh forces TLS and ignores SSL_CERT_FILE on macOS) (lightweight aside via /wr-itil:capture-problem)
+
 > Last reviewed: 2026-08-21 **P118 captured** — every risk report is a single newline; 98 of 109 measured empty and nothing populated since 2026-08-19, because the scorer runs as a background subagent so the PostToolUse hook sees launch metadata rather than the verdict (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-20 **P033 known error** — source-inspection tests. Convention documented in AGENTS.md § Writing Tests, which targets the copying mechanism the RCA names. The lint/CI task is closed as NOT BUILT: lint-staged is scoped to `*.js`/`*.jsx` per ADR-014 so an ESLint rule would never run on the `*.test.mjs` files it would police, and the file-level ratchet designed in its place had a zero catch rate against P091 — the pin landed in a file the predicate already matched. Effort re-rated M → XL now the audit has sized the fix, which drops WSJF 8.0 → 4.0 despite the Known Error multiplier

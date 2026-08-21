@@ -143,7 +143,7 @@ There is now.
 
 ## Related
 
-- **[P033](../known-error/033-source-inspection-tests-anti-pattern.md)** — the parent Known Error. Its shell
+- **[P033](../closed/033-source-inspection-tests-anti-pattern.md)** — the parent Known Error. Its shell
   task named five files; three were never in the population or converted on 2026-08-21, and this is the
   remainder. Split out rather than left in place because P033 is XL and this is L, so leaving it there
   priced it at the parent's divisor.
