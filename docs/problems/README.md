@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-20 **P033 known error** — source-inspection tests. Convention documented in AGENTS.md § Writing Tests, which targets the copying mechanism the RCA names. The lint/CI task is closed as NOT BUILT: lint-staged is scoped to `*.js`/`*.jsx` per ADR-014 so an ESLint rule would never run on the `*.test.mjs` files it would police, and the file-level ratchet designed in its place had a zero catch rate against P091 — the pin landed in a file the predicate already matched. Effort re-rated M → XL now the audit has sized the fix, which drops WSJF 8.0 → 4.0 despite the Known Error multiplier
+> Last reviewed: 2026-08-21 **P118 captured** — every risk report is a single newline; 98 of 109 measured empty and nothing populated since 2026-08-19, because the scorer runs as a background subagent so the PostToolUse hook sees launch metadata rather than the verdict (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -15,6 +15,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                    | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P116 | Nine workflow pins imply coverage they cannot provide, and say nothing about it | High (12)    | Open          | S      | 2026-08-20 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                  | High (10)    | Open          | S      | 2026-08-08 | internal |
+| 10.0 | P118 | Every risk report is a single newline, so the audit trail is empty              | High (10)    | Open          | S      | 2026-08-21 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only              | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
 | 9.0  | P064 | external-comms commit-message gate scans only the first `-m` value              | Medium (9)   | Open          | S      | 2026-07-26 | internal |
 | 9.0  | P100 | Production recovery floor has never been measured                               | Medium (9)   | Open          | S      | 2026-08-18 | internal |

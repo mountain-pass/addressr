@@ -218,3 +218,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-19 **P104 captured, then rescored 12 → 8** — the perf probe's retrieve threshold passes on zero samples; every iteration throws and k6 reports a tick. Rescored the same day: 12 double-counted the harm on Impact and the defect frequency on Likelihood, and put P104 above its own parent P032 (9). Root cause resolved at capture — the probe is the defect, the API is to contract (lightweight aside via /wr-itil:capture-problem)
 
 > Last reviewed: 2026-08-18 **P103 captured** — workflow referrers outside guard coverage rot unseen; the same file broke twice, both times found by review rather than by test (lightweight aside via /wr-itil:capture-problem)
+
+## 2026-08-21
+
+> Last reviewed: 2026-08-20 **P033 known error** — source-inspection tests. Convention documented in AGENTS.md § Writing Tests, which targets the copying mechanism the RCA names. The lint/CI task is closed as NOT BUILT: lint-staged is scoped to `*.js`/`*.jsx` per ADR-014 so an ESLint rule would never run on the `*.test.mjs` files it would police, and the file-level ratchet designed in its place had a zero catch rate against P091 — the pin landed in a file the predicate already matched. Effort re-rated M → XL now the audit has sized the fix, which drops WSJF 8.0 → 4.0 despite the Known Error multiplier
