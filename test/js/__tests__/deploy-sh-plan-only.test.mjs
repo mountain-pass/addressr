@@ -45,7 +45,20 @@ const REPO = path.resolve(
 const DEPLOY_DIR = path.join(REPO, 'apps/addressr-deployment');
 const TF_ENV = path.join(DEPLOY_DIR, '.terraform/environment');
 
-const harness = { stubDir: '', savedEnvironment: undefined };
+const harness = {
+  stubDir: '',
+  savedEnvironment: undefined,
+};
+
+const untrackedPaths = () =>
+  execFileSync(
+    'git',
+    ['status', '--porcelain', '--untracked-files=all', '--', DEPLOY_DIR],
+    { cwd: REPO, encoding: 'utf8' },
+  )
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => line.slice(3));
 
 before(() => {
   harness.stubDir = mkdtempSync(path.join(tmpdir(), 'tfstub-'));
@@ -104,13 +117,6 @@ const runDeploy = (environment) => {
     calls: readFileSync(calls, 'utf8').trim().split('\n').filter(Boolean),
   };
 };
-
-const untracked = () =>
-  execFileSync(
-    'git',
-    ['status', '--porcelain', '--untracked-files=all', '--', DEPLOY_DIR],
-    { cwd: REPO, encoding: 'utf8' },
-  );
 
 describe('apps/addressr-deployment/deploy.sh — run, not read', () => {
   it('refuses PLAN_ONLY without an explicit workspace, before touching terraform', () => {
@@ -216,34 +222,37 @@ describe('apps/addressr-deployment/deploy.sh — run, not read', () => {
     );
   });
 
-  it('every artefact the run actually creates is git-ignored', () => {
+  it('leaves nothing un-ignored in the deployment directory', () => {
     // This repo is PUBLIC and tfplan.json carries cleartext secrets. The floor
     // this replaces read deploy.sh and asserted the WRITES were still written —
     // which cannot tell a write that happens from a write that is merely coded.
-    // Deriving the list from what the run leaves on disk closes that gap and
+    // Deriving the check from what is actually on disk closes that gap and
     // cannot go stale.
-    assert.equal(
-      untracked(),
-      '',
-      'the deployment directory was not clean before the run',
-    );
-
+    //
+    // ABSOLUTE, not a delta against a baseline. Two attempts at a
+    // baseline-relative version were measured BLIND to the `deployment/` ignore
+    // rule being stripped, because that directory is a durable artefact: it
+    // survives between runs, so it sits in any baseline this file could capture
+    // and gets filtered out as pre-existing. There is no pristine snapshot to
+    // diff against, and the property worth asserting does not need one — ANY
+    // un-ignored file here is a file the deploy would offer for commit on a
+    // public repo, whoever put it there.
     runDeploy({
       PLAN_ONLY: '1',
       TF_WORKSPACE: 'prod',
       npm_lifecycle_event: 'deploy:prod',
     });
 
-    const leaked = untracked()
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => line.slice(3));
-    // `git status` already applies the ignore rules, so anything listed here is
-    // a file the deploy would offer for commit on a public repo.
+    // `git status` already applies the ignore rules, so anything listed is
+    // un-ignored by definition.
+    const leaked = untrackedPaths();
     assert.deepEqual(
       leaked,
       [],
-      `deploy.sh left un-ignored artefacts behind: ${leaked.join(', ')}`,
+      `un-ignored files in the deployment directory: ${leaked.join(', ')}. ` +
+        'Either an ignore rule was dropped, or an artefact was written to a ' +
+        'path no rule covers, or a stray file was left here by hand. All ' +
+        'three are commit offers on a public repo, so all three red.',
     );
   });
 
