@@ -82,7 +82,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 // js-yaml 5 dropped the default export and reorganised the public API
 // around flat named exports, so this is `{ load }` rather than `yaml`.
@@ -376,7 +376,9 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // both asserted, so the property survives a step reorder OR an env edit.
     const names = releaseSteps.map((s) => s.name);
     const detectAt = names.indexOf('Detect a deployment version bump');
-    const changesetsAt = names.indexOf('Create Release Pull Request or Publish to npm');
+    const changesetsAt = names.indexOf(
+      'Create Release Pull Request or Publish to npm',
+    );
     assert.ok(detectAt >= 0 && changesetsAt >= 0, 'both steps must exist');
     assert.ok(
       detectAt < changesetsAt,
@@ -892,13 +894,12 @@ describe('release-watch.sh — the watcher invariants (P004 / P085)', () => {
 
     // 4. check-deps stays exempt — advisory per ADR 015, carries
     //    continue-on-error, so a mature-dependency notice must not red a release.
-    // The exemption moved with the scan; it is asserted by name and by
-    // non-extension (a `check-deps-strict` must NOT inherit it) in
-    // scan-jobs-awk.test.mjs, which can prove it rather than match it.
-    assert.ok(
-      existsSync(fileURLToPath(new URL('../../../scripts/scan-jobs.awk', import.meta.url))),
-      'the shared scan carrying the ADR-015 check-deps exemption must exist',
-    );
+    // The existence assert that stood here is GONE, converted 2026-08-21 per
+    // RFC-009. It checked that scripts/scan-jobs.awk is present, which the
+    // fixture suite establishes far better: measured by deleting the file,
+    // scan-jobs-awk.test.mjs reds, because it cannot run its 15 cases without
+    // it. An existence check downstream of a suite that executes the file is a
+    // weaker restatement of what that suite already proves.
 
     // 5. The PR-checks gate must not select a job name that does not exist.
     //    `select(.name == "build")` matched nothing on every run, so the
@@ -969,16 +970,14 @@ describe('push-and-watch.sh — the same watcher invariants (P085)', () => {
       'push-and-watch.sh must treat an UNKNOWN scan (exit 2) distinctly, not as success',
     );
 
-    // POINTED AT THE FILE THE SCAN NOW LIVES IN. Left aimed at pushWatch this
-    // asserted the absence of a line from a file that could never contain it —
-    // vacuous, and reading as coverage. The property itself is proven against
-    // real input in scan-jobs-awk.test.mjs; this keeps the negative so a
-    // re-inline-and-weaken in one step still reds.
-    assert.doesNotMatch(
-      readFileSync(fileURLToPath(new URL('../../../scripts/scan-jobs.awk', import.meta.url)), 'utf8'),
-      /\$1 == "pending" \{ next \}/,
-      'the scan must NOT be weakened to let pending jobs pass',
-    );
+    // The negative pin that stood here is GONE, converted 2026-08-21 per RFC-009.
+    // It read scripts/scan-jobs.awk and asserted the absence of a
+    // `$1 == "pending" { next }` line. Measured: inserting exactly that line is
+    // CAUGHT by scan-jobs-awk.test.mjs, which drives the real awk with a pending
+    // job and asserts it still fails. Removing the `skipped` clause is CAUGHT
+    // there too and was BLIND to the pin — so the fixture suite is not merely an
+    // equal, it is strictly stronger. A text pin over a file that a fixture suite
+    // already executes adds no cover and one more place to keep in sync.
     // Pin the EXIT, not just the condition — the same lesson this file already
     // records for the empty-scan branch. A run concluding `failure` while every
     // job reads success/skipped would otherwise report "completed successfully"
