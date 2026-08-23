@@ -1,0 +1,52 @@
+{
+  "name": "@mountainpass/website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "addressr.io",
+  "author": "Tom Howard",
+  "keywords": [
+    "gatsby"
+  ],
+  "scripts": {
+    "develop": "gatsby develop",
+    "start": "gatsby develop",
+    "build": "gatsby build",
+    "serve": "gatsby serve",
+    "clean": "gatsby clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.4.2",
+    "@fortawesome/free-solid-svg-icons": "^6.4.2",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@mdx-js/react": "^2.3.0",
+    "@mountainpass/waychaser": "^5.0.11",
+    "@windyroad/fetch-link": "^3.0.5",
+    "gatsby": "^5.12.4",
+    "gatsby-plugin-force-trailing-slashes": "^1.0.6",
+    "gatsby-plugin-google-gtag": "^5.12.0",
+    "gatsby-plugin-image": "^3.12.0",
+    "gatsby-plugin-manifest": "^5.12.0",
+    "gatsby-plugin-mdx": "^5.12.0",
+    "gatsby-plugin-sass": "^6.12.0",
+    "gatsby-plugin-sharp": "^5.12.0",
+    "gatsby-plugin-sitemap": "^6.12.0",
+    "gatsby-source-filesystem": "^5.12.0",
+    "gatsby-transformer-sharp": "^5.12.0",
+    "react": "^18.2.0",
+    "react-autosuggest": "^10.1.0",
+    "react-dom": "^18.2.0",
+    "react-helmet": "^6.1.0",
+    "react-tabs": "^6.0.2",
+    "sass": "^1.67.0",
+    "swagger-ui": "^5.7.1",
+    "swagger-ui-react": "^5.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.3",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.6",
+    "typescript": "^5.1.6"
+  }
+}

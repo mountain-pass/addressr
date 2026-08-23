@@ -1,0 +1,52 @@
+# Netlify build configuration for apps/website (ADR-053, phase 1).
+#
+# HOSTING IS DELIBERATELY UNCHANGED BY THE IMPORT. Netlify's git integration is
+# repointed from the old standalone repository to this monorepo; the deploy
+# semantics — unarmed, on push to master — are the status quo carried across,
+# not a new second pipeline against the maintainer persona's ONE PIPELINE TO
+# PRODUCTION constraint. ADR-053 pins the phase-2 answer: nothing reaches
+# addressr.io production without a committed changeset, and Cloudflare Pages'
+# own git integration is disabled as part of that cutover rather than swapping
+# one unarmed path for another. Traced on JTBD-400's screens.
+#
+# WHY BASE IS THE REPOSITORY ROOT, NOT apps/website. Setting base to the package
+# directory is the intuitive choice and it breaks npm workspaces — Netlify would
+# cd there and install against a directory with no root lockfile. Worse, it
+# would have failed SILENTLY: the imported tree carried its own stale 2023
+# package-lock.json, so the build would have succeeded against a wholly
+# different dependency resolution. That lockfile is deleted, and this is why.
+# The install must happen at the root; `-w` targets the one workspace.
+#
+# Measured against the real repository before landing, not a scratchpad:
+# `npm ci` exit 0 at 2287 packages, `npm run build -w @mountainpass/website`
+# exit 0, 7 pages, 26s, and zero `hooks.slack` occurrences in the output.
+[build]
+  command = "npm run build -w @mountainpass/website"
+  publish = "apps/website/public"
+
+  # Without this, EVERY push to this monorepo rebuilds the website — an API
+  # change, a decision record, a problem ticket. The polarity reads backwards:
+  # exit 0 means SKIP, exit 1 means BUILD, and `--quiet` exits 0 when it finds
+  # no changes. So "no diff under apps/website" resolves to skip.
+  #
+  # FAILURE MODE, because it will otherwise be mistaken for a broken rule. On
+  # the first build after repointing, and after any cache clear,
+  # $CACHED_COMMIT_REF is empty and this command errors — non-zero — which
+  # BUILDS. Shallow clones do the same when the cached ref falls outside the
+  # fetch depth. Fail-open toward building is the right direction, but it
+  # confounds ADR-053 Confirmation criterion 9, which requires observing the
+  # negative case between two positives: order those observations so the
+  # negative is not the first build after the repoint, or a spurious build will
+  # read as a broken ignore rule.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- apps/website"
+
+# No [[headers]] block, deliberately. Cache-directive parity with the current
+# Netlify Edge behaviour is phase-2 work under ADR-053, and adding headers here
+# would pull a runtime-path performance review into a commit whose whole premise
+# is that it changes no runtime behaviour.
+#
+# This file also does not repair the site's redirects. gatsby-node.js calls
+# createRedirect three times, gatsby-plugin-netlify is not installed, and a
+# build emits no _redirects — so those, and the root _redirects file Gatsby
+# never copies out, are all inert. The live 301s are configured in the Netlify
+# UI and are not reproducible from this repository. Tracked as P122.

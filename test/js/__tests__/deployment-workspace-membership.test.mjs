@@ -44,7 +44,7 @@
 // read this note as covering them.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
@@ -138,5 +138,67 @@ describe('the deployment package is inside the npm workspace (ADR-045 arming)', 
       'packages/addressr must stay publishable — resolve-version.sh reads the ' +
         'registry for the version the deployment manifest pins',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ADR-046 Confirmation criterion 4, converted from inspection to assertion.
+//
+// The criterion says the polarity check "should become an assertion WHEN A
+// THIRD ARRIVES". `apps/website` is the third workspace entry (ADR-053), so it
+// is due now. Above, the same rule is asserted for the two entries that existed
+// individually; this block generalises it so a FOURTH entry is covered the day
+// it lands rather than the day someone remembers.
+//
+// IT IS TWO OPPOSITE ASSERTIONS, and that is the whole subtlety. Copying the
+// `notEqual(private, true)` nuance to both globs would assert that apps/website
+// is NOT private — the inverse of the rule, and in direct contradiction with
+// the deployment assertion above. Each glob gets its own direction:
+//
+//   packages/*  MUST be publishable  -> notEqual(private, true)
+//               (absent key is as correct as explicit false; see :128-140)
+//   apps/*      MUST be private      -> equal(private, true)
+//               (an app published to the registry is the thing ADR-046's
+//                distributable/deployed split exists to prevent)
+describe('ADR-046 criterion 4 — packages/* publishable, apps/* private', () => {
+  const manifests = (glob) => {
+    const dir = `${repoRoot}${glob}`;
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => `${glob}/${e.name}/package.json`)
+      .filter((rel) => existsSync(`${repoRoot}${rel}`));
+  };
+
+  it('finds entries under BOTH globs, so a zero-match pass is impossible', () => {
+    // Without this, a rename of packages/ or apps/ would empty the corpus and
+    // both assertions below would pass having examined nothing — the exact
+    // zero-match class this repo has been bitten by before.
+    assert.ok(manifests('packages').length > 0, 'no packages/* manifests found');
+    assert.ok(manifests('apps').length > 0, 'no apps/* manifests found');
+  });
+
+  it('no packages/* entry is private', () => {
+    for (const rel of manifests('packages')) {
+      assert.notEqual(
+        read(rel).private,
+        true,
+        `${rel} is private — packages/* is the DISTRIBUTABLE tree (ADR-046). ` +
+          `A private package here publishes nothing and any consumer resolving ` +
+          `it from the registry fails closed.`,
+      );
+    }
+  });
+
+  it('no apps/* entry is publishable', () => {
+    for (const rel of manifests('apps')) {
+      assert.equal(
+        read(rel).private,
+        true,
+        `${rel} is not private — apps/* is the DEPLOYED tree (ADR-046). ` +
+          `Without private:true, changeset publish pushes our own deployment ` +
+          `or website source to the public registry.`,
+      );
+    }
   });
 });

@@ -1,0 +1,237 @@
+@import 'libs/vars';
+@import 'libs/functions';
+@import 'libs/mixins';
+@import 'libs/skel';
+@import '../css/font-awesome.min.css';
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,300italic,600,600italic');
+
+@import 'css-grid';
+
+/*
+	Forty by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+*/
+
+@include skel-breakpoints(
+  (
+    xlarge: '(max-width: 1680px)',
+    large: '(max-width: 1280px)',
+    medium: '(max-width: 980px)',
+    small: '(max-width: 736px)',
+    xsmall: '(max-width: 480px)',
+    xxsmall: '(max-width: 360px)',
+  )
+);
+
+@include skel-layout(
+  (
+    reset: 'full',
+    boxModel: 'border',
+  )
+);
+
+@mixin inner {
+  > .inner {
+    @include padding(4em, 0);
+    margin: 0 auto;
+    max-width: _size(inner);
+    width: calc(100% - 6em);
+
+    @include breakpoint(small) {
+      @include padding(3em, 0);
+      width: calc(100% - 3em);
+    }
+  }
+}
+
+// Base.
+
+@import 'base/page';
+@import 'base/typography';
+
+// Component.
+
+@import 'components/section';
+@import 'components/form';
+@import 'components/box';
+@import 'components/icon';
+@import 'components/image';
+@import 'components/list';
+@import 'components/table';
+@import 'components/button';
+@import 'components/tiles';
+@import 'components/contact-method';
+@import 'components/spotlights';
+
+// Layout.
+
+@import 'layout/header';
+@import 'layout/banner';
+@import 'layout/main';
+@import 'layout/contact';
+@import 'layout/footer';
+@import 'layout/wrapper';
+@import 'layout/menu';
+
+.swagger-ui {
+  //   background-color: _palette(fg) !important;
+}
+
+.swagger-wrapper {
+  padding: 1px 0;
+  background-color: _palette(fg) !important;
+}
+
+#react-autowhatever-1 {
+}
+
+#react-autowhatever-1 em {
+  font-weight: bold;
+  font-style: normal;
+}
+
+#react-autowhatever-1 ul {
+  list-style: none
+}
+
+
+.react-autosuggest__container {
+  position: relative;
+}
+
+.react-autosuggest__input--focused {
+  outline: none;
+}
+
+.react-autosuggest__input--open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.react-autosuggest__suggestions-container {
+  display: none;
+}
+
+.react-autosuggest__suggestions-container--open {
+  display: block;
+  border-color: _palette(highlight);
+  box-shadow: 0 0 0 2px _palette(highlight);
+  position: relative;
+  top: 2px;
+}
+
+.react-autosuggest__suggestions-list {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.react-autosuggest__suggestion {
+  cursor: pointer;
+  padding: 10px 20px;
+}
+
+.react-autosuggest__suggestion--highlighted {
+  background-color: _palette(bg);
+}
+
+
+table.address, table.address th, table.address td {
+  border: solid 1px _palette(fg);
+}
+
+
+.react-tabs {
+  margin-top: 10px;
+
+  th {
+    text-transform: uppercase;
+    vertical-align: middle;
+    padding: 0.75em 0.75em 0.75em 0.75em;
+  }
+}
+
+.react-tabs__tab-list {
+  border-bottom: 1px solid _palette(fg);
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.react-tabs__tab {
+  display: inline-block;
+  border: 2px solid transparent;
+  border-bottom: none;
+  bottom: -0px;
+  position: relative;
+  list-style: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+}
+
+.react-tabs__tab--selected {
+  background: _palette(fg);
+  border-color: 1px solid _palette(fg);
+  color: _palette(bg);
+}
+
+.react-tabs__tab--disabled {
+  color: GrayText;
+  cursor: default;
+}
+
+.react-tabs__tab:focus {
+  box-shadow: 0 0 5px hsl(208, 99%, 50%);
+  border-color: hsl(208, 99%, 50%);
+  outline: none;
+}
+
+.react-tabs__tab:focus:after {
+  content: "";
+  position: absolute;
+  height: 5px;
+  left: -4px;
+  right: -4px;
+  bottom: -5px;
+  background: #fff;
+}
+
+.react-tabs__tab-panel {
+  display: none;
+}
+
+.react-tabs__tab-panel--selected {
+  display: block;
+}
+
+
+/* Enterprise call-to-action (ADR-053).
+ *
+ * The email address repeats as visible text below the button because a mailto:
+ * is inert for webmail users and anyone with no mail client configured; a bare
+ * button leaves them nothing to copy. It sits OUTSIDE the button deliberately.
+ *
+ * `overflow-wrap` is the only rule here that is load-bearing: the address is a
+ * 29-character unbreakable token and the Enterprise card is narrow at 320px and
+ * at 400% zoom (WCAG 1.4.10 Reflow).
+ *
+ * DELIBERATELY NOT ADDED, having checked rather than assumed. An accessibility
+ * review recommended `user-select: text` and a `:focus-visible` outline
+ * override, both predicated on Bootstrap — `.btn { user-select: none }` and
+ * `.btn:focus { outline: 0; box-shadow: 0 0 0 .2rem rgba(brand,.25) }`. There is
+ * no Bootstrap here: it is in neither package.json nor any SCSS import, the
+ * only `user-select` in the tree is a name inside a vendor-prefix list in
+ * libs/_skel.scss, and the two `outline: none` rules in this file are scoped to
+ * `.react-autosuggest__input--focused` and `.react-tabs__tab:focus`. So the
+ * address is selectable and the browser's default focus ring reaches these
+ * anchors unimpeded. Adding overrides for absent behaviour would be unverified
+ * CSS defending against a problem this site does not have.
+ */
+.enterprise-cta__address {
+  margin-top: 1.5rem;
+  overflow-wrap: anywhere;
+}

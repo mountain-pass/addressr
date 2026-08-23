@@ -22,6 +22,18 @@ export default [
     'lib/**',
     'scratchpad/**',
     '.env',
+    // ADR-053 phase 1. This config has no TypeScript parser and no JSX settings,
+    // so .tsx would go unlinted while stray .js/.jsx collected eslint-plugin-n
+    // recommended-module and unicorn/filename-case findings that fight React
+    // convention. Adding typescript-eslint and jsx-a11y is real work with its own
+    // decisions; jsx-a11y is the obvious later addition given this repo's
+    // accessibility-first posture, so the omission is sequencing, not oversight.
+    //
+    // Inside globalIgnores rather than a new top-level block, deliberately: a new
+    // block would make 17 entries and falsify ADR-014's Confirmation, which pins 16.
+    // This form also fails LOUD if apps/website ever moves — findings appear on
+    // staged files rather than an autofix quietly mutating something.
+    'apps/website/**',
   ]),
   js.configs.recommended,
   pluginSecurity.configs.recommended,

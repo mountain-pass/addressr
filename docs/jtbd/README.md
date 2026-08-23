@@ -76,6 +76,12 @@ Lands code to the Addressr repo under a trunk-based workflow with automated chan
 | -------- | --------------------------------- | --------------------------------------------------------------------------------------- |
 | JTBD-400 | Ship releases reliably from trunk | [JTBD-400](addressr-maintainer/JTBD-400-ship-releases-reliably-from-trunk.validated.md) |
 
+### Proposed
+
+| ID       | Job                                                | File                                                                                              |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| JTBD-401 | Keep credentials out of what this repository ships | [JTBD-401](addressr-maintainer/JTBD-401-keep-credentials-out-of-what-this-repo-ships.proposed.md) |
+
 ## Current Solutions / Alternatives
 
 | Alternative              | Strengths                   | Weaknesses vs Addressr                                        |

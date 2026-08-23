@@ -96,6 +96,40 @@ jobs:
       - name: Licence audit of the published production tree
         run: npm run check-licenses
 
+  # The website's behavioural test tier (ADR-053).
+  #
+  # WHY IT IS ITS OWN JOB. These assertions read Gatsby's EMITTED output —
+  # rendered HTML and bundles — not JSX source. That needs a build, which costs
+  # ~23s and produces `apps/website/public`, a gitignored directory that exists
+  # in no other job. Putting them in `test:js` would fail everywhere that does
+  # not build, or force a skip-when-missing that passes having examined nothing.
+  #
+  # WHY BEHAVIOURAL AT ALL. The first version grepped JSX. P033's population
+  # guard reddened on it immediately — that ticket exists because source pins
+  # stand in for behaviour and once hid a production defect for four months.
+  # Source greps also cannot see what actually breaks these pages: a mailto
+  # resolved as a site-relative path by Gatsby's Link, a deleted route still
+  # linked, or a credential inlined into a bundle. All three are asserted here.
+  #
+  # NOT in `release`'s `needs`, deliberately. The website deploys via Netlify
+  # independently of this pipeline in phase 1, so a website build failure reds
+  # the run without blocking an API release. P123 records what happens when an
+  # unrelated job gates the release job.
+  website-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build the website
+        run: npm run build -w @mountainpass/website
+      - name: Behavioural assertions over the built site
+        run: npm run test:website
+
   build-and-test:
     runs-on: ubuntu-latest
     strategy:

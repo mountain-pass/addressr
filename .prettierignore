@@ -14,3 +14,13 @@
 #
 # Do not edit the file. Edit it upstream and re-render.
 docs/story-maps/story-map.css
+
+# ADR-053 phase 1 — the imported website tree.
+#
+# lint-staged runs `"*.{json,css,md}": "prettier --write"` with no path scope, so
+# without this entry the FIRST thing it does is reformat every .css/.json/.md the
+# import carries — inside the one commit that must stay reviewable. ADR-046's Bad
+# consequence ("Every move surfaces lint debt") predicts exactly this.
+#
+# Paired with the ESLint ignore in eslint.config.js. Both are phase 1 only.
+apps/website/

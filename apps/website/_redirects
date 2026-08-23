@@ -1,0 +1,11 @@
+http://addressr.io/* https://addressr.io/:splat 301!
+http://www.addressr.io/* https://addressr.io/:splat 301!
+https://www.addressr.io/* https://addressr.io/:splat 301!
+http://addressr.mountain-pass.com.au/* https://addressr.io/:splat 301!
+https://addressr.mountain-pass.com.au/* https://addressr.io/:splat 301!
+http://addressr.mountainpass.com.au/* https://addressr.io/:splat 301!
+https://addressr.mountainpass.com.au/* https://addressr.io/:splat 301!
+http://wizardly-mahavira-44f7c9.netlify.app/* https://addressr.io/:splat 301!
+https://wizardly-mahavira-44f7c9.netlify.app/* https://addressr.io/:splat 301!
+/api-docs/ https://rapidapi.com/addressr-addressr-default/api/addressr 301!
+/api-docs https://rapidapi.com/addressr-addressr-default/api/addressr 301!

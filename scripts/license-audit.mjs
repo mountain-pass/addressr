@@ -182,6 +182,7 @@ export function resolveProductionTree(repoRoot = process.cwd()) {
   const root = JSON.parse(readFileSync(`${repoRoot}/package.json`, 'utf8'));
   const seen = new Set();
   const packages = [];
+  const excluded = [];
 
   for (const glob of root.workspaces ?? []) {
     if (!glob.endsWith('/*')) continue;
@@ -199,7 +200,23 @@ export function resolveProductionTree(repoRoot = process.cwd()) {
       } catch {
         continue;
       }
-      if (manifest.private === true) continue; // unpublished: its deps ship nowhere
+      if (manifest.private === true) {
+        // NAME IT, do not just skip it (ADR-053 Confirmation criterion 5). The scan
+        // REACHES this tree via root.workspaces above and then declines to audit it.
+        // Silently, that is the P106 shape — a gate that examines nothing and reports
+        // success, where the green reads as coverage of everything present.
+        //
+        // Generic rather than special-cased to apps/website, so apps/addressr-deployment
+        // is named too. That is the honest excluded set and it closes the same
+        // misreading for both at no extra cost.
+        //
+        // The exclusion is a SCOPE statement, not a claim of no obligation: this audit's
+        // subject is the published npm tarball. A Gatsby client bundle does ship
+        // third-party code to browsers, which is a real licence question under most OSS
+        // terms — just a distinct, currently ungoverned one.
+        excluded.push(`${glob.slice(0, -2)}/${entry}`);
+        continue;
+      }
 
       const run = (args) => {
         try {
@@ -234,6 +251,7 @@ export function resolveProductionTree(repoRoot = process.cwd()) {
       }
     }
   }
+  packages.excluded = excluded;
   return packages;
 }
 
@@ -245,6 +263,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     exceptions: EXCEPTIONS,
   });
   console.log(`licence audit: ${checked} packages in the published production tree`);
+  for (const x of packages.excluded ?? [])
+    console.log(`  EXCLUDED   ${x} (private: hosted or deployed, not published — NOT audited)`);
   for (const e of exercised) console.log(`  EXCEPTION  ${e}`);
   for (const p of problems) console.error(`  FAIL       ${p}`);
   if (!ok) {

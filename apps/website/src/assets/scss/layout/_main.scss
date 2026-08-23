@@ -1,0 +1,270 @@
+///
+/// Forty by HTML5 UP
+/// html5up.net | @ajlkn
+/// Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+///
+
+/* Main */
+
+#main {
+  background-color: _palette(bg-alt);
+
+  > * {
+    border-top: solid 1px _palette(border);
+
+    &:first-child {
+      border-top: 0;
+    }
+
+    @include inner;
+  }
+
+  &.alt {
+    background-color: transparent;
+    border-bottom: solid 1px _palette(border);
+  }
+}
+
+/* Pricing */
+
+.pricing {
+  padding: 100px 0;
+}
+
+.price-styles {
+  margin-bottom: 30px;
+}
+
+.popular {
+  padding-top: 0 !important;
+  margin-left: 15px;
+  margin-right: 15px;
+  background: _palette(bg);
+  height: 40px;
+  line-height: 40px;
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: -40px;
+  color: _palette(fg);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 3px 3px 0 0;
+}
+
+.pricing__item {
+  margin: 0;
+  padding: 40px 40px 40px;
+  text-align: left;
+  color: _palette(bg);
+  background: _palette(fg);
+  position: relative;
+  box-shadow: 0px 0px 10px _palette(border-bg);
+  border: none;
+  border-radius: 3px;
+}
+
+.pricing__item__popular {
+  border-radius: 0 0 3px 3px;
+}
+
+.pricing__title {
+  margin: 0px 0px 10px;
+  color: _palette(accent1);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.pricing__price {
+  font-size: 65px;
+  font-weight: 700;
+  padding: 10px 0 20px;
+  color: _palette(bg);
+  text-align: center;
+}
+
+.pricing__currency {
+  font-size: 25px;
+  vertical-align: super;
+  color: _palette(bg);
+  margin-left: -0.7em;
+}
+
+.pricing__period {
+  font-size: 15px;
+  color: _palette(bg);
+  display: inline-block;
+}
+
+.pricing__sentence {
+  padding: 0 0 0.5em;
+  margin: 0;
+  color: _palette(bg);
+  text-align: center;
+}
+
+.pricing__feature-list {
+  font-size: 0.95em;
+  margin: 0;
+  padding: 0 0 2.5em;
+  list-style: none;
+  color: _palette(bg-alt);
+}
+
+.pricing__feature {
+  position: relative;
+  display: block;
+  padding: 0px 0px 5px 20px;
+  line-height: 1.5;
+}
+
+.pricing__feature::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 2px;
+  background: _palette(bg);
+  opacity: 0.2;
+  left: 0;
+  top: 50%;
+  margin: -2px 0 0 0;
+}
+
+.pricing__item .btn {
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  color: _palette(fg);
+}
+
+.pricing .container {
+  max-width: 1000px;
+}
+
+@media only screen and (min-width: 768px) and (max-width: 992px) {
+  .container {
+    width: 100%;
+    max-width: 800px;
+  }
+  .pricing__price {
+    padding: 35px 0 30px;
+    line-height: 20px;
+  }
+  .pricing__item {
+    margin: 0;
+    padding: 30px 30px 30px;
+  }
+}
+
+@media only screen and (min-width: 280px) and (max-width: 767px) {
+  .pricing__item {
+    margin: 0 0 47px;
+    padding: 30px 30px 30px;
+  }
+}
+
+@media (max-width: 767px) {
+  .price-styles {
+    display: block;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+}
+
+.price-four-el {
+  padding: 40px 15px 15px 15px;
+}
+
+.price-four-el h3 {
+  text-align: center;
+}
+
+@media (min-width: 767px) {
+  .pricing__price {
+    line-height: 35px;
+    font-size: 50px;
+  }
+  .pricing__title {
+  }
+  .pricing__item p {
+    font-size: 12px;
+    line-height: 20px;
+  }
+  .pricing__item a.btn {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+@media (max-width: 991px) {
+  .pricing__price {
+    line-height: 35px;
+    font-size: 50px;
+  }
+  .pricing__title {
+    font-size: 16px;
+  }
+  .pricing__item p {
+    font-size: 12px;
+    line-height: 20px;
+  }
+  .pricing__item a.btn {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+.btn-primary {
+  color: _palette(fg) !important;
+}
+
+.btn.btn-primary {
+  background-color: _palette(dk-accent1);
+  border-color: _palette(dk-accent1);
+}
+
+// a {
+//   color: #4caf50;
+// }
+
+.mbr-primary-color {
+  color: _palette(dk-accent1) !important;
+}
+
+.mbr-title-font {
+  font-family: 'Lato', sans-serif !important;
+}
+
+.mbr-text-font,
+p {
+  font-family: 'Open Sans', sans-serif !important;
+}
+
+.status {
+  text-transform: uppercase;
+  display: inline-block;
+  font-size: 0.8em;
+  font-weight: 600;
+  // height: 3.5em;
+  // line-height: 3.5em;
+  padding: 0 1.75em;
+  letter-spacing: 0.25em;
+  text-align: center;
+  white-space: nowrap;
+  font-family: 'Source Sans Pro', Helvetica, 'sans-serif';
+  border-radius: 3px;
+}
+
+.accent6 {
+  color: _palette(bg) !important;
+  background-color: _palette(accent6) !important;
+}
+
+.light {
+  color: _palette(fg-light) !important;
+}
