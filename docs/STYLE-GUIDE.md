@@ -50,8 +50,12 @@ Legacy dead weight, flagged rather than removed because removing is a change and
 `ie8.scss`, `ie9.scss`, and their `.css` counterparts.
 
 **Not BEM, not utility-first, not CSS modules.** Plain semantic class names (`.menu-link`, `.major`,
-`.inner`, `.price-styles`) with descendant selectors. No CSS-in-JS. No Tailwind. Styling is global; there is
-no component-scoped CSS anywhere in the tree.
+`.inner`, `.price-styles`) with descendant selectors. No Tailwind, no styled-components, no CSS modules.
+
+Styling is _mostly_ global — but not entirely, and the qualifier is load-bearing. An earlier draft of this
+paragraph ended "there is no component-scoped CSS anywhere in the tree", which is false: `index.jsx` and
+`Header.js` carry inline `style={{}}` props covering colour, padding and sizing. Those are component-scoped
+styling of the least overridable kind. See the hardcoded-values table below.
 
 ## Design tokens
 

@@ -62,6 +62,44 @@ Elsewhere:
 - `Get Started Free` appears on two tiers pointing at two different destinations. That is ambiguous link
   text and belongs to the link-checker rather than to voice.
 
+**Added 2026-08-24**, found during the [P125](125-every-page-of-the-website-ships-without-a-title-element.md)
+title fix and deliberately not changed there — an accessibility ticket should not become the carrier for copy
+edits.
+
+`404.tsx` body copy:
+
+- `You just hit a route that doesn't exist... the sadness.` Three findings in one sentence. **`doesn't
+exist`** sits in the guide's Terminology "Instead of" column opposite `not found` — the same named-table
+  class as `on-premise` above, and made sharper by the fact that the new page title, reviewed the same day,
+  uses the preferred term two lines away. **`route`** is developer jargon for what a visitor calls a page or
+  a link, and the guide names a secondary audience of people arriving from the RapidAPI listing or the site
+  itself; a 404 is one of the few pages guaranteed to be reached by accident by a non-developer. And the
+  sentence **states no recovery action** — it tells someone who is lost that this is sad.
+- It is **not authored voice at all.** That string is the verbatim Gatsby starter default. Worth knowing
+  before anyone tries to preserve its tone: there is no house voice here to preserve.
+- `NOT FOUND` as the h1 — shouty caps, the same class as `100% Free. FOREVER` above.
+
+The page **title** was settled during P125 and is not in question: `Page not found - Addressr by Mountain
+Pass`, terse register, deliberately not matching the body's joke because a title is read in a tab and a
+history entry with nothing to set a joke up. The body is what remains.
+
+### A guide gap this surfaced, beyond the three already listed
+
+The voice review of those titles could not answer three of five questions from the guide, which is more
+evidence for this ticket:
+
+- **No tone entry for user-facing error pages.** The existing Error messages entry is scoped to API
+  responses, and its examples are machine-parsed strings. A 404 read by a human is a context the Tone section
+  does not cover — and it is the context both the new title and the flagged body copy live in.
+- **No rule for page titles as a copy class.** Nothing covers separator, brand-suffix policy, word order, or
+  a length budget. Every question about them had to be answered from repo evidence rather than from the
+  guide, which is the same "evidence is not a rule, and the next argument re-runs it" problem this ticket
+  already records for `enquiry`/`inquiry`.
+- **The casing gap bites here.** `Page not found` is sentence case in a set that is otherwise Title Case
+  (`Pricing`, `Quick Start`, `API Docs`). Not a violation, because there is no rule — but undecided rather
+  than fine, and `Page Not Found` would read badly, so the sentence-case exception for full-sentence titles
+  is the specific thing needing a decision.
+
 ## Investigation Tasks
 
 - [ ] Decide the locale rule and record it. Evidence points to Australian English; it needs to be a rule so
