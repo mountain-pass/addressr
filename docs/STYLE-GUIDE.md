@@ -1,17 +1,27 @@
 # Style Guide
 
 **Last reviewed**: 2026-08-24
-**human-oversight**: unconfirmed
-**Status**: DESCRIPTIVE DRAFT — awaiting maintainer ratification
+**human-oversight**: confirmed
+**oversight-date**: 2026-08-24
+**Status**: Ratified
 
 > **Read this first.** This guide **describes the conventions already in `apps/website`**; it does not
 > propose new ones. It was written because the style gate blocks `.jsx`/`.tsx` edits until it exists, and it
-> was blocking a WCAG Level A fix ([P125](problems/open/125-every-page-of-the-website-ships-without-a-title-element.md)).
+> was blocking a WCAG Level A fix ([P125](problems/closed/125-every-page-of-the-website-ships-without-a-title-element.md)).
 > Everything here was read out of the tree, and every number was measured rather than asserted.
 >
-> **It is unconfirmed.** The maintainer has not ratified any of it. Where the existing CSS is inconsistent,
-> this guide says so rather than picking a winner — choosing is the maintainer's call, not the describer's.
-> `wr-style-guide:agent` reads this file to review CSS and UI changes, so ratifying it makes it binding.
+> **Ratified by the maintainer 2026-08-24**, and `wr-style-guide:agent` now reads it as binding rather than
+> advisory. Two things a reader should know about what that ratification covers:
+>
+> - It ratifies a **description**, not a design. Where the existing CSS is inconsistent this guide says so
+>   rather than picking a winner, and those open questions stay open — ratifying the description does not
+>   settle them. They are listed under _Known gaps_.
+> - The Do/Don't rules are now enforceable. The **live defects** those rules describe are tracked as tickets
+>   and are not conventions to preserve — see
+>   [P131](problems/open/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) and
+>   [P132](problems/open/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md).
+>   A reviewer meeting one of them is looking at a known defect, not at a rule being broken for the first
+>   time.
 
 ## Scope
 
@@ -242,6 +252,14 @@ preserve.
 
 ## For the reviewer agent
 
-`wr-style-guide:agent` reads this file. Until the maintainer ratifies it, treat violations as **advisory**:
-this guide describes what the imported template does, and some of what it does is wrong — items 1, 2 and 3
-under Do/Don't are live Level A defects, not conventions to preserve.
+`wr-style-guide:agent` reads this file, and as of 2026-08-24 it is **ratified**, so the Do/Don't rules are
+binding on new work rather than advisory.
+
+Two standing qualifications, because a ratified description is not the same as a clean tree:
+
+- **Existing violations are tracked defects, not precedent.** The tree currently breaks rules 1, 2, 3 and 4
+  in known places, recorded in P131, P132 and P126. Meeting one of them in a file is not evidence the rule
+  does not apply; do not let it license a new instance.
+- **The _Known gaps_ section is genuinely unresolved**, not tacitly approved. Ratification covers the
+  description of what the tree does. It does not decide the spacing scale, the dark-only question, or the
+  absence of accessibility linting.

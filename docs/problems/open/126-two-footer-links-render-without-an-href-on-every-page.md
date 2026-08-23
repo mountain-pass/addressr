@@ -73,5 +73,5 @@ it on every page. Recorded so the omission is deliberate.
 
 The deeper point is that `jsx-a11y` would have caught this at author time. ADR-053 defers adding it and
 records that as sequencing rather than oversight; this ticket is the first evidence of what the deferral
-costs. Related: [P125](125-every-page-of-the-website-ships-without-a-title-element.md), a Level A failure in
+costs. Related: [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md), a Level A failure in
 the same tree found the same day, also invisible to source-level review.

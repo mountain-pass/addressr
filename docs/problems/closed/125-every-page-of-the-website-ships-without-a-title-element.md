@@ -1,6 +1,6 @@
 # Problem 125: Every page of addressr.io ships without a `<title>` element
 
-**Status**: Open
+**Status**: Closed — 2026-08-24, fixed and verified on production
 **Reported**: 2026-08-23
 **Priority**: 12 (High) — Impact: Moderate (3) × Likelihood: Certain (4 capped at Likely for scoring consistency with realised defects). Impact 3: WCAG 2.4.2 Page Titled is **Level A**, the lowest bar, and it fails on every page of the public marketing site. A screen-reader user hears the URL or nothing when the tab opens, and browser tabs and bookmarks are unlabelled. **Corrected 2026-08-24:** an earlier draft added "search engines have no title to index — which also costs the site the discovery path JTBD-004 depends on". That over-reached. No job in the corpus documents search discovery as a desired outcome; what JTBD-004 actually records is narrower — a visitor arriving on "a stale link, bookmark or search result", which is **re-entry into an already-documented journey**, not acquisition. The indexing benefit of this fix is real and incidental, and is deliberately not claimed as justification, so an accessibility ticket does not become the carrier for unscoped SEO work. The Impact 3 score never rested on that clause: a Level A failure on every page of the public site carries it alone. Not 4: no data loss, no service outage, and the pages are otherwise navigable. Likelihood: this is not a probability. It is realised and live on all five pages as of 2026-08-23.
 **Origin**: internal
@@ -31,7 +31,7 @@ Five pages (`index.jsx`, `pricing.js`, `quick-start.js`, `download.js`, `api-doc
 
 What is missing is the bridge. Helmet needs `gatsby-plugin-react-helmet` to inject its output into server-rendered HTML, and that plugin is **not in `package.json`** and **not in the config Gatsby actually loads**. So Helmet runs client-side, mutates the DOM after hydration, and contributes nothing to the static document the crawler, the screen reader on first paint, and the browser tab all read.
 
-**Why it looks configured but is not** — this is the same defect class as [P122](122-three-redirect-mechanisms-in-the-website-and-none-reach-the-built-site.md), in the same tree. Two Gatsby configs ship:
+**Why it looks configured but is not** — this is the same defect class as [P122](../open/122-three-redirect-mechanisms-in-the-website-and-none-reach-the-built-site.md), in the same tree. Two Gatsby configs ship:
 
 |                                         | `gatsby-config.js` | `gatsby-config.ts` |
 | --------------------------------------- | ------------------ | ------------------ |

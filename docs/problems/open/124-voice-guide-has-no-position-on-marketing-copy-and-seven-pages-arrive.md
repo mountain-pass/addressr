@@ -62,7 +62,7 @@ Elsewhere:
 - `Get Started Free` appears on two tiers pointing at two different destinations. That is ambiguous link
   text and belongs to the link-checker rather than to voice.
 
-**Added 2026-08-24**, found during the [P125](125-every-page-of-the-website-ships-without-a-title-element.md)
+**Added 2026-08-24**, found during the [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md)
 title fix and deliberately not changed there — an accessibility ticket should not become the carrier for copy
 edits.
 

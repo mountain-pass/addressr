@@ -2,7 +2,7 @@
 
 **Status**: Open
 **Reported**: 2026-08-24
-**Priority**: 16 (High) — Impact: Major (4) × Likelihood: Certain (4). Impact 4: the primary navigation of a public commercial site is **entirely unavailable** to anyone who cannot use a pointer. Not degraded — absent. A keyboard or switch user, or anyone driving the site by screen reader, cannot reach the menu at all, which removes every route between pages except the footer. WCAG 2.1.1 Keyboard is **Level A**, the floor. This is higher-impact than [P125](125-every-page-of-the-website-ships-without-a-title-element.md), which was WSJF 12: an untitled page is still usable, an unreachable navigation is not. Likelihood 4: not a probability. Realised and live on all six pages, verified in source and reproduced on the built output 2026-08-24.
+**Priority**: 16 (High) — Impact: Major (4) × Likelihood: Certain (4). Impact 4: the primary navigation of a public commercial site is **entirely unavailable** to anyone who cannot use a pointer. Not degraded — absent. A keyboard or switch user, or anyone driving the site by screen reader, cannot reach the menu at all, which removes every route between pages except the footer. WCAG 2.1.1 Keyboard is **Level A**, the floor. This is higher-impact than [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md), which was WSJF 12: an untitled page is still usable, an unreachable navigation is not. Likelihood 4: not a probability. Realised and live on all six pages, verified in source and reproduced on the built output 2026-08-24.
 **Origin**: internal
 **Effort**: S — two elements change from `<a>` to `<button type="button">`, plus whatever CSS follows. The skip link is a few more lines.
 **WSJF**: 16.0 — (16 × 1.0) / 1
@@ -11,7 +11,7 @@
 
 ## Description
 
-Found while fixing [P125](125-every-page-of-the-website-ships-without-a-title-element.md). Not caused by it, and deliberately not fixed there — it is a bigger defect than the one that ticket was about, and folding it in would have buried it.
+Found while fixing [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md). Not caused by it, and deliberately not fixed there — it is a bigger defect than the one that ticket was about, and folding it in would have buried it.
 
 Both controls that operate the site menu are anchors with no `href`:
 
@@ -54,6 +54,6 @@ Filed here rather than separately because it is the same journey, the same users
 
 ## Related
 
-- [P125](125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix; its Fixed section records this and the other findings.
+- [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix; its Fixed section records this and the other findings.
 - [P126](126-two-footer-links-render-without-an-href-on-every-page.md) — the same "anchor that is not a link" class, in the footer. Different cause (`to` used where `href` belongs) and lower impact, since the footer has other working links, but a single fix session should probably take both.
 - [ADR-053](../../decisions/053-website-imported-as-an-app-with-hosting-unchanged.proposed.md) — deferred `jsx-a11y` out of phase 1, and predicted the accessibility gate would begin firing permanently after the import. It did.

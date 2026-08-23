@@ -11,7 +11,7 @@
 
 ## Description
 
-Found while writing [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) during the [P125](125-every-page-of-the-website-ships-without-a-title-element.md) fix, and it is a finding I nearly buried myself — see Notes.
+Found while writing [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) during the [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md) fix, and it is a finding I nearly buried myself — see Notes.
 
 `apps/website/src/assets/scss/components/_tiles.scss:113-147` uses `accent1`–`accent6` as the background of the home page's content tiles. The inherited body colour is `_palette(fg)`, white. Measured with the WCAG 2.x relative-luminance formula:
 
@@ -58,6 +58,6 @@ The guide now carries both tables and says the palette is "sound for its dark-gr
 
 ## Related
 
-- [P125](125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix and recorded in its Fixed section.
+- [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix and recorded in its Fixed section.
 - [P131](131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — the Level A blocker found in the same pass. Higher priority: that one makes navigation impossible, this one makes text hard to read.
 - [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) — carries the measurements; `human-oversight: unconfirmed`.
