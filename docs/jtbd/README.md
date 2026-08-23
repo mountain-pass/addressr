@@ -17,6 +17,12 @@ Builds customer-facing web/mobile apps that need fast, accurate Australian addre
 | JTBD-002 | Look up localities, postcodes, and states    | [JTBD-002](web-app-developer/JTBD-002-lookup-locality-postcode-state.validated.md)   |
 | JTBD-003 | Geocode addresses to coordinates             | [JTBD-003](web-app-developer/JTBD-003-geocode-addresses-to-coordinates.validated.md) |
 
+### Proposed
+
+| ID       | Job                                                  | File                                                                                     |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| JTBD-004 | Evaluate Addressr and reach a first working API call | [JTBD-004](web-app-developer/JTBD-004-evaluate-and-reach-first-working-call.proposed.md) |
+
 ## Data Quality Analyst
 
 Validates, normalizes, and enriches Australian address datasets against the authoritative G-NAF source.

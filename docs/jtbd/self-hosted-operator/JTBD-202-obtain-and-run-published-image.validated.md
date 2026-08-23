@@ -7,6 +7,8 @@ persona: self-hosted-operator
 date-created: 2026-07-28
 screens:
   - README.md (Self Hosted with Docker)
+  - "apps/website/src/pages/download.js — a SECOND copy of the same instruction set. ADDED 2026-08-23 on the ADR-053 import. The two have lived in separate repositories since 2019 and have been drifting unobserved; nothing could compare them because no diff spanned both. Listing it here is the point of the import for this job: the page and the README it duplicates now move under one review. If they disagree, that is a defect in this job's surface, not a website cosmetic. NOTE the file is not in the tree yet — the source lands in a later commit."
+
   - docs/DOCKER-IMAGE-CHANGELOG.md
   - Dockerfile
   - .dockerignore.tmpl

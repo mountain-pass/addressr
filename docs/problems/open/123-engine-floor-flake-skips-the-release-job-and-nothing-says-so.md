@@ -55,9 +55,9 @@ Three properties compose badly:
 
 - [ ] Reproduce on Node 22.7 specifically. Every other job floats to `22.x`, so this leg is the only one
       exercising the declared engine floor and the flake may be version-coupled rather than ordering-coupled.
-- [ ] Determine whether the two assertions share state — a temp directory, a bundle artefact, a cwd — with
+- [x] Determine whether the two assertions share state — a temp directory, a bundle artefact, a cwd — with
       another test in the same file or run. `node --test` parallelism across files is the usual culprit.
-- [ ] Check whether the failure is order-dependent by running the file in isolation repeatedly, then in the
+- [x] Check whether the failure is order-dependent by running the file in isolation repeatedly, then in the
       full suite repeatedly. A count, not an impression.
 - [ ] Once diagnosed, mutation-test the fix: the assertions must still red when `deploy.sh` genuinely stops
       applying the resolved version at a site. A flake fix that also removes the detection is worse than the
@@ -72,3 +72,80 @@ Three properties compose badly:
   another instance of why that one matters.
 - **P106** — the licence gate that exists only because a compliance control must run in CI. An engine-floor
   flake skips it, which is a quieter version of the same failure that ticket closed.
+
+## Root cause — reproduced locally 2026-08-23; the Node floor is not a precondition
+
+Reproduced on the developer machine, which removes the 22.7 hypothesis as a _precondition_ (this run was on
+the session's default Node, not the floor):
+
+| Harness                                                                       | Runs | Failures |
+| ----------------------------------------------------------------------------- | ---- | -------- |
+| `node --test test/js/__tests__/deploy-version-resolution.test.mjs` (isolated) | 12   | **0**    |
+| `node --test test/js/__tests__/*.test.mjs` (full suite, parallel)             | 5    | **1**    |
+
+Isolated it is clean; in the parallel suite it fails. The failure message names the mechanism:
+
+```
+cp: cannot stat '/Users/tomhoward/Projects/addressr/apps/addressr-deployment/mountainpass-addressr-deployment-3.3.2.zip': No such file or directory
+```
+
+**That is a fixed path inside the real working tree, not a temp directory.** `apps/addressr-deployment/`
+currently holds three such artefacts — `mountainpass-addressr-deployment-1.1.0.zip`,
+`mountainpass-addressr-deployment-3.3.2.zip`, `test-mountainpass-addressr-deployment-1.1.0.zip` — and
+`git ls-files` shows **none of them tracked**. They are build output the tests leave behind in a source
+directory.
+
+The path is derived from the resolved version, so it is the _same_ path on every run and for every
+concurrent reader, and `node --test` executes files in parallel. Green in isolation is exactly what that
+predicts.
+
+**The version number is a fingerprint, and it names the participant.** `packages/addressr/package.json` is
+`3.3.2` — the version in the failing path — while `deploy-version-resolution.test.mjs`'s own harness writes
+a fake manifest at **3.1.0** (`:214`) into `mkdtempSync` temp dirs (`:197-215`). A 3.3.2 artefact therefore
+**cannot** come from that test's fixtures; it can only come from something resolving against the real
+manifest. `deploy-sh-plan-only.test.mjs:41-46` sets `DEPLOY_DIR` to `<repo>/apps/addressr-deployment` — the
+real working tree — and runs the real `deploy.sh`, stubbing **only `terraform`**, not `zip` and not `rm`.
+
+And `deploy.sh` is destructive on that fixed path by design: `:53` is
+`rm -f "mountainpass-addressr-deployment-${deploy_version}.zip"`, `:76` recreates it. So any two overlapping
+runs against the same `DEPLOY_DIR` have one deleting what the other just built. That is a read-the-code
+certainty about the mechanism, independent of the sample size above; what remains open is which pair of
+invocations actually overlapped.
+
+**Whether this is the SAME failure as the CI one is not yet established.** The CI evidence recorded above is
+`not ok 2` / `not ok 39` only; nothing confirms run 32458245036's log carried the same `cp: cannot stat`
+line. It is the obvious hypothesis and the rates are compatible — roughly 7% on the runner against 1 in 5
+locally is the kind of gap scheduling explains — but one log fetch from that run would settle it and has
+not been done. Do not treat the CI instance as diagnosed until it is.
+
+Two further caveats on the evidence, so nobody over-reads it. Under `node --test` parallel execution stderr
+from every file interleaves, so **attributing the `cp:` line to the leaf at `:308` is inference, not
+observation**. And 0-in-12 versus 1-in-5 is a small sample: it is consistent with a large difference between
+isolated and parallel rates, but the statistics alone would not carry the claim. What carries it is the
+mechanism below.
+
+## Revised fix direction
+
+Isolate the artefact per test run — a temp directory with a unique path — rather than writing into
+`apps/addressr-deployment/`. That removes the race at its source instead of serialising around it. Two
+things to preserve while doing it:
+
+- The assertion's meaning. `bundles EXACTLY the manifest, which is what makes the source_hash honest` is a
+  real invariant about what the deployment archive contains; the fix must not weaken it into a check that
+  the archive merely exists. Mutation-test in both directions, per the task above.
+- The artefacts should probably not be produced in a tracked source directory at all, even when the race is
+  gone. Untracked build output in `apps/addressr-deployment/` is how the collision became possible.
+
+## Revised task list
+
+- [ ] Isolate the archive path per run (temp directory), and confirm 0 failures across at least 20
+      full-suite runs — the pre-fix rate was 1 in 5, so a handful of green runs proves nothing.
+- [ ] Mutation-test that the isolated assertion still reds when the archive contents genuinely diverge from
+      the manifest.
+- [ ] Confirm the CI instance is the same failure by fetching run 32458245036's log and looking for the
+      `cp: cannot stat` line. Until then the local diagnosis and the CI red are two facts, not one.
+- [ ] Decide whether these tests should run the real `deploy.sh` against the real `apps/addressr-deployment`
+      at all. **They are already gitignored** — `.gitignore:109` carries an unanchored `*.zip`, which is why
+      `deploy-artefact-ignores.test.mjs` never needed to enumerate them — so this is about test isolation,
+      not about ignore rules. Note that unanchored rule is one of the few in that block without a mid-pattern
+      separator, which is why it survived both 2026-08-10 directory moves intact.
