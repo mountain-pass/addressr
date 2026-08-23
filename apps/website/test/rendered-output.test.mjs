@@ -23,6 +23,14 @@
 // scans test/js/__tests__ — not as a dodge, but because they genuinely are not
 // the class P033 measures. They exercise their subject.
 //
+// HONEST LIMIT, learned the hard way on the first production deploy. This tier
+// asserts on what Gatsby EMITS — the origin. It cannot see what the CDN
+// DELIVERS. Cloudflare's Email Obfuscation rewrites the Enterprise mailto and
+// the visible address at the edge, so criterion 8's assertion below passes here
+// and is partially defeated in production for no-JS visitors (P128). Nothing in
+// this file is wrong; its scope is just narrower than "what a user sees", and
+// the criterion was signed off as though the two were the same thing.
+//
 // @adr ADR-053 (website imported as an app with hosting unchanged)
 // @jtbd JTBD-004
 // @jtbd JTBD-401
