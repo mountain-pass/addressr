@@ -1,6 +1,5 @@
 import { Link } from 'gatsby';
 import React from 'react';
-import Helmet from 'react-helmet';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
 // import { getProfile } from '../utils/auth';
@@ -9,11 +8,6 @@ const Downloads = () => {
   const user = undefined; //getProfile();
   return (
     <Layout user={user}>
-      <Helmet>
-        <title>Download - Addressr by Mountain Pass</title>
-        <meta name="description" content="Download Addressr by Mountain Pass" />
-      </Helmet>
-
       <Banner>
         <header className="major">
           <h1>Download</h1>
@@ -38,5 +32,18 @@ const Downloads = () => {
     </Layout>
   );
 };
+
+// The <title> half of P125. A Gatsby `Head` export, NOT react-helmet:
+// helmet needed `gatsby-plugin-react-helmet` to reach server-rendered
+// output, that plugin was never installed, so the title this page has
+// declared since 2019 went into the DOM after hydration and never into
+// the document. The <html lang> half cannot live here — Head emits only
+// children of <head> — and is in gatsby-ssr.js.
+export const Head = () => (
+  <>
+    <title>Download - Addressr by Mountain Pass</title>
+    <meta name="description" content="Download Addressr by Mountain Pass" />
+  </>
+);
 
 export default Downloads;

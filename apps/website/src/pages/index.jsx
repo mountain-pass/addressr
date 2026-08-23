@@ -1,6 +1,5 @@
 import { Link } from 'gatsby';
 import React from 'react';
-import Helmet from 'react-helmet';
 import pic01 from '../assets/images/pic01.jpg';
 import pic02 from '../assets/images/pic02.jpg';
 import pic03 from '../assets/images/pic03.jpg';
@@ -17,17 +16,6 @@ import dataGovLogo from './Data-gov-au.jpg';
 const HomeIndex = () => {
   return (
     <Layout>
-      <Helmet
-        title="Addressr by Mountain Pass - Free Australian Address Validation, Search and Autocomplete"
-        meta={[
-          {
-            name: 'description',
-            content:
-              'Free Australian Address Validation, Search and Autocomplete',
-          },
-          { name: 'keywords', content: 'address, validation, gnaf, australia' },
-        ]}
-      />
 
       <Banner className="major">
         <header className="major">
@@ -205,4 +193,35 @@ const HomeIndex = () => {
     </Layout>
   );
 };
+// The <title> half of P125; <html lang> is in gatsby-ssr.js, because Gatsby's
+// Head API emits children of <head> and cannot set attributes on <html>.
+//
+// THE UNIQUE PART LEADS, and that is the whole change. The previous title was
+// `Addressr by Mountain Pass - Free Australian Address Validation, ...` — 87
+// characters, brand first. A browser tab shows roughly the first 25, so every
+// tab of this site read "Addressr by Mountain Pas" and none was distinguishable
+// from another. The other four pages already led with their unique part; this
+// page was the only outlier, so the reorder is a consistency gain.
+//
+// `by Mountain Pass` is KEPT. Dropping it would save 17 characters that sit past
+// the truncation point and buy nothing, while breaking a compound used as the
+// API title in three swagger documents and as the manifest name. The
+// reviewed-title regression pin is in test/__tests__/index.test.mjs.
+//
+// `keywords` is NOT carried across. Search engines have ignored it for over a
+// decade, and P125 explicitly declines to claim search discovery as
+// justification for any of this work.
+export const Head = () => (
+  <>
+    <title>
+      Free Australian Address Validation, Search and Autocomplete - Addressr by
+      Mountain Pass
+    </title>
+    <meta
+      name="description"
+      content="Free Australian Address Validation, Search and Autocomplete"
+    />
+  </>
+);
+
 export default HomeIndex;

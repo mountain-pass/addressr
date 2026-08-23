@@ -76,6 +76,151 @@ describe('apps/website rendered output', () => {
     );
   });
 
+  describe('every page has a title and a language (P125)', () => {
+    // WRITTEN TO FAIL, 2026-08-24. Both are Level A and both are broken on
+    // every page of the live site.
+    //
+    // 2.4.2 Page Titled fails in a way source inspection CANNOT see, which is
+    // exactly why these belong in the built-output tier. Five of the six pages
+    // DO declare `<Helmet><title>…</title></Helmet>` and `react-helmet`
+    // resolves fine — so a source grep for `<title` finds them and reports
+    // health. What is missing is `gatsby-plugin-react-helmet`, the SSR bridge,
+    // absent from both the manifest and the config Gatsby actually loads.
+    // Helmet therefore mutates the DOM after hydration and puts nothing into
+    // the static document that a screen reader on first paint, a browser tab,
+    // a bookmark and a crawler all read.
+    //
+    // 3.1.1 Language of Page has the same invisibility and a different cause:
+    // no page ever set it, through Helmet or otherwise.
+    //
+    // @jtbd JTBD-004 — its Confirmation section names this defect by name and
+    // records it NOT MET. These assertions are that criterion, executable.
+
+    /**
+     * Every emitted page as [file, route, html] — derived, so a new page is
+     * covered without editing this list.
+     *
+     * TWO EXCLUSIONS, both discovered by these assertions failing on things
+     * that are not pages, and both narrow on purpose:
+     *
+     *   - `_gatsby/**` holds Gatsby's own slice fragments. They are HTML by
+     *     extension and not documents by nature — `_gatsby-scripts-1.html` is a
+     *     bare `<script>` block with no <html> element — so no title or lang
+     *     could apply. Excluded by directory rather than by name, because
+     *     Gatsby adds more of them.
+     *   - Nothing else. In particular `page-data/404.html` is a DIRECTORY, not
+     *     a file, so it never enters this set; noted because a `find -name
+     *     "*.html"` does match it and would suggest a hole that is not there.
+     *
+     * ROUTE, not filename, is the identity. Gatsby emits the 404 twice —
+     * `404.html` for the host's error handler and `404/index.html` for the
+     * route — and they are ONE page. Distinctness has to know that, or a
+     * correct site fails the check.
+     */
+    const pages = () =>
+      emitted()
+        .filter((f) => f.endsWith('.html'))
+        .map((f) => path.relative(PUBLIC, f))
+        .filter((rel) => !rel.split(path.sep).includes('_gatsby'))
+        .map((rel) => [
+          rel,
+          rel.replace(/[/\\]index\.html$/, '').replace(/\.html$/, '') || '/',
+          readFileSync(path.join(PUBLIC, rel), 'utf8'),
+        ]);
+
+    const titleOf = (html) =>
+      (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim();
+
+    it('emits at least the six known pages, so nothing below can pass on an empty set', () => {
+      // The floor. Without it every assertion here is vacuous the day the page
+      // set fails to build, and reports green having examined nothing.
+      const routes = [...new Set(pages().map(([, route]) => route))];
+      assert.ok(
+        routes.length >= 6,
+        `only ${routes.length} HTML pages emitted (${routes.join(', ')}); the ` +
+          'site has six, so a set this small means the build is incomplete ' +
+          'rather than the pages clean',
+      );
+    });
+
+    it('gives every page a non-empty <title>', () => {
+      const untitled = pages()
+        .filter(([, , html]) => titleOf(html) === '')
+        .map(([file]) => file);
+      assert.deepEqual(
+        untitled,
+        [],
+        'pages emitted with no usable <title>. WCAG 2.4.2 is Level A: a screen ' +
+          'reader announces the URL or nothing when the tab opens, and every ' +
+          'tab and bookmark is unlabelled.',
+      );
+    });
+
+    it('gives every page a DISTINCT title, not one repeated site-wide', () => {
+      // 2.4.2 asks the title to describe TOPIC OR PURPOSE. Six identical
+      // titles would satisfy the presence check above and fail the criterion,
+      // so distinctness is the assertion that carries it.
+      const seen = new Map();
+      for (const [, route, html] of pages()) {
+        const title = titleOf(html);
+        if (!title) continue;
+        // Keyed by ROUTE, so the 404's two emissions count once.
+        seen.set(title, new Set([...(seen.get(title) ?? []), route]));
+      }
+      const shared = [...seen.entries()]
+        .map(([title, routes]) => [title, [...routes]])
+        .filter(([, routes]) => routes.length > 1)
+        .map(([title, routes]) => `"${title}" on ${routes.join(' + ')}`);
+      assert.deepEqual(
+        shared,
+        [],
+        'the same title appears on more than one page, so it cannot be ' +
+          "describing either page's topic or purpose",
+      );
+    });
+
+    it('has exactly one of each Gatsby lifecycle file, so no decoy can sit beside a live one', () => {
+      // NOT a source-content grep, and the distinction matters for P033: this
+      // asks the filesystem how many files share a basename, not what any of
+      // them says. It exists because this tree has produced TWO instances of
+      // the decoy class in a week. `gatsby-config.js` and `gatsby-config.ts`
+      // both shipped; only the `.ts` ever loaded, and the `.js` — the one with
+      // the obvious filename, naming the Helmet plugin and the analytics IDs —
+      // had never executed. That is P125's root cause and P122's both.
+      //
+      // The <title> assertions above prove the LOADED config is right. They
+      // cannot see a second file that looks authoritative and runs never.
+      const roots = ['gatsby-config', 'gatsby-ssr', 'gatsby-browser', 'gatsby-node'];
+      const duplicated = roots
+        .map((base) => [
+          base,
+          readdirSync(websiteRoot).filter((f) => f.replace(/\.[^.]+$/, '') === base),
+        ])
+        .filter(([, matches]) => matches.length > 1)
+        .map(([base, matches]) => `${base}: ${matches.join(' + ')}`);
+      assert.deepEqual(
+        duplicated,
+        [],
+        'more than one file shares a Gatsby lifecycle basename. Gatsby loads ' +
+          'exactly one and ignores the rest silently, so the other is a decoy ' +
+          'that a maintainer will read and believe.',
+      );
+    });
+
+    it('declares a language on <html> for every page', () => {
+      const unlabelled = pages()
+        .filter(([, , html]) => !/<html[^>]*\slang=["'][^"']+["']/i.test(html))
+        .map(([file]) => file);
+      assert.deepEqual(
+        unlabelled,
+        [],
+        'pages emitted with no lang on <html>. WCAG 3.1.1 is Level A: without ' +
+          'it a screen reader reads the page in whatever voice it defaults to, ' +
+          'mispronouncing the content for anyone whose default is not English.',
+      );
+    });
+  });
+
   describe('Enterprise call-to-action (ADR-053 criterion 8)', () => {
     it('resolves to the address by mailto', () => {
       assert.match(

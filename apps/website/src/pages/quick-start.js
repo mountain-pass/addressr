@@ -1,5 +1,4 @@
 import React from 'react';
-import Helmet from 'react-helmet';
 import howItWorks from '../assets/images/addressr.svg';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
@@ -10,14 +9,6 @@ const QuickStart = () => {
 
   return (
     <Layout user={user}>
-      <Helmet>
-        <title>Quick Start - Addressr by Mountain Pass</title>
-        <meta
-          name="description"
-          content="Quick Start for Addressr by Mountain Pass"
-        />
-      </Helmet>
-
       <Banner>
         <header className="major">
           <h1>Quick Start</h1>
@@ -181,5 +172,18 @@ const QuickStart = () => {
     </Layout>
   );
 };
+
+// The <title> half of P125. A Gatsby `Head` export, NOT react-helmet:
+// helmet needed `gatsby-plugin-react-helmet` to reach server-rendered
+// output, that plugin was never installed, so the title this page has
+// declared since 2019 went into the DOM after hydration and never into
+// the document. The <html lang> half cannot live here — Head emits only
+// children of <head> — and is in gatsby-ssr.js.
+export const Head = () => (
+  <>
+    <title>Quick Start - Addressr by Mountain Pass</title>
+    <meta name="description" content="Quick Start for Addressr by Mountain Pass" />
+  </>
+);
 
 export default QuickStart;

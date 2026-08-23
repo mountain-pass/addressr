@@ -37,7 +37,6 @@
     "react": "^18.2.0",
     "react-autosuggest": "^10.1.0",
     "react-dom": "^18.2.0",
-    "react-helmet": "^6.1.0",
     "react-tabs": "^6.0.2",
     "sass": "^1.67.0",
     "swagger-ui": "^5.7.1",
