@@ -1,6 +1,6 @@
 ---
-human-oversight: unconfirmed
-oversight-date: 2026-07-18
+human-oversight: confirmed
+oversight-date: 2026-08-23
 name: web-app-developer
 description: Builds customer-facing web/mobile apps that need fast, accurate Australian address autocomplete with simple API contracts.
 ---

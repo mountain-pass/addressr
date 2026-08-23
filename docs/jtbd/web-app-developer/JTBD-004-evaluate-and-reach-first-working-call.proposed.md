@@ -1,5 +1,6 @@
 ---
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-23
 status: proposed
 job-id: evaluate-and-reach-first-working-call
 persona: web-app-developer

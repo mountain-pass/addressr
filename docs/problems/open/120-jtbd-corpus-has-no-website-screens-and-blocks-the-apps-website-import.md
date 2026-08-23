@@ -68,7 +68,8 @@ narrower question than the one first raised.
 - `docs/jtbd/web-app-developer/JTBD-004-evaluate-and-reach-first-working-call.proposed.md` — new, six screens,
   `self-hosted-operator` secondary.
 - `web-app-developer/persona.md` — evaluating-stage context constraint, the tier-choice moment, and a new
-  pain point. The oversight marker is **downgraded** `confirmed` → `unconfirmed`; see below.
+  pain point. The oversight marker was **downgraded** `confirmed` → `unconfirmed` at this point, and has
+  since been legitimately re-confirmed at the drain; see the 2026-08-23 ratification entry below.
 - `JTBD-200` — the Search component added as the production `safeHosts` client.
 - `JTBD-202` — the download page added beside the `README.md` it duplicates.
 - `JTBD-400` — `apps/website/**` added, recording that it arms NOTHING in phase 1 and naming what goes false
@@ -78,17 +79,26 @@ narrower question than the one first raised.
   under a marker dated 2026-07-18. The file is byte-identical to HEAD and is absent from the commit by
   design, not by a staging slip.
 
-**Not closed yet. TWO artefacts need ratifying at `/wr-jtbd:confirm-jobs-and-personas`, in one sitting:**
-JTBD-004, and the `web-app-developer` persona amendment. **The persona marker is a DOWNGRADE, not a revert** — HEAD carries
-`confirmed` / 2026-07-18, so `unconfirmed` is a state this file has not been in before. The wrong state
-(`confirmed` with the date refreshed to 2026-08-23) was written in the working tree and caught by the risk
-scorer before any commit, so **no bad marker ever reached history and there is no SHA to cite**. The date is
-back to 2026-07-18, the last substance a human actually attested. Whoever ratifies is restoring a marker,
-not refreshing a date. The
-reasoning that produced the error is worth keeping: the user DID ratify the direction — amend the persona
-rather than mint a buyer persona — but the two Context Constraints and the Pain Point are agent-authored
-prose composed after that answer, and `confirmed` attests to when a human READ, not when an agent wrote.
-Refreshing the date would have removed the file from this very drain. The screens entries also name files that are **not in the tree**, which
-is deliberate and flagged in each entry — the drift this corpus has twice recorded came from adding entries
-after the code, not before it. The real test is whether the `wr-jtbd:agent` gate passes the source write;
-until that happens this ticket stays open.
+**Ratified 2026-08-23.** Both artefacts went through `/wr-jtbd:confirm-jobs-and-personas` in one sitting and
+the user confirmed each: the `web-app-developer` amendment (the integrator arrives evaluating, and the
+tier-choice moment is a stage of that same person) and JTBD-004 (the path from landing page to a first
+working call). Both now carry `human-oversight: confirmed` / `oversight-date: 2026-08-23`, written after the
+`wr-jtbd-mark-oversight-confirmed` evidence markers, and `wr-jtbd-detect-unoversighted docs/jtbd` returns
+empty — the corpus is fully oversighted.
+
+JTBD-004 stays `status: proposed` deliberately. The user confirmed the job reflects real need; two of its
+three Confirmation criteria are measurably unmet today, so `validated` would be a claim about the
+implementation rather than the need.
+
+**Worth keeping, because it is the interesting part of this ticket.** The persona was briefly written as
+`confirmed` with `oversight-date` refreshed to 2026-08-23 BEFORE any ratification, on the reasoning that the
+user had answered a question about it in-session. The risk scorer caught it and the reasoning was wrong:
+`confirmed` attests to when a **human read**, and the user had ratified the _direction_ (amend rather than
+mint a persona), not the agent-authored constraints that followed. Refreshing the date would have removed
+the file from the very drain that has now legitimately confirmed it. Nothing bad reached history — the
+marker was corrected in the working tree — but the near-miss is the reason the drain exists.
+
+**Still open**, and this is the last item: the discharge condition is the `wr-jtbd:agent` gate passing the
+`apps/website` source write. That has not happened, because the source has not landed. Note also that a bare
+gate PASS will not by itself be evidence the gate examined the import — the marker hook consumes its verdict
+at agent launch rather than completion, so it can be one review behind (see the marker-race ticket).
