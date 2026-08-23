@@ -2,7 +2,7 @@
 
 **Status**: Open
 **Reported**: 2026-08-24
-**Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: when this fires, a release that should have shipped does not, and [P085](085-push-and-watch-reports-success-on-a-red-master.md) means the watcher may report the push as successful anyway — so the failure is both real and quiet. Likelihood 2 rather than higher **because the known instance is fixed**: [P123](../verifying/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md) removed the race that caused the only observed occurrence. This ticket is about the coupling that let one test file's flake stop a production release, which survives that fix.
+**Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: when this fires, a release that should have shipped does not, and [P085](085-push-and-watch-reports-success-on-a-red-master.md) means the watcher may report the push as successful anyway — so the failure is both real and quiet. Likelihood 2 rather than higher **because the known instance is fixed**: [P123](../closed/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md) removed the race that caused the only observed occurrence. This ticket is about the coupling that let one test file's flake stop a production release, which survives that fix.
 **Origin**: internal
 **Effort**: S — the change itself is a `needs:` edit and a test-expectation update. The work is the decision, not the diff.
 **WSJF**: 6.0 — (6 × 1.0) / 1
@@ -11,7 +11,7 @@
 
 ## Description
 
-Split out of [P123](../verifying/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md), where it sat as an unticked investigation task while the rest of the ticket closed. It was split rather than carried because it is **not a defect and not P123's to answer** — it is a pipeline-coupling decision that needs the maintainer's judgement, and leaving it inside a closing ticket is how it would have been buried.
+Split out of [P123](../closed/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md), where it sat as an unticked investigation task while the rest of the ticket closed. It was split rather than carried because it is **not a defect and not P123's to answer** — it is a pipeline-coupling decision that needs the maintainer's judgement, and leaving it inside a closing ticket is how it would have been buried.
 
 `release` declares `needs: [build-and-test, engine-floor]`. `engine-floor` is the one job that pins the declared Node engine floor rather than floating to `22.x`, so it exercises what a self-hosted operator on the oldest supported runtime actually gets. That is a real concern and worth testing.
 

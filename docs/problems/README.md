@@ -77,15 +77,14 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off the dual-tolerant glob `docs/problems/*.verifying.md docs/problems/verifying/*.md` per ADR-022 + RFC-002 migration window). Sorted by `Released date ASC` (oldest at row 1; same-day releases tiebreak by ID ASC). <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` column carries an **evidence-first** cell per P186 — three canonical values: `yes — observed: <evidence>`, `no — not observed` (default for newly-released tickets), `no — observed regression`. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 --> Age is preserved separately via the `Released` column.
 
-| ID   | Title                                                          | Released          | Likely verified?                                                                                                                                                                                                           |
-| ---- | -------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18        | no — not observed                                                                                                                                                                                                          |
-| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20        | no — not observed                                                                                                                                                                                                          |
-| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2 | no — not observed                                                                                                                                                                                                          |
-| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed                                                                                                                                                                                                          |
-| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed                                                                                                                                                                                                          |
-| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed                                                                                                                                                                                                          |
-| P123 | An engine-floor flake skips the release job                    | 2026-08-23        | yes — mechanism removed, CI instance CONFIRMED from run 32458245036 log, mutation-proved in clean AND polluted tree. A green run is NOT the evidence (~93% likely anyway at the 7% rate); it is only a falsification check |
+| ID   | Title                                                          | Released          | Likely verified?  |
+| ---- | -------------------------------------------------------------- | ----------------- | ----------------- |
+| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18        | no — not observed |
+| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20        | no — not observed |
+| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2 | no — not observed |
+| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
+| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
+| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
 
 ## Inbound Upstream Reports
 

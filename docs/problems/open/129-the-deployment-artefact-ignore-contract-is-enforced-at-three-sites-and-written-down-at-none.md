@@ -30,7 +30,7 @@ No decision record mentions `tfplan`, `gitignore` or `cleartext`. Grepped across
 Three restatement sites of an unwritten contract is the condition under which a decision is owed. The evidence that it rots is not hypothetical:
 
 - `.gitignore`'s own comments record two rules silently stripped in one day, during the 2026-08-10 directory moves. Both were caught by accident of pattern shape, not by design — the unanchored `*.zip` survived because it carries no mid-pattern separator.
-- The behavioural site was, until [P123](../verifying/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md)'s second pass, **examining nothing at all** on any machine that had run `npm run deploy:prod`. It imported the artefacts it was supposed to judge into its own baseline and filtered them out as pre-existing. A risk review found that, not a test.
+- The behavioural site was, until [P123](../closed/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md)'s second pass, **examining nothing at all** on any machine that had run `npm run deploy:prod`. It imported the artefacts it was supposed to judge into its own baseline and filtered them out as pre-existing. A risk review found that, not a test.
 
 So the failure mode is established: a site weakens, the other two do not notice because nothing says what each is responsible for, and the green is read as coverage of the whole contract.
 
@@ -48,6 +48,6 @@ Stated explicitly because it is the thing most likely to go wrong. If this ticke
 
 ## Notes
 
-Captured during [P123](../verifying/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md)'s second pass, on an architect-gate advisory. The advisory's argument for deferring it out of that commit is worth keeping: the ADR should describe the contract **as it will stand**, not as it stood while one of its three assertions was vacuous.
+Captured during [P123](../closed/123-engine-floor-flake-skips-the-release-job-and-nothing-says-so.md)'s second pass, on an architect-gate advisory. The advisory's argument for deferring it out of that commit is worth keeping: the ADR should describe the contract **as it will stand**, not as it stood while one of its three assertions was vacuous.
 
 Inflow discipline: a capture-time hang-off check was run against the open backlog and returned PROCEED_NEW. The closest candidate was [P116](116-nine-workflow-pins-imply-coverage-they-cannot-provide-and-say-nothing-about-it.md) (workflow pins implying coverage they cannot provide), rejected on three grounds — disjoint file population, and P116's remedy is a per-file header comment, which is precisely the remedy this ticket reports as already applied and insufficient. [P076](076-adr-confirmation-items-can-be-prescribed-and-never-implemented.md) is the inverse shape: prescribed-but-not-implemented, where this is implemented-but-never-prescribed.

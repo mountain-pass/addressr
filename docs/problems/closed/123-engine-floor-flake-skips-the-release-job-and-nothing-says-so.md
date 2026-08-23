@@ -1,6 +1,26 @@
 # Problem 123: An engine-floor flake skips the release job, and the watcher still says the push succeeded
 
-**Status**: Verification Pending
+> **CLOSED 2026-08-24.** Two test files were racing on a shared mutable path in the real source tree; the
+> copy is now derived from git's index, so the path is not shared and the race cannot occur. Closed on the
+> evidence set out in _What discharges this ticket_, not on the green run — see that section for why one
+> green would have been the weaker instrument.
+>
+> The push on commit `63c39ee0` gave the fix its chance to be refuted and did not take it:
+> `engine-floor` **success**, `release` **success** (ran rather than skipped), `website-build` success,
+> both `build-and-test` legs success, `docker-publish` skipped for want of changesets. `check-deps` failed,
+> as it does routinely — it is `continue-on-error: true` and gates nothing.
+>
+> Read job by job, deliberately. The watcher printed "Push pipeline completed successfully" while listing
+> `failure check-deps` in the same output — [P085](../open/085-push-and-watch-reports-success-on-a-red-master.md)
+> demonstrating itself on the very run that closed this ticket.
+>
+> Two things were split out rather than closed with it:
+> [P129](../open/129-the-deployment-artefact-ignore-contract-is-enforced-at-three-sites-and-written-down-at-none.md)
+> (the artefact/ignore contract has no written record) and
+> [P130](../open/130-engine-floor-gates-release-so-a-test-flake-and-a-shipping-decision-share-one-fate.md)
+> (whether `engine-floor` should gate `release` at all — a maintainer decision, not a defect).
+
+**Status**: Closed — 2026-08-24, fixed
 **Reported**: 2026-08-23
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: `release.yml:205` gives the `release` job `needs: [build-and-test, engine-floor]`, so an engine-floor failure **skips the release job entirely**. A release that should have happened does not, and the failure is in a job whose subject is unrelated to the release. Likelihood 2: measured, not estimated — 1 failure in the last 15 Release runs on master (run 32458245036, sha 569aef18), so roughly 7%.
 **Origin**: internal
