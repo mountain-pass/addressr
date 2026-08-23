@@ -31,11 +31,14 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI                | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
 | 6.0  | P113 | Lifecycle transition breaks relative links; the repair is manual                 | Medium (6)   | Open          | S      | 2026-08-20 | internal |
 | 6.0  | P117 | A search timeout returns 500, not 504 — `displayName` is a legacy client field   | Medium (6)   | Open          | S      | 2026-08-21 | internal |
+| 6.0  | P122 | Three redirect mechanisms in the website, none reach the built site              | Medium (6)   | Open          | S      | 2026-08-23 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                      | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                  | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                          | High (12)    | Open          | M      | 2026-08-19 | internal |
+| 6.0  | P121 | JTBD marker hook consumes the verdict at agent launch, not completion            | High (12)    | Open          | M      | 2026-08-23 | internal |
 | 5.0  | P098 | Test assertions that never execute — no runner, or no caller                     | High (10)    | Open          | M      | 2026-08-09 | internal |
 | 5.0  | P105 | @changesets/cli ships as a production dep of the published package               | High (10)    | Open          | M      | 2026-08-19 | internal |
+| 5.0  | P120 | JTBD corpus maps no website surface; it blocks the `apps/website` import         | High (10)    | Open          | M      | 2026-08-23 | internal |
 | 4.5  | P075 | ADR-041 inverts exact-vs-range ranking on at least one address                   | Medium (9)   | Open          | M      | 2026-07-31 | internal |
 | 4.5  | P081 | Assistant escalates judgement calls, acts freely on mechanical ones              | Medium (9)   | Open          | M      | 2026-08-02 | internal |
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated                  | Medium (9)   | Open          | M      | 2026-08-03 | internal |

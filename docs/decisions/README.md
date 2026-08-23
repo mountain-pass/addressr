@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 52 (46 in-force, 6 historical)
+**Total ADRs:** 53 (47 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_46 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_47 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -226,7 +226,7 @@ _46 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** proposed | **Oversight:** confirmed
 **Decides:** `packages/*` holds distributables published to a registry (`packages/addressr` is `@mountainpass/addressr`) and `apps/*` holds what we deploy or host (`apps/addressr-deployment` today, `apps/website` anticipated), because a second deployable is coming and its infrastructure target is explicitly undecided. The root `workspaces` glob `["packages/*", "apps/*"]` is load-bearing — ADR-045's arming mechanism silently stops reaching production if it ever stops matching — and the `-deployment` suffix is deliberate: that tree holds Terraform pointing at an npm package, not the application, while a source-bearing `apps/website` will take no suffix.
 **Confirmation:** `deployment-workspace-membership.test.mjs` asserts the workspaces glob matches the deployment dir, changesets does not ignore it, it stays `private: true`, and `packages/addressr` remains the published distributable; `npx npm@10 ci` resolves the workspace under CI's exact resolver; directory name and package name agree for both workspace packages; no `packages/*` entry is private and no `apps/*` entry is publishable.
-**Related:** ADR-045, ADR-007, ADR-048
+**Related:** ADR-045, ADR-007, ADR-048, ADR-053
 
 ### ADR-047 — Dead conditionals retired by supersession
 
@@ -270,6 +270,13 @@ _46 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Wire the stale-scheduled-workflow check to a `SessionStart` hook that reads a stamp and returns without network, printing findings when there are any and escalating when the last successful verification is older than the tightest cadence bound, while spawning the real 11.29s check detached — because ADR-051 leaves agent-read-at-session-start as the only reachable terminus for a corpus with no in-flow moment to block. The guarantee is that no session proceeds unaware of a stale schedule, NOT detection within N days: the detector's liveness is correlated with the failure it detects, a property of every in-repo detector rather than of this choice.
 **Confirmation:** two pre-existing holes verified present then closed (empty workflow dir now exits 2 below the floor of 5; absent `gh` puts UNKNOWN findings on stdout and exits 2); six mutations of `schedule-report.mjs` all caught; fresh-clone end-to-end emits the never-verified block, exits 0, and the detached refresh writes the stamp; `schedule-hook-wiring.test.mjs` reconciles every hook command and asserts the stamp is both ignored and untracked; OWED — ADR-038's briefing-block emission not re-verified since this hook was registered.
 **Related:** ADR-051, ADR-038, ADR-048
+
+### ADR-053 — Website imported as an app with hosting unchanged
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** The addressr.io Gatsby site is copied into `apps/website` as a private `@mountainpass/website` workspace app with Netlify hosting merely repointed at the monorepo, because the request contains two independent changes and only separating them gives the Cloudflare Pages cutover its own rollback on the zone that also carries the production API gateway. History is not imported and four dead or credential-bearing files are deleted in the same commit, because this repo is public and an import-then-prune would republish two live Slack webhooks under a new path.
+**Confirmation:** manifest declares `@mountainpass/website`, `private: true`, `type: commonjs`; no `hooks.slack.com` in the tree or in `gatsby build` output; import plus four deletions in one commit; workspace-membership test asserts both privacy directions, mutation-tested; `check-licenses` names the excluded tree; `npx npm@10 ci` clean from the committed lockfile; `gatsby build` emits 7 pages; no route links to the two removed paths and the Enterprise CTA shows `addressr@mountain-pass.com.au` as visible text; Netlify builds on a website-only push and not otherwise, both observed; old repo archived.
+**Related:** ADR-046, ADR-011, ADR-014, ADR-044, ADR-008, ADR-045, ADR-048, ADR-032, ADR-015
 
 ---
 

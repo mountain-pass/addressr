@@ -1,0 +1,224 @@
+---
+status: 'proposed'
+date: 2026-08-23
+human-oversight: unconfirmed
+decision-makers: [Tom Howard]
+consulted: [wr-architect:agent, wr-jtbd:agent]
+informed: []
+reassessment-date: 2026-11-23
+---
+
+# Website imported as an app with hosting unchanged
+
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+
+## Context and Problem Statement
+
+The Addressr marketing and documentation site — `https://addressr.io` — lives in its own repository, `github.com/mountain-pass/addressr.mountain-pass.com.au`, and is deployed by Netlify's git integration on push. It has no CI of its own. [ADR-046](046-packages-are-distributable-apps-are-deployed.proposed.md) already reserved `apps/website` for it by name, on the strength of the user's own question during the deployment-tree move: _"what happens when we bring apps/website in here?"_
+
+The user asked for the site to be brought in and made "managable and deployable from here using the same changesets approach". Investigation established that this is one request containing **two independent changes**:
+
+1. **Repo consolidation** — the source moves into this monorepo as a workspace app.
+2. **A hosting cutover** — Netlify is replaced by Cloudflare Pages, deployed under the [ADR-045](045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md) arming gate.
+
+The second is more dangerous than it looks, for a reason neither the request nor the initial proposal accounted for: **`addressr.io` and `api.addressr.io` are the same Cloudflare zone**, and that zone is already held in `apps/addressr-deployment` Terraform state via `module.cloudflare_worker`'s `cloudflare_workers_route.api_addressr_io`. A DNS and edge cutover therefore operates on the zone carrying the production API gateway. Bundled with a monorepo integration, an edge failure and an integration failure become indistinguishable, on the one surface where that ambiguity is least affordable.
+
+**A credential exposure was found during the import survey, and it changes what gets imported.** Two distinct Slack incoming-webhook URLs are hardcoded in the website source:
+
+| Location                                                 | Exposure                                                                                                                   | Since      |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `src/pages/enterprise-price-request.js` (two call sites) | Public repository **and** the served client bundle — it is a browser `fetch`, so every visitor to addressr.io is handed it | 2019-07-03 |
+| `src/components/Contact.js`                              | Public repository only; the component is imported nowhere, and it is confirmed absent from the build output                | 2019-06-28 |
+
+`gh repo view` confirms `"visibility":"PUBLIC"`. A Slack incoming-webhook URL is a bearer credential: anyone holding it can post arbitrary messages into that channel. Both have been exposed for roughly seven years. This is live today and independent of the move, and it sits directly against the established convention that secrets travel 1Password Voder → GitHub Actions → Terraform and never into source.
+
+Two further facts shaped the plan. The site is Gatsby 5.12.4 with a `package.json` untouched since 2023-10-24, against a current Gatsby 5.16.1 published 2026-02-10 with nothing since — a maintenance-mode framework carrying roughly two and a half years of local drift. And the arming machinery the user asked to reuse is, today, hardcoded to exactly one deployable.
+
+## Decision Drivers
+
+- **Failure isolation on a shared zone.** The cutover touches the zone carrying `api.addressr.io`. Every change bundled alongside it widens the set of things that could have caused an outage there.
+- **The zone's Terraform state ownership is genuinely unmade, and forcing it early would decide it badly.** Either Pages shares a root module with the production API gateway — the shared-infrastructure assumption ADR-046 Decision Driver 2 explicitly refused to encode, quoting the user: _"the website would not neccesaryly be deployed to the same infra"_ — or a second state co-owns one zone, which is textbook split-brain.
+- **Do not import a live credential.** Importing the tree verbatim would copy two exposed webhooks into this repo, whose whole secret-handling posture exists to prevent exactly that. The import is the right moment to remove them, not a reason to defer.
+- **A duplicate source that still deploys is worse than the status quo.** Importing while leaving the old repo live and wired to Netlify produces two copies of the site with one of them shipping. Eliminating that duplication is the actual point of the move.
+- **The arming guards are single-deployable by construction.** `scripts/check-deployment-changeset.sh:73` hardcodes `DEPLOY_DIR='apps/addressr-deployment'` and `scripts/detect-deployment-bump.sh:51` hardcodes `MANIFEST=apps/addressr-deployment/package.json`. Arming the website without extending both produces no refusal at push time **and** no deploy — the site silently stops updating and later ships as a rider on an unrelated release. That is the silent-green class ADR-045 exists to prevent.
+- **Two changes, two rollbacks.** [ADR-044](044-native-esm-without-a-build-step.proposed.md) set this precedent deliberately, holding `deploy/create-deployment-archive.js` out of the ESM change so a deletion would not arm an apply as a rider on a module-system change.
+- **Gatsby's staleness must not become a third variable.** A rendering failure after this change should have exactly one plausible cause.
+
+## Considered Options
+
+1. **Import to `apps/website` with hosting unchanged, deleting the dead and credential-bearing surfaces in the same commit; cut over separately (chosen)** — the tree lands minus four dead or leaking files, Netlify is repointed at the monorepo, and the Pages migration becomes its own decision with its own rollback.
+2. **Import verbatim and cut over in one change** — everything lands together. Rejected: it makes an edge failure and an integration failure indistinguishable on the zone carrying the production API route, forces the state-ownership decision as a side effect, and copies two live credentials into this repo.
+3. **Import verbatim, prune in a follow-up commit** — land the tree as-is and clean up next. Rejected, and worse than it sounds: this repo is public, so an import-then-delete sequence **republishes the live webhook under a new path with a fresh commit date**, which is strictly worse than leaving it where it is.
+4. **Import and leave the old repo deploying** — the cheapest import, changing no hosting at all. Rejected: two live copies of the source with one shipping to production is a worse drift hazard than the split repo it replaces.
+5. **Port off Gatsby as part of the move** — re-home onto a maintained framework while the tree is being touched. Rejected as a third simultaneous variable; `gatsby-plugin-image`/`gatsby-plugin-sharp`, the MDX pipeline, GraphQL typegen, `swagger-ui-react` and `react-autosuggest` each need re-homing, and Gatsby builds on Pages unchanged, so nothing about the hosting target forces the port now.
+6. **Do nothing** — leave the site in its own repo. Rejected: it institutionalises the split that makes the quick-start's example call untestable against the API this repo ships, and leaves a second unarmed path to production permanently outside every instrument here.
+
+## Decision Outcome
+
+Chosen option: **"Import to `apps/website` with hosting unchanged, pruning the dead and credential-bearing surfaces in the same commit"**, because the request contains two independent changes and only their separation gives each a clean rollback on a zone that also carries the production API gateway — and because a credential found during the survey must not be copied forward.
+
+**What lands in phase 1.**
+
+|                 |                                                                                                                                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Path            | `apps/website`, no suffix — ADR-046's stated rule for a source-bearing app.                                                                                                                                                                         |
+| Package         | `@mountainpass/website`, `private: true`. Satisfies ADR-046 Confirmation criterion 3, the `directory ↔ package` invariant.                                                                                                                          |
+| Source of truth | The `addressr.io` working clone, level with `origin/master`, 84 tracked files. The `addressr.mountain-pass.com.au` clone is 7 commits behind and is discarded.                                                                                      |
+| Module system   | `"type": "commonjs"` declared **explicitly**, because the root declares `"type": "module"` and Gatsby's `gatsby-config.js` / `gatsby-node.js` are CJS by convention.                                                                                |
+| Hosting         | **Unchanged.** Netlify's git integration is repointed from the old repo to this monorepo with base directory `apps/website`, plus a `netlify.toml` ignore rule scoped to that path so unrelated monorepo pushes do not trigger a full Gatsby build. |
+| Old repo        | Archived. Referrers pointing **into** it from outside are swept by hand.                                                                                                                                                                            |
+| Gatsby          | Stays at 5.12.4. Porting off it is separate work.                                                                                                                                                                                                   |
+
+**Deleted rather than imported**, user-directed on 2026-08-23:
+
+- `src/pages/enterprise-price-request.js` — the live enterprise quote form, and the reason webhook A reaches browsers.
+- `src/components/Contact.js` — dead component, imported nowhere, carrying webhook B.
+- `src/pages/callback.js` — a dead Auth0 route. `src/utils/auth` does not exist; both importers reference it only on commented-out lines; the page renders `<p>Loading...</p>` and nothing links to it.
+- The `auth0-js` webpack null-loader rule at `gatsby-node.js:38-48` and its stale comment, which points at a `src/utils/auth.js` that does not exist. `auth0-js` is not a dependency, so the rule stubs out a package that is not there. The sibling `swagger-ui` null-loader rule in the same block **stays** — `swagger-ui-react` is a real dependency and the build needs it.
+- `src/pages/pricing.js:305`'s Enterprise "Request Quote" call-to-action is repointed from the deleted form to **`addressr@mountain-pass.com.au`**. That address is stated literally here because its only current source in the repo is `Contact.js:262`, which this change deletes. It must render as **visible text alongside the link, not only as the link target** — a `mailto:` is a no-op for webmail users and anyone without a configured mail client, so a bare link strands them with no address to copy.
+
+**The deletions land in the same commit as the import. This is a hard constraint, not a preference.** The repository is public. Importing first and pruning second republishes a live credential under a new path with a fresh commit date, which is worse than the status quo it was meant to improve.
+
+**History is NOT imported, for the same reason.** The obvious mechanism for folding one repository into another is `git subtree add`, which preserves the source history — and that would replay every commit containing both webhooks into _this_ repository's history, permanently. It would defeat the same-commit constraint above by a different route: the working tree would be clean while the credential sat in `git log` here as well as there. The import is therefore a **plain copy of the 84 tracked files at `origin/master`**, landing as one ordinary commit with no ancestry from the old repository. The cost is real and accepted: seven years of website history stops being reachable from this repo, and `git log`/`git blame` on `apps/website` will begin at the import. The old repository is archived rather than deleted precisely so that history remains readable at its origin.
+
+**Deleting the code does not revoke the credentials.** Both webhooks remain valid until rotated in Slack, and both survive in the git history of both repositories and in every archived build artefact. **Revocation is a separate action with a separate owner**, and it is not discharged by this decision.
+
+**Two live URLs begin returning 404, and that is accepted rather than overlooked.** `/enterprise-price-request/` and `/callback/` have been served since 2019. The cheap in-repo fix is genuinely unavailable: the site's redirect machinery does not work. `gatsby-node.js` calls `createRedirect` three times (`/signup` → `/quick-start/`, and two `/community-support` variants), `gatsby-plugin-netlify` is not installed, and a build emits no `signup/` directory, no `redirects.json` and no `_redirects` — so those three redirects are already silently dead, as is the root `_redirects` file, which Gatsby never copies because it is not in `static/`. The live 301s are configured in the Netlify UI. Installing a plugin to repair this mid-import would add a dependency and change live redirect behaviour during a move whose whole premise is changing none. The user's decision on 2026-08-23 is to **accept the 404s**; the broken machinery is tracked separately as [P122](../problems/open/122-three-redirect-mechanisms-in-the-website-and-none-reach-the-built-site.md).
+
+**Repointing Netlify is not a regression against the arming direction.** The user has already pinned the phase-2 answer, and unarmed push-deploy is exactly what happens today. Phase 1 carries the status quo across so the only thing that changes is _which repository_ Netlify builds from; phase 2 retires it.
+
+**The phase-2 direction is pinned now, so it cannot drift.** Asked what class of change may reach `https://addressr.io` production without a committed changeset, the user answered: **nothing**. The Pages deploy becomes a conditional step in `release.yml` gated exactly as the Terraform apply is, and **Cloudflare Pages' own git integration must be disabled as part of that change** — leaving it on merely swaps Netlify's second unarmed pipeline for Cloudflare's and achieves nothing.
+
+**Scoping decisions this ADR settles.**
+
+- **ADR-046 Confirmation criterion 4 comes due now**, and it is **two opposite assertions**, not one generic rule. `apps/website` is the third workspace entry, which is the trigger the criterion names. `test/js/__tests__/deployment-workspace-membership.test.mjs` is extended to enumerate both globs and assert each direction: over `packages/*`, `assert.notEqual(manifest.private, true)` — the nuance already at `:135-140`, where an absent key is as correct as an explicit `false`; over `apps/*`, `assert.equal(manifest.private, true)` — the form already at `:112`. Copying the `notEqual` nuance to both would assert that `apps/website` is _not_ private, inverting half the rule and contradicting this record's own Confirmation criterion 1.
+- **Licence audit scope ([ADR-011](011-license-compliance-precommit.accepted.md)): the website tree stays OUT of the corpus.** `scripts/license-audit.mjs:186` derives its scan roots from `root.workspaces`, so `apps/website` **is** reached and then skipped at `:202` by `if (manifest.private === true) continue;`. **The ground is scope, not absence of obligation**: the audit's subject is the published npm tarball, which ADR-011's own Context scopes to "a publicly distributed npm package". A Gatsby client bundle does ship third-party code to browsers, and that is a real licence question under most OSS terms — it is simply a **distinct and currently ungoverned** one, not one this audit was built to answer. Saying "hosted, not distributed" would be false comfort. The exclusion must be **explicit and tested**, named in the audit's own output so green can never be misread as coverage; that is the P106 failure shape and the half of this decision not up for negotiation. Because the scan already reaches the tree, the emission belongs at the skip site and needs no widening of the scan roots.
+- **Lint and format surface ([ADR-014](014-eslint-flat-config.accepted.md)) — both halves, because `lint-staged` has two entries.** `package.json:154-157` runs `"*.{js,jsx}": "eslint --fix"` **and** `"*.{json,css,md}": "prettier --write"`. **ESLint**: ignore `apps/website` in the flat config for phase 1. The config has no TypeScript parser and no JSX config, so `.tsx` would go unlinted while stray `.js`/`.jsx` collect `eslint-plugin-n` recommended-module and `unicorn/filename-case` findings that fight React conventions. **Prettier**: add `apps/website` to `.prettierignore`, following the precedent at `test/js/__tests__/vendored-story-map-assets.test.mjs:19`. The second entry is unscoped, so without this every staged website `.css`/`.json`/`.md` is reformatted — starting with the import commit, which is the one commit that must not grow. ADR-046's Bad consequence ("Every move surfaces lint debt") predicts exactly this. **`jsx-a11y` is the obvious later addition** given this repo's accessibility-first posture; recording that here makes the omission read as sequencing rather than oversight.
+- **ADR-044's Confirmation criteria are scoped to the root manifest and `packages/addressr`.** This needs stating outright, not implying. ADR-044's Confirmation reads "`package.json` contains `"type": "module"`, no `build` script, and no `@babel/*` dependency", and its Bad consequence at `:73` records that "Every `.js` file in the repo is now ESM". Read over `apps/website/package.json` all of those go false the moment this lands: a `build` script, `@babel/*` devDependencies, and `"type": "commonjs"`. ADR-044 names the repo-wide-ESM _consequence_ at `:73`; it does not sanction a workspace-scoped `type: commonjs`, and this record should not claim it does. A build step inside a private hosted app does not reopen ADR-044, and without this scoping written down a future reader sees Gatsby's Babel and TypeScript machinery in the lockfile and concludes ADR-044 was quietly abandoned.
+- **Turbo's scope ([ADR-008](008-turbo-build-orchestration.accepted.md)) in this repo is release orchestration only.** `turbo.json` declares `//#ci:version` and `//#ci:publish` with `globalDependencies: []`, and no `build` task is added now. Recorded so Gatsby building outside Turbo reads as a deliberate boundary rather than drift.
+- **`.changeset/config.json`'s `ignore` list stays EMPTY, so `apps/website` is changeset-visible whether or not that is wanted.** `deployment-cascade-pin.test.mjs:163-175` asserts emptiness rather than membership, mutation-proved, discharging ADR-045 criterion 4 — the website cannot be hidden from changesets without reddening it. The resulting state, recorded so it is not discovered: `apps/website` becomes a versionable workspace package that `changeset add` offers and that grows its own CHANGELOG on first bump. **A website changeset is not a deploy affordance in phase 1** — both arming guards hardcode the deployment path, so a website bump arms nothing, and website changes reach production by Netlify push.
+- **The lockfile is reconciled from the committed known-good lock**, not regenerated by `rm -rf` and reinstall — that path can pass `npm install` and still fail CI `npm ci`. ADR-046 criterion 2 uses `npx npm@10 ci`, and `lockfile-agrees-with-manifests.test.mjs` will feel this.
+
+**Deferred to the phase-2 cutover ADR, named here so they cannot be forgotten:**
+
+- Which Terraform state owns the `addressr.io` zone — shared root module with the production API gateway, or a second state co-owning one zone.
+- The Terraform / non-Terraform deploy-tool boundary. `cloudflare_pages_project` creates the project but cannot upload build output; that needs `wrangler pages deploy` or the git integration. [ADR-032](032-cloudflare-worker-terraform-deploy.proposed.md) rejected Wrangler on three grounds, of which only "forks the secret spine" weakens for secret-free static content — "two deploy commands where one would do" transfers intact. **ADR-032's esbuild amendment at `:21` says "esbuild is purely a bundler (no deploy, no secret handling); Terraform still owns deploy + the `RAPIDAPI_KEY` secret binding", which is precisely the line `wrangler pages deploy` crosses, so it must not be cited as supporting precedent.** Phase 2 needs a rule, not a one-off exception. **ADR-032's `reassessment-date` of 2026-08-15 is already past**, so phase 2 inherits a due reassessment rather than opening a fresh question.
+- Cloudflare API token scope. The token at `apps/addressr-deployment/vars.tf:67` is documented as Workers Scripts Edit + Workers Routes Edit + Workers Secrets Edit. Pages needs Pages:Edit — either widen the one credential that can rewrite the production API gateway, or mint a second Pages-scoped secret on the 1Password → GitHub Actions → Terraform path. A gateway-boundary question.
+- Extending both arming guards to derive the armed set from the `workspaces` glob rather than gaining a second hardcoded literal. `release.yml:517` keys on `steps.changesets.outputs.published` and `steps.deployment-version.outputs.changed`, and `release-workflow-deploy-only.test.mjs:276` asserts **exactly three** steps carry the gate string, so a website deploy step reds that test — the fix must be a deliberate widening, not a count bump.
+- The cascade trap: if `apps/website` ever declares a dependency on `@mountainpass/addressr`, `updateInternalDependencies: "patch"` makes every app release auto-deploy the website as a rider. `deployment-cascade-pin.test.mjs` pins the deployment side only.
+- ADR-045's reassessment fires if Pages preview deployments are enabled, since it names a preview or staging environment as reopening what a deployment changeset means. Preview builds on the release PR are the documented-compatible way to keep the fast copy-edit loop without a second pipeline.
+- Cache-directive parity: capture `curl -sI https://addressr.io/` cache, vary and etag headers **before** cutover and pin a target `_headers` file reproducing them. Netlify currently serves `cache-control: public,max-age=0,must-revalidate` via Netlify Edge. No performance-budget ADR exists.
+- P122's dead redirect machinery. If it is repaired before the cutover, the two accepted 404s become cheaply fixable and that choice should be revisited rather than inherited.
+
+## Consequences
+
+### Good
+
+- A cutover failure and an integration failure become distinguishable, each with its own rollback, on the zone that carries the production API gateway.
+- **Two exposed credentials stop being served and stop being carried forward**, and the change that removes them is the same change that would otherwise have duplicated them.
+- The duplicate source disappears immediately: one repository, one deploying copy, from the first commit.
+- The zone's Terraform state ownership gets decided on its own merits instead of as a side effect of a structural move.
+- The quick-start's example call and the download page's Docker instructions land in the same tree as the API and `README.md` they duplicate, so their drift becomes reviewable in one diff for the first time.
+- Four dead or leaking files leave the tree, and the account-holding actor no persona covered ceases to exist rather than needing a persona invented for it.
+- ADR-046's reserved name is used as reserved, and its criterion-4 assertion converts on the trigger it named — in both directions, which a generic copy of the existing nuance would have got half wrong.
+
+### Neutral
+
+- Netlify remains the host, and remains a second unarmed path to production, until phase 2. That is the status quo, neither improved nor worsened.
+- `packages/*` still holds exactly one entry. The category is correct and under-populated.
+- The imported tree deliberately differs from the old repository's HEAD. Intended and recorded, but it does mean the two are not diff-comparable after the fact.
+- `apps/website` becomes changeset-visible and will accumulate its own CHANGELOG. Harmless in phase 1 and required by phase 2, but it means `changeset add` starts offering a package whose bump does nothing until the cutover lands.
+
+### Bad
+
+- **Two URLs live since 2019 start returning 404**, and no in-repo redirect is available to soften it (P122). Accepted deliberately; a bookmarked quote-request link dies silently.
+- **Enterprise enquiries lose their form and fall back to email.** A `mailto:` converts worse than a form, produces no structured record, is a no-op for webmail users, and makes the address scrapeable. Accepted on the user's direction; if enterprise volume matters, a replacement belongs in phase 2 where a Worker or Pages Function can hold the credential server-side.
+- **Deletion does not revoke.** Both webhooks stay valid until rotated in Slack, and both remain in two public git histories permanently. This ADR reduces exposure; it does not end it.
+- **Nothing in this pipeline would have caught a secret in build output, and the exposure ran unnoticed from 2019-07-03.** Importing a repository imports its exposure. That is an argument for a scanning control that outlives this decision, and no such control exists today.
+- **JTBD obligations fall due before the source lands, and this record discharges none of them.** [P120](../problems/open/120-jtbd-corpus-has-no-website-screens-and-blocks-the-apps-website-import.md) carries the worklist. **This ADR pre-authorises no source write**; the items are checked at the `wr-jtbd:agent` gate, not here, and that gate re-fires on the import independent of what this record says. They are: a new evaluation job under `docs/jtbd/web-app-developer/`; the download page added to `docs/jtbd/self-hosted-operator/JTBD-202-obtain-and-run-published-image.validated.md`; the Search component added as the production `safeHosts` client to `docs/jtbd/self-hosted-operator/JTBD-200-protect-gateway-boundary.validated.md`; and the live Search component routed from `docs/jtbd/web-app-developer/JTBD-001-search-autocomplete-addresses.validated.md` to the new job. A fifth needs the user and is the long pole: the pricing page still addresses a buyer choosing a tier, and the recommendation is an **amendment to the `web-app-developer` persona** — the same person at an earlier moment — rather than a new buyer persona, resolved via `/wr-jtbd:confirm-jobs-and-personas`.
+- **The accessibility gate starts firing, permanently.** It currently never fires because this repo has no web UI. From this change on, every `.tsx`/`.css`/`.scss` edit goes through the CLAUDE.md WCAG AA PreToolUse gate, and commit `569aef18` already records two upstream accessibility issues.
+- **`npm ci` gets slower in every CI job.** Measured in the scratchpad workspace: the website tree alone resolves to **1730 packages in about 1 minute** on a warm cache. That is the website in isolation, not the delta on this repo's existing install, which is **not yet measured** — capture the before-and-after wall clock at landing rather than inheriting an adjective. No performance-budget ADR exists to measure either figure against.
+- **`dry-aged-deps --check` ([ADR-015](015-dry-aged-deps.accepted.md)) lands loud.** A tree whose manifest has not moved since 2023 will report extensively. That job is `continue-on-error: true` so it will not redden master — it will just be noisy, and noise that is expected is noise that stops being read.
+- **The licence audit's blind spot is accepted, not closed.** Making it explicit and tested prevents the green from lying, but the website's client-bundle licence obligations genuinely go unexamined.
+- **Two phases means the interim state must be understood by whoever reads it.** Between phase 1 and phase 2 the repo contains a site whose deploy path is invisible to every instrument in the repo, and only this record explains why that is deliberate.
+- **A deferred cutover can become a permanent one.** The phase-2 list above is the mitigation; if it is not worked, phase 1 has merely relocated the problem.
+
+## Confirmation
+
+1. `apps/website/package.json` declares `"name": "@mountainpass/website"`, `"private": true`, and `"type": "commonjs"`.
+2. **`grep -r "hooks.slack.com"` returns nothing over `apps/website` AND nothing over a fresh `gatsby build` output.** The second half is the one that matters — a source grep alone would pass on a tree whose bundle still carried the string. The source-tree half lands as a three-line test in `test/js/__tests__/` so it runs on every commit rather than once; the build-output half is a one-shot at landing. Verified in a scratchpad workspace before this record was written: zero occurrences in build output.
+3. The import and the four deletions are in **one commit**. Retrieve it with `git log --diff-filter=A -- apps/website` and check `git show --stat` on that SHA. A two-commit sequence fails this decision even if the end state matches.
+4. The extended workspace-membership test asserts **both directions** — `notEqual(private, true)` over `packages/*`, `equal(private, true)` over `apps/*`. Mutation-test each: publishing an app manifest must red, and marking a package manifest private must red.
+5. `npm run check-licenses` names the excluded `apps/website` tree in its output. A run whose output does not mention the exclusion is a failing implementation of this decision, not a passing audit.
+6. `npx npm@10 ci` succeeds from the committed lockfile on a clean checkout, and `lockfile-agrees-with-manifests.test.mjs` passes.
+7. `gatsby build` succeeds for `apps/website` from the workspace root. Measured in a scratchpad workspace before this record: 1730 packages installed, `sharp` hoisted to the workspace root, exit 0 — 9 pages before the deletions and **7 after**, the two removed being `enterprise-price-request` and `callback`. `Contact.js` was a component, not a route, so it changes no page count.
+8. No route on the built site links to `/enterprise-price-request/` or `/callback/`, and the Enterprise tier's call-to-action resolves to `addressr@mountain-pass.com.au` with the address present as visible text, not only as an `href`.
+9. A push touching only `apps/website` triggers a Netlify build; a push touching nothing under it does not. **Both directions must be observed, and both recorded** — capture the Netlify deploy id and timestamp for each, ordering the observations so the negative sits between two positives. Otherwise a broken integration and a working ignore rule leave identical evidence.
+10. `github.com/mountain-pass/addressr.mountain-pass.com.au` is archived, and a repository-wide grep for its URL returns only historical references inside decision records.
+
+## Pros and Cons of the Options
+
+### Import with hosting unchanged, pruning in the same commit
+
+- Good, because each change has its own rollback on a zone carrying production API traffic.
+- Good, because the credential leaves the served bundle in the same change that would otherwise have copied it into a second repo.
+- Good, because the state-ownership decision is not forced by a structural move.
+- Bad, because it takes two changes and two review cycles to reach the end state.
+- Bad, because the interim state has a deploy path invisible to the repo's own instruments.
+
+### Import verbatim and cut over in one change
+
+- Good, because there is one landing and no interim state to explain.
+- Bad, because an edge failure and an integration failure become indistinguishable.
+- Bad, because it forces the Terraform state-ownership decision as a side effect.
+- Bad, because it copies two live credentials into this repository.
+
+### Import verbatim, prune in a follow-up commit
+
+- Good, because the imported tree is diff-identical to the old repo, making the move trivially auditable.
+- Bad, because on a public repository it republishes a live credential under a new path with a fresh commit date.
+
+### Import and leave the old repo deploying
+
+- Good, because it is the smallest possible change.
+- Bad, because two live copies of the source with one shipping is worse than the split it replaces.
+
+### Port off Gatsby as part of the move
+
+- Good, because it retires a maintenance-mode framework while the tree is already being touched.
+- Bad, because it adds a third simultaneous variable to a change that already has two.
+- Bad, because nothing about Cloudflare Pages forces it — Gatsby builds there unchanged.
+
+### Do nothing
+
+- Good, because it is free, and the site has shipped this way since 2019 without incident anyone noticed.
+- Bad, because "without incident anyone noticed" is the problem: the survey that produced this record found two credentials exposed for seven years, and it only happened because the move forced someone to read the tree.
+- Bad, because it leaves the quick-start's example call and the download page's Docker instructions permanently untestable against the API this repo ships.
+- Bad, because a second unarmed path to production stays outside every instrument here, which is the condition the phase-2 direction exists to end.
+
+## Reassessment Criteria
+
+- **Phase 2 does not land within one release cycle.** The interim state is justified by being temporary; if the cutover stalls, this decision has relocated the problem rather than solved it and the split should be re-argued.
+- **The Netlify ignore rule proves unreliable.** If unrelated pushes trigger website builds, or website pushes fail to, the "hosting unchanged" claim is false and the cutover should be pulled forward.
+- **Client-bundle licence obligations become a live question** — a licence-compliance enquiry, an adopter asking, or a dependency whose terms reach browser-delivered code. The exclusion decided here is scoped to the published npm tarball and does not answer that; it would need its own record.
+- **Enterprise enquiries measurably drop after the form is removed.** That would make a server-side form a phase-2 requirement rather than an option.
+- **A secret-scanning control is adopted, or a second secret is found in an imported tree.** Either makes the "importing a repo imports its exposure" note load-bearing rather than incidental.
+- **P122 is fixed before the cutover**, making the two accepted 404s cheaply redirectable. The acceptance recorded here was conditional on the repair being unavailable.
+- **The accessibility gate proves obstructive in practice.** If routine copy changes become materially harder, the gate's scoping — not the import — needs revisiting.
+- **The zone's state-ownership question resolves in favour of a separate state.** That would make an earlier cutover cheaper than modelled here, weakening the sequencing argument.
+- **Gatsby publishes nothing further, or ships a breaking security advisory.** Either converts the deferred port from housekeeping into scheduled work, to be sequenced against phase 2 rather than after it.
+- **ADR-046's suffix asymmetry proves confusing.** This change is the first real test ADR-046 named. The verdict at landing: the asymmetry held, and `apps/website` read correctly against `apps/addressr-deployment` without explanation. One data point, not a vindication.
+
+## Related
+
+- **Discharges** [ADR-046](046-packages-are-distributable-apps-are-deployed.proposed.md)'s first reassessment criterion (`046-…:112`), _"`apps/website` lands. The first real test of the suffix asymmetry"_, and converts its Confirmation criterion 4 (`:85`) from inspection to assertion on the trigger that criterion names.
+- **Narrows** [ADR-011](011-license-compliance-precommit.accepted.md) — its corpus is scoped to the published npm tarball, excluding the private hosted tree. Neither of its two Confirmation criteria (`011-…:42-43`) is affected; the exclusion is a scope statement, not a weakening.
+- **Narrows** [ADR-014](014-eslint-flat-config.accepted.md) — `apps/website` is excluded from both the ESLint flat config and `.prettierignore` for phase 1.
+- **Narrows** [ADR-044](044-native-esm-without-a-build-step.proposed.md) — its Confirmation criteria and its repo-wide-ESM consequence at `:73` are scoped to the root manifest and `packages/addressr`. A private hosted app with a build step and `"type": "commonjs"` does not reopen it.
+- **Declines to extend** [ADR-008](008-turbo-build-orchestration.accepted.md) — Turbo's scope stays release orchestration; no `build` task is added for the second app.
+- **[ADR-045](045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md)** — untouched by phase 1, which widens no gate. Its arming mechanism and the phase-2 obligations against it are recorded in the deferral list above.
+- **[ADR-048](048-moved-path-referrers-resolved-by-executable-guard.proposed.md)** — its Confirmation criterion 2 is scoped to **relative** documentation links, so an absolute URL pointing at the old repository falls outside it by the criterion's own wording. The inbound-referrer sweep is manual for that reason.
+- **[ADR-032](032-cloudflare-worker-terraform-deploy.proposed.md)** — out of scope for phase 1 and inherited by phase 2 with its reassessment already overdue (`reassessment-date: 2026-08-15`).
+- **P120** — the JTBD worklist that must clear before the source write.
+- **P122** — the three inert redirect mechanisms; the reason the two 404s have no cheap fix.
+- **JTBD-400** — the job this serves. One repository, one deploying copy, and a recorded pre-commitment that phase 2 arms the website rather than leaving a second unarmed pipeline.
