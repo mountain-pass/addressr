@@ -103,6 +103,7 @@ Auto-populated from `.risk-reports/` via Phase 2b drain.
 
 ## Change Log
 
+- 2026-08-23: **Re-verified after P039 closed and R015's link to it was repointed.** **Direction: unchanged.** R015's only change was the moved-path repoint — P039 went `known-error/` → `closed/`, and ADR-048 obliges its referrers to follow. No claim in R015 moved. This entry cites R015 solely as the owner of the release-trigger clause in the decomposition table above, and ownership is not reachable by a link target. No re-rate.
 - 2026-08-10 (fourth entry today): **Re-verified after R015's stale gate quote and line anchors were corrected.** **Direction: unchanged.** R015 is cited here only as the owner of the release-trigger clause in this entry's decomposition table; that ownership is unaffected by correcting its quoted gate string and dropping its line anchors. No re-rate.
 
 - 2026-08-10 (third entry today): **Re-verified after R020 was re-scored against the changesets-armed successor route**, which is now BUILT and is the sole path to a production infrastructure apply — `deploy_only` is deleted. **Direction: unchanged.** What provisioning a new OpenSearch domain costs on a release is a property of the provisioning, not of what armed the apply. No re-rate.

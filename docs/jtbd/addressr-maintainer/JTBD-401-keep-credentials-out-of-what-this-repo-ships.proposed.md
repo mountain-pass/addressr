@@ -35,14 +35,18 @@ When I import, write, or accept code into a public repository that ships an npm 
 - **GitHub secret scanning.** Covers provider-registered patterns; Slack incoming-webhook URLs are within its published coverage, so either it is not enabled on these repositories or its alerts have no reader. Worth establishing which before building anything, because the answer changes what is worth building.
 - **Trusting review.** Both credentials survived every review since 2019.
 
-## Known credential in the served bundle — status UNVERIFIED, not benign
+## Known credential in the served bundle — RESOLVED 2026-08-23: verified restricted
 
 `apps/website/src/components/Search.js` inlines a Google Maps browser API key (`AIzaSyBJ9PUm…`), and it reaches
 the client bundle. Same shape as the 2019 Slack exposure this job exists for, and it is the first thing a
 build-output scanner will hit — so it needs a recorded status before that scanner exists, or whoever builds
 it will either blanket-suppress `AIzaSy*` or raise a false incident.
 
-**Recorded as unverified rather than benign, on the evidence.** A review asserted it was correctly
+**RESOLVED 2026-08-23.** The maintainer verified the key in the Google Cloud console and confirmed it is restricted. Provenance matters and is recorded deliberately: this is the maintainer's console reading, not an independent probe — the section below explains why no probe available from outside could have settled it, and that remains true. The key stays in the served bundle by design, because a browser key must reach the browser; what makes it safe is the restriction, which lives in configuration this repository cannot see.
+
+The history below is retained rather than deleted, because the _reason_ it could not be settled from outside is the load-bearing part for the build-output scanner: a scanner will hit this key, and its allowlist entry rests on a fact no scan can verify.
+
+**Why it was recorded as unverified rather than benign, on the evidence at the time.** A review asserted it was correctly
 HTTP-referrer restricted, citing 200 with `Referer: https://addressr.io/` and 403 `not authorized` from an
 arbitrary referer. **That does not reproduce.** Probing `https://maps.googleapis.com/maps/api/js?key=…` on
 2026-08-23 returned **HTTP 200 with an identical payload for both referers** — the JS loader endpoint does
@@ -71,6 +75,7 @@ either miss it or cry wolf.
 
 ## Reassessment Criteria
 
+- **The Maps key's restriction changes, or the key is rotated without the allowlist entry following.** The build-output scanner allowlists it by prefix; a rotation silently turns the allowlist into a rule that matches nothing and the new key reads as an unrecognised one, which reds the build. That is the safe direction, but the entry needs updating with the key rather than after it.
 - **A second credential is found in any tree, by any route.** That converts the "importing a repo imports its exposure" observation from an anecdote into a pattern, and makes the build-output criterion urgent rather than aspirational.
 - **GitHub secret scanning turns out to be enabled and alerting.** Then the gap is a reader problem, not a detection problem, and the job's shape changes accordingly.
 - **The website ports off Gatsby, or gains a second bundler.** Bundle-inlining behaviour is what made the original exposure reach browsers; a different toolchain changes what build-output scanning has to look at.

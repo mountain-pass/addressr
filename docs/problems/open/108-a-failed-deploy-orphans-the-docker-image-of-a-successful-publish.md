@@ -162,7 +162,7 @@ the gate. That is why re-running — the obvious first move, and the one the too
   divergence as an accepted Bad consequence, with the `docker:push` break-glass as its compensating
   control. `release.yml` states it at the `docker-publish` job. This ticket is in part a request to
   revisit that acceptance, which is why it is a ticket rather than a surprise.
-- **P039** ([`039-decouple-saas-deployment-from-npm-publish.md`](../known-error/039-decouple-saas-deployment-from-npm-publish.md))
+- **P039** ([`039-decouple-saas-deployment-from-npm-publish.md`](../closed/039-decouple-saas-deployment-from-npm-publish.md))
   — sibling in the publish/deploy coupling family, opposite direction. P039 is "a deploy has no entry
   point other than a publish"; this is "a deploy failure destroys an artefact of the publish". Different
   fix locus — P039 never touches `docker-image.yml`.

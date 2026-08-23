@@ -87,13 +87,13 @@ all measured on-disk context. It is the single biggest surface in the system by 
 
 ## Top-N Offenders
 
-| Surface                                                                      | Bytes  | Bucket    | Comparable prior                                                      |
-| ---------------------------------------------------------------------------- | ------ | --------- | --------------------------------------------------------------------- |
-| `docs/problems/open/033-source-inspection-tests-anti-pattern.md`             | 70,664 | problems  | `not estimated — no prior data` for a single-ticket trim in this repo |
-| `docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md`  | 65,839 | decisions | `not estimated — no prior data`                                       |
-| `docs/decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md`     | 56,092 | decisions | `not estimated — no prior data`                                       |
-| `docs/decisions/031-read-shadow-for-search-backend-migrations.proposed.md`   | 47,651 | decisions | `not estimated — no prior data`                                       |
-| `docs/problems/known-error/039-decouple-saas-deployment-from-npm-publish.md` | 41,265 | problems  | `not estimated — no prior data`                                       |
+| Surface                                                                     | Bytes  | Bucket    | Comparable prior                                                      |
+| --------------------------------------------------------------------------- | ------ | --------- | --------------------------------------------------------------------- |
+| `docs/problems/open/033-source-inspection-tests-anti-pattern.md`            | 70,664 | problems  | `not estimated — no prior data` for a single-ticket trim in this repo |
+| `docs/decisions/040-release-pipeline-change-type-action-matrix.proposed.md` | 65,839 | decisions | `not estimated — no prior data`                                       |
+| `docs/decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md`    | 56,092 | decisions | `not estimated — no prior data`                                       |
+| `docs/decisions/031-read-shadow-for-search-backend-migrations.proposed.md`  | 47,651 | decisions | `not estimated — no prior data`                                       |
+| `docs/problems/closed/039-decouple-saas-deployment-from-npm-publish.md`     | 41,265 | problems  | `not estimated — no prior data`                                       |
 
 ### The largest file doubled today, and this session did it
 

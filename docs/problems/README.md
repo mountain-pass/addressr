@@ -47,7 +47,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.5  | P083 | Risk register is an index of hints — 24 of 25 entries uncurated                      | Medium (9)   | Open          | M      | 2026-08-03 | internal |
 | 4.5  | P088 | Assistant manufactures problems and presents them as findings                        | Medium (9)   | Open          | M      | 2026-08-07 | internal |
 | 4.5  | P127 | Nothing makes a mis-set Netlify base fail loudly; ADR-053 says something that does   | Medium (9)   | Open          | M      | 2026-08-23 | internal |
-| 4.0  | P039 | Decouple SaaS deployment from npm publish in release pipeline                        | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P041 | `capture-problem` halts on pre-existing README drift                                 | Low (4)      | Known Error   | M      | 2026-05-14 | internal |
 | 4.0  | P055 | Migrate the Docker image from Alpine to Distroless                                   | Low (4)      | Known Error   | M      | 2026-07-18 | internal |
 | 4.0  | P035 | Read-shadow soak validation has multiple blind spots                                 | Medium (8)   | Known Error   | L      | 2026-05-03 | internal |

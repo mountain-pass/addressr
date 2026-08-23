@@ -67,7 +67,7 @@ The residual sits above appetite at 8 and the treatment is P039's smoke-paramete
 ## Related
 
 - Criteria: `RISK-POLICY.md`
-- Realised-as: [P039](../problems/known-error/039-decouple-saas-deployment-from-npm-publish.md) — Known Error; open for the smoke-parameterisation task, **not** for the coupling itself.
+- Realised-as: [P039](../problems/closed/039-decouple-saas-deployment-from-npm-publish.md) — Known Error; open for the smoke-parameterisation task, **not** for the coupling itself.
 - Absorbs: [R019](R019-release-ships-fresh-server-lifecycle-code-to-prod-via-coupled-publish.retired.md) (retired 2026-08-05)
 - Adjacent: [R020](R020-deploy-path-push-tier-prod-deploy-precondition-unmet.active.md) owns the _reverse_ direction — the publish-free path. That was `deploy_only` until 2026-08-10; it is now a changeset naming only `apps/addressr-deployment`, which deploys without publishing because the package is `private`. R015 owns the coupling; R020 owns the publish-free route, which has carried zero real applies. Deliberately kept separate.
 - Treatment ADRs: [ADR 001](../decisions/001-risk-gated-release-process.proposed.md) — its 2026-07-26 amendment introduced the publish-free `deploy_only` trigger, **deleted 2026-08-10** and superseded by [ADR 045](../decisions/045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md)'s changesets-armed route; _(corrected 2026-08-10 — this was the sibling, twenty lines below, of the adjacency note corrected in the same sweep, and it survived that sweep. R028 records this exact repeat shape.)_ [ADR 040](../decisions/040-release-pipeline-change-type-action-matrix.proposed.md) — the change-type-to-action matrix that preserved `published ⇒ deploy` deliberately.

@@ -61,7 +61,7 @@ ADR-045 then inserted the changesets round trip ahead of the apply and retired t
 
 - **ADR-045** (changesets-armed release-PR merge as the production deploy entry point) — made the pipeline the only route, and inserted the leg nobody has timed.
 - **ADR-029** (OpenSearch blue/green two-phase upgrade) — carries the 6m36s apply-leg figure and the 2026-08-18 trigger-provenance note that scopes it to apply-start.
-- **P039** (`docs/problems/known-error/039-decouple-saas-deployment-from-npm-publish.md`) — the known error on publish/deploy coupling.
+- **P039** (`docs/problems/closed/039-decouple-saas-deployment-from-npm-publish.md`) — the known error on publish/deploy coupling.
 - **JTBD-400** (Ship Releases Reliably From Trunk), persona `addressr-maintainer` — its "Infra-boundary release steps are checkable artefacts, not memory" outcome is exactly what an unmeasured floor fails.
 - `docs/BREAK_GLASS_RUNBOOK.md` — states the gap and points here; the destination for the measured number.
 

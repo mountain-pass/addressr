@@ -73,7 +73,7 @@ Resolved via cache-fallback mode (`*/cache/<owner>/<plugin>/<version>/bin` back-
 | `docs/decisions/029-opensearch-blue-green-two-phase-upgrade.accepted.md`                 | 49,849 | decisions | framework ADR-038 progressive disclosure                                    |
 | `docs/decisions/031-read-shadow-for-search-backend-migrations.proposed.md`               | 47,446 | decisions | framework ADR-038 progressive disclosure                                    |
 | `docs/problems/closed/028-opensearch-1-3-20-version-debt.md`                             | 36,850 | problems  | `not estimated — no prior data` (no closed-ticket archive tier exists)      |
-| `docs/problems/known-error/039-decouple-saas-deployment-from-npm-publish.md`             | 32,015 | problems  | `not estimated — no prior data`                                             |
+| `docs/problems/closed/039-decouple-saas-deployment-from-npm-publish.md`                  | 32,015 | problems  | `not estimated — no prior data`                                             |
 | `docs/problems/verifying/069-partial-prefix-search-recall-longer-query-drops-results.md` | 30,965 | problems  | `not estimated — no prior data`                                             |
 | `docs/decisions/README.md` (generated compendium)                                        | 29,192 | decisions | wr-architect ADR-077 hook-regenerated; destructive-generator caveat applies |
 

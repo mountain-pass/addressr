@@ -229,5 +229,5 @@ which measures only the apply leg.
   the enforcement a rung-2 result other than 401 means you have lost.
 - [ADR-031](decisions/031-read-shadow-for-search-backend-migrations.proposed.md)
   — which read-shadow posture is current.
-- [P039](problems/known-error/039-decouple-saas-deployment-from-npm-publish.md) —
+- [P039](problems/closed/039-decouple-saas-deployment-from-npm-publish.md) —
   why infrastructure and publish are coupled.

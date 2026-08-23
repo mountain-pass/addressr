@@ -1,11 +1,52 @@
 # Problem 039: Decouple SaaS Deployment From npm Publish in Release Pipeline
 
-**Status**: Known Error
+**Status**: Closed
 **Reported**: 2026-05-14
 **Priority**: 4 (Low) — Impact: Minor (2) × Likelihood: Unlikely (2)
 **Origin**: internal
 **Effort**: M
 **WSJF**: 4.0
+
+## Closed 2026-08-23 — delivered by ADR-045, which arrived from a different direction
+
+Both harms this ticket names are addressed, and neither was fixed by working this ticket. [ADR-045](../../decisions/045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md)
+solved them as a side effect of answering a different question — what arms a production apply.
+
+- **Forced version churn on infra-only changes** (the 20-commit sample below). `apps/addressr-deployment` is
+  `private: true`, so `changeset version` bumps it while `changeset publish` skips it. An infra change now
+  costs a version line in a package nobody installs, not a public npm release.
+- **Infra committed but not applied** — the inverse harm, which this ticket rated the subtler of the two.
+  `scripts/check-deployment-changeset.sh` refuses the push, so the two events "commit the Terraform" and
+  "apply the Terraform" have the explicit link this ticket says they lacked.
+
+**What is NOT delivered, recorded so the close is honest.** Changeset TYPING — tagging a changeset `npm`,
+`saas` or `both` — is listed above as a candidate shape and does not exist. Arming is per-PACKAGE, not
+per-changeset-type. That is a different mechanism reaching the same outcome for the two harms actually
+named, which is why this closes rather than staying open against an unbuilt design.
+
+**Closing this does NOT retire R015, and the obvious next move is to think it does.** The standing risk
+entry is literally named `R015-npm-publish-coupled-to-prod-deploy-p039-unresolved.active.md`, so a reader
+seeing this close will reach for it. They are opposite directions of the same coupling and only one is
+solved:
+
+| direction   | question                         | state                                                                                                                                      |
+| ----------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| this ticket | can I DEPLOY without publishing? | **Solved** — a changeset on the `private: true` deployment package bumps a version, publishes nothing, and arms the apply.                 |
+| R015        | can I PUBLISH without deploying? | **Unchanged** — a `packages/addressr` changeset merging to master still publishes to npm and deploys to Elastic Beanstalk in the same job. |
+
+R015's own Description already says why it survives: the retired `deploy_only` disjunct "was the one path
+that deployed WITHOUT publishing and so was never part of the coupling this entry names." The two were never
+about the same disjunct. Recorded here rather than on R015 because amending a risk entry trips R028's review
+fence, which then obliges revisiting the three entries that reference it — a cascade out of proportion to a
+note, and this is where the reader will be.
+
+**A queued recommendation on this ticket had gone stale and would have caused harm.** An AFK iteration
+recommended Option 4, "add a `deploy_only` input to release.yml". ADR-045 **deleted** that input on
+2026-08-10, deliberately rather than leaving it declared: `release.yml:10-22` records that a
+`deploy_only=true` dispatch would skip the publish, skip the P044 assertion, skip Deploy/Wait/Smoke — and
+conclude GREEN, which is the silent-green class ADR-045 exists to prevent. Acting on the queued advice would
+have reinstated it. Recorded because the lesson is about queued recommendations decaying against a moving
+codebase, not about this ticket.
 
 ## Description
 
