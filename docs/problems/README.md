@@ -60,6 +60,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate               | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them              | Medium (6)   | Open          | M      | 2026-08-07 | internal |
 | 3.0  | P114 | Three governance checks that cannot fail (shape / evidence / wrong tree)         | Medium (6)   | Open          | M      | 2026-08-20 | internal |
+| 3.0  | P123 | An engine-floor flake skips the release job, and the watcher says success        | Medium (6)   | Open          | M      | 2026-08-23 | internal |
 | 3.0  | P119 | Twenty-three watcher assertions read shell text; converting needs a stubbed `gh` | High (12)    | Open          | L      | 2026-08-21 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets                 | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat            | Low (4)      | Open          | M      | 2026-07-19 | internal |
