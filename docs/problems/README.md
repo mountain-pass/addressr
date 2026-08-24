@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-21 **P033 CLOSED** — source-inspection tests. Zero open investigation tasks: the audit published a rerunnable predicate, the convention is in AGENTS.md, and every decision-bearing pin converted with mutation proof in both directions, which turned up two live defects nothing else had (a timeout mapping that never fires, and a swallowed terraform apply exit code). What remains is NOT closed with it — nine workflow files needing a note (P116) and 23 watcher assertions still pinned as text (P119), both split out because an XL divisor was mispricing S and L work
+> Last reviewed: 2026-08-24 **P139 verification pending** — both live home-page tile overlays now take their accessible names from visible headings; the built-output regression failed on both unnamed links before the fix and passes after a clean build. Awaiting exact Netlify production verification
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -15,7 +15,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                         | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P116 | Nine workflow pins imply coverage they cannot provide, and say nothing about it      | High (12)    | Open          | S      | 2026-08-20 | internal |
 | 12.0 | P138 | Nothing decides what enforces accessibility conformance on `apps/website`            | High (12)    | Open          | S      | 2026-08-24 | internal |
-| 12.0 | P139 | The home page's API tile is a link with no accessible name                           | High (12)    | Open          | S      | 2026-08-24 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                       | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 10.0 | P118 | Every risk report is a single newline, so the audit trail is empty                   | High (10)    | Open          | S      | 2026-08-21 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only                   | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
@@ -93,6 +92,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
+| P139 | The home page's API tile is a link with no accessible name     | 2026-08-24        | no — not observed |
 
 ## Inbound Upstream Reports
 

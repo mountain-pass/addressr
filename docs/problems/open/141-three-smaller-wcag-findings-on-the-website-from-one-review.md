@@ -11,7 +11,7 @@
 
 ## Description
 
-Three findings from the same accessibility review that produced [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P132](132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md), [P137](137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md), [P139](139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) and [P140](140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md). Grouped because each is small, none blocks a task, and splitting them would make five WSJF rows out of an afternoon's work. They are otherwise unrelated — fix them independently.
+Three findings from the same accessibility review that produced [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P132](132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md), [P137](137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md), [P139](../verifying/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) and [P140](140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md). Grouped because each is small, none blocks a task, and splitting them would make five WSJF rows out of an afternoon's work. They are otherwise unrelated — fix them independently.
 
 ### 1. The GitHub ribbon is an `<h4>` that heads nothing (1.3.1 Info and Relationships)
 

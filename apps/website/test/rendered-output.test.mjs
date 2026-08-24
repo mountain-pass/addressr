@@ -133,6 +133,42 @@ describe('apps/website rendered output', () => {
     const idsIn = (html) =>
       new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
 
+    const attrOf = (attrs, name) =>
+      attrs.match(new RegExp(`\\s${name}="([^"]*)"`, 'i'))?.[1] ?? '';
+
+    const textOf = (html) =>
+      html
+        .replace(/<img\b([^>]*)>/gi, (_, attrs) => ` ${attrOf(attrs, 'alt')} `)
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&(?:nbsp|#x20|#32);/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const accessibleNameOf = (attrs, content, html) => {
+      const labelledBy = attrOf(attrs, 'aria-labelledby')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((id) => {
+          const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const target = html.match(
+            new RegExp(
+              `<([a-z][\\w-]*)[^>]*\\sid="${escaped}"[^>]*>([\\s\\S]*?)</\\1>`,
+              'i',
+            ),
+          );
+          return textOf(target?.[2] ?? '');
+        })
+        .join(' ')
+        .trim();
+
+      return (
+        attrOf(attrs, 'aria-label').trim() ||
+        labelledBy ||
+        textOf(content) ||
+        attrOf(attrs, 'title').trim()
+      );
+    };
+
     it('emits a menu control on every page, so nothing below passes vacuously', () => {
       const pages = pagesOf();
       assert.ok(pages.length >= 6, `only ${pages.length} pages emitted`);
@@ -184,6 +220,22 @@ describe('apps/website rendered output', () => {
         [],
         `${bad.length} anchors emitted with no href. An anchor without one is ` +
           'not a link: not focusable, no role, inert to Enter.',
+      );
+    });
+
+    it('emits no link without an accessible name', () => {
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        for (const m of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)) {
+          if (!accessibleNameOf(m[1], m[2], html)) bad.push(`${file}: ${m[0]}`);
+        }
+      }
+      assert.deepEqual(
+        bad.slice(0, 8),
+        [],
+        `${bad.length} links emitted without an accessible name. A screen ` +
+          'reader user cannot tell what an unnamed link does — WCAG 2.4.4 ' +
+          'and 4.1.2, Level A.',
       );
     });
 

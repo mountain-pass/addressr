@@ -47,7 +47,7 @@ const HomeIndex = () => {
         <section id="one" className="tiles">
           <article style={{ backgroundImage: `url(${pic01})` }}>
             <header className="major">
-              <h3>Australian Data Source</h3>
+              <h3 id="australian-data-source-title">Australian Data Source</h3>
 
               <p>
                 Addresses validated against the Geocoded National Address File
@@ -80,9 +80,8 @@ const HomeIndex = () => {
             <a
               href="https://data.gov.au/dataset/ds-dga-19432f89-dc3a-4ef3-b943-5326ef1dbecc/details"
               className="link primary"
-            >
-              {' '}
-            </a>
+              aria-labelledby="australian-data-source-title"
+            />
           </article>
           <article style={{ backgroundImage: `url(${pic02})` }}>
             <header className="major">
@@ -108,7 +107,6 @@ const HomeIndex = () => {
                 we&apos;ve got you covered.
               </p>
             </header>
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
           <article style={{ backgroundImage: `url(${pic11})` }}>
             <header className="major">
@@ -118,7 +116,6 @@ const HomeIndex = () => {
                 you&apos;re never out-of-date.
               </p>
             </header>
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
           <article style={{ backgroundImage: `url(${pic03})` }}>
             <header className="major">
@@ -127,14 +124,17 @@ const HomeIndex = () => {
                 Add address autocomplete, search and validation to your forms.
               </p>
             </header>
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
           <article style={{ backgroundImage: `url(${pic04})` }}>
             <header className="major">
-              <h3>Easy To Use API</h3>
+              <h3 id="easy-to-use-api-title">Easy To Use API</h3>
               <p>Build your solution quickly, with our straightforward API.</p>
             </header>
-            <Link to="/api-docs" className="link primary" />
+            <Link
+              to="/api-docs"
+              className="link primary"
+              aria-labelledby="easy-to-use-api-title"
+            />
           </article>
           <article style={{ backgroundImage: `url(${pic05})` }}>
             <header className="major">
@@ -144,7 +144,6 @@ const HomeIndex = () => {
                 infrastructure, or leave all the hard work to us.
               </p>
             </header>
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
           <article style={{ backgroundImage: `url(${pic06})` }}>
             <header className="major">
@@ -160,11 +159,9 @@ const HomeIndex = () => {
                 commercial support you can truly rely on.
               </p>
             </header>
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
           <article style={{ backgroundImage: `url(${pic10})` }}>
             <header className="major" />
-            {/* <Link to="/landing" className="link primary" /> */}
           </article>
         </section>
         <section id="two">
