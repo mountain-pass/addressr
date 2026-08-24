@@ -26,6 +26,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
+| 8.0  | P135 | `root.feature` pins a rel namespace the server stopped emitting                      | Medium (8)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P107 | A verification vouches only for the state it ran against                             | High (16)    | Open          | M      | 2026-08-19 | internal |
 | 8.0  | P109 | Gate-blocked invocation runs nothing; bundled `git add` commits a stale index        | High (16)    | Open          | M      | 2026-08-20 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`                     | Medium (6)   | Open          | S      | 2026-07-26 | internal |
@@ -38,6 +39,8 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P126 | Two footer links render without an href, on every page                               | Medium (6)   | Open          | S      | 2026-08-23 | internal |
 | 6.0  | P130 | `engine-floor` gates `release` — a test flake and a shipping decision share one fate | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P133 | `check-deps` red on 45/45 runs, so its vulnerability report has no reader            | Medium (6)   | Open          | S      | 2026-08-24 | internal |
+| 6.0  | P134 | Nothing in the repo can see what Netlify is actually doing                           | Medium (6)   | Open          | S      | 2026-08-24 | internal |
+| 6.0  | P136 | `release-pr-plan` calls itself advisory but can block the release merge              | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                          | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |

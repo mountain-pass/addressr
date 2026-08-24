@@ -291,14 +291,25 @@ describe('apps/website rendered output', () => {
       // addition. The check above was scoped to the single credential ADR-053
       // already deletes, so a tier advertised as closing the 2019 build-output gap
       // could not see the one live credential still in the tree: the Google Maps
-      // browser key in Search.js, whose referrer restriction is UNVERIFIED
-      // (JTBD-401 records two probes that failed to discriminate).
+      // browser key in Search.js, whose referrer restriction was UNVERIFIED at
+      // the time — JTBD-401 recorded two probes that failed to discriminate, and
+      // wrongly concluded from those two that no probe could. It is VERIFIED as
+      // of 2026-08-24: the endpoint the site actually calls does discriminate,
+      // and the check runs in CI (see below).
       //
       // The known key is allowlisted rather than asserted absent, because a Maps
       // BROWSER key legitimately has to reach the browser — removing it breaks the
       // demo. What this catches is a SECOND one arriving, which is the class the
-      // job actually guards. When the restriction is confirmed in the Cloud
-      // console, record it in JTBD-401 and this allowlist stops being provisional.
+      // job actually guards.
+      //
+      // THE ALLOWLIST IS NO LONGER PROVISIONAL. This comment used to end "when
+      // the restriction is confirmed in the Cloud console, record it in JTBD-401
+      // and this allowlist stops being provisional". Superseded 2026-08-24:
+      // `test/credentials/maps-key-is-restricted.test.mjs` probes the restriction
+      // on every push and reds if the referrer allowlist is widened. Allowlisting
+      // this key therefore rests on an asserted property rather than on an
+      // assumption — which is the whole difference between an allowlist and a
+      // blind spot.
       const KNOWN = 'AIzaSyBJ9PUm';
       const keyShape = /AIza[0-9A-Za-z_-]{35}/g;
       const found = new Set();

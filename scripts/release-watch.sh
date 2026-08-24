@@ -115,7 +115,11 @@ echo "Checking CI status..."
 # we proceed — the release workflow itself runs tests before publishing.
 # P085 sibling fix. This loop used to select `.name == "build"`, and release.yml
 # has no job by that name — the jobs are check-deps, engine-floor,
-# build-and-test (<engine>) and release. So the selector matched nothing on
+# build-and-test (<opensearch_version>, two legs), website-build, release and
+# docker-publish. (Corrected twice on 2026-08-24: website-build was missing, and
+# so was docker-publish; the matrix axis was mislabelled <engine>. An
+# enumeration whose whole purpose is describing what this loop scans had been
+# wrong about three of six jobs.) So the selector matched nothing on
 # EVERY run, the empty case was taken every time, and after ~60s the script
 # announced "No build check found (expected for changeset PRs)" and proceeded.
 # The "expected for changeset PRs" rationale is sometimes true, but the broken

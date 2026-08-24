@@ -12,6 +12,68 @@
 #    make it useless. P068 was found by an external reporter, not by us.
 # 2. A third-party availability probe must never be able to redden master or
 #    stall the trunk loop. In its own workflow it cannot.
+#
+#    EXCEPTION TAKEN 2026-08-24, recorded here rather than only in the workflow
+#    that diverges, so a reader of the RULE meets the exception. `website-build`
+#    now runs a third-party probe per-push (the Maps key's referrer restriction,
+#    JTBD-401).
+#
+#    IT BREAKS THIS REASON IN BOTH HALVES, and an earlier draft of this note
+#    claimed otherwise. That draft said the step "cannot stall the trunk loop,
+#    because that job is absent from `release`'s `needs`". FALSE, and
+#    scripts/scan-jobs.awk is why: it is default-deny over EVERY job in the run
+#    with `check-deps` as the single named exemption, and both
+#    push-and-watch.sh and release-watch.sh consume it. A red `website-build`
+#    therefore makes `npm run push:watch` exit 1. `needs` uncouples GitHub's own
+#    publish path; it does not uncouple the loop a human actually runs. So the
+#    step can redden master AND stall the trunk loop, and the exception has to
+#    be justified on that basis rather than on a distinction that does not hold.
+#
+#    WHY IT IS STILL THE RIGHT CALL. The alternative this file argues for — a
+#    scheduled workflow — has no reader, and that is settled rather than
+#    speculative: ADR-051 records the maintainer's own direction on the channel
+#    question, "I'm not going to monitor it". So "move it to a cron and fix the
+#    reader first" waits on something nobody has agreed to own. The property is
+#    a SECURITY control, configured outside this repository and silently
+#    widenable to `*`, whose only other evidence was a console screenshot.
+#    Unwatched is the worse failure. THE ACCEPTED COST, stated in full because
+#    three earlier drafts each stopped one gate short: a Google outage reds the
+#    post-merge master push, where the exemption does not apply. That red
+#    reaches release-watch.sh's job scan, which exits BEFORE the ADR-045
+#    "bumped the deployment package but did NOT deploy" check. So the cost is
+#    not a stalled `push:watch` — it is a suppressed deploy-verification
+#    control, and it is not recoverable by re-running: the release PR is
+#    already merged, so a second `release:watch` exits at "No open release PR
+#    found" and that check never runs for that release.
+#
+#    IT DOES NOT BLOCK A RELEASE, but only because the step carries an `if:`
+#    that skips it on the changesets release PR. Without that, release.yml's
+#    `pull_request: ['*']` trigger would run the probe as a release-PR check,
+#    and release-watch.sh applies its OWN default-deny over those checks before
+#    `gh pr merge` — a second gate, separate from scan-jobs.awk, that two
+#    earlier drafts of this note missed.
+#
+#    NOT justified by P133, though an earlier draft cited it. P133 measures 45
+#    consecutive unread reds of `check-deps` — which is PUSH-triggered, so it is
+#    not evidence about scheduled workflows at all. The variable that separates
+#    the two cases is `continue-on-error`: check-deps cannot redden and so is
+#    ignorable, `website-build` can. Citing P133 for schedule-ness was the same
+#    mis-transfer as citing ADR-041 for fail-not-skip, corrected in the same
+#    commit. P101 remains the honest citation for the no-reader claim.
+#
+#    THE RULE AS IT NOW STANDS, in three clauses because there are three gates
+#    and two earlier drafts of this rule each named only some of them:
+#      (a) a third-party probe must not appear in the `release` job's `needs`;
+#      (b) it must be SKIPPED ON THE CHANGESETS RELEASE PR, because
+#          release-watch.sh default-denies those checks before `gh pr merge` —
+#          this is the clause both earlier drafts missed, and the one with a
+#          publish and a Terraform apply behind it;
+#      (c) it may then redden master and stall `push:watch` — accepting that a
+#          red post-merge push also suppresses the ADR-045 deploy-verification
+#          check, unrecoverably for that release — when the property it guards
+#          is a security control that would otherwise go unwatched.
+#    Clause (b) is pinned by test/js/__tests__/release-workflow-deploy-only.test.mjs
+#    rather than left to this prose.
 # 3. Decoupled cadence: not per-push, not in the build-and-test matrix. This
 #    followed perf-regression.yml, which was deleted 2026-08-20 (ADR-051); the
 #    shape stands on reasons 1 and 2 above, not on that precedent.

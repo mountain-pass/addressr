@@ -1,7 +1,13 @@
 #!/bin/bash
 # Usage: npm run push:watch
-# Pushes to origin, watches the Release workflow's build-and-test job, and
-# reports results. If a release PR exists or is created, shows its URL.
+# Pushes to origin, watches EVERY job in the Release workflow, and reports
+# results. If a release PR exists or is created, shows its URL.
+#
+# Corrected 2026-08-24: this line said "watches the Release workflow's
+# build-and-test job", which is the stale claim P085 removed from the body of
+# this same file ~100 lines below. The scan is default-deny over all jobs via
+# scripts/scan-jobs.awk, exempting only check-deps. A header describing a
+# narrower reach than the code has is how the P085 selector defect survived.
 #
 # Risk gate: this script is gated by the PLUGIN-OWNED wr-risk-scorer
 # git-push-gate hook (NOT a repo-local .claude/hooks/ script — that directory
