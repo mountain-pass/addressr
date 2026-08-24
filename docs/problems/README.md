@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-24 **P139 verification pending** — both live home-page tile overlays now take their accessible names from visible headings; the built-output regression failed on both unnamed links before the fix and passes after a clean build. Awaiting exact Netlify production verification
+> Last reviewed: 2026-08-24 **P139 closed after production verification** — `addressr.io` emits both live home-page tile links with accessible names from their visible headings and the expected destinations
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -92,7 +92,6 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
-| P139 | The home page's API tile is a link with no accessible name     | 2026-08-24        | no — not observed |
 
 ## Inbound Upstream Reports
 

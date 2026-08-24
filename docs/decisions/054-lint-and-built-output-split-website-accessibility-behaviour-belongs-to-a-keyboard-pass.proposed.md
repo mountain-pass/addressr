@@ -26,7 +26,7 @@ Within 72 hours the deferral was tested three times, and each ticket said so at 
 P131 was resolved by extending the built-output test tier — and **that choice was never recorded, so it was never weighed.** This record is the weighing. Three measured facts made it necessary:
 
 - **`rendered-output.test.mjs` asserts HTML shape only.** Its own header states the limit: source greps "cannot see the things that actually break a page: a CSS rule hiding an element." Both P137 regressions are exactly that. Twenty-five assertions, all green, both defects live on production. **A linter would have caught neither.**
-- **A linter would have caught what that tier could not.** The empty footer anchors, and the unnamed tile link on the home page ([P139](../problems/verifying/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md)), are `anchor-is-valid` and `anchor-has-content`.
+- **A linter would have caught what that tier could not.** The empty footer anchors, and the unnamed tile link on the home page ([P139](../problems/closed/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md)), are `anchor-is-valid` and `anchor-has-content`.
 - **Neither can see behaviour.** P131's skip link carried **seven dedicated assertions, all passing**, on a build where activating it left focus on the link. Present, fragment resolving to exactly one id, first in focus order — every property except the one that matters, which is that focus moves.
 
 The two observed failure classes are **disjoint**, and the third is reachable by neither. So the question is not "should we lint" but what each mechanism is responsible for, and what is left over.
@@ -177,7 +177,7 @@ So the check runs **both directions**, with the reverse direction scoped to site
 - [ADR-015](015-dry-aged-deps.accepted.md) — the new dependencies named above enter its freshness surface.
 - [P138](../problems/open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — the ticket whose blocking task was this decision. Its remaining tasks are the implementation.
 - [P084](../problems/open/084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md) — sequencing authority for the lint half; Confirmation criterion 4.
-- [P139](../problems/verifying/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) — a live defect the lint half must catch; Confirmation criterion 3.
+- [P139](../problems/closed/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) — a live defect the lint half must catch; Confirmation criterion 3.
 - [P137](../problems/open/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) — the two regressions the built-output half must catch; Confirmation criterion 5.
 - [P140](../problems/open/140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md) — behavioural, so this record deliberately assigns it to the keyboard pass and not to either mechanism.
 - [P141](../problems/open/141-three-smaller-wcag-findings-on-the-website-from-one-review.md) — open findings; the forced-colors item is another one neither mechanism can see.

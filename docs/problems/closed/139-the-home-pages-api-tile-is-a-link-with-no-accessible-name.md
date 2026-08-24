@@ -1,6 +1,6 @@
 # Problem 139: The home page's API tile is a link with no accessible name
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 12 (High) — Impact: Major (4) × Likelihood: Likely (3). Impact 4: a link with no accessible name is a Level A failure of both 2.4.4 Link Purpose and 4.1.2 Name, Role, Value. It appears in a screen reader's link list as blank and is announced as "link" with nothing after it, so a non-visual user cannot tell it exists, what it does, or where it goes. Likelihood 3: it is on the home page, the site's most-visited route.
 **Origin**: internal
@@ -45,7 +45,9 @@ Before the fix, a non-visual visitor could use the separately named `API Docs` m
 
 Released to `master` on 2026-08-24. Both live full-tile links now take their accessible names from their visible `<h3>` headings via `aria-labelledby`; the six inactive commented placeholders are removed.
 
-The built-output regression test failed before the fix on exactly the data.gov.au and API tile anchors, then passed after a clean Gatsby build. Local verification: website tests 26/26, JavaScript tests 668/668, and browser role queries resolved exactly one `Australian Data Source` link and one `Easy To Use API` link with the expected destinations. Exact production verification is pending Netlify deployment.
+The built-output regression test failed before the fix on exactly the data.gov.au and API tile anchors, then passed after a clean Gatsby build. Local verification: website tests 26/26, JavaScript tests 668/668, and browser role queries resolved exactly one `Australian Data Source` link and one `Easy To Use API` link with the expected destinations.
+
+Production verification on 2026-08-24 fetched `https://addressr.io/` and observed both exact relationships and destinations in the emitted markup: `aria-labelledby="australian-data-source-title"` on the data.gov.au anchor and `aria-labelledby="easy-to-use-api-title"` on `/api-docs/`, with both referenced visible headings present. P139 is closed on that evidence.
 
 ## Related
 
