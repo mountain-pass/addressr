@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 53 (47 in-force, 6 historical)
+**Total ADRs:** 54 (48 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_47 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_48 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -273,10 +273,17 @@ _47 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-053 — Website imported as an app with hosting unchanged
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** proposed | **Oversight:** confirmed | **Superseded in part by:** ADR-054 (the ESLint flat-config ignore obligation only — the `.prettierignore` half of that bullet stands)
 **Decides:** The addressr.io Gatsby site is copied into `apps/website` as a private `@mountainpass/website` workspace app with Netlify merely repointed at the monorepo, because the request bundles two independent changes and only separating them gives the Cloudflare Pages cutover its own rollback on the zone that also carries the production API gateway. History is not imported and the dead or credential-bearing files are deleted in the same commit, because this repo is public and an import-then-prune would republish two Slack webhooks under a new path.
 **Confirmation:** manifest declares `@mountainpass/website`, `private: true`, `type: commonjs` — MET; no `hooks.slack.com` in the tree or in `gatsby build` output; import plus ALL deletions in one commit; workspace-membership test asserts both privacy directions, mutation-tested; `check-licenses` names the excluded tree; `npx npm@10 ci` clean from the committed lockfile; `gatsby build` emits 7 pages; no route links to the two removed paths and the Enterprise CTA shows `addressr@mountain-pass.com.au` as visible text (verified at the origin only — Cloudflare email obfuscation defeats it for no-JS visitors, P128); Netlify builds on a website-only push and not otherwise, both observed; old repo archived — MET 2026-08-24, but the grep covers the repo URL only and a Netlify site may still be attached (P134, P135).
 **Related:** ADR-046, ADR-011, ADR-014, ADR-044, ADR-008, ADR-045, ADR-048, ADR-032, ADR-015
+
+### ADR-054 — Lint and built output split website accessibility; behaviour belongs to a keyboard pass
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-053 (clause `053#eslint-ignore-phase-1`)
+**Decides:** Ends ADR-053's phase-1 obligation to ignore `apps/website` in ESLint, and splits accessibility enforcement across two mechanisms with a recorded division of labour — source lint (`jsx-a11y`) owns author-time markup rules, built-output assertions own emitted-artefact properties including CSS selector reachability — because the three defects that shipped in three days fall into disjoint classes neither mechanism alone covers. Behaviour (focus movement, return, `inert`, Escape) is explicitly owned by a human keyboard pass; browser-driven checking was rejected on scope, not merit.
+**Confirmation:** `apps/website` source no longer ignored while `public/`+`.cache/` are, with findings on the order of 10² not 10⁴; no `Parsing error: Unexpected token <` and no unmatched `.jsx`/`.tsx`; lint fails on the unnamed tile link in `index.jsx`; ignore entry only leaves once source lint is green or the 81-findings/17-files baseline is explicitly recorded; reachability assertion mutation-tested against both P137 defects in both directions; third-party reverse-direction exclusions are named literals; any green accessibility report states that behaviour is not covered.
+**Related:** ADR-053, ADR-014, ADR-048, ADR-051, ADR-049, ADR-015, ADR-047, ADR-032
 
 ---
 
