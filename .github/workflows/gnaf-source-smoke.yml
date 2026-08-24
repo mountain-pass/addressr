@@ -44,7 +44,9 @@
 #    not a stalled `push:watch` — it is a suppressed deploy-verification
 #    control, and it is not recoverable by re-running: the release PR is
 #    already merged, so a second `release:watch` exits at "No open release PR
-#    found" and that check never runs for that release.
+#    found" and that check never runs for that release. Scope: it only fires on
+#    a release that bumped the deployment package, so on an ordinary release
+#    there was nothing for it to catch.
 #
 #    IT DOES NOT BLOCK A RELEASE, but only because the step carries an `if:`
 #    that skips it on the changesets release PR. Without that, release.yml's

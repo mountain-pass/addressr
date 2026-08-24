@@ -99,15 +99,43 @@ const globbedDirs = () => {
   return found;
 };
 
-/** `*.test.mjs` → a matcher. Only `*` is supported; nothing here uses more. */
+/**
+ * `*.test.mjs` → a matcher. `*` is the only wildcard; every other character is
+ * literal.
+ *
+ * NO REGEX, and that is the point rather than a style preference. This was a
+ * `new RegExp` built by escaping the pattern and substituting `.*` for `*`. It
+ * worked, and it carried two costs a risk review made me price properly:
+ *
+ *   1. `?` was not escaped, so a basename containing one became a quantifier
+ *      and OVER-matched — `foo?.test.mjs` matching `fo.test.mjs`. A correctness
+ *      hole in a guard, which I had annotated rather than closed.
+ *   2. It tripped `security/detect-non-literal-regexp`, and the suppression I
+ *      wrote for it went wrong three times: first inert (the directive sat at
+ *      the top of a multi-line comment, so it landed on another comment), then
+ *      deleted on a false premise, then restored with a justification that
+ *      mis-cited P131 and contradicted itself.
+ *
+ * Splitting on `*` removes both at once. No escaping means no escaping bug, and
+ * no dynamic RegExp means no rule to suppress and nothing to justify. The fix
+ * that deletes the argument beats the fix that wins it.
+ */
 const matcherFor = (pattern) => {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  // eslint-disable-next-line security/detect-non-literal-regexp -- built from a
-  // package.json glob basename, escaped above; every unsupported construct
-  // under-matches to a count of 0 and reds, so a residual escaping defect
-  // cannot produce the false green this guard exists to prevent.
-  const re = new RegExp(`^${escaped.replace(/\*/g, '.*')}$`);
-  return (name) => re.test(name);
+  const parts = pattern.split('*');
+  if (parts.length === 1) return (name) => name === pattern;
+  const [first] = parts;
+  const last = parts.at(-1);
+  return (name) => {
+    if (name.length < first.length + last.length) return false;
+    if (!name.startsWith(first) || !name.endsWith(last)) return false;
+    let cursor = first.length;
+    for (const middle of parts.slice(1, -1)) {
+      const at = name.indexOf(middle, cursor);
+      if (at === -1) return false;
+      cursor = at + middle.length;
+    }
+    return cursor <= name.length - last.length;
+  };
 };
 
 const derived = globbedDirs();
@@ -171,7 +199,12 @@ for (const [dir, floor] of Object.entries(FLOORS)) {
   const matches = patterns.map((p) => matcherFor(p));
   let files = [];
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- dir comes from the FLOORS literal above
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `abs` is
+    // path.join(REPO, dir) where dir is a key of the FLOORS literal above. Named
+    // `abs` rather than `dir` because the reason should name the argument actually
+    // passed. The structurally identical unsuppressed site is the readFileSync at
+    // the top of this file; both are benign for the same reason and only one was
+    // annotated, which is the ad-hoc-suppression pattern P084 exists to triage.
     files = readdirSync(abs).filter((f) => matches.some((m) => m(f)));
   } catch (error) {
     console.error(`assert-test-files: cannot read ${abs} — ${error.message}`);

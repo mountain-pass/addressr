@@ -169,7 +169,7 @@ jobs:
       # the release-PR check path gates the merge too, which is why the `if:`
       # above exists.
       #
-      # THE ACCEPTED COST, stated fully at the third attempt. With the `if:` in
+      # THE ACCEPTED COST. With the `if:` in
       # place a Google outage cannot block a release — publish and apply are
       # already done by then. What it CAN do is red the post-merge master push,
       # where the exemption does not apply because `ref_name` is `master`. That
@@ -177,8 +177,10 @@ jobs:
       # "bumped the deployment package but did NOT deploy" assertion — the check
       # that file itself calls the only thing catching the silent-green class on
       # that path. So the cost is not merely a stalled `push:watch`: a
-      # third-party outage suppresses a deploy-verification control. Loud and
-      # misattributed rather than silent, which is what bounds it.
+      # third-party outage suppresses a deploy-verification control. Two things
+      # bound it — the failure is loud and misattributed rather than silent, and
+      # the suppressed check only fires on a release that bumped the deployment
+      # package, so on an ordinary release it would have passed trivially.
       #
       # Accepted because the alternative — a scheduled workflow — has no reader,
       # and ADR-051 records that as the maintainer's own settled direction
