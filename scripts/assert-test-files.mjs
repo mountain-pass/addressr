@@ -199,12 +199,23 @@ for (const [dir, floor] of Object.entries(FLOORS)) {
   const matches = patterns.map((p) => matcherFor(p));
   let files = [];
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `abs` is
-    // path.join(REPO, dir) where dir is a key of the FLOORS literal above. Named
-    // `abs` rather than `dir` because the reason should name the argument actually
-    // passed. The structurally identical unsuppressed site is the readFileSync at
-    // the top of this file; both are benign for the same reason and only one was
-    // annotated, which is the ad-hoc-suppression pattern P084 exists to triage.
+    // `abs` is path.join(REPO, dir), where dir is a key of the FLOORS literal
+    // above — so the path is repo-controlled, not user input. The readFileSync
+    // near the top of this file is the same rule for the same reason and is not
+    // annotated; both are untriaged P084 debt, and note P084's enumeration
+    // greps `src/ service/ test/`, which does not reach `scripts/`.
+    //
+    // THE DIRECTIVE IS THE LAST COMMENT LINE. That is mandatory, not tidy:
+    // `eslint-disable-next-line` covers exactly the line after itself, and
+    // consecutive `//` lines are separate comments rather than one block. Put
+    // it above the reasoning and it lands on a comment and suppresses nothing.
+    // This file got the PLACEMENT wrong twice: once on a regex suppression since
+    // deleted, and once here, in the same edit that added a paragraph about it.
+    // (An earlier version of this line said three times. That conflated
+    // placement with the regex suppression's other two failures — deleted on a
+    // false premise, then restored with a mis-cited ticket — which were wrong
+    // for different reasons. Corrected against git history rather than memory.)
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- repo-controlled path, see above
     files = readdirSync(abs).filter((f) => matches.some((m) => m(f)));
   } catch (error) {
     console.error(`assert-test-files: cannot read ${abs} — ${error.message}`);
