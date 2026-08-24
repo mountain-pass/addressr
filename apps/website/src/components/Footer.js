@@ -28,7 +28,7 @@ const Footer = () => (
               </a>
             </li>
             <li>
-              <a to="https://rapidapi.com/addressr-addressr-default/api/addressr/">
+              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
                 API Docs
               </a>
             </li>
@@ -48,7 +48,7 @@ const Footer = () => (
         <div className="col-3">
           <ul className="links">
             <li>
-              <a to="https://rapidapi.com/addressr-addressr-default/api/addressr/">
+              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
                 RapidAPI
               </a>
             </li>

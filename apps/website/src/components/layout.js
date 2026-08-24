@@ -13,7 +13,13 @@ class Layout extends React.Component {
       isMenuVisible: false,
       loading: 'is-loading',
     };
-    this.handleToggleMenu = this.handleToggleMenu.bind(this);
+    this.handleOpenMenu = this.handleOpenMenu.bind(this);
+    this.handleDismissMenu = this.handleDismissMenu.bind(this);
+    this.handleNavigateFromMenu = this.handleNavigateFromMenu.bind(this);
+    this.handleMenuKeyDown = this.handleMenuKeyDown.bind(this);
+    this.handleSkipToContent = this.handleSkipToContent.bind(this);
+    this.openerRef = React.createRef();
+    this.menuRef = React.createRef();
   }
 
   componentDidMount() {
@@ -82,10 +88,62 @@ class Layout extends React.Component {
     }
   }
 
-  handleToggleMenu() {
-    this.setState(prevState => ({
-      isMenuVisible: !prevState.isMenuVisible,
-    }));
+  // SPLIT INTO THREE, and the split is load-bearing rather than tidy (P131).
+  //
+  // One `handleToggleMenu` used to serve three different intents: open, close
+  // by dismissing, and close by navigating — the menu's own links call it so
+  // the overlay does not persist across a route change. Focus-return must fire
+  // for the second and NOT the third: pulling focus back to the hamburger
+  // during a Gatsby route transition fights the navigation and lands the user
+  // somewhere they did not ask to be. A handler that cannot tell those apart
+  // cannot get that right, which is why this is three methods and not a
+  // boolean.
+  handleOpenMenu() {
+    // setState's CALLBACK, not a bare .focus() after it. The menu is a sibling
+    // of #wrapper, and #wrapper becomes `inert` in the same commit — so a focus
+    // call issued in the same tick is swallowed by an ancestor that has not
+    // finished un-inerting. React guarantees the callback runs after commit.
+    this.setState({ isMenuVisible: true }, () => {
+      if (this.menuRef.current) this.menuRef.current.focus();
+    });
+  }
+
+  // Dismissal: the close button or Escape. Focus goes
+  // back where it came from, because the user is still on this page.
+  handleDismissMenu() {
+    this.setState({ isMenuVisible: false }, () => {
+      if (this.openerRef.current) this.openerRef.current.focus();
+    });
+  }
+
+  // Navigation: a menu link was followed. Close, but do NOT restore focus —
+  // the page is changing and the destination owns focus from here.
+  handleNavigateFromMenu() {
+    this.setState({ isMenuVisible: false });
+  }
+
+  // THE HANDLER IS NOT BELT-AND-BRACES; without it the skip link does not work.
+  //
+  // Verified by driving a browser, which is the only thing that caught it: with
+  // `href="#content"` and `tabIndex="-1"` on the target, a real Enter updates
+  // the URL to #content and scrolls the page — and leaves focus on the link.
+  // The next Tab then lands on "Find us on GitHub", the first thing the skip
+  // link exists to skip. The bypass looked correct and bypassed nothing.
+  //
+  // Every static assertion passed while this was broken: the link is present,
+  // its fragment resolves to exactly one id, and it is first in the focus
+  // order. All true, and none of them is the property that matters.
+  //
+  // No preventDefault: the hash and the scroll are still wanted, and a no-JS
+  // visitor keeps the native behaviour. This only adds the focus move the
+  // browser declined to make.
+  handleSkipToContent() {
+    const target = document.getElementById('content');
+    if (target) target.focus();
+  }
+
+  handleMenuKeyDown(event) {
+    if (event.key === 'Escape') this.handleDismissMenu();
   }
 
   render() {
@@ -130,9 +188,37 @@ class Layout extends React.Component {
             isMenuVisible ? 'is-menu-visible' : ''
           } `}
         >
-          <div id="wrapper">
-            <Header onToggleMenu={this.handleToggleMenu} />
-            {children}
+          {/* FIRST FOCUSABLE THING ON THE PAGE, deliberately — before the
+              ribbon, before the header. WCAG 2.4.1: every page repeats a promo
+              ribbon, a header and a status header before any content, and
+              until now a keyboard user tabbed through all of it on every page.
+              It targets a real <main> landmark rather than the existing
+              `#main`, which is a styling hook that five of six pages put the
+              <h1> OUTSIDE of. */}
+          <a
+            className="skip-link"
+            href="#content"
+            onClick={this.handleSkipToContent}
+          >
+            Skip to main content
+          </a>
+          {/* `inert` while the menu is open. Without it Tab walks the whole
+              blurred page behind the overlay — every link and the footer —
+              before reaching a single menu item, each stop invisible under a
+              90%-opaque overlay and unclickable. That exposure is created by
+              this commit: nobody could open the menu by keyboard before, so
+              nobody was stranded behind it. String form, not boolean, because
+              React 18 does not recognise `inert` as a boolean prop; undefined
+              omits the attribute, so SSR and hydration agree. */}
+          <div id="wrapper" inert={isMenuVisible ? '' : undefined}>
+            <Header
+              onToggleMenu={this.handleOpenMenu}
+              isMenuVisible={isMenuVisible}
+              openerRef={this.openerRef}
+            />
+            <main id="content" tabIndex="-1">
+              {children}
+            </main>
             {/* <Drift
               appId="8cne7yrgdapx"
               userId={user === undefined ? '' : user.sub}
@@ -140,7 +226,12 @@ class Layout extends React.Component {
             /> */}
             <Footer />
           </div>
-          <Menu onToggleMenu={this.handleToggleMenu} />
+          <Menu
+            onDismiss={this.handleDismissMenu}
+            onNavigate={this.handleNavigateFromMenu}
+            onKeyDown={this.handleMenuKeyDown}
+            menuRef={this.menuRef}
+          />
         </div>
       );
     // }

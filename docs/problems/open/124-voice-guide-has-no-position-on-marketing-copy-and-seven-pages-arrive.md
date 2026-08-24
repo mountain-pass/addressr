@@ -83,6 +83,23 @@ The page **title** was settled during P125 and is not in question: `Page not fou
 Pass`, terse register, deliberately not matching the body's joke because a title is read in a tab and a
 history entry with nothing to set a joke up. The body is what remains.
 
+### Added 2026-08-24 (second pass) — a copy class the guide does not know exists
+
+Found reviewing the two new strings from the P131 keyboard fix (`Skip to main content`, and `Close` → `Close menu`). Both strings passed; the review failed on the guide again, for a gap distinct from the four already recorded.
+
+**Assistive-technology-only strings are user-facing copy and the guide has no position on them.** Accessible names, `aria-label` values and visually-hidden text are announced to real people and never seen by anyone else. The guide has no tone entry, no casing rule and no terminology position for the class. `Close menu` is displaced off-screen by `text-indent`; the skip link renders only while focused. Both are copy; neither is visible.
+
+**A correction to this ticket's own premise, which mis-scopes one of its tasks.** The Investigation Task below says the pages are "currently Title Case throughout" and that sentence case "would be a page-wide change". That is not accurate — sentence case is already load-bearing in at least six places: `Self hosted` (h2, `pricing.js` and `quick-start.js`), `System requirements` and `With Geocoding enabled` (`quick-start.js`), `Find us on GitHub` (`Header.js`), the uptime badge alt text, and `Page not found` from the P125 fix. The real boundary is **short noun-phrase labels in Title Case** (`Pricing`, `Quick Start`, `API Docs`) versus **clause-shaped strings in sentence case** — with marketing CTAs (`Get Started Free`) as the one imperative-clause-in-Title-Case exception. So the decision is where that existing line sits and whether to ratify it, not whether to switch.
+
+**The casing rule probably needs three buckets, not one:** visible headings, visible CTAs, and AT-only names. The third settles cheaply and permanently — sentence case always, because casing is not announced — which removes a class from the argument entirely.
+
+**Two more gaps this pass surfaced:**
+
+- **No rule on convention versus house voice.** `Skip to main content` is the near-universal wording, and people using assistive technology have learned to expect it. The guide happened to foreclose the alternatives on its own here, so the tiebreak was never needed — but that was luck of the instance.
+- **No terminology entry for UI chrome nouns.** menu / navigation / site menu had to be settled from the opener's existing label rather than from the Prefer table.
+
+**A defect this review caught in the P131 change itself, fixed before it shipped.** That commit briefly added `aria-label="Main"` to the header wrapper and `aria-label="Site"` to the real menu — named on different bases and arguably inverted, since the `Main` one contained a single button while the `Site` one held every site link. Resolved by demoting the header wrapper from a nav landmark to a plain div, which left one nav needing no label at all. Recorded because it is exactly the failure this ticket predicts: new copy written with no rule to check it against.
+
 ### A guide gap this surfaced, beyond the three already listed
 
 The voice review of those titles could not answer three of five questions from the guide, which is more

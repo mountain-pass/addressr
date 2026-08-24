@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import { faGithub, faGitter } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Link } from 'gatsby';
@@ -12,30 +11,41 @@ import React from 'react';
 // The `user` prop went with it, deliberately. The web-app-developer persona
 // amendment justifies its own sufficiency on the account actor being gone; while
 // this component still ACCEPTED a user, that held only because a prop was not
-// passed, and one wiring change away from false. Pinned by
-// test/js/__tests__/Menu.test.mjs.
-const Menu = ({ onToggleMenu }) => {
+// passed, and one wiring change away from false.
+//
+// CITATION CORRECTED 2026-08-24: this said "Pinned by
+// test/js/__tests__/Menu.test.mjs". No such file exists, and none ever has.
+// The assertion is real but lives in apps/website/test/rendered-output.test.mjs,
+// as one of the deleted-routes checks over built output. Worth stating plainly
+// rather than just repointing: there is no unit-level regression guard on this
+// component at all, and the wrong path has been read as though there were one.
+const Menu = ({ onDismiss, onNavigate, onKeyDown, menuRef }) => {
+  // tabIndex -1 so focus can be MOVED to the menu on open without putting the
+  // container itself in the tab order. Without it the opener works and then
+  // drops the user at the top of an inert page — a working button attached to
+  // nothing. Escape is handled here rather than on the document, so it is
+  // scoped to the menu and needs no global listener to register or clean up.
   return (
-    <nav id="menu">
+    <nav id="menu" ref={menuRef} tabIndex="-1" onKeyDown={onKeyDown}>
       <div className="inner">
         <ul className="links">
           <li>
-            <Link onClick={onToggleMenu} to="/">
+            <Link onClick={onNavigate} to="/">
               Home
             </Link>
           </li>
           <li>
-            <Link onClick={onToggleMenu} to="/pricing/">
+            <Link onClick={onNavigate} to="/pricing/">
               Pricing
             </Link>
           </li>
           <li>
-            <Link onClick={onToggleMenu} to="/api-docs/">
+            <Link onClick={onNavigate} to="/api-docs/">
               API Docs
             </Link>
           </li>
           <li>
-            <Link onClick={onToggleMenu} to="/download/">
+            <Link onClick={onNavigate} to="/download/">
               Download
             </Link>
           </li>
@@ -45,7 +55,7 @@ const Menu = ({ onToggleMenu }) => {
             </a>
           </li>
           <li>
-            <Link onClick={onToggleMenu} to="/quick-start/">
+            <Link onClick={onNavigate} to="/quick-start/">
               Quick Start
             </Link>
           </li>
@@ -64,15 +74,28 @@ const Menu = ({ onToggleMenu }) => {
           </li>
         </ul>{' '}
       </div>
-      <a className="close" onClick={onToggleMenu}>
-        Close
-      </a>
+      {/* A button, for the same reason as the opener. The text says "Close
+          menu" rather than "Close": `text-indent: 8em` with `overflow: hidden`
+          displaces it visually while leaving the accessible name computed and
+          exposed — that technique is fine per accname, which counts only
+          display:none, visibility:hidden, [hidden] and aria-hidden as hidden —
+          so the name is what a screen reader announces, and "Close" alone does
+          not say what closes. */}
+      <button type="button" className="close" onClick={onDismiss}>
+        Close menu
+      </button>
     </nav>
   );
 };
 
 Menu.propTypes = {
-  onToggleMenu: PropTypes.func.isRequired,
+  onDismiss: PropTypes.func.isRequired,
+  onNavigate: PropTypes.func.isRequired,
+  onKeyDown: PropTypes.func.isRequired,
+  menuRef: // `current: any`, NOT instanceOf(Element): Element is a browser global and
+  // is undefined during Gatsby's static render, so instanceOf(Element) throws
+  // ReferenceError at build time. The build caught it; nothing else would have.
+  PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 
 export default Menu;

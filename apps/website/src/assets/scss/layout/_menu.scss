@@ -99,8 +99,35 @@
 
   .close {
     // @include vendor('transition', 'color #{_duration(transition)} ease-in-out');
+    //
+    // UNDOING _button.scss (P131). Its selector group carries a BARE `button`
+    // element selector, so converting this control from an anchor pulls in the
+    // whole button reset. `#menu .close` outranks it at (0,2,0) vs (0,0,1) for
+    // the properties it DECLARES — but it declares none of these, so they
+    // leaked in. `font-size` is the one that matters most: this block sizes
+    // itself in em (height 4em, width 8em, and text-indent 8em is what hides
+    // the label), so inheriting 0.8em would shrink every one of them by a fifth
+    // and unhide the text. Measured from the built stylesheet.
+    background-color: transparent;
+    box-shadow: none;
+    font: inherit;
+    font-size: 1em;
+    // `inherit`, not `normal`: normal computes to 0, while the faithful
+    // pre-conversion value is the inherited _font(letter-spacing).
+    letter-spacing: inherit;
+    padding-left: 0;
+    text-transform: none;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     border: 0;
+
+    // Colocated with the box model it depends on. INSET because #menu is
+    // `overflow: hidden` and this sits flush in the corner — an offset
+    // ring is clipped on two edges.
+    &:focus-visible {
+      outline: 3px solid _palette(highlight);
+      outline-offset: -3px;
+    }
+
     cursor: pointer;
     display: block;
     height: 4em;

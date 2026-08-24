@@ -1,6 +1,6 @@
 # Problem 126: Two footer links render without an `href`, on every page
 
-**Status**: Open
+**Status**: Closed — 2026-08-24, fixed inside P131 and pinned by assertion
 **Reported**: 2026-08-23
 **Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3). Impact 2: two labels in the footer of every page are inert — not focusable, not exposed as links to assistive technology, and doing nothing on click. It is a WCAG failure and a functional one, but the destinations both remain reachable by four other working paths (see below), so it degrades the journey rather than severing it. Likelihood 3: the harm needs someone to try those specific labels rather than the working ones beside them.
 **Origin**: internal

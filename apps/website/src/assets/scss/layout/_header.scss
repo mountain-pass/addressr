@@ -114,7 +114,35 @@
     height: inherit;
     line-height: inherit;
 
-    a {
+    a,
+    button {
+      // UNDOING _button.scss, which has a BARE `button` element selector in its
+      // group and so reaches this control the moment it stops being an anchor.
+      // It supplies a white 2px inset ring, 3.5em height and line-height,
+      // uppercase, 0.25em letter-spacing, centred text and 1.75em padding —
+      // enough to visibly wreck the hamburger. None of it was ever intended for
+      // a nav control; it applies only because the element type changed.
+      // Measured from the built CSS, not assumed.
+      background-color: transparent;
+      box-shadow: none;
+      // The Meyer reset at main.scss selects `reset: 'full'`, whose selector
+      // list omits `button`, so font-family is NOT inherited and nothing else
+      // sets it. `font: inherit` first, then re-declare the size the nav wants.
+      font: inherit;
+      letter-spacing: inherit;
+      // text-align: inherit is LOAD-BEARING, not cosmetic — it cancels the UA's
+      // `button { text-align: center }`, and at xsmall the label is hidden by
+      // `text-indent: 5em` + `overflow: hidden`, which centring would defeat.
+      // That xsmall block is nested under a bare `nav` selector, which is one
+      // of the reasons the element stays a <nav>: see Header.js.
+      text-align: inherit;
+      // `inherit`, NOT `none`. An earlier version of this line said `none` and
+      // that was a live visual regression: #header sets `text-transform:
+      // uppercase` and it inherits, so the label renders MENU. _button.scss
+      // sets the SAME value, so this property never leaked anything and needed
+      // no neutralising — `none` was the change, not the fix. Visible at base,
+      // xlarge, large and small; only xsmall displaces the label.
+      text-transform: inherit;
       border: 0;
       display: block;
       font-size: 0.8em;
@@ -130,6 +158,23 @@
 
       &.menu-link {
         padding-right: 3.325em !important;
+
+        // FOCUS RING, colocated with the box model it depends on (P131). It
+        // lived in main.scss for one commit, which is the hazard the style
+        // guide names by example: "the two live in different files and nothing
+        // connects them... if either moves independently the focus indicator
+        // disappears silently".
+        //
+        // INSET, for the same reason .close needs it and for a geometry I got
+        // wrong first time: #header is `position: fixed; top: 0` and this
+        // button sits flush against the right edge, so `outline-offset: 2px`
+        // paints the top and right segments outside the viewport and leaves an
+        // L-shaped remnant. Measured 11.15:1 on bg, ~6.8:1 worst case over the
+        // banner composite; both clear 1.4.11's 3:1.
+        &:focus-visible {
+          outline: 2px solid _palette(highlight);
+          outline-offset: -2px;
+        }
 
         &:before,
         &:after {
@@ -244,7 +289,8 @@
 
   @include breakpoint(xlarge) {
     nav {
-      a {
+      a,
+      button {
         &.menu-link {
           padding-right: 3.75em !important;
 
@@ -258,7 +304,8 @@
 
   @include breakpoint(large) {
     nav {
-      a {
+      a,
+      button {
         &.menu-link {
           padding-right: 4em !important;
 
@@ -282,7 +329,8 @@
 
 
     nav {
-      a {
+      a,
+      button {
         padding: 0 0.5em;
 
         &:last-child {
@@ -318,7 +366,8 @@
     }
 
     nav {
-      a {
+      a,
+      button {
         &.menu-link {
           overflow: hidden;
           padding-right: 0 !important;

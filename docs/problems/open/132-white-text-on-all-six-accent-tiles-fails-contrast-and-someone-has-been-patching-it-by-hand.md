@@ -59,5 +59,5 @@ The guide now carries both tables and says the palette is "sound for its dark-gr
 ## Related
 
 - [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix and recorded in its Fixed section.
-- [P131](131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — the Level A blocker found in the same pass. Higher priority: that one makes navigation impossible, this one makes text hard to read.
+- [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — the Level A blocker found in the same pass. Higher priority: that one makes navigation impossible, this one makes text hard to read.
 - [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) — carries the measurements; `human-oversight: unconfirmed`.

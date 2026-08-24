@@ -1,11 +1,10 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Link } from 'gatsby';
 import PropTypes from 'prop-types';
 import React from 'react';
 
-const Header = ({ onToggleMenu }) => (
+const Header = ({ onToggleMenu, isMenuVisible, openerRef }) => (
   <>
     <h4 className="ribbon">
       <a href="https://github.com/mountain-pass/addressr">
@@ -20,12 +19,64 @@ const Header = ({ onToggleMenu }) => (
         by <a href="https://mountain-pass.com.au">Mountain Pass</a>
       </span>
 
+      {/* A BUTTON, not an anchor — this is the whole of P131's first half.
+          `<a onClick>` with no href is not focusable, exposes no role, and
+          ignores Enter and Space, so the menu opened by mouse and by nothing
+          else on every page of the site.
+
+          THE <nav> STAYS, and an earlier draft of this fix wrongly replaced it
+          with `<div className="nav">`. The accessibility review's argument for
+          deleting it is sound — a navigation landmark whose only child is a
+          disclosure button is incoherent, and it competes with the real menu
+          landmark. The cost is what that draft got wrong. `_header.scss` nests
+          the flex layout AND four breakpoint blocks under a bare `nav`
+          selector, and the draft widened only the base one, so every
+          responsive rule for this control silently died — including the xsmall
+          block that hides the label behind `text-indent: 5em`. On mobile the
+          button would have rendered the literal word "Menu" at the wrong
+          width. An architecture review caught it; none of the 25 built-output
+          assertions could see it, because they read HTML shape and this is a
+          CSS-reachability failure.
+
+          So the landmark defect is real and is NOT fixed here. It is a
+          different concern from keyboard operability, it costs a stylesheet
+          refactor on a live marketing site, and bundling it into a Level A
+          keyboard fix is how that fix acquires a visual regression.
+
+          `aria-controls` is the hook the built-output tests key on, so they
+          assert "the thing that controls the menu" rather than "the second
+          anchor in the header". `aria-expanded` was a pre-existing 4.1.2 gap;
+          it is fixed here as opportunistic remediation, not because this
+          commit caused it — but the affected population goes from nobody to
+          everybody the moment the control works. */}
       <nav>
-        <a className="menu-link" onClick={onToggleMenu}>
+        <button
+          type="button"
+          className="menu-link"
+          onClick={onToggleMenu}
+          aria-expanded={isMenuVisible}
+          aria-controls="menu"
+          ref={openerRef}
+        >
           Menu
-        </a>
+        </button>
       </nav>
     </header>
+    {/* STILL A SECOND <header id="header">, and still a defect: two elements
+        share that id and both expose role="banner". An earlier draft of this
+        fix made it a `<div>` on the stated grounds that "`.status-header` is
+        already the styling hook, so nothing visual depends on the tag or the
+        id". That was false, and checkable — `_header.scss:20` reads
+        `#header.status-header`, id-qualified. Dropping the id was the
+        element's ONLY stylesheet reachability: it would have lost the whole
+        `#header` block (fixed positioning, height, background, shadow), its
+        four breakpoint `top` offsets, `#header.alt`, `#header .logo` for the
+        badge below, and the load fade — turning an out-of-flow element into an
+        in-flow one at the top of a wrapper whose `padding-top` is sized for
+        exactly one fixed header. A layout shift on all six pages, from a claim
+        one grep would have falsified.
+
+        Left as found, with the defect recorded rather than half-fixed. */}
     <header id="header" className="alt status-header">
       <a
         className="logo"
@@ -43,6 +94,11 @@ const Header = ({ onToggleMenu }) => (
 
 Header.propTypes = {
   onToggleMenu: PropTypes.func.isRequired,
+  isMenuVisible: PropTypes.bool.isRequired,
+  openerRef: // `current: any`, NOT instanceOf(Element): Element is a browser global and
+  // is undefined during Gatsby's static render, so instanceOf(Element) throws
+  // ReferenceError at build time. The build caught it; nothing else would have.
+  PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 
 export default Header;

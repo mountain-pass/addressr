@@ -76,6 +76,187 @@ describe('apps/website rendered output', () => {
     );
   });
 
+  describe('a keyboard user can operate and bypass the navigation (P131)', () => {
+    // WRITTEN TO FAIL, 2026-08-24. Two Level A defects on every page.
+    //
+    // 2.1.1 Keyboard: the menu's open and close controls are anchors with no
+    // `href`, so neither is focusable, neither exposes a role, and neither
+    // responds to Enter or Space. The menu opens by mouse and by nothing else.
+    //
+    // 2.4.1 Bypass Blocks: no skip link anywhere, with a promo ribbon, a header
+    // and a second status header repeated before the content of all six pages.
+    //
+    // WHAT THESE ASSERT, AND WHY NOT WHAT I FIRST PROPOSED. An accessibility
+    // review rejected my draft target of `#main`: that id is a STYLING hook
+    // (`_main.scss` gives it a background and pads its children), and on five
+    // of six pages the `<h1>` sits OUTSIDE it, in `<Banner>`. A skip link to
+    // `#main` would have skipped the page heading and, on the home page, the
+    // live address search — the product's primary interaction. The target is a
+    // real `<main id="content">` landmark introduced in Layout instead.
+    //
+    // The assertions are written against PROPERTIES the review named, not
+    // against the markup I happened to write: "the thing that controls the
+    // menu" via `aria-controls`, rather than "the second anchor in the header".
+    //
+    // THE DEFECT THESE ASSERTIONS DID NOT CATCH, recorded because it is the
+    // whole lesson of this ticket. Every one of them passed on a build where
+    // the skip link DID NOT WORK: activating it updated the URL to #content and
+    // scrolled, and left focus on the link, so the next Tab landed on "Find us
+    // on GitHub" — the first thing it exists to skip. The link was present, its
+    // fragment resolved to exactly one id, and it was first in the focus order.
+    // All true. None of them is the property that matters, which is that focus
+    // MOVES. Fixed with an explicit onClick handler in layout.js.
+    //
+    // Verified 2026-08-24 by driving a real browser: activation lands focus on
+    // <main id="content">, the next focusable element is inside it, no positive
+    // tabindex exists to decouple tab order from DOM order, and the menu opens,
+    // takes focus, closes on Escape and returns focus to its opener.
+    //
+    // NOT COVERED HERE, named rather than proxied: Escape-to-close and
+    // focus-return have no static proxy in emitted HTML. Enter/Space activation
+    // is implied by assertion 2 — a native button gets it from the UA — but
+    // that does not prove no handler calls preventDefault. Both need a driven
+    // browser, and this tier does not have one. "Skip link visible on focus" is
+    // deliberately absent: grepping for a `.skip-link:focus` selector proves a
+    // selector exists, not that it unhides anything, which is the shape this
+    // file's own header warns about.
+    //
+    // @jtbd JTBD-004
+
+    const pagesOf = () =>
+      emitted()
+        .filter((f) => f.endsWith('.html'))
+        .map((f) => path.relative(PUBLIC, f))
+        .filter((rel) => !rel.split(path.sep).includes('_gatsby'))
+        .map((rel) => [rel, readFileSync(path.join(PUBLIC, rel), 'utf8')]);
+
+    const idsIn = (html) =>
+      new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+
+    it('emits a menu control on every page, so nothing below passes vacuously', () => {
+      const pages = pagesOf();
+      assert.ok(pages.length >= 6, `only ${pages.length} pages emitted`);
+      const without = pages
+        .filter(([, html]) => !/aria-controls="menu"/.test(html))
+        .map(([f]) => f);
+      assert.deepEqual(
+        without,
+        [],
+        'pages with no element declaring aria-controls="menu". Every assertion ' +
+          'below keys on that hook, so without it they examine nothing.',
+      );
+    });
+
+    it('makes every control of the menu focusable', () => {
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        for (const m of html.matchAll(/<(\w+)([^>]*\saria-controls="menu"[^>]*)>/g)) {
+          const [, tag, attrs] = m;
+          const focusable =
+            tag === 'button' ||
+            (tag === 'a' && /\shref="/.test(attrs)) ||
+            /\stabindex="0"/.test(attrs);
+          if (!focusable) bad.push(`${file}: <${tag}>`);
+        }
+      }
+      assert.deepEqual(
+        bad,
+        [],
+        'the menu is controlled by something a keyboard cannot reach. An <a> ' +
+          'with no href is not focusable and exposes no role — WCAG 2.1.1, ' +
+          'Level A, and it is the whole of P131.',
+      );
+    });
+
+    it('emits no anchor without an href, anywhere', () => {
+      // BROADER THAN P131 ON PURPOSE. The review pointed out that "an <a> with
+      // an onclick and no href" — my draft — misses `<a to="...">` in Footer.js,
+      // which renders an anchor with no href for a different reason. Same
+      // class, two tickets: P131 and P126. One assertion covers both.
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        for (const m of html.matchAll(/<a(\s[^>]*)?>/g)) {
+          if (!/\shref="/.test(m[1] ?? '')) bad.push(`${file}: ${m[0]}`);
+        }
+      }
+      assert.deepEqual(
+        bad.slice(0, 8),
+        [],
+        `${bad.length} anchors emitted with no href. An anchor without one is ` +
+          'not a link: not focusable, no role, inert to Enter.',
+      );
+    });
+
+    it('emits no positive tabindex', () => {
+      // Cheap, and it is the precondition that makes "first focusable element"
+      // computable from source order at all.
+      const bad = pagesOf()
+        .filter(([, html]) => /\stabindex="[1-9]/.test(html))
+        .map(([f]) => f);
+      assert.deepEqual(bad, [], 'a positive tabindex decouples tab order from DOM order');
+    });
+
+    it('emits a skip link whose target exists on that same page, exactly once', () => {
+      // Referential integrity per page, generically — so a page added later is
+      // covered without editing this test.
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        const link = html.match(/<a[^>]*class="[^"]*skip-link[^"]*"[^>]*href="#([^"]+)"/);
+        if (!link) {
+          bad.push(`${file}: no skip link`);
+          continue;
+        }
+        const target = link[1];
+        const count = [...html.matchAll(new RegExp(`\\sid="${target}"`, 'g'))].length;
+        if (count !== 1) bad.push(`${file}: #${target} appears ${count} times`);
+      }
+      assert.deepEqual(
+        bad,
+        [],
+        'the skip link is missing or its fragment does not resolve on that ' +
+          'page. WCAG 2.4.1: a bypass that goes nowhere is not a bypass.',
+      );
+    });
+
+    it('resolves aria-controls to an id on the same page', () => {
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        if (!idsIn(html).has('menu')) bad.push(file);
+      }
+      assert.deepEqual(
+        bad,
+        [],
+        'aria-controls="menu" points at no element on this page. A dangling ' +
+          'reference is worse than none — it asserts a relationship that does ' +
+          'not exist.',
+      );
+    });
+
+    it('puts the skip link first in the focus order', () => {
+      // Sound only because the no-positive-tabindex assertion above holds:
+      // with tab order equal to DOM order, "first focusable" is computable from
+      // source. Gatsby's #gatsby-focus-wrapper carries tabindex="-1" and
+      // correctly does not count.
+      const FOCUSABLE = /<(?:a\s[^>]*href="|button\b|input\b|select\b|textarea\b)|\stabindex="0"/g;
+      const bad = [];
+      for (const [file, html] of pagesOf()) {
+        const body = html.slice(html.indexOf('<body'));
+        const first = body.match(FOCUSABLE);
+        const skipAt = body.search(/<a[^>]*class="[^"]*skip-link/);
+        const firstAt = first ? body.search(FOCUSABLE) : -1;
+        if (skipAt === -1 || firstAt === -1 || skipAt > firstAt) {
+          bad.push(file);
+        }
+      }
+      assert.deepEqual(
+        bad,
+        [],
+        'something focusable precedes the skip link, so a keyboard user meets ' +
+          'it after the thing it exists to skip.',
+      );
+    });
+  });
+
   describe('every page has a title and a language (P125)', () => {
     // WRITTEN TO FAIL, 2026-08-24. Both are Level A and both are broken on
     // every page of the live site.

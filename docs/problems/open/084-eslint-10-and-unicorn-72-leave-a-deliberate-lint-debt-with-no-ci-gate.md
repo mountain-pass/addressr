@@ -144,3 +144,20 @@ What actually holds Impact 2 is the catch-power of the missing lint. On `ip-matc
 - **ADR-044** (supersedes ADR-005) — as of 2026-08-09 no rule in `eslint.config.js` cites ADR-005 as a LIVE justification; both such citations were removed the day the blocker died. The token `ADR 005` still appears at two of those sites, in the space form a hyphenated grep misses — each time in a past-tense clause recording what the citation used to say and that it is superseded, which is the sanctioned shape. Babel/CJS incompatibility is no longer an available justification for a suppression, so if `no-this-outside-of-class` stays off it needs a reason of its own, measured and dated. Do not re-file it under the old citation: this bullet used to instruct exactly that, and the instruction outlived the constraint by a day.
 
 Origin: internal, surfaced 2026-08-03 when the Babel 8 / ESLint 10 wall came down and eight majors of unicorn rules landed at once. Captured at the migration commit as remediation R2 from the risk gate, so the deferral is on the ledger rather than in a commit message.
+
+## Measured 2026-08-24: `npm run lint` is destructive, not merely noisy
+
+Hung off this ticket rather than captured separately — the fact is a property of the `eslint . --fix` command this ticket already names. What was not recorded is what running it actually does.
+
+Run once on a clean tree while working on something unrelated, it rewrote **40 files**: 36 tests, four scripts. Two of the changes are damage, not formatting churn:
+
+- **It strips `#!/usr/bin/env node` from every executable script.** The rule is `n/hashbang` — "This file needs no shebang" — and it is auto-fixable, so `--fix` deletes it. Five files are mode `755` with a shebang: `scripts/assert-test-files.mjs`, `scripts/check-not-cli2-tags.mjs`, `scripts/license-audit.mjs`, `scripts/scheduled-workflow-staleness.mjs`, `packages/addressr/scripts/check-version.js`. Nothing invokes them by bare path today, so the breakage is latent — which is worse, not better: the mode bit and the shebang both survive as an invitation to invoke them directly, and the next person to do so gets a shell syntax error rather than a clear failure.
+- **It edited a quoted historical string inside a comment.** `scripts/license-audit.mjs` documents why `license-checker` was retired, quoting the exact bogus identifier it produced: `Custom: http://github.com/substack/node-bufferlist`. `--fix` upgraded that to `https://`, silently falsifying the evidence the comment exists to preserve.
+
+The rest is `unicorn/name-replacements` renaming (`pkg` → `package_`) across the test tier — harmless, but it means the documented lint command cannot be run without producing a 40-file diff unrelated to whatever you were doing. In practice that makes it unrunnable, which is a second reason the debt never shrinks: the one command that would chip at it is the one nobody can afford to invoke.
+
+## Further Investigation Tasks
+
+- [ ] Decide on `n/hashbang` before any sweep. Either declare the five scripts in a `bin` map (the rule then wants the shebang and stops), add them to an override that disables the rule, or delete both the shebangs and the executable bits so the files are honestly node-only. Doing the sweep first bakes the deletion in.
+- [ ] Protect quoted evidence. The `license-audit.mjs` comment is not the only place this repo quotes a string verbatim to preserve what a tool once emitted. A sweep that "fixes" those destroys the record. Worth a convention — fenced blocks are not auto-fixed, prose URLs are.
+- [ ] Split `lint` from `lint:fix`. `npm run lint` reading as a check and behaving as a 40-file rewrite is the trap; a read-only default costs one line.

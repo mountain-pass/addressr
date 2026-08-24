@@ -9,12 +9,13 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                                | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | ------------------------------------------------------------------------------------ | ------------ | ------------- | ------ | ---------- | -------- |
-| 16.0 | P131 | Site menu cannot be opened or closed by keyboard, on any page                        | High (16)    | Open          | S      | 2026-08-24 | internal |
 | 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)                    | High (12)    | Open          | S      | 2026-08-03 | internal |
 | 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices                 | High (12)    | Open          | S      | 2026-08-10 | internal |
 | 12.0 | P101 | Scheduled workflow's loud failure has no reader                                      | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                         | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P116 | Nine workflow pins imply coverage they cannot provide, and say nothing about it      | High (12)    | Open          | S      | 2026-08-20 | internal |
+| 12.0 | P138 | Nothing decides what enforces accessibility conformance on `apps/website`            | High (12)    | Open          | S      | 2026-08-24 | internal |
+| 12.0 | P139 | The home page's API tile is a link with no accessible name                           | High (12)    | Open          | S      | 2026-08-24 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                       | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 10.0 | P118 | Every risk report is a single newline, so the audit trail is empty                   | High (10)    | Open          | S      | 2026-08-21 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only                   | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
@@ -23,6 +24,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
 | 9.0  | P132 | White text on all six accent tiles fails contrast (1.4.3 AA)                         | Medium (9)   | Open          | S      | 2026-08-24 | internal |
+| 9.0  | P140 | A route change moves no focus, so the next Tab resumes mid-page                      | Medium (9)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -36,11 +38,11 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P117 | A search timeout returns 500, not 504 — `displayName` is a legacy client field       | Medium (6)   | Open          | S      | 2026-08-21 | internal |
 | 6.0  | P122 | Three redirect mechanisms in the website, none reach the built site                  | Medium (6)   | Open          | S      | 2026-08-23 | internal |
 | 6.0  | P124 | Voice guide has no position on marketing copy; seven pages arrive                    | Medium (6)   | Open          | S      | 2026-08-23 | internal |
-| 6.0  | P126 | Two footer links render without an href, on every page                               | Medium (6)   | Open          | S      | 2026-08-23 | internal |
 | 6.0  | P130 | `engine-floor` gates `release` — a test flake and a shipping decision share one fate | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P133 | `check-deps` red on 45/45 runs, so its vulnerability report has no reader            | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P134 | Nothing in the repo can see what Netlify is actually doing                           | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P136 | `release-pr-plan` calls itself advisory but can block the release merge              | Medium (6)   | Open          | S      | 2026-08-24 | internal |
+| 6.0  | P141 | Three smaller WCAG findings on the website, from one review                          | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                          | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |
@@ -71,6 +73,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate                   | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them                  | Medium (6)   | Open          | M      | 2026-08-07 | internal |
 | 3.0  | P114 | Three governance checks that cannot fail (shape / evidence / wrong tree)             | Medium (6)   | Open          | M      | 2026-08-20 | internal |
+| 3.0  | P137 | The site header exposes two banner landmarks and a duplicate id                      | Medium (6)   | Open          | M      | 2026-08-24 | internal |
 | 3.0  | P119 | Twenty-three watcher assertions read shell text; converting needs a stubbed `gh`     | High (12)    | Open          | L      | 2026-08-21 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets                     | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat                | Low (4)      | Open          | M      | 2026-07-19 | internal |
