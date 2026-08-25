@@ -240,3 +240,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-25 **P132 verification pending** — a shared 65% dark scrim gives all six home-page accent tiles at least 6.18:1 white-text contrast over the brightest image input; built Chromium recomputes the composites
 
 > Last reviewed: 2026-08-25 **P132 closed after production verification** — `addressr.io` emits all six home-page accent tiles with the fixed scrim stacking order and white-text ratios from 6.18:1 to 7.81:1
+
+## 2026-08-26
+
+> Last reviewed: 2026-08-26 **P137 implementation ready** — header and navigation landmark semantics are fixed locally; exact production verification remains before closure

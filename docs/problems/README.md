@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P137 implementation ready** — header and navigation landmark semantics are fixed locally; exact production verification remains before closure
+> Last reviewed: 2026-08-26 **P137 known error** — the selector-coupled landmark root cause is documented; the deployed correction is production-verified
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -28,6 +28,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P135 | `root.feature` pins a rel namespace the server stopped emitting                      | Medium (8)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P107 | A verification vouches only for the state it ran against                             | High (16)    | Open          | M      | 2026-08-19 | internal |
 | 8.0  | P109 | Gate-blocked invocation runs nothing; bundled `git add` commits a stale index        | High (16)    | Open          | M      | 2026-08-20 | internal |
+| 6.0  | P137 | The site header exposes two banner landmarks and a duplicate id                      | Medium (6)   | Known Error   | M      | 2026-08-24 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`                     | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears                | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI                    | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
@@ -69,7 +70,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 3.0  | P084 | ESLint 10 / unicorn 72 lint debt, pre-commit hook is the only gate                   | Medium (6)   | Open          | M      | 2026-08-03 | internal |
 | 3.0  | P090 | Decisions compendium facts are hand-maintained; nothing checks them                  | Medium (6)   | Open          | M      | 2026-08-07 | internal |
 | 3.0  | P114 | Three governance checks that cannot fail (shape / evidence / wrong tree)             | Medium (6)   | Open          | M      | 2026-08-20 | internal |
-| 3.0  | P137 | The site header exposes two banner landmarks and a duplicate id                      | Medium (6)   | Open          | M      | 2026-08-24 | internal |
 | 3.0  | P119 | Twenty-three watcher assertions read shell text; converting needs a stubbed `gh`     | High (12)    | Open          | L      | 2026-08-21 | internal |
 | 2.0  | P057 | Relevance-close evaluator misses platform-version-rooted tickets                     | Low (4)      | Open          | M      | 2026-07-19 | internal |
 | 2.0  | P061 | work-problems iter briefing carries another ticket's evaluator caveat                | Low (4)      | Open          | M      | 2026-07-19 | internal |

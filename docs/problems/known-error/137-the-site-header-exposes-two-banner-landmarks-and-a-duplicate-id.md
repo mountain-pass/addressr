@@ -1,11 +1,11 @@
 # Problem 137: The site header exposes two banner landmarks and a duplicate id
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-08-24
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Likely (2). Impact 3: a screen-reader user navigating by landmark meets two "banner" regions on every page and a navigation landmark that contains one button, so the landmark map — the primary non-visual way to skim a page — is misleading rather than absent. Not Level A on its own. Likelihood 2: it affects every landmark-navigating visitor on all six pages, but only that population.
 **Origin**: internal
 **Effort**: M — the markup change is three tokens. Making it safe is a stylesheet refactor, and the estimate exists because the naive version was already tried and reverted.
-**WSJF**: 3.0 — (6 × 1.0) / 2
+**WSJF**: 6.0 — (6 × 2.0) / 2
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
 
@@ -36,6 +36,10 @@ All three were fixed inside [P131](../closed/131-the-site-menu-cannot-be-opened-
 ## Root Cause Analysis
 
 The template reused document landmarks and the same id as layout hooks. Responsive menu styling was also coupled to the wrapper's `nav` element type, so the first semantic correction killed live breakpoint selectors. A separate duplicate `id="two"` on the Quick Start page showed that emitted id uniqueness was not checked generically.
+
+## Workaround
+
+Before the fix shipped, retaining the original landmark markup preserved the site layout while the selector-safe correction was developed and tested. The deployed fix now removes the need for that workaround.
 
 ## Fix Released
 
