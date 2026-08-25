@@ -289,7 +289,7 @@ _50 ADRs. These are the current rules. The architect agent reads this section fi
 
 **Status:** proposed | **Oversight:** confirmed
 **Decides:** Check selector reachability in both directions against Gatsby's built output, because removing the status-header id is visible only from element to CSS while orphaning responsive `nav` rules is visible only from CSS to elements. Reverse matching is limited to site-authored SCSS, with named third-party bundles excluded rather than a growing selector allowlist.
-**Confirmation:** the check runs in the website build path and fails loudly; mutations reproducing both [P137](../problems/known-error/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) selector failures make it fail; reverse exclusions name third-party bundles; an empty file or selector corpus cannot pass.
+**Confirmation:** the check runs in the website build path and fails loudly; mutations reproducing both [P137](../problems/verifying/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) selector failures make it fail; reverse exclusions name third-party bundles; an empty file or selector corpus cannot pass.
 **Related:** ADR-054, ADR-056
 
 ### ADR-056 — Browser-automated keyboard accessibility verification

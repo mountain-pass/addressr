@@ -15,7 +15,7 @@ ADR-053 excluded `apps/website` from the ESLint flat config for phase 1 and name
 
 - [P126](../closed/126-two-footer-links-render-without-an-href-on-every-page.md): "`jsx-a11y` would have caught this at author time" — the rule is literally `anchor-is-valid`.
 - [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md): "this ticket is evidence for taking that up".
-- [P137](../known-error/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md): two CSS regressions shipped inside an accessibility fix.
+- [P137](../verifying/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md): two CSS regressions shipped inside an accessibility fix.
 
 That third case is the one that makes this a real decision rather than a to-do. **P131 was resolved by extending the built-output test tier — and that choice was never recorded, which means it was never weighed.** The evidence says it is at best half an answer:
 
@@ -44,7 +44,7 @@ The architecture review's advisory lean is **C, with B load-bearing** — B addr
 ## Related
 
 - ADR-053 — the phase-1 deferral this reopens.
-- [P126](../closed/126-two-footer-links-render-without-an-href-on-every-page.md), [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P137](../known-error/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) — the three tests of the deferral.
+- [P126](../closed/126-two-footer-links-render-without-an-href-on-every-page.md), [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P137](../verifying/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) — the three tests of the deferral.
 - [P098](098-five-test-files-reached-by-no-runner-assertions-never-execute.md) — `test:precommit` is invoked by nothing. Same family: a tier believed to be enforcing something, that is not.
 
 ## Decided 2026-08-24 — and the implementation is bigger than this ticket assumed

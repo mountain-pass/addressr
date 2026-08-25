@@ -1,11 +1,11 @@
 # Problem 137: The site header exposes two banner landmarks and a duplicate id
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-08-24
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Likely (2). Impact 3: a screen-reader user navigating by landmark meets two "banner" regions on every page and a navigation landmark that contains one button, so the landmark map — the primary non-visual way to skim a page — is misleading rather than absent. Not Level A on its own. Likelihood 2: it affects every landmark-navigating visitor on all six pages, but only that population.
 **Origin**: internal
 **Effort**: M — the markup change is three tokens. Making it safe is a stylesheet refactor, and the estimate exists because the naive version was already tried and reverted.
-**WSJF**: 6.0 — (6 × 2.0) / 2
+**WSJF**: 0 — Verification Pending tickets are excluded from the dev-work queue
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
 
@@ -43,9 +43,13 @@ Before the fix shipped, retaining the original landmark markup preserved the sit
 
 ## Fix Released
 
-Implemented on 2026-08-26. The site keeps one `header#header`; the status strip is now `div#status-header`, and the disclosure button uses a non-landmark `.nav` wrapper. Shared SCSS is limited to the frame, logo and `.alt` behavior, while all menu rules — including forced-colors and four breakpoint blocks — use `.nav`. The two unused duplicate `id="two"` values were removed from Quick Start.
+Implemented and deployed on 2026-08-26 in commit `ee053cc16a6f292e68a7782359914bafc439ab0d` through release run `32860411102`. The site keeps one `header#header`; the status strip is now `div#status-header`, and the disclosure button uses a non-landmark `.nav` wrapper. Shared SCSS is limited to the frame, logo and `.alt` behavior, while all menu rules — including forced-colors and four breakpoint blocks — use `.nav`. The two unused duplicate `id="two"` values were removed from Quick Start.
 
-The seven-route Gatsby build passes 33 built-output assertions, including unique ids and exactly one banner and navigation landmark per page. ADR-055's two mutation regressions now exercise the new status and menu hooks. All 13 Chromium journeys pass, including status placement and menu geometry at all five affected viewport bands. Awaiting exact production verification before closure.
+The seven-route Gatsby build passes 33 built-output assertions, including unique ids and exactly one banner and navigation landmark per page. ADR-055's two mutation regressions now exercise the new status and menu hooks. All 13 Chromium journeys pass, including status placement and menu geometry at all five affected viewport bands.
+
+Production verification on 2026-08-26 confirmed `https://addressr.io/` and `https://addressr.io/quick-start/` each expose one banner landmark and one navigation landmark, `#status-header` is a `DIV`, and no duplicate ids are present. This verifies P137's landmark and id defect only; it is not a general WCAG conformance claim.
+
+**Release vehicle**: private website deployment at commit `ee053cc16a6f292e68a7782359914bafc439ab0d`; no package changeset. <!-- no-changeset-reference -->
 
 ## Related
 

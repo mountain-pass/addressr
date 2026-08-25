@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P137 known error** — the selector-coupled landmark root cause is documented; the deployed correction is production-verified
+> Last reviewed: 2026-08-26 **P137 verification pending** — commit `ee053cc1` is deployed and exact live landmark and id checks pass
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -28,7 +28,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P135 | `root.feature` pins a rel namespace the server stopped emitting                      | Medium (8)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P107 | A verification vouches only for the state it ran against                             | High (16)    | Open          | M      | 2026-08-19 | internal |
 | 8.0  | P109 | Gate-blocked invocation runs nothing; bundled `git add` commits a stale index        | High (16)    | Open          | M      | 2026-08-20 | internal |
-| 6.0  | P137 | The site header exposes two banner landmarks and a duplicate id                      | Medium (6)   | Known Error   | M      | 2026-08-24 | internal |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`                     | Medium (6)   | Open          | S      | 2026-07-26 | internal |
 | 6.0  | P080 | external-comms gate cannot read `--body-file`; that path never clears                | Medium (6)   | Upstream #408 | S      | 2026-08-02 | internal |
 | 6.0  | P082 | `RISK_BYPASS: reducing` opens all three gates, incl. push-past-CI                    | High (12)    | Upstream #407 | S      | 2026-08-02 | internal |
@@ -81,14 +80,15 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off the dual-tolerant glob `docs/problems/*.verifying.md docs/problems/verifying/*.md` per ADR-022 + RFC-002 migration window). Sorted by `Released date ASC` (oldest at row 1; same-day releases tiebreak by ID ASC). <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` column carries an **evidence-first** cell per P186 — three canonical values: `yes — observed: <evidence>`, `no — not observed` (default for newly-released tickets), `no — observed regression`. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 --> Age is preserved separately via the `Released` column.
 
-| ID   | Title                                                          | Released          | Likely verified?  |
-| ---- | -------------------------------------------------------------- | ----------------- | ----------------- |
-| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18        | no — not observed |
-| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20        | no — not observed |
-| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2 | no — not observed |
-| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
-| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
-| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
+| ID   | Title                                                           | Released            | Likely verified?                                                      |
+| ---- | --------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------- |
+| P051 | release:watch stalls on the changeset release-PR approval gate  | 2026-07-18          | no — not observed                                                     |
+| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content   | 2026-07-20          | no — not observed                                                     |
+| P023 | Cross-origin root `/` not browser-cached (preflight flood)      | 2026-07-25 v3.0.2   | no — not observed                                                     |
+| P067 | addressr server has no SIGTERM graceful-shutdown handler        | 2026-07-26 v3.0.3   | no — not observed                                                     |
+| P070 | stream-down promotes failed and partial downloads into cache    | 2026-07-29 v3.0.4   | no — not observed                                                     |
+| P097 | Cucumber leg intermittently starts against an empty index       | 2026-08-09 v3.3.0   | no — not observed                                                     |
+| P137 | The site header exposes two banner landmarks and a duplicate id | 2026-08-26 ee053cc1 | yes — observed: live home and Quick Start landmark and id checks pass |
 
 ## Inbound Upstream Reports
 

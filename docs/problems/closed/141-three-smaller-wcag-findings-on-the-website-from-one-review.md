@@ -11,7 +11,7 @@
 
 ## Description
 
-Three findings from the same accessibility review that produced [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P132](../closed/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md), [P137](../known-error/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md), [P139](../closed/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) and [P140](../closed/140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md). Grouped because each is small, none blocks a task, and splitting them would make five WSJF rows out of an afternoon's work. They are otherwise unrelated — fix them independently.
+Three findings from the same accessibility review that produced [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P132](../closed/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md), [P137](../verifying/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md), [P139](../closed/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) and [P140](../closed/140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md). Grouped because each is small, none blocks a task, and splitting them would make five WSJF rows out of an afternoon's work. They are otherwise unrelated — fix them independently.
 
 ### 1. The GitHub ribbon is an `<h4>` that heads nothing (1.3.1 Info and Relationships)
 
@@ -29,7 +29,7 @@ A related gap worth deciding in the same sitting: the site defines no `prefers-r
 
 ## Investigation Tasks
 
-- [x] Ribbon: demote to a non-heading element. Check `_header.scss:399` — `.ribbon` styling is class-based, so the tag should be free to change, but verify rather than assume. That assumption is what produced both regressions in [P137](../known-error/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md).
+- [x] Ribbon: demote to a non-heading element. Check `_header.scss:399` — `.ribbon` styling is class-based, so the tag should be free to change, but verify rather than assume. That assumption is what produced both regressions in [P137](../verifying/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md).
 - [x] Badge: decide between fetching the figure and rendering it as text, or an alt that stops implying it conveys a value. Note the badge is a remote third-party image on every page — worth pricing that separately while here.
 - [x] Forced colors: add a `@media (forced-colors: active)` treatment that preserves a visible menu control and ribbon outline. Verify in the mode; this cannot be checked from source.
 - [x] Decide on `prefers-reduced-motion`. One media query disabling transitions and the header animation, or a recorded decision not to.
