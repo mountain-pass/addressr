@@ -246,3 +246,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-26 **P137 implementation ready** — header and navigation landmark semantics are fixed locally; exact production verification remains before closure
 
 > Last reviewed: 2026-08-26 **P137 known error** — the selector-coupled landmark root cause is documented; the deployed correction is production-verified
+
+> Last reviewed: 2026-08-26 **P137 verification pending** — commit `ee053cc1` is deployed and exact live landmark and id checks pass

@@ -1,11 +1,11 @@
 # Problem 137: The site header exposes two banner landmarks and a duplicate id
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Likely (2). Impact 3: a screen-reader user navigating by landmark meets two "banner" regions on every page and a navigation landmark that contains one button, so the landmark map — the primary non-visual way to skim a page — is misleading rather than absent. Not Level A on its own. Likelihood 2: it affects every landmark-navigating visitor on all six pages, but only that population.
 **Origin**: internal
 **Effort**: M — the markup change is three tokens. Making it safe is a stylesheet refactor, and the estimate exists because the naive version was already tried and reverted.
-**WSJF**: 0 — Verification Pending tickets are excluded from the dev-work queue
+**WSJF**: 3.0 — (6 × 1.0) / 2
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
 
@@ -48,6 +48,8 @@ Implemented and deployed on 2026-08-26 in commit `ee053cc16a6f292e68a7782359914b
 The seven-route Gatsby build passes 33 built-output assertions, including unique ids and exactly one banner and navigation landmark per page. ADR-055's two mutation regressions now exercise the new status and menu hooks. All 13 Chromium journeys pass, including status placement and menu geometry at all five affected viewport bands.
 
 Production verification on 2026-08-26 confirmed `https://addressr.io/` and `https://addressr.io/quick-start/` each expose one banner landmark and one navigation landmark, `#status-header` is a `DIV`, and no duplicate ids are present. This verifies P137's landmark and id defect only; it is not a general WCAG conformance claim.
+
+Closed on 2026-08-26 after that exact production verification.
 
 **Release vehicle**: private website deployment at commit `ee053cc16a6f292e68a7782359914bafc439ab0d`; no package changeset. <!-- no-changeset-reference -->
 
