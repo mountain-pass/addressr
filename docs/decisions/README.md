@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 54 (48 in-force, 6 historical)
+**Total ADRs:** 56 (50 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_48 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_50 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -278,12 +278,26 @@ _48 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** manifest declares `@mountainpass/website`, `private: true`, `type: commonjs` — MET; no `hooks.slack.com` in the tree or in `gatsby build` output; import plus ALL deletions in one commit; workspace-membership test asserts both privacy directions, mutation-tested; `check-licenses` names the excluded tree; `npx npm@10 ci` clean from the committed lockfile; `gatsby build` emits 7 pages; no route links to the two removed paths and the Enterprise CTA shows `addressr@mountain-pass.com.au` as visible text (verified at the origin only — Cloudflare email obfuscation defeats it for no-JS visitors, P128); Netlify builds on a website-only push and not otherwise, both observed; old repo archived — MET 2026-08-24, but the grep covers the repo URL only and a Netlify site may still be attached (P134, P135).
 **Related:** ADR-046, ADR-011, ADR-014, ADR-044, ADR-008, ADR-045, ADR-048, ADR-032, ADR-015
 
-### ADR-054 — Lint and built output split website accessibility; behaviour belongs to a keyboard pass
+### ADR-054 — Source accessibility linting
 
 **Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-053 (clause `053#eslint-ignore-phase-1`)
-**Decides:** Ends ADR-053's phase-1 obligation to ignore `apps/website` in ESLint, and splits accessibility enforcement across two mechanisms with a recorded division of labour — source lint (`jsx-a11y`) owns author-time markup rules, built-output assertions own emitted-artefact properties including CSS selector reachability — because the three defects that shipped in three days fall into disjoint classes neither mechanism alone covers. Behaviour (focus movement, return, `inert`, Escape) is explicitly owned by a human keyboard pass; browser-driven checking was rejected on scope, not merit.
-**Confirmation:** `apps/website` source no longer ignored while `public/`+`.cache/` are, with findings on the order of 10² not 10⁴; no `Parsing error: Unexpected token <` and no unmatched `.jsx`/`.tsx`; lint fails on the unnamed tile link in `index.jsx`; ignore entry only leaves once source lint is green or the 81-findings/17-files baseline is explicitly recorded; reachability assertion mutation-tested against both P137 defects in both directions; third-party reverse-direction exclusions are named literals; any green accessibility report states that behaviour is not covered.
-**Related:** ADR-053, ADR-014, ADR-048, ADR-051, ADR-049, ADR-015, ADR-047, ADR-032
+**Decides:** End ADR-053's temporary obligation to ignore `apps/website` source in ESLint and adopt author-time accessibility markup checks, while explicitly excluding generated `public/` and `.cache/` output. Parser and file-scope evidence is required because removing the ignore alone reaches none of the JSX that `jsx-a11y` targets; the `.prettierignore` entry remains independent and unchanged.
+**Confirmation:** website source is linted while generated output remains ignored; JSX and TSX parse and match a configuration; recreating the formerly unnamed API tile fails `jsx-a11y/anchor-has-content`; the broad ignore leaves only after source and test lint is green or the measured 81-findings/17-files baseline is explicitly recorded.
+**Related:** ADR-014, ADR-015, ADR-053, ADR-055, ADR-056
+
+### ADR-055 — Built-output CSS selector reachability
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Check selector reachability in both directions against Gatsby's built output, because removing the status-header id is visible only from element to CSS while orphaning responsive `nav` rules is visible only from CSS to elements. Reverse matching is limited to site-authored SCSS, with named third-party bundles excluded rather than a growing selector allowlist.
+**Confirmation:** the check runs in the website build path and fails loudly; mutations reproducing both P137 selector failures make it fail; reverse exclusions name third-party bundles; an empty file or selector corpus cannot pass.
+**Related:** ADR-054, ADR-056
+
+### ADR-056 — Manual keyboard accessibility verification
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Require a manual browser keyboard pass before closing behavioural accessibility work, because seven passing static assertions did not establish that the skip link moved focus. Browser automation is deferred on scope, and green automated output must not claim that focus, Escape, inertness or focus return was covered.
+**Confirmation:** behavioural tickets record the browser and affected interaction exercised; the pass covers the relevant observable outcomes; automated reports state that keyboard behaviour is not covered; lint or built-output assertions cannot be the sole interaction evidence.
+**Related:** ADR-054, ADR-055
 
 ---
 

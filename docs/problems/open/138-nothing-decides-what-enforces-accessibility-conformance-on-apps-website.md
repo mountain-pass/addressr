@@ -49,7 +49,7 @@ The architecture review's advisory lean is **C, with B load-bearing** — B addr
 
 ## Decided 2026-08-24 — and the implementation is bigger than this ticket assumed
 
-The maintainer chose **both mechanisms with a recorded split**. It is written up as ADR-054, _Lint and built output split website accessibility; behaviour belongs to a keyboard pass_ — `status: proposed`, `human-oversight: unconfirmed` until the review drain ratifies it. That record supersedes one clause of the website-import decision: the obligation to ignore `apps/website` in the ESLint flat config "for phase 1". The `.prettierignore` half of the same bullet stands, and is load-bearing — see below.
+The maintainer separated the three independently reversible choices into three proposed, unconfirmed records: [source accessibility linting](../../decisions/054-source-accessibility-linting.proposed.md), [built-output CSS selector reachability](../../decisions/055-built-output-css-selector-reachability.proposed.md), and [manual keyboard accessibility verification](../../decisions/056-manual-keyboard-accessibility-verification.proposed.md). The source-linting record supersedes one clause of the website-import decision: the obligation to ignore `apps/website` in the ESLint flat config "for phase 1". The `.prettierignore` half of the same bullet stands, and is load-bearing — see below.
 
 An architecture review of the draft found five issues. Two changed what this ticket is asking for.
 
@@ -84,4 +84,4 @@ Reading them in order:
 - [ ] Replace the blanket ignore with one scoped to `apps/website/public/` and `apps/website/.cache/`.
 - [ ] Get the source tree green or baseline the 81 findings explicitly, recording the count. Do not import the whole lint-debt backlog — the shebang and quoted-URL damage recorded there block nothing here.
 - [ ] Build the reachability check to the shape above, and mutation-test it against **both** real defects. A single-direction check demonstrably cannot pass both, which is the point of testing both.
-- [ ] Note that widening `lint-staged`'s `*.{js,jsx}` glob to reach `.tsx` would touch the flat-config decision's own confirmation criterion, so it needs clause supersession rather than a factual correction. ADR-054 deliberately does not do it, which leaves `404.tsx` unlinted at author time and covered only by built output.
+- [ ] Note that widening `lint-staged`'s `*.{js,jsx}` glob to reach `.tsx` would touch the flat-config decision's own confirmation criterion, so it needs clause supersession rather than a factual correction. The source-linting decision deliberately does not do it, which leaves `404.tsx` unlinted at author time and covered only by built output.
