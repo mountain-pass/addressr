@@ -1,13 +1,13 @@
 # Problem 138: Nothing decides what enforces accessibility conformance on `apps/website`
 
-**Status**: Known Error
+**Status**: Verification Pending
 **Reported**: 2026-08-24
 **Priority**: 12 (High) — Impact: Major (4) × Likelihood: Likely (3). Impact 4: this repository's stated posture is accessibility-first and WCAG AA, enforced on every UI edit by a global gate; the one tree containing UI has no automated enforcement at all, so the posture rests entirely on whether a reviewer happens to look. Likelihood 3: three defects invisible to the current mechanism were found in a single change, within one day of the tree landing.
 **Origin**: internal
 **Effort**: S — the work is one decision record. The mechanisms it chooses between are each S–M, and belong to their own tickets.
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
-**WSJF**: 24.0 — (12 × 2.0) / 1
+**WSJF**: 0 — Verification Pending tickets are excluded from the dev-work queue
 
 ## Description
 
@@ -87,6 +87,14 @@ ADR-056's browser mechanism was implemented on 2026-08-25. Playwright Chromium n
 - [x] Get the source tree green or baseline the 81 findings explicitly, recording the count. Do not import the whole lint-debt backlog — the shebang and quoted-URL damage recorded there block nothing here. **Completed 2026-08-26 under ADR-057:** `npx eslint apps/website` exits 0 with 48 warnings and 0 errors. Blocking `jsx-a11y-x` source findings were fixed or documented: the search input has a meaningful associated label, both home tile overlay links carry source text, Gatsby `Link` is covered explicitly, and the menu container's scoped Escape handler has a single inline baseline. Behavioural ESLint tests prove TSX parsing plus broken and fixed overlay-link and label cases.
 - [x] Build the reachability check to the shape above, and mutation-test it against **both** real defects. A single-direction check demonstrably cannot pass both, which is the point of testing both. **Completed 2026-08-25:** the shared checker compiles the site SCSS with source maps, excludes only the named Font Awesome, Swagger UI and Meyer reset sources, and checks 206 site-owned selectors against all six routes plus hydrated menu, Autosuggest and Tabs states. The pre-existing unused HTML5 UP selector corpus was deleted in place rather than baselined. Both status-header-id and `nav`-to-`div` mutations fail; zero-page and zero-selector corpora fail loudly. Gatsby build and all three Chromium journeys pass. This is a CSS/markup relationship check, not a claim of WCAG conformance.
 - [x] Note that widening `lint-staged`'s `*.{js,jsx}` glob to reach `.tsx` would touch the flat-config decision's own confirmation criterion, so it needs clause supersession rather than a factual correction. **Recorded in ADR-054:** this decision deliberately does not do it, which leaves `404.tsx` outside staged-file autofix and covered by full lint/build output instead.
+
+## Fix Released
+
+Implemented and deployed on 2026-08-26 in commit `01c9b8029f0dafc6420f746e7f7c2b45e4896b99` through release run `32866153763`. ADR-054 and ADR-057 now enforce website source accessibility linting with an ESLint 10-compatible parser and plugin; ADR-055 checks CSS selector reachability in both directions against Gatsby output; ADR-056 runs focused Chromium keyboard journeys in the website build path.
+
+Verification passed with 0 ESLint errors, five executable lint mutations, a fresh seven-route Gatsby build, 33 built-output assertions, 13 Chromium journeys and all 673 JavaScript tests. Production verification at `https://addressr.io/?verify=01c9b802` confirmed the search label/input association and source plus heading-derived accessible names for both home-page tile links. This verifies P138's three enforcement tiers and the regressions they cover only; it is not a general WCAG conformance claim.
+
+**Release vehicle**: private website deployment at commit `01c9b8029f0dafc6420f746e7f7c2b45e4896b99`; no package changeset. <!-- no-changeset-reference -->
 
 ## Root Cause Analysis
 
