@@ -49,7 +49,7 @@ The architecture review's advisory lean is **C, with B load-bearing** — B addr
 
 ## Decided 2026-08-24 — and the implementation is bigger than this ticket assumed
 
-The maintainer separated the three independently reversible choices into three proposed, unconfirmed records: [source accessibility linting](../../decisions/054-source-accessibility-linting.proposed.md), [built-output CSS selector reachability](../../decisions/055-built-output-css-selector-reachability.proposed.md), and [manual keyboard accessibility verification](../../decisions/056-manual-keyboard-accessibility-verification.proposed.md). The source-linting record supersedes one clause of the website-import decision: the obligation to ignore `apps/website` in the ESLint flat config "for phase 1". The `.prettierignore` half of the same bullet stands, and is load-bearing — see below.
+The maintainer separated the three independently reversible choices into three proposed records: [source accessibility linting](../../decisions/054-source-accessibility-linting.proposed.md), [built-output CSS selector reachability](../../decisions/055-built-output-css-selector-reachability.proposed.md), and [browser-automated keyboard accessibility verification](../../decisions/056-browser-automated-keyboard-accessibility-verification.proposed.md). The source-linting record supersedes one clause of the website-import decision: the obligation to ignore `apps/website` in the ESLint flat config "for phase 1". The `.prettierignore` half of the same bullet stands, and is load-bearing — see below.
 
 An architecture review of the draft found five issues. Two changed what this ticket is asking for.
 

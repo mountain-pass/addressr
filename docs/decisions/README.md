@@ -280,23 +280,23 @@ _50 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-054 — Source accessibility linting
 
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-053 (clause `053#eslint-ignore-phase-1`)
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** ADR-053 (clause `053#eslint-ignore-phase-1`)
 **Decides:** End ADR-053's temporary obligation to ignore `apps/website` source in ESLint and adopt author-time accessibility markup checks, while explicitly excluding generated `public/` and `.cache/` output. Parser and file-scope evidence is required because removing the ignore alone reaches none of the JSX that `jsx-a11y` targets; the `.prettierignore` entry remains independent and unchanged.
 **Confirmation:** website source is linted while generated output remains ignored; JSX and TSX parse and match a configuration; recreating the formerly unnamed API tile fails `jsx-a11y/anchor-has-content`; the broad ignore leaves only after source and test lint is green or the measured 81-findings/17-files baseline is explicitly recorded.
 **Related:** ADR-014, ADR-015, ADR-053, ADR-055, ADR-056
 
 ### ADR-055 — Built-output CSS selector reachability
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Check selector reachability in both directions against Gatsby's built output, because removing the status-header id is visible only from element to CSS while orphaning responsive `nav` rules is visible only from CSS to elements. Reverse matching is limited to site-authored SCSS, with named third-party bundles excluded rather than a growing selector allowlist.
 **Confirmation:** the check runs in the website build path and fails loudly; mutations reproducing both P137 selector failures make it fail; reverse exclusions name third-party bundles; an empty file or selector corpus cannot pass.
 **Related:** ADR-054, ADR-056
 
-### ADR-056 — Manual keyboard accessibility verification
+### ADR-056 — Browser-automated keyboard accessibility verification
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Require a manual browser keyboard pass before closing behavioural accessibility work, because seven passing static assertions did not establish that the skip link moved focus. Browser automation is deferred on scope, and green automated output must not claim that focus, Escape, inertness or focus return was covered.
-**Confirmation:** behavioural tickets record the browser and affected interaction exercised; the pass covers the relevant observable outcomes; automated reports state that keyboard behaviour is not covered; lint or built-output assertions cannot be the sole interaction evidence.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Run Playwright with Chromium against Gatsby's built site in the existing website pipeline, because browser automation can drive keyboard input and assert focus, focus return, Escape handling and inert state where seven static assertions could not. Green covers only the scripted interactions, not full keyboard, screen-reader, cross-browser or WCAG conformance.
+**Confirmation:** Playwright runs in `website-build`; skip-link activation moves focus to `main#content` and the next Tab stays inside it; menu activation updates `aria-expanded`, moves focus into `nav#menu`, keeps Tab out of the inert background, removes inertness on Escape and returns focus to the opener; later behavioural fixes add focused browser regressions; output states the coverage limit.
 **Related:** ADR-054, ADR-055
 
 ---

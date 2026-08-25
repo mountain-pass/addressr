@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-24
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-25
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
@@ -17,7 +18,7 @@ reassessment-date: 2026-11-24
 
 Removing the existing ignore alone would not provide that protection. Measured on 2026-08-24, `npx eslint apps/website` produced 53,405 findings because it included generated output. Restricting the run to source and tests produced 81 findings across 17 files, while every `.js` file containing JSX failed to parse and `.jsx`/`.tsx` files matched no configuration.
 
-This decision assigns author-time accessibility markup checks. It does not decide CSS selector reachability or interactive keyboard behaviour; those are separate decisions in [ADR-055](055-built-output-css-selector-reachability.proposed.md) and [ADR-056](056-manual-keyboard-accessibility-verification.proposed.md).
+This decision assigns author-time accessibility markup checks. It does not decide CSS selector reachability or interactive keyboard behaviour; those are separate decisions in [ADR-055](055-built-output-css-selector-reachability.proposed.md) and [ADR-056](056-browser-automated-keyboard-accessibility-verification.proposed.md).
 
 ## Decision Drivers
 
@@ -94,7 +95,7 @@ Source lint owns author-time markup rules. Generated `public/` and `.cache/` out
 - [ADR-015](015-dry-aged-deps.accepted.md) — freshness control for the new dependencies.
 - [ADR-053](053-website-imported-as-an-app-with-hosting-unchanged.proposed.md) — superseded only for its temporary ESLint source exclusion; its Prettier exclusion stands.
 - [ADR-055](055-built-output-css-selector-reachability.proposed.md) — build-time ownership of CSS reachability.
-- [ADR-056](056-manual-keyboard-accessibility-verification.proposed.md) — behavioural keyboard ownership.
+- [ADR-056](056-browser-automated-keyboard-accessibility-verification.proposed.md) — behavioural keyboard ownership.
 - [P084](../problems/open/084-eslint-10-and-unicorn-72-leave-a-deliberate-lint-debt-with-no-ci-gate.md) — sequencing authority for entering the autofixing lint path.
 - [P138](../problems/open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — implementation ticket.
 - [P139](../problems/closed/139-the-home-pages-api-tile-is-a-link-with-no-accessible-name.md) — observed unnamed-link defect.

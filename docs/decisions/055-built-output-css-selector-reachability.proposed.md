@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-25
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-25
 decision-makers: [Tom Howard]
 consulted: []
 informed: []
@@ -96,6 +97,6 @@ The reverse check is limited to site-authored SCSS. Third-party bundles are excl
 ## Related
 
 - [ADR-054](054-source-accessibility-linting.proposed.md) — author-time markup ownership.
-- [ADR-056](056-manual-keyboard-accessibility-verification.proposed.md) — behavioural keyboard ownership.
+- [ADR-056](056-browser-automated-keyboard-accessibility-verification.proposed.md) — behavioural keyboard ownership.
 - [P137](../problems/open/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) — the two observed selector regressions used as mutations.
 - [P138](../problems/open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — implementation ticket.
