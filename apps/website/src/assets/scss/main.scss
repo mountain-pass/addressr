@@ -54,22 +54,17 @@
 
 @import 'components/section';
 @import 'components/form';
-@import 'components/box';
-@import 'components/icon';
 @import 'components/image';
 @import 'components/list';
 @import 'components/table';
 @import 'components/button';
 @import 'components/tiles';
-@import 'components/contact-method';
-@import 'components/spotlights';
 
 // Layout.
 
 @import 'layout/header';
 @import 'layout/banner';
 @import 'layout/main';
-@import 'layout/contact';
 @import 'layout/footer';
 @import 'layout/wrapper';
 @import 'layout/menu';
@@ -98,15 +93,6 @@
 
 .react-autosuggest__container {
   position: relative;
-}
-
-.react-autosuggest__input--focused {
-  outline: none;
-}
-
-.react-autosuggest__input--open {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
 }
 
 .react-autosuggest__suggestions-container {
@@ -179,11 +165,6 @@ table.address, table.address th, table.address td {
   color: _palette(bg);
 }
 
-.react-tabs__tab--disabled {
-  color: GrayText;
-  cursor: default;
-}
-
 .react-tabs__tab:focus {
   box-shadow: 0 0 5px hsl(208, 99%, 50%);
   border-color: hsl(208, 99%, 50%);
@@ -225,8 +206,8 @@ table.address, table.address th, table.address td {
  * `.btn:focus { outline: 0; box-shadow: 0 0 0 .2rem rgba(brand,.25) }`. There is
  * no Bootstrap here: it is in neither package.json nor any SCSS import, the
  * only `user-select` in the tree is a name inside a vendor-prefix list in
- * libs/_skel.scss, and the two `outline: none` rules in this file are scoped to
- * `.react-autosuggest__input--focused` and `.react-tabs__tab:focus`. So the
+ * libs/_skel.scss, and the one `outline: none` rule in this file is scoped to
+ * `.react-tabs__tab:focus`. So the
  * address is selectable and the browser's default focus ring reaches these
  * anchors unimpeded. Adding overrides for absent behaviour would be unverified
  * CSS defending against a problem this site does not have.

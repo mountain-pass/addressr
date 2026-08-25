@@ -6,8 +6,7 @@
 
 /* Menu */
 
-#menu,
-#login {
+#menu {
   //   @include vendor(
   //     'transition',
   //     (
@@ -81,11 +80,6 @@
           line-height: 4em;
           text-decoration: none;
           text-transform: uppercase;
-        }
-
-        > .button {
-          display: block;
-          margin: 0.5em 0 0 0;
         }
 
         &:first-child {
@@ -182,37 +176,12 @@
   }
 }
 
-body.is-ie {
-  #menu,
-  #login {
-    background: transparentize(_palette(bg-alt), 0.025);
-  }
-}
-
 .body.is-menu-visible {
   #wrapper {
     @include vendor('filter', 'blur(0.5em)');
   }
 
   #menu {
-    @include vendor('pointer-events', 'auto');
-    opacity: 1;
-    visibility: visible;
-
-    .inner {
-      @include vendor('transform', 'none');
-      opacity: 1;
-      visibility: visible;
-    }
-  }
-}
-
-.body.is-login-visible {
-  #wrapper {
-    @include vendor('filter', 'blur(0.5em)');
-  }
-
-  #login {
     @include vendor('pointer-events', 'auto');
     opacity: 1;
     visibility: visible;

@@ -6,13 +6,6 @@
 
 /* Section/Article */
 
-section,
-article {
-  &.special {
-    text-align: center;
-  }
-}
-
 header {
   &.major {
     width: 100%;
@@ -53,19 +46,6 @@ header {
       text-transform: uppercase;
     }
 
-    body.is-ie & {
-      > :first-child {
-        &:after {
-          max-width: 9em;
-        }
-      }
-
-      > h1 {
-        &:after {
-          max-width: 100% !important;
-        }
-      }
-    }
   }
 
   @include breakpoint(small) {

@@ -48,15 +48,7 @@
       z-index: 3;
     }
 
-    h3 {
-      font-size: 1.75em;
-
-      a {
-        &:hover {
-          color: inherit !important;
-        }
-      }
-    }
+    h3 { font-size: 1.75em; }
 
     .link.primary {
       border: 0;
@@ -98,12 +90,6 @@
     //     opacity: 0;
     //   }
     // }
-
-    &.is-transitioning {
-      //   @include vendor('transform', 'scale(0.95)');
-      //   @include vendor('filter', 'blur(0.5em)');
-      opacity: 0;
-    }
 
     &:nth-child(4n - 1),
     &:nth-child(4n - 2) {

@@ -6,17 +6,6 @@
 
 /* Header */
 
-@include keyframes('reveal-header') {
-  0% {
-    top: -4em;
-    opacity: 0;
-  }
-  100% {
-    top: 0;
-    opacity: 1;
-  }
-}
-
 #header.status-header {
   @include breakpoint(xlarge) {
     top: 3.25em;
@@ -114,7 +103,6 @@
     height: inherit;
     line-height: inherit;
 
-    a,
     button {
       // UNDOING _button.scss, which has a BARE `button` element selector in its
       // group and so reaches this control the moment it stops being an anchor.
@@ -225,10 +213,6 @@
     }
   }
 
-  &.reveal {
-    @include vendor('animation', 'reveal-header 0.35s ease');
-  }
-
   &.alt {
     @include vendor('transition', 'opacity #{_duration(banner)} ease');
     @include vendor('transition-delay', '0.75s');
@@ -237,59 +221,10 @@
     box-shadow: none;
     position: absolute;
 
-    &.style1 {
-      .logo {
-        strong {
-          color: _palette(accent1);
-        }
-      }
-    }
-    &.style2 {
-      .logo {
-        strong {
-          color: _palette(accent2);
-        }
-      }
-    }
-    &.style3 {
-      .logo {
-        strong {
-          color: _palette(accent3);
-        }
-      }
-    }
-    &.style4 {
-      .logo {
-        strong {
-          color: _palette(accent4);
-        }
-      }
-    }
-    &.style5 {
-      .logo {
-        strong {
-          color: _palette(accent5);
-        }
-      }
-    }
-    &.style6 {
-      .logo {
-        strong {
-          color: _palette(accent6);
-        }
-      }
-    }
-  }
-
-  .body.is-loading & {
-    &.alt {
-      opacity: 0;
-    }
   }
 
   @include breakpoint(xlarge) {
     nav {
-      a,
       button {
         &.menu-link {
           padding-right: 3.75em !important;
@@ -304,7 +239,6 @@
 
   @include breakpoint(large) {
     nav {
-      a,
       button {
         &.menu-link {
           padding-right: 4em !important;
@@ -322,14 +256,7 @@
     line-height: 2.75em;
     font-size: smaller;
 
-    .logo .status {
-      padding: 0 1em;
-      font-size: 0.8em;
-    }
-
-
     nav {
-      a,
       button {
         padding: 0 0.5em;
 
@@ -359,14 +286,7 @@
   }
 
   @include breakpoint(xsmall) {
-    .logo {
-      span {
-        display: none;
-      }
-    }
-
     nav {
-      a,
       button {
         &.menu-link {
           overflow: hidden;

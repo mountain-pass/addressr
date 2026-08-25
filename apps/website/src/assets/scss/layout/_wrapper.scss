@@ -14,10 +14,6 @@
   // ));
   padding-top: 3.25em;
 
-  &.is-transitioning {
-    opacity: 0;
-  }
-
   > * {
     @include inner;
   }

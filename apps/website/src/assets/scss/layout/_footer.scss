@@ -25,11 +25,6 @@
       margin-left: 1em;
       padding-left: 1em;
     }
-    &:first-child {
-      border-left: 0;
-      margin-left: 0;
-      padding-left: 0;
-    }
   }
   @include breakpoint(xsmall) {
     .copyright,

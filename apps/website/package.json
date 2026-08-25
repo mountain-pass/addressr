@@ -48,6 +48,10 @@
     "@types/node": "^20.3.3",
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
+    "cheerio": "^1.2.0",
+    "postcss": "^8.5.26",
+    "postcss-selector-parser": "^7.1.5",
+    "source-map-js": "^1.2.1",
     "typescript": "^5.1.6"
   }
 }
