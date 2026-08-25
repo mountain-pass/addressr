@@ -1,6 +1,6 @@
 # Problem 141: Three smaller WCAG findings on the website, from one review
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: three independent conformance gaps, each affecting a distinct population — heading-navigating screen-reader users, anyone relying on the uptime figure without seeing it, and forced-colors users. None blocks a task. Likelihood 2: each affects a narrower group than the Level A defects tracked separately.
 **Origin**: internal
@@ -42,7 +42,9 @@ The ribbon reused a heading element for styling even though `.ribbon` was alread
 
 Implemented on 2026-08-26. The ribbon is now a non-heading container, and both badge instances honestly direct users to the linked page for the current 30-day ratio without adding a runtime status fetch. In forced-colors mode the xsmall menu exposes its native text label, while the ribbon uses a current-colour border and drops its decorative pseudo-elements. A reduced-motion media query removes site transitions and animations.
 
-The Gatsby build emits seven routes. Built-output checks assert the ribbon structure and both badge names. Chromium checks exercise the 360px menu fallback, the ribbon outline at a wider viewport and the reduced-motion styles. ADR-055 also caught and drove removal of the `h4 a` selector orphaned by the semantic correction. Local verification passed 32 website assertions and all eight Chromium journeys. Awaiting exact production verification before closure.
+The Gatsby build emits seven routes. Built-output checks assert the ribbon structure and both badge names. Chromium checks exercise the 360px menu fallback, the ribbon outline at a wider viewport and the reduced-motion styles. ADR-055 also caught and drove removal of the `h4 a` selector orphaned by the semantic correction. Local verification passed 32 website assertions and all eight Chromium journeys.
+
+Production verified on 2026-08-26 at `https://addressr.io/`: the ribbon is a non-heading `div`, and both live uptime badges expose the reviewed accessible name. Release run 32857781056 for commit `78bc90da` completed successfully; `website-build`, both build-and-test jobs, `engine-floor` and `release` passed, while `check-deps` remained the known advisory failure.
 
 ## Related
 

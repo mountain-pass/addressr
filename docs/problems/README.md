@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P141 verification pending** — the ribbon heading, uptime badge names, forced-colors fallback and reduced-motion handling are implemented with built-output and Chromium regressions
+> Last reviewed: 2026-08-26 **P141 closed** — the ribbon, uptime badge names, forced-colors fallback and reduced-motion handling are production verified
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -89,7 +89,6 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
-| P141 | Three smaller WCAG findings on the website, from one review    | 2026-08-26        | no — not observed |
 
 ## Inbound Upstream Reports
 
