@@ -18,8 +18,8 @@ const renderSuggestion = suggestion => {
   );
 };
 
-const AddressrTd = props => {
-  const { value, colSpan, rowSpan } = props;
+const AddressrTd = properties => {
+  const { value, colSpan, rowSpan } = properties;
   return (
     <td
       rowSpan={rowSpan}
@@ -153,7 +153,8 @@ class Search extends React.Component {
     const { value, suggestions, selected, addressr } = this.state;
 
     // Autosuggest will pass through all these props to the input.
-    const inputProps = {
+    const inputProperties = {
+      id: 'address-search',
       placeholder: 'Address',
       value,
       onChange: this.onChange,
@@ -164,8 +165,11 @@ class Search extends React.Component {
     return (
       <>
         <div>
-          <label style={{ width: '100%', textAlign: 'center' }}>
-            Try me out
+          <label
+            htmlFor="address-search"
+            style={{ width: '100%', textAlign: 'center' }}
+          >
+            Search for an address
           </label>
           {addressr ? (
             <Autosuggest
@@ -177,7 +181,7 @@ class Search extends React.Component {
               getSuggestionValue={getSuggestionValue}
               renderSuggestion={renderSuggestion}
               onSuggestionSelected={this.onSuggestionSelected}
-              inputProps={inputProps}
+              inputProps={inputProperties}
             />
           ) : (
             'loading...'

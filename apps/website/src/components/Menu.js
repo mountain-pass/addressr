@@ -26,6 +26,7 @@ const Menu = ({ onDismiss, onNavigate, onKeyDown, menuRef }) => {
   // nothing. Escape is handled here rather than on the document, so it is
   // scoped to the menu and needs no global listener to register or clean up.
   return (
+    // eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions -- programmatic-focus container owns scoped Escape handling for the open menu.
     <nav id="menu" ref={menuRef} tabIndex="-1" onKeyDown={onKeyDown}>
       <div className="inner">
         <ul className="links">

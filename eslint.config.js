@@ -8,6 +8,8 @@ import pluginPromise from 'eslint-plugin-promise';
 import nodePlugin from 'eslint-plugin-n';
 import { importX } from 'eslint-plugin-import-x';
 import pluginChaiFriendly from 'eslint-plugin-chai-friendly';
+import tsParser from '@typescript-eslint/parser';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import { globalIgnores } from 'eslint/config';
 
 export default [
@@ -22,18 +24,10 @@ export default [
     'lib/**',
     'scratchpad/**',
     '.env',
-    // ADR-053 phase 1. This config has no TypeScript parser and no JSX settings,
-    // so .tsx would go unlinted while stray .js/.jsx collected eslint-plugin-n
-    // recommended-module and unicorn/filename-case findings that fight React
-    // convention. Adding typescript-eslint and jsx-a11y is real work with its own
-    // decisions; jsx-a11y is the obvious later addition given this repo's
-    // accessibility-first posture, so the omission is sequencing, not oversight.
-    //
-    // Inside globalIgnores rather than a new top-level block, deliberately: a new
-    // block would make 17 entries and falsify ADR-014's Confirmation, which pins 16.
-    // This form also fails LOUD if apps/website ever moves — findings appear on
-    // staged files rather than an autofix quietly mutating something.
-    'apps/website/**',
+    // ADR-054 narrows the ADR-053 phase-1 website lint exclusion to generated
+    // Gatsby output; ADR-057 implements its source override on ESLint 10.
+    'apps/website/public/**',
+    'apps/website/.cache/**',
   ]),
   js.configs.recommended,
   pluginSecurity.configs.recommended,
@@ -143,12 +137,96 @@ export default [
     },
   },
   {
+    files: ['apps/website/src/**/*.{js,jsx,ts,tsx}'],
+    ...jsxA11yX.configs.recommended,
+    languageOptions: {
+      ...jsxA11yX.configs.recommended.languageOptions,
+      parser: tsParser,
+      parserOptions: {
+        ...jsxA11yX.configs.recommended.languageOptions.parserOptions,
+        sourceType: 'module',
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+    rules: {
+      ...jsxA11yX.configs.recommended.rules,
+      'jsx-a11y-x/anchor-has-content': ['error', { components: ['Link'] }],
+      // ADR-057 implements ADR-054's accessibility gate, not a style sweep.
+      'unicorn/filename-case': 'off',
+      'unicorn/default-export-style': 'off',
+      'unicorn/no-top-level-side-effects': 'off',
+      'unicorn/prefer-global-this': 'off',
+      'unicorn/prefer-query-selector': 'off',
+      'unicorn/consistent-class-member-order': 'off',
+      'n/no-extraneous-import': 'off',
+      'n/no-missing-import': 'off',
+    },
+  },
+  {
+    files: ['apps/website/gatsby-*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+    rules: {
+      // Gatsby owns these integration module shapes; ADR-057 only needs them
+      // reachable without importing unrelated repo lint debt.
+      'unicorn/prefer-module': 'off',
+      'unicorn/prefer-global-this': 'off',
+      'unicorn/no-global-object-property-assignment': 'off',
+      'n/no-extraneous-import': 'off',
+    },
+  },
+  {
+    files: ['apps/website/test/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+    rules: {
+      // Website tests run on Node 24/Playwright and intentionally parse built
+      // artefacts; ADR-057 does not turn them into backend style subjects.
+      'n/no-unsupported-features/node-builtins': 'off',
+      'unicorn/filename-case': 'off',
+      'unicorn/isolated-functions': 'off',
+      'unicorn/max-nested-calls': 'off',
+      'unicorn/no-return-array-push': 'off',
+      'unicorn/no-negated-array-predicate': 'off',
+      'unicorn/no-break-in-nested-loop': 'off',
+      'unicorn/no-duplicate-loops': 'off',
+      'unicorn/prefer-string-replace-all': 'off',
+      'unicorn/no-unreadable-for-of-expression': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+      'unicorn/prefer-iterator-to-array': 'off',
+      'unicorn/prefer-string-raw': 'off',
+      'unicorn/consistent-boolean-name': 'off',
+      'unicorn/no-unreadable-array-destructuring': 'off',
+      'unicorn/no-useless-concat': 'off',
+      'unicorn/explicit-length-check': 'off',
+      'unicorn/prefer-direct-iteration': 'off',
+      'unicorn/no-null': 'off',
+      'unicorn/prefer-number-coercion': 'off',
+    },
+  },
+  {
     files: ['test/**'],
     ...pluginChaiFriendly.configs.recommendedFlat,
     languageOptions: {
       globals: {
         expect: true,
       },
+    },
+    rules: {
+      ...pluginChaiFriendly.configs.recommendedFlat.rules,
+      // The repository's Node test-runner convention is test/**/__tests__/*.test.mjs.
+      'unicorn/filename-case': 'off',
     },
   },
   {

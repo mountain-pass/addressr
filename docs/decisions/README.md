@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 56 (50 in-force, 6 historical)
+**Total ADRs:** 57 (51 in-force, 6 historical)
 
 ---
 
 ## In-force decisions
 
-_50 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_51 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -298,6 +298,13 @@ _50 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Add Playwright with Chromium against Gatsby's built site in the existing `website-build` path, because only a real browser can establish interaction outcomes — focus movement, focus return, Escape handling, inert state — that lint and built-output assertions can merely infer, as seven green assertions over a skip link that never moved focus showed. Green covers the scripted interactions alone, not full keyboard, screen-reader, cross-browser or WCAG conformance.
 **Confirmation:** Playwright/Chromium runs against the built site in `website-build` and fails the job on error; a skip-link test asserts focus moves to `main#content` and the next Tab stays inside it; a menu test covers keyboard activation, `aria-expanded`, focus into `nav#menu`, Tab and Shift+Tab staying out of the inert background, Escape dismissal, inert removal and focus return to the opener; each later behavioural fix adds its focused browser regression before ticket closure; output states the coverage limit.
 **Related:** ADR-054, ADR-055
+
+### ADR-057 — ESLint 10-compatible source accessibility linting
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Implement ADR-054 with `eslint-plugin-jsx-a11y-x` and `@typescript-eslint/parser`, retaining ESLint 10 and Gatsby client-side routing rather than downgrading the lint stack or forcing an unsupported peer set. Gatsby `Link` is explicitly covered by `anchor-has-content`.
+**Confirmation:** the dependency peer set resolves; website JSX and TSX reach the 19-entry flat config while generated Gatsby output stays ignored; executable ESLint mutations reject empty Gatsby links and unassociated labels and accept their fixed forms; full website lint exits zero with 48 measured warnings; typecheck, build, built-output and browser checks pass.
+**Related:** ADR-014, ADR-054, ADR-055, ADR-056
 
 ---
 

@@ -79,7 +79,9 @@ const HomeIndex = () => {
               href="https://data.gov.au/dataset/ds-dga-19432f89-dc3a-4ef3-b943-5326ef1dbecc/details"
               className="link primary"
               aria-labelledby="australian-data-source-title"
-            />
+            >
+              <span className="sr-only">Australian Data Source</span>
+            </a>
           </article>
           <article style={{ backgroundImage: `url(${pic02})` }}>
             <header className="major">
@@ -127,10 +129,12 @@ const HomeIndex = () => {
               <p>Build your solution quickly, with our straightforward API.</p>
             </header>
             <Link
-              to="/api-docs"
+              to="/api-docs/"
               className="link primary"
               aria-labelledby="easy-to-use-api-title"
-            />
+            >
+              <span className="sr-only">Easy To Use API</span>
+            </Link>
           </article>
           <article style={{ backgroundImage: `url(${pic05})` }}>
             <header className="major">
