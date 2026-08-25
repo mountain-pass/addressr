@@ -80,6 +80,8 @@ Reading them in order:
 
 ### Remaining tasks
 
+ADR-056's browser mechanism was implemented on 2026-08-25. Playwright Chromium now serves Gatsby's built output in the existing `website-build` job and exercises exactly two scripted journeys: skip-link focus/bypass and menu activation, focus, inert background, Escape and focus return. Its output explicitly does not claim full keyboard, screen-reader, cross-browser or WCAG conformance. The first reverse-Tab probe found a real escaped regression: the skip link sat outside `#wrapper[inert]` and could receive focus behind the overlay. Moving it inside the wrapper fixed the boundary, and the browser check now rejects focus on the skip link or anywhere in the inert subtree.
+
 - [ ] Add a JSX/TypeScript parser and widen the config's file globs to `.jsx`/`.tsx`. **Nothing else in the lint half works until this does**, and a green run before it would be meaningless.
 - [ ] Replace the blanket ignore with one scoped to `apps/website/public/` and `apps/website/.cache/`.
 - [ ] Get the source tree green or baseline the 81 findings explicitly, recording the count. Do not import the whole lint-debt backlog — the shebang and quoted-URL damage recorded there block nothing here.

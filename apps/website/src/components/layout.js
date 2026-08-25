@@ -188,20 +188,6 @@ class Layout extends React.Component {
             isMenuVisible ? 'is-menu-visible' : ''
           } `}
         >
-          {/* FIRST FOCUSABLE THING ON THE PAGE, deliberately — before the
-              ribbon, before the header. WCAG 2.4.1: every page repeats a promo
-              ribbon, a header and a status header before any content, and
-              until now a keyboard user tabbed through all of it on every page.
-              It targets a real <main> landmark rather than the existing
-              `#main`, which is a styling hook that five of six pages put the
-              <h1> OUTSIDE of. */}
-          <a
-            className="skip-link"
-            href="#content"
-            onClick={this.handleSkipToContent}
-          >
-            Skip to main content
-          </a>
           {/* `inert` while the menu is open. Without it Tab walks the whole
               blurred page behind the overlay — every link and the footer —
               before reaching a single menu item, each stop invisible under a
@@ -211,6 +197,19 @@ class Layout extends React.Component {
               React 18 does not recognise `inert` as a boolean prop; undefined
               omits the attribute, so SSR and hydration agree. */}
           <div id="wrapper" inert={isMenuVisible ? '' : undefined}>
+            {/* FIRST FOCUSABLE THING ON THE PAGE, deliberately — before the
+                ribbon, before the header. It lives inside the inert wrapper so
+                reverse-Tab cannot reach it behind the open menu. WCAG 2.4.1:
+                every page repeats a promo ribbon, a header and a status header
+                before any content. It targets a real <main> landmark rather
+                than the existing `#main`, which is only a styling hook. */}
+            <a
+              className="skip-link"
+              href="#content"
+              onClick={this.handleSkipToContent}
+            >
+              Skip to main content
+            </a>
             <Header
               onToggleMenu={this.handleOpenMenu}
               isMenuVisible={isMenuVisible}

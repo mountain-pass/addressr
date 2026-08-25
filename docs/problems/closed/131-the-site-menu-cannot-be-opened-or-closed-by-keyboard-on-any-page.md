@@ -129,3 +129,7 @@ The risk review's remaining uncovered item: neither converted control declares `
 Measured rather than argued, by injecting an `<a class="menu-link">` into the same live nav and comparing computed styles against the button beside it. **Identical both ways**: `rgb(255,255,255)` at rest, `rgb(155,241,255)` on hover. `button { color: _palette(fg-bold) }` and `a { color }` resolve to the same token, as do `button:hover` and `a:hover`. No neutralisation needed, and adding one would be the `text-transform: none` mistake again — a rule written against a difference that does not exist.
 
 The `transition` shorthand does differ (`background-color, box-shadow, color` against `color, border-bottom-color`), same duration and easing. Both animate `color`; the others have no changing value on this control.
+
+### Correction 2026-08-25 — the skip link was outside the inert boundary
+
+The earlier “9 focusable elements with the menu open” measurement did not establish that every background control was inert. Browser automation added under ADR-056 found that Shift+Tab from the focused menu reached the skip link behind the overlay because the link was a sibling before `#wrapper`, not a child of the inert subtree. The skip link is now the first child of `#wrapper`: it remains first in focus order while the menu is closed and becomes inert with the rest of the page while the menu is open. The browser regression rejects focus on the skip link or anything inside the inert wrapper; it does not add the focus trap this ticket explicitly declined.

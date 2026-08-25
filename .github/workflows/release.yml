@@ -138,6 +138,10 @@ jobs:
         run: npm run build -w @mountainpass/website
       - name: Behavioural assertions over the built site
         run: npm run test:website
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Scripted Chromium keyboard interactions only — not full accessibility conformance
+        run: npm run test:browser -w @mountainpass/website
       # The Maps browser key's referrer restriction, probed live (JTBD-401).
       #
       # It rides in THIS job rather than a new one because it shares this job's
