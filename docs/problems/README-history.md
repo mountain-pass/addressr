@@ -236,3 +236,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-08-25
 
 > Last reviewed: 2026-08-24 **P139 closed after production verification** — `addressr.io` emits both live home-page tile links with accessible names from their visible headings and the expected destinations
+
+> Last reviewed: 2026-08-25 **P132 verification pending** — a shared 65% dark scrim gives all six home-page accent tiles at least 6.18:1 white-text contrast over the brightest image input; built Chromium recomputes the composites

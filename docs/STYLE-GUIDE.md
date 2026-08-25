@@ -19,7 +19,7 @@
 > - The Do/Don't rules are now enforceable. The **live defects** those rules describe are tracked as tickets
 >   and are not conventions to preserve — see
 >   [P131](problems/closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) and
->   [P132](problems/verifying/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md).
+>   [P132](problems/closed/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md).
 >   A reviewer meeting one of them is looking at a known defect, not at a rule being broken for the first
 >   time.
 

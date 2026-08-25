@@ -1,6 +1,6 @@
 # Problem 132: White text on all six accent tiles fails contrast, and someone has been patching it by hand
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 9 (Medium) — Impact: Moderate (3) × Likelihood: Certain (3, capped at Possible for scoring consistency with other realised defects). Impact 3: WCAG 1.4.3 Contrast (Minimum) is **Level AA**, and this fails on the home page's primary content tiles — the surface a prospect reads while deciding whether to evaluate the product. Not 4: the text is legible to most sighted readers in good conditions, and no other page or function is affected. Likelihood: realised and live, measured 2026-08-24.
 **Origin**: internal
@@ -58,7 +58,9 @@ The existing dark `:after` scrim painted below the 85% accent `:before` layer, w
 
 Implemented on 2026-08-25. The accent layer now paints at z-index 1 and a 65% `bg` scrim paints above it at z-index 2, below the z-index 3 content and z-index 4 full-tile link. Against a pure-white underlying image, the six resulting white-text ratios range from 6.18:1 to 7.81:1; the scrim alone provides a conservative 4.64:1 floor.
 
-The three inline black patches are gone. A Chromium regression reads the built pseudo-element styles, verifies the paint order and recomputes all six ratios against the brightest possible image input. Local verification passed a clean seven-route Gatsby build, 30 built-output assertions and the focused Chromium contrast journey. Awaiting exact production verification before closure.
+The three inline black patches are gone. A Chromium regression reads the built pseudo-element styles, verifies the paint order and recomputes all six ratios against the brightest possible image input. Local verification passed a clean seven-route Gatsby build, 30 built-output assertions and the focused Chromium contrast journey.
+
+Production verified on 2026-08-25 at `https://addressr.io/`: all six live home-page tile headers expose the fixed stacking order (`::before` z-index 1 at 85% opacity, `::after` z-index 2 with `rgba(36, 41, 67, 0.65)`, content z-index 3), white header text, and computed ratios of 6.37, 7.81, 7.00, 6.18, 6.76 and 6.38. Release run 32855144646 for commit `fbc8adf4` completed successfully; `check-deps` remained the known advisory failure.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-25 **P132 verification pending** — a shared 65% dark scrim gives all six home-page accent tiles at least 6.18:1 white-text contrast over the brightest image input; built Chromium recomputes the composites
+> Last reviewed: 2026-08-25 **P132 closed after production verification** — `addressr.io` emits all six home-page accent tiles with the fixed scrim stacking order and white-text ratios from 6.18:1 to 7.81:1
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -90,7 +90,6 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
-| P132 | White text on all six accent tiles fails contrast (1.4.3 AA)   | 2026-08-25        | no — not observed |
 
 ## Inbound Upstream Reports
 
