@@ -7,6 +7,7 @@ test.describe(
       page,
     }) => {
       await page.goto('/');
+      await expect(page.locator('.body')).not.toHaveClass(/is-loading/);
 
       const skipLink = page.getByRole('link', { name: 'Skip to main content' });
       const main = page.locator('main#content');
