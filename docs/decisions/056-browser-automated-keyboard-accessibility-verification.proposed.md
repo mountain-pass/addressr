@@ -92,4 +92,4 @@ The checks run in Chromium against Gatsby's built site in the existing `website-
 - [ADR-054](054-source-accessibility-linting.proposed.md) — author-time markup ownership.
 - [ADR-055](055-built-output-css-selector-reachability.proposed.md) — build-time CSS reachability ownership.
 - [P131](../problems/closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — the interaction repair that exposed the static-check blind spot.
-- [P140](../problems/verifying/140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md) — current behavioural accessibility work governed by this decision.
+- [P140](../problems/closed/140-a-route-change-moves-no-focus-so-the-next-tab-resumes-mid-page.md) — route-change focus behaviour governed by this decision.

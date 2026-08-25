@@ -1,6 +1,6 @@
 # Problem 140: A route change moves no focus, so the next Tab resumes mid-page
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 9 (Medium) — Impact: Moderate (3) × Likelihood: Likely (3). Impact 3: WCAG 2.4.3 Focus Order (Level A) as it applies to client-side routing — the new page is never announced and keyboard position is inherited from the page that was left. Not a hard block: the content is reachable, just not findable without hunting. Likelihood 3: every internal navigation on the site, for every keyboard and screen-reader user.
 **Origin**: internal
@@ -37,7 +37,9 @@ Before the fix, keyboard users could activate the new page's skip link after nav
 
 Released to `master` on 2026-08-25. `gatsby-browser.js` now focuses `main#content` after pathname changes, excluding initial loads and same-page hash navigation. Gatsby's built-in announcer remains the only route announcement.
 
-The Playwright regression failed before the fix because `main#content` was inactive. A synchronous first implementation then exposed the ordering race: Gatsby reclaimed focus on `#gatsby-focus-wrapper`, and the next Tab landed on the skip link. The animation-frame implementation passes the full journey and leaves the next Tab inside the destination main content. Awaiting exact production verification before closure.
+The Playwright regression failed before the fix because `main#content` was inactive. A synchronous first implementation then exposed the ordering race: Gatsby reclaimed focus on `#gatsby-focus-wrapper`, and the next Tab landed on the skip link. The animation-frame implementation passes the full journey and leaves the next Tab inside the destination main content.
+
+Production verification at `https://addressr.io/pricing/` on 2026-08-25 23:17 AEST confirmed that menu navigation focuses `main#content`, clears the menu's inert state and updates Gatsby's sole announcer to `Navigated to Pricing`. The browser regression also confirms that the following Tab remains within the destination main content.
 
 ## Related
 
