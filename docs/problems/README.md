@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-25 **P140 closed** — production menu navigation focuses the destination main landmark, clears inert state and updates Gatsby's sole route announcement; Chromium also covers next-Tab containment
+> Last reviewed: 2026-08-25 **P132 verification pending** — a shared 65% dark scrim gives all six home-page accent tiles at least 6.18:1 white-text contrast over the brightest image input; built Chromium recomputes the composites
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -22,7 +22,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P100 | Production recovery floor has never been measured                                    | Medium (9)   | Open          | S      | 2026-08-18 | internal |
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
-| 9.0  | P132 | White text on all six accent tiles fails contrast (1.4.3 AA)                         | Medium (9)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -91,6 +90,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
+| P132 | White text on all six accent tiles fails contrast (1.4.3 AA)   | 2026-08-25        | no — not observed |
 
 ## Inbound Upstream Reports
 

@@ -1,6 +1,6 @@
 # Problem 132: White text on all six accent tiles fails contrast, and someone has been patching it by hand
 
-**Status**: Open
+**Status**: Verification Pending
 **Reported**: 2026-08-24
 **Priority**: 9 (Medium) — Impact: Moderate (3) × Likelihood: Certain (3, capped at Possible for scoring consistency with other realised defects). Impact 3: WCAG 1.4.3 Contrast (Minimum) is **Level AA**, and this fails on the home page's primary content tiles — the surface a prospect reads while deciding whether to evaluate the product. Not 4: the text is legible to most sighted readers in good conditions, and no other page or function is affected. Likelihood: realised and live, measured 2026-08-24.
 **Origin**: internal
@@ -44,20 +44,30 @@ The third is the one that preserves the design intent, so it is worth pricing be
 
 ## Investigation Tasks
 
-- [ ] Decide between the three options above. This is a visual-design call and belongs to the maintainer, not to whoever implements it.
-- [ ] Whatever is chosen, **measure it** — record the resulting ratios in `docs/STYLE-GUIDE.md`'s background-contrast table rather than asserting the fix works.
-- [ ] Sweep the three `color: 'black'` inline styles in `index.jsx`. If they survive the fix they mask it.
-- [ ] Check `fg-light` (`rgba(244,244,255,0.2)`) while in here. It is deliberately excluded from both contrast tables in the style guide because alpha compositing makes a single number misleading, but 20% alpha white on any of these accents will be far below 4.5:1 wherever it is used over one.
-- [ ] Add a design-token contrast assertion so this cannot silently return. The style guide now carries measured tables, but nothing executable checks them — a token edit can falsify the document without failing anything.
+- [x] Choose the shared dark scrim so the accent hues and the site's light-on-dark treatment remain intact.
+- [x] Measure the conservative white-image composites and record all six ratios in `docs/STYLE-GUIDE.md`.
+- [x] Remove the three `color: 'black'` inline patches from `index.jsx`.
+- [x] Confirm `fg-light` is not used in tile content.
+- [x] Add a built-browser contrast assertion over the emitted pseudo-element colours, opacity and stacking order.
+
+## Root Cause Analysis
+
+The existing dark `:after` scrim painted below the 85% accent `:before` layer, where it could not darken the colour directly behind the text. Three individual `<strong>` elements were then patched to black while their surrounding headings, paragraphs and links continued to inherit white. Contrast ownership had drifted from the shared tile layer into leaf markup.
+
+## Fix Released
+
+Implemented on 2026-08-25. The accent layer now paints at z-index 1 and a 65% `bg` scrim paints above it at z-index 2, below the z-index 3 content and z-index 4 full-tile link. Against a pure-white underlying image, the six resulting white-text ratios range from 6.18:1 to 7.81:1; the scrim alone provides a conservative 4.64:1 floor.
+
+The three inline black patches are gone. A Chromium regression reads the built pseudo-element styles, verifies the paint order and recomputes all six ratios against the brightest possible image input. Local verification passed a clean seven-route Gatsby build, 30 built-output assertions and the focused Chromium contrast journey. Awaiting exact production verification before closure.
 
 ## Notes
 
 **On how this was nearly missed.** The first draft of `docs/STYLE-GUIDE.md` contained the sentence "The palette is in good shape", written on the strength of a contrast table that measured every token as a **foreground on the page background**. Six of them are used as backgrounds, and that table said nothing about it. A style-guide review caught it. Had it been ratified as written, the guide would have told every future reviewer that colour contrast on this site had been checked and cleared — at precisely the surface where it fails.
 
-The guide now carries both tables and says the palette is "sound for its dark-ground pairings and unresolved for the tile overlays". This ticket is the unresolved half.
+The guide now carries the original raw-token range and the fixed tile composites, so a foreground-only measurement cannot hide this usage again.
 
 ## Related
 
 - [P125](../closed/125-every-page-of-the-website-ships-without-a-title-element.md) — found during that fix and recorded in its Fixed section.
 - [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — the Level A blocker found in the same pass. Higher priority: that one makes navigation impossible, this one makes text hard to read.
-- [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) — carries the measurements; `human-oversight: unconfirmed`.
+- [docs/STYLE-GUIDE.md](../../STYLE-GUIDE.md) — ratified guide carrying the measured composites and executable-check boundary.

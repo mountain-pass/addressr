@@ -52,9 +52,7 @@ const HomeIndex = () => {
               <p>
                 Addresses validated against the Geocoded National Address File
                 (referred to as G-NAF), Australia’s{' '}
-                <strong style={{ color: 'black', fontWeight: '800' }}>
-                  authoritative
-                </strong>{' '}
+                <strong>authoritative</strong>{' '}
                 address file.
               </p>
               <span
@@ -87,9 +85,7 @@ const HomeIndex = () => {
             <header className="major">
               <h3>
                 Software As or{' '}
-                <strong style={{ color: 'black', fontWeight: '800' }}>
-                  NOT
-                </strong>{' '}
+                <strong>NOT</strong>{' '}
                 As A Service
               </h3>
               <p>
@@ -150,9 +146,7 @@ const HomeIndex = () => {
               <h3>Completely Free or Pay for Support</h3>
               <p>
                 That&apos;s right, Addressr is completely free.{' '}
-                <strong style={{ color: 'black', fontWeight: '800' }}>
-                  Forever.
-                </strong>
+                <strong>Forever.</strong>
                 &nbsp;
                 <br />
                 Or for peace of mind for your mission critical solutions, get

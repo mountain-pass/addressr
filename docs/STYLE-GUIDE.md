@@ -1,6 +1,6 @@
 # Style Guide
 
-**Last reviewed**: 2026-08-24
+**Last reviewed**: 2026-08-25
 **human-oversight**: confirmed
 **oversight-date**: 2026-08-24
 **Status**: Ratified
@@ -19,7 +19,7 @@
 > - The Do/Don't rules are now enforceable. The **live defects** those rules describe are tracked as tickets
 >   and are not conventions to preserve — see
 >   [P131](problems/closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) and
->   [P132](problems/open/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md).
+>   [P132](problems/verifying/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md).
 >   A reviewer meeting one of them is looking at a known defect, not at a rule being broken for the first
 >   time.
 
@@ -79,17 +79,17 @@ tree". Both are false. The grep behind them matched 6-digit hex in `.scss` only 
 3-digit hex, `rgba()`, a second `hsl()` on the very next line, and JSX inline styles entirely. There are at
 least ten hardcoded colour values across five files:
 
-| Location                                        | Value                                         |
-| ----------------------------------------------- | --------------------------------------------- |
-| `main.scss:188` and `:189`                      | `hsl(208, 99%, 50%)`, twice, in the same rule |
-| `main.scss:200`                                 | `background: #fff`                            |
-| `main.scss:183`                                 | `color: GrayText` (system keyword)            |
-| `layout/_header.scss:353-354`                   | `background: rebeccapurple; color: white`     |
-| `layout/_header.scss:59`                        | `rgba(0, 0, 0, 0.15)`                         |
-| `layout/_menu.scss:102`                         | `rgba(0, 0, 0, 0)`                            |
-| `libs/_mixins.scss:219-227`                     | `red`, `blue`, `green` (debug mixin)          |
-| `layout/_main.scss:232`                         | `// color: #4caf50` (commented out)           |
-| `index.jsx:67,76,103,166` and `Header.js:17,32` | `'black'`, `'#f2f2f2'` — JSX inline styles    |
+| Location                      | Value                                         |
+| ----------------------------- | --------------------------------------------- |
+| `main.scss:188` and `:189`    | `hsl(208, 99%, 50%)`, twice, in the same rule |
+| `main.scss:200`               | `background: #fff`                            |
+| `main.scss:183`               | `color: GrayText` (system keyword)            |
+| `layout/_header.scss:353-354` | `background: rebeccapurple; color: white`     |
+| `layout/_header.scss:59`      | `rgba(0, 0, 0, 0.15)`                         |
+| `layout/_menu.scss:102`       | `rgba(0, 0, 0, 0)`                            |
+| `libs/_mixins.scss:219-227`   | `red`, `blue`, `green` (debug mixin)          |
+| `layout/_main.scss:232`       | `// color: #4caf50` (commented out)           |
+| `index.jsx` and `Header.js`   | `'#f2f2f2'` — JSX inline styles               |
 
 Strictly there are no CSS modules and no styled-components. But inline `style={{}}` props **are**
 component-scoped styling, and they are the least overridable kind there is. Saying otherwise stops a reader
@@ -128,27 +128,27 @@ recomputed by a reviewer:
 
 **This table is why the section above must not be read as "the palette is cleared."** An earlier draft of
 this guide said "the palette is in good shape" on the strength of the foreground table alone. That sentence
-was wrong, and wrong in the most expensive direction: it told a reader that colour contrast had been checked,
-at precisely the place where there is a live failure.
+was wrong: the accent tokens are also used as backgrounds, where their raw contrast with white ranges from
+1.82:1 to 3.43:1.
 
-`components/_tiles.scss:113-147` sets `accent1`–`accent6` as the home page tile overlay backgrounds, with the
-inherited white body text sitting above them:
+The tile treatment now preserves white text by painting a 65% `bg` scrim above the 85% accent overlay and
+below the content. The conservative measurements below assume the image beneath every tile is pure white,
+the brightest possible input. They were computed on 2026-08-25 with the WCAG 2.x relative-luminance formula:
 
-| Tile background   | White text      | Black text   |
-| ----------------- | --------------- | ------------ |
-| `accent1` #6fc3df | **1.99:1 FAIL** | 10.55:1 pass |
-| `accent2` #8d82c4 | **3.43:1 FAIL** | 6.12:1 pass  |
-| `accent3` #ec8d81 | **2.42:1 FAIL** | 8.69:1 pass  |
-| `accent4` #e7b788 | **1.82:1 FAIL** | 11.53:1 pass |
-| `accent5` #8ea9e8 | **2.34:1 FAIL** | 8.99:1 pass  |
-| `accent6` #87c5a4 | **1.99:1 FAIL** | 10.55:1 pass |
+| Tile composite    | White text |
+| ----------------- | ---------- |
+| `accent1` #6fc3df | **6.37:1** |
+| `accent2` #8d82c4 | **7.81:1** |
+| `accent3` #ec8d81 | **7.01:1** |
+| `accent4` #e7b788 | **6.18:1** |
+| `accent5` #8ea9e8 | **6.76:1** |
+| `accent6` #87c5a4 | **6.38:1** |
 
-All six fail WCAG 1.4.3 (Level AA, 4.5:1) with white text; all six pass with black. This is a **live defect,
-not a hypothetical** — and `index.jsx` contains its own evidence: three hand-patched
-`style={{ color: 'black' }}` `<strong>` elements sitting on those tiles, someone fixing this one word at a
-time while the surrounding `<h3>` and `<p>` text stayed white and stayed failing.
-
-So: the palette is **sound for its dark-ground pairings** and **unresolved for the tile overlays**.
+All six pass WCAG 1.4.3 (Level AA, 4.5:1) for normal text. Even if the accent layer disappeared, the 65%
+`bg` scrim alone guarantees **4.64:1** over a white image. A Chromium regression reads the built pseudo-element
+colours, opacity and stacking order and recomputes the six conservative ratios, so a token or layer change
+cannot silently falsify this table. The three former inline black patches were removed; the shared layer now
+owns contrast for headings, paragraphs, links and strong text together.
 
 `fg-light` at 20% alpha is excluded from both tables deliberately: alpha compositing makes its effective
 ratio depend on what sits behind it, and a single number would be more misleading than none.

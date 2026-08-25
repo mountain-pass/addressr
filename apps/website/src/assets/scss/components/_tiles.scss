@@ -70,11 +70,11 @@
       opacity: 0.85;
       position: absolute;
       width: 100%;
-      z-index: 2;
+      z-index: 1;
     }
 
     &:after {
-      background-color: transparentize(_palette(bg), 0.75);
+      background-color: transparentize(_palette(bg), 0.35);
       content: '';
       display: block;
       height: 100%;
@@ -82,7 +82,7 @@
       position: absolute;
       top: 0;
       width: 100%;
-      z-index: 1;
+      z-index: 2;
     }
 
     // &:hover {
