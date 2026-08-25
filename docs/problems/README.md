@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P137 closed after production verification** — live home and Quick Start landmark and id checks pass for commit `ee053cc1`
+> Last reviewed: 2026-08-26 **P138 known error** — source, built-output and browser enforcement gaps have documented root causes and deployed fixes
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,12 +9,12 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                                | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | ------------------------------------------------------------------------------------ | ------------ | ------------- | ------ | ---------- | -------- |
+| 24.0 | P138 | Nothing decides what enforces accessibility conformance on `apps/website`            | High (12)    | Known Error   | S      | 2026-08-24 | internal |
 | 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)                    | High (12)    | Open          | S      | 2026-08-03 | internal |
 | 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices                 | High (12)    | Open          | S      | 2026-08-10 | internal |
 | 12.0 | P101 | Scheduled workflow's loud failure has no reader                                      | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                         | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P116 | Nine workflow pins imply coverage they cannot provide, and say nothing about it      | High (12)    | Open          | S      | 2026-08-20 | internal |
-| 12.0 | P138 | Nothing decides what enforces accessibility conformance on `apps/website`            | High (12)    | Open          | S      | 2026-08-24 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                       | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 10.0 | P118 | Every risk report is a single newline, so the audit trail is empty                   | High (10)    | Open          | S      | 2026-08-21 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only                   | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |

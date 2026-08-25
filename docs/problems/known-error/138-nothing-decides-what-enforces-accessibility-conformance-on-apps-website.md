@@ -1,13 +1,13 @@
 # Problem 138: Nothing decides what enforces accessibility conformance on `apps/website`
 
-**Status**: Open
+**Status**: Known Error
 **Reported**: 2026-08-24
 **Priority**: 12 (High) — Impact: Major (4) × Likelihood: Likely (3). Impact 4: this repository's stated posture is accessibility-first and WCAG AA, enforced on every UI edit by a global gate; the one tree containing UI has no automated enforcement at all, so the posture rests entirely on whether a reviewer happens to look. Likelihood 3: three defects invisible to the current mechanism were found in a single change, within one day of the tree landing.
 **Origin**: internal
 **Effort**: S — the work is one decision record. The mechanisms it chooses between are each S–M, and belong to their own tickets.
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
-**WSJF**: 12.0 — (12 × 1.0) / 1
+**WSJF**: 24.0 — (12 × 2.0) / 1
 
 ## Description
 
@@ -45,7 +45,7 @@ The architecture review's advisory lean is **C, with B load-bearing** — B addr
 
 - ADR-053 — the phase-1 deferral this reopens.
 - [P126](../closed/126-two-footer-links-render-without-an-href-on-every-page.md), [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md), [P137](../closed/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md) — the three tests of the deferral.
-- [P098](098-five-test-files-reached-by-no-runner-assertions-never-execute.md) — `test:precommit` is invoked by nothing. Same family: a tier believed to be enforcing something, that is not.
+- [P098](../open/098-five-test-files-reached-by-no-runner-assertions-never-execute.md) — `test:precommit` is invoked by nothing. Same family: a tier believed to be enforcing something, that is not.
 
 ## Decided 2026-08-24 — and the implementation is bigger than this ticket assumed
 
@@ -87,3 +87,13 @@ ADR-056's browser mechanism was implemented on 2026-08-25. Playwright Chromium n
 - [x] Get the source tree green or baseline the 81 findings explicitly, recording the count. Do not import the whole lint-debt backlog — the shebang and quoted-URL damage recorded there block nothing here. **Completed 2026-08-26 under ADR-057:** `npx eslint apps/website` exits 0 with 48 warnings and 0 errors. Blocking `jsx-a11y-x` source findings were fixed or documented: the search input has a meaningful associated label, both home tile overlay links carry source text, Gatsby `Link` is covered explicitly, and the menu container's scoped Escape handler has a single inline baseline. Behavioural ESLint tests prove TSX parsing plus broken and fixed overlay-link and label cases.
 - [x] Build the reachability check to the shape above, and mutation-test it against **both** real defects. A single-direction check demonstrably cannot pass both, which is the point of testing both. **Completed 2026-08-25:** the shared checker compiles the site SCSS with source maps, excludes only the named Font Awesome, Swagger UI and Meyer reset sources, and checks 206 site-owned selectors against all six routes plus hydrated menu, Autosuggest and Tabs states. The pre-existing unused HTML5 UP selector corpus was deleted in place rather than baselined. Both status-header-id and `nav`-to-`div` mutations fail; zero-page and zero-selector corpora fail loudly. Gatsby build and all three Chromium journeys pass. This is a CSS/markup relationship check, not a claim of WCAG conformance.
 - [x] Note that widening `lint-staged`'s `*.{js,jsx}` glob to reach `.tsx` would touch the flat-config decision's own confirmation criterion, so it needs clause supersession rather than a factual correction. **Recorded in ADR-054:** this decision deliberately does not do it, which leaves `404.tsx` outside staged-file autofix and covered by full lint/build output instead.
+
+## Root Cause Analysis
+
+Accessibility enforcement was treated as one concern even though source markup, built CSS/HTML relationships and interaction behaviour require different instruments. The website was also blanket-ignored by ESLint; removing that ignore alone still left JSX and TSX unmatched or unparseable, while the upstream accessibility plugin did not support the repository's ESLint 10 version.
+
+The reproduction evidence is retained above: 81 source findings with every JSX-bearing `.js` file failing to parse, unmatched `.jsx`/`.tsx`, two CSS mutations that only opposite-direction reachability checks catch, and seven green static assertions over a broken skip-link interaction.
+
+## Workaround
+
+Before the three enforcement tiers landed, accessibility defects required manual review plus focused built-output assertions. That remained an incomplete workaround because it could not provide author-time feedback, detect selector orphans generally, or exercise focus behaviour. ADR-054 through ADR-057 now replace it with scoped source lint, two-way built-output reachability and scripted Chromium checks.

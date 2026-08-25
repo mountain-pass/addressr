@@ -52,4 +52,4 @@ Production verification on 2026-08-24 fetched `https://addressr.io/` and observe
 ## Related
 
 - [P126](../closed/126-two-footer-links-render-without-an-href-on-every-page.md) — anchors that are not links. This is the inverse: a link that is not nameable.
-- [P138](../open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — `jsx-a11y/anchor-has-content` is exactly this rule, and would have caught it at author time.
+- [P138](../known-error/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — `jsx-a11y/anchor-has-content` is exactly this rule, and would have caught it at author time.

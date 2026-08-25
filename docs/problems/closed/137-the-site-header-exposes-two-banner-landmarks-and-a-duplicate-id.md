@@ -24,7 +24,7 @@ All three were fixed inside [P131](../closed/131-the-site-menu-cannot-be-opened-
 - **`<header id="header" class="alt status-header">` → `<div class="alt status-header">`.** The justification written at the time was "`.status-header` is already the styling hook, so nothing visual depends on the tag or the id". One grep falsifies it: `_header.scss:20` reads `#header.status-header`, **id-qualified**. The id was the element's only stylesheet reachability. Dropping it loses the entire `#header` block (`position: fixed`, `height: 3.25em`, background, shadow, `text-transform`), the four breakpoint `top` offsets that place this strip _below_ the main header, `#header.alt` (which makes it absolute and transparent), `#header .logo` for the badge anchor, and the `body.is-loading` fade. An out-of-flow element becomes in-flow at the top of a wrapper whose `padding-top` is sized for exactly one fixed header — a layout shift on all six pages.
 - **`<nav>` → `<div className="nav">`, with only the base selector widened.** `_header.scss` nests four breakpoint blocks under a bare `nav`. All four went dead. The worst is xsmall, where `overflow: hidden; text-indent: 5em; width: 5em` is what hides the label behind the hamburger glyph: on mobile the button renders the literal word "Menu" at the wrong width.
 
-**Neither was visible to any of the 25 built-output assertions**, which read emitted HTML and cannot see a CSS rule that stopped matching. An architecture review caught both. That is the evidence [P138](../open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) exists to act on.
+**Neither was visible to any of the 25 built-output assertions**, which read emitted HTML and cannot see a CSS rule that stopped matching. An architecture review caught both. That is the evidence [P138](../known-error/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) exists to act on.
 
 ## Investigation Tasks
 
@@ -56,4 +56,4 @@ Closed on 2026-08-26 after that exact production verification.
 ## Related
 
 - [P131](../closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) — where this was attempted, reverted, and split out. Carries the full account.
-- [P138](../open/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — what would have caught it.
+- [P138](../known-error/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — what would have caught it.
