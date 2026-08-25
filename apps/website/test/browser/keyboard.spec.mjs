@@ -74,5 +74,30 @@ test.describe(
       await expect(wrapper).not.toHaveAttribute('inert', '');
       await expect(opener).toBeFocused();
     });
+
+    test('menu navigation moves focus to the new page without reclaiming it', async ({
+      page,
+    }) => {
+      await page.goto('/');
+
+      const opener = page.getByRole('button', { name: 'Menu', exact: true });
+      await opener.focus();
+      await page.keyboard.press('Enter');
+
+      await page.locator('#menu').getByRole('link', { name: 'Pricing' }).press('Enter');
+      await expect(page).toHaveURL(/\/pricing\/$/);
+
+      const main = page.locator('main#content');
+      await expect(main).toBeFocused();
+      await expect(page.locator('#wrapper')).not.toHaveAttribute('inert', '');
+      await expect(page.locator('#gatsby-announcer')).toContainText(
+        'Navigated to Pricing',
+      );
+
+      await page.keyboard.press('Tab');
+      await expect
+        .poll(() => main.evaluate((element) => element.contains(document.activeElement)))
+        .toBe(true);
+    });
   },
 );

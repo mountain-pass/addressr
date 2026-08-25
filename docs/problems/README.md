@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-24 **P139 closed after production verification** — `addressr.io` emits both live home-page tile links with accessible names from their visible headings and the expected destinations
+> Last reviewed: 2026-08-25 **P140 verification pending** — route changes now move focus to the destination main landmark after Gatsby completes its own focus step; Chromium covers menu navigation, inert removal, the existing route announcement, and next-Tab containment
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -23,7 +23,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
 | 9.0  | P132 | White text on all six accent tiles fails contrast (1.4.3 AA)                         | Medium (9)   | Open          | S      | 2026-08-24 | internal |
-| 9.0  | P140 | A route change moves no focus, so the next Tab resumes mid-page                      | Medium (9)   | Open          | S      | 2026-08-24 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -84,14 +83,15 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 Fix released, awaiting user verification (driven off the dual-tolerant glob `docs/problems/*.verifying.md docs/problems/verifying/*.md` per ADR-022 + RFC-002 migration window). Sorted by `Released date ASC` (oldest at row 1; same-day releases tiebreak by ID ASC). <!-- VQ-SORT-DIRECTION: oldest-first per ADR-022 --> `Likely verified?` column carries an **evidence-first** cell per P186 — three canonical values: `yes — observed: <evidence>`, `no — not observed` (default for newly-released tickets), `no — observed regression`. <!-- LIKELY-VERIFIED-CELL-SHAPE: evidence-based per P186 --> Age is preserved separately via the `Released` column.
 
-| ID   | Title                                                          | Released          | Likely verified?  |
-| ---- | -------------------------------------------------------------- | ----------------- | ----------------- |
-| P051 | release:watch stalls on the changeset release-PR approval gate | 2026-07-18        | no — not observed |
-| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content  | 2026-07-20        | no — not observed |
-| P023 | Cross-origin root `/` not browser-cached (preflight flood)     | 2026-07-25 v3.0.2 | no — not observed |
-| P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
-| P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
-| P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
+| ID   | Title                                                           | Released          | Likely verified?  |
+| ---- | --------------------------------------------------------------- | ----------------- | ----------------- |
+| P051 | release:watch stalls on the changeset release-PR approval gate  | 2026-07-18        | no — not observed |
+| P062 | AFK iter subprocess sessions missing docs/BRIEFING.md content   | 2026-07-20        | no — not observed |
+| P023 | Cross-origin root `/` not browser-cached (preflight flood)      | 2026-07-25 v3.0.2 | no — not observed |
+| P067 | addressr server has no SIGTERM graceful-shutdown handler        | 2026-07-26 v3.0.3 | no — not observed |
+| P070 | stream-down promotes failed and partial downloads into cache    | 2026-07-29 v3.0.4 | no — not observed |
+| P097 | Cucumber leg intermittently starts against an empty index       | 2026-08-09 v3.3.0 | no — not observed |
+| P140 | A route change moves no focus, so the next Tab resumes mid-page | 2026-08-25        | no — not observed |
 
 ## Inbound Upstream Reports
 

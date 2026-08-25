@@ -4,10 +4,16 @@
  * See: https://www.gatsbyjs.org/docs/browser-apis/
  */
 
-import PropTypes from 'prop-types';
-import React from 'react';
 import SwaggerUI from 'swagger-ui';
 window.SwaggerUI = SwaggerUI;
+
+export const onRouteUpdate = ({ location, prevLocation }) => {
+  if (!prevLocation || prevLocation.pathname === location.pathname) return;
+
+  requestAnimationFrame(() => {
+    document.querySelector('#content')?.focus({ preventScroll: true });
+  });
+};
 
 // class SessionCheck extends React.Component {
 //   constructor(props) {

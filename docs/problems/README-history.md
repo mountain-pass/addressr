@@ -232,3 +232,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-24 **P139 verification pending** — both live home-page tile overlays now take their accessible names from visible headings; the built-output regression failed on both unnamed links before the fix and passes after a clean build. Awaiting exact Netlify production verification
 
 > Last reviewed: 2026-08-21 **P033 CLOSED** — source-inspection tests. Zero open investigation tasks: the audit published a rerunnable predicate, the convention is in AGENTS.md, and every decision-bearing pin converted with mutation proof in both directions, which turned up two live defects nothing else had (a timeout mapping that never fires, and a swallowed terraform apply exit code). What remains is NOT closed with it — nine workflow files needing a note (P116) and 23 watcher assertions still pinned as text (P119), both split out because an XL divisor was mispricing S and L work
+
+## 2026-08-25
+
+> Last reviewed: 2026-08-24 **P139 closed after production verification** — `addressr.io` emits both live home-page tile links with accessible names from their visible headings and the expected destinations

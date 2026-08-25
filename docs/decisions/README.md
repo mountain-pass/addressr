@@ -295,8 +295,8 @@ _50 ADRs. These are the current rules. The architect agent reads this section fi
 ### ADR-056 — Browser-automated keyboard accessibility verification
 
 **Status:** proposed | **Oversight:** confirmed
-**Decides:** Run Playwright with Chromium against Gatsby's built site in the existing website pipeline, because browser automation can drive keyboard input and assert focus, focus return, Escape handling and inert state where seven static assertions could not. Green covers only the scripted interactions, not full keyboard, screen-reader, cross-browser or WCAG conformance.
-**Confirmation:** Playwright runs in `website-build`; skip-link activation moves focus to `main#content` and the next Tab stays inside it; menu activation updates `aria-expanded`, moves focus into `nav#menu`, keeps Tab out of the inert background, removes inertness on Escape and returns focus to the opener; later behavioural fixes add focused browser regressions; output states the coverage limit.
+**Decides:** Add Playwright with Chromium against Gatsby's built site in the existing `website-build` path, because only a real browser can drive keyboard input and establish focus movement, focus return, Escape handling and inert state — outcomes that lint and built-output assertions can only infer, as seven green skip-link assertions over broken focus showed. Green covers the scripted interactions alone, not full keyboard, screen-reader, cross-browser or WCAG conformance.
+**Confirmation:** Playwright/Chromium runs against the built site in `website-build` and fails the job on error; a skip-link test asserts focus moves to `main#content` and the next Tab stays inside it; a menu test covers keyboard activation, `aria-expanded`, focus into `nav#menu`, Tab and Shift+Tab staying out of the inert background, Escape dismissal, inert removal and focus return to the opener; each later behavioural fix adds its focused browser regression before ticket closure; output states the coverage limit.
 **Related:** ADR-054, ADR-055
 
 ---
