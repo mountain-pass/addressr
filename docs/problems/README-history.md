@@ -252,3 +252,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-26 **P137 verification pending** — commit `ee053cc1` is deployed and exact live landmark and id checks pass
 
 > Last reviewed: 2026-08-26 **P138 known error** — source, built-output and browser enforcement gaps have documented root causes and deployed fixes
+
+> Last reviewed: 2026-08-26 **P138 verification pending** — commit `01c9b802` is deployed; source, built-output, Chromium and focused live checks pass

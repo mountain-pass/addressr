@@ -120,7 +120,7 @@ The section above says an accessibility review found two. An architecture review
 
 **The fix is a revert, not a repair.** Both elements are back to what they were. Verified afterwards in the CSSOM rather than by assertion: the status header is `position: absolute; top: 52px` with a `display: block` logo, and all four breakpoint rules resolve against the button — the xsmall one included, `overflow: hidden; text-indent: 5em; width: 5em`. The landmark defects are recorded separately in [P137](../closed/137-the-site-header-exposes-two-banner-landmarks-and-a-duplicate-id.md), where the stylesheet work they actually require can be priced honestly.
 
-**What this says about the test tier.** Three findings in one change — the skip link, and these two — were all invisible to a suite that asserts HTML shape. The suite's own header advertises the gap: source greps "cannot see the things that actually break a page: a CSS rule hiding an element". So does this ticket. What enforces accessibility conformance on `apps/website` is tracked in [P138](../verifying/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md).
+**What this says about the test tier.** Three findings in one change — the skip link, and these two — were all invisible to a suite that asserts HTML shape. The suite's own header advertises the gap: source greps "cannot see the things that actually break a page: a CSS rule hiding an element". So does this ticket. What enforces accessibility conformance on `apps/website` is tracked in [P138](../closed/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md).
 
 ### One residual raised at risk scoring, measured and closed
 

@@ -49,4 +49,4 @@ Production verified on 2026-08-26 at `https://addressr.io/`: the ribbon is a non
 ## Related
 
 - [P132](../closed/132-white-text-on-all-six-accent-tiles-fails-contrast-and-someone-has-been-patching-it-by-hand.md) — the contrast findings from the same review.
-- [P138](../verifying/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — none of these would be caught by the current mechanism either.
+- [P138](../closed/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — none of these would be caught by the current mechanism either.

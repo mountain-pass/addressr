@@ -1,13 +1,13 @@
 # Problem 138: Nothing decides what enforces accessibility conformance on `apps/website`
 
-**Status**: Verification Pending
+**Status**: Closed
 **Reported**: 2026-08-24
 **Priority**: 12 (High) — Impact: Major (4) × Likelihood: Likely (3). Impact 4: this repository's stated posture is accessibility-first and WCAG AA, enforced on every UI edit by a global gate; the one tree containing UI has no automated enforcement at all, so the posture rests entirely on whether a reviewer happens to look. Likelihood 3: three defects invisible to the current mechanism were found in a single change, within one day of the tree landing.
 **Origin**: internal
 **Effort**: S — the work is one decision record. The mechanisms it chooses between are each S–M, and belong to their own tickets.
 **JTBD**: JTBD-401
 **Persona**: addressr-maintainer
-**WSJF**: 0 — Verification Pending tickets are excluded from the dev-work queue
+**WSJF**: 12.0 — (12 × 1.0) / 1
 
 ## Description
 
@@ -93,6 +93,8 @@ ADR-056's browser mechanism was implemented on 2026-08-25. Playwright Chromium n
 Implemented and deployed on 2026-08-26 in commit `01c9b8029f0dafc6420f746e7f7c2b45e4896b99` through release run `32866153763`. ADR-054 and ADR-057 now enforce website source accessibility linting with an ESLint 10-compatible parser and plugin; ADR-055 checks CSS selector reachability in both directions against Gatsby output; ADR-056 runs focused Chromium keyboard journeys in the website build path.
 
 Verification passed with 0 ESLint errors, five executable lint mutations, a fresh seven-route Gatsby build, 33 built-output assertions, 13 Chromium journeys and all 673 JavaScript tests. Production verification at `https://addressr.io/?verify=01c9b802` confirmed the search label/input association and source plus heading-derived accessible names for both home-page tile links. This verifies P138's three enforcement tiers and the regressions they cover only; it is not a general WCAG conformance claim.
+
+Closed on 2026-08-26 after that exact production verification.
 
 **Release vehicle**: private website deployment at commit `01c9b8029f0dafc6420f746e7f7c2b45e4896b99`; no package changeset. <!-- no-changeset-reference -->
 

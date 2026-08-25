@@ -97,4 +97,4 @@ Website source uses the recommended `jsx-a11y-x` rules with `@typescript-eslint/
 - [ADR-054](054-source-accessibility-linting.proposed.md) — the confirmed source-lint outcome this decision implements compatibly.
 - [ADR-055](055-built-output-css-selector-reachability.proposed.md) — built-output CSS ownership.
 - [ADR-056](056-browser-automated-keyboard-accessibility-verification.proposed.md) — browser-behaviour ownership.
-- [P138](../problems/verifying/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — the enforcement gap closed by this implementation.
+- [P138](../problems/closed/138-nothing-decides-what-enforces-accessibility-conformance-on-apps-website.md) — the enforcement gap closed by this implementation.
