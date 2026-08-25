@@ -39,6 +39,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { load } from 'cheerio';
 
 const websiteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(websiteRoot, 'public');
@@ -306,6 +307,29 @@ describe('apps/website rendered output', () => {
         'something focusable precedes the skip link, so a keyboard user meets ' +
           'it after the thing it exists to skip.',
       );
+    });
+  });
+
+  describe('smaller website accessibility findings (P141)', () => {
+    const home = () => load(read('index.html'));
+
+    it('renders the GitHub ribbon as a link container, not a heading', () => {
+      const $ = home();
+      assert.equal($('.ribbon').length, 1);
+      assert.equal($('h1, h2, h3, h4, h5, h6').filter('.ribbon').length, 0);
+      assert.equal($('.ribbon a').text().replace(/\s+/g, ' ').trim(), 'Find us on GitHub');
+    });
+
+    it('names both uptime badges without implying the image supplies the live value', () => {
+      const $ = home();
+      const badges = $('img[src*="img.shields.io/uptimerobot/ratio"]');
+      assert.equal(badges.length, 2);
+      badges.each((_, badge) => {
+        assert.equal(
+          $(badge).attr('alt'),
+          'View current 30-day uptime ratio on the status page',
+        );
+      });
     });
   });
 

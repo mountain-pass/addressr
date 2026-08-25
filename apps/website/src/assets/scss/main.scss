@@ -228,6 +228,39 @@ table.address, table.address th, table.address td {
   overflow-wrap: anywhere;
 }
 
+@media (forced-colors: active) {
+  #header nav button.menu-link {
+    padding-right: 1.5em !important;
+    text-indent: 0;
+    width: auto;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  .ribbon {
+    border: 1px solid currentColor;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+  }
+}
+
 /* Skip link and focus indicators (P131).
  *
  * THE SKIP LINK is visually hidden until focused, not `display:none` — a

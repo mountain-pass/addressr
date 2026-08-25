@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-25 **P132 closed after production verification** — `addressr.io` emits all six home-page accent tiles with the fixed scrim stacking order and white-text ratios from 6.18:1 to 7.81:1
+> Last reviewed: 2026-08-26 **P141 verification pending** — the ribbon heading, uptime badge names, forced-colors fallback and reduced-motion handling are implemented with built-output and Chromium regressions
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -39,7 +39,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P133 | `check-deps` red on 45/45 runs, so its vulnerability report has no reader            | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P134 | Nothing in the repo can see what Netlify is actually doing                           | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P136 | `release-pr-plan` calls itself advisory but can block the release merge              | Medium (6)   | Open          | S      | 2026-08-24 | internal |
-| 6.0  | P141 | Three smaller WCAG findings on the website, from one review                          | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                          | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |
@@ -90,6 +89,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P067 | addressr server has no SIGTERM graceful-shutdown handler       | 2026-07-26 v3.0.3 | no — not observed |
 | P070 | stream-down promotes failed and partial downloads into cache   | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index      | 2026-08-09 v3.3.0 | no — not observed |
+| P141 | Three smaller WCAG findings on the website, from one review    | 2026-08-26        | no — not observed |
 
 ## Inbound Upstream Reports
 

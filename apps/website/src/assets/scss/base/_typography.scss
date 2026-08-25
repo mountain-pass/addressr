@@ -66,11 +66,6 @@ h2 { font-size: 1.75em; }
 h3 { font-size: 1.35em; }
 h4 {
   font-size: 1.1em;
-
-  a {
-    border-bottom: 0;
-    color: inherit;
-  }
 }
 
 @include breakpoint(small) {
