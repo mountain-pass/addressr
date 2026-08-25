@@ -6,24 +6,6 @@
 
 /* Header */
 
-#header.status-header {
-  @include breakpoint(xlarge) {
-    top: 3.25em;
-  }
-
-  @include breakpoint(large) {
-    top: 3.25em;
-  }
-
-  @include breakpoint(small) {
-    top: 2.75em;
-  }
-
-  @include breakpoint(xsmall) {
-    top: 2.75em;
-  }
-}
-
 #by {
   // @include breakpoint(xlarge) {
   //   top: 3.25em;
@@ -42,7 +24,8 @@
   }
 }
 
-#header {
+#header,
+#status-header {
   @include vendor('display', 'flex');
   background-color: _palette(bg-alt);
   box-shadow: 0 0 0.25em 0 rgba(0, 0, 0, 0.15);
@@ -59,14 +42,52 @@
   width: 100%;
   z-index: _misc(z-index-base);
 
-  .logo {
-    border: 0;
-    display: inline-block;
-    font-size: 0.8em;
-    height: inherit;
-    line-height: inherit;
-    padding: 0 1.5em;
+  &.alt {
+    @include vendor('transition', 'opacity #{_duration(banner)} ease');
+    @include vendor('transition-delay', '0.75s');
+    @include vendor('animation', 'none');
+    background-color: transparent;
+    box-shadow: none;
+    position: absolute;
+  }
 
+  @include breakpoint(small) {
+    height: 2.75em;
+    line-height: 2.75em;
+    font-size: smaller;
+  }
+}
+
+#header .logo,
+#status-header .logo {
+  border: 0;
+  display: inline-block;
+  font-size: 0.8em;
+  height: inherit;
+  line-height: inherit;
+  padding: 0 1.5em;
+}
+
+#status-header {
+  @include breakpoint(xlarge) {
+    top: 3.25em;
+  }
+
+  @include breakpoint(large) {
+    top: 3.25em;
+  }
+
+  @include breakpoint(small) {
+    top: 2.75em;
+  }
+
+  @include breakpoint(xsmall) {
+    top: 2.75em;
+  }
+}
+
+#header {
+  .logo {
     strong {
       @include vendor(
         'transition',
@@ -83,20 +104,16 @@
       padding: 0 0.125em 0 (_font(letter-spacing-alt) + 0.125em);
     }
 
-    &:hover {
-      strong {
-        background-color: _palette(highlight);
-      }
+    &:hover strong {
+      background-color: _palette(highlight);
     }
 
-    &:active {
-      strong {
-        background-color: desaturate(darken(_palette(highlight), 15), 5);
-      }
+    &:active strong {
+      background-color: desaturate(darken(_palette(highlight), 15), 5);
     }
   }
 
-  nav {
+  .nav {
     @include vendor('display', 'flex');
     @include vendor('justify-content', 'flex-end');
     @include vendor('flex-grow', '1');
@@ -121,8 +138,7 @@
       // text-align: inherit is LOAD-BEARING, not cosmetic — it cancels the UA's
       // `button { text-align: center }`, and at xsmall the label is hidden by
       // `text-indent: 5em` + `overflow: hidden`, which centring would defeat.
-      // That xsmall block is nested under a bare `nav` selector, which is one
-      // of the reasons the element stays a <nav>: see Header.js.
+      // The xsmall block below depends on this inherited alignment.
       text-align: inherit;
       // `inherit`, NOT `none`. An earlier version of this line said `none` and
       // that was a live visual regression: #header sets `text-transform:
@@ -213,18 +229,8 @@
     }
   }
 
-  &.alt {
-    @include vendor('transition', 'opacity #{_duration(banner)} ease');
-    @include vendor('transition-delay', '0.75s');
-    @include vendor('animation', 'none');
-    background-color: transparent;
-    box-shadow: none;
-    position: absolute;
-
-  }
-
   @include breakpoint(xlarge) {
-    nav {
+    .nav {
       button {
         &.menu-link {
           padding-right: 3.75em !important;
@@ -238,7 +244,7 @@
   }
 
   @include breakpoint(large) {
-    nav {
+    .nav {
       button {
         &.menu-link {
           padding-right: 4em !important;
@@ -252,11 +258,7 @@
   }
 
   @include breakpoint(small) {
-    height: 2.75em;
-    line-height: 2.75em;
-    font-size: smaller;
-
-    nav {
+    .nav {
       button {
         padding: 0 0.5em;
 
@@ -286,7 +288,7 @@
   }
 
   @include breakpoint(xsmall) {
-    nav {
+    .nav {
       button {
         &.menu-link {
           overflow: hidden;

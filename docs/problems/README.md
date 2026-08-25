@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P141 closed** — the ribbon, uptime badge names, forced-colors fallback and reduced-motion handling are production verified
+> Last reviewed: 2026-08-26 **P137 implementation ready** — header and navigation landmark semantics are fixed locally; exact production verification remains before closure
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings

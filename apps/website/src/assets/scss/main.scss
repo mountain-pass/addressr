@@ -229,7 +229,7 @@ table.address, table.address th, table.address td {
 }
 
 @media (forced-colors: active) {
-  #header nav button.menu-link {
+  #header .nav button.menu-link {
     padding-right: 1.5em !important;
     text-indent: 0;
     width: auto;

@@ -16,7 +16,7 @@ const QuickStart = () => {
       </Banner>
 
       <div id="main" className="alt">
-        <section id="two">
+        <section>
           <div className="inner" id="saas">
             <h2>SaaS</h2>
             <div style={{ width: 'fit-content' }}>
@@ -39,7 +39,7 @@ const QuickStart = () => {
             </div>
           </div>
         </section>
-        <section id="two">
+        <section>
           <div className="inner" id="self-hosted">
             <h2>Self hosted</h2>
             <ol>

@@ -333,6 +333,39 @@ describe('apps/website rendered output', () => {
     });
   });
 
+  describe('the shared header exposes only meaningful landmarks (P137)', () => {
+    const pages = () =>
+      emitted()
+        .filter((file) => file.endsWith('.html'))
+        .filter((file) => !path.relative(PUBLIC, file).split(path.sep).includes('_gatsby'));
+
+    it('emits unique ids, one banner and one navigation landmark on every page', () => {
+      const bad = [];
+      for (const file of pages()) {
+        const $ = load(readFileSync(file, 'utf8'));
+        const ids = $('[id]')
+          .map((_, element) => $(element).attr('id'))
+          .get();
+        const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+        if (
+          duplicateIds.length ||
+          $('header#header').length !== 1 ||
+          $('div#status-header.status-header').length !== 1 ||
+          $('nav').length !== 1 ||
+          $('nav#menu').length !== 1 ||
+          $('header#header > nav').length
+        ) {
+          bad.push(path.relative(PUBLIC, file));
+        }
+      }
+      assert.deepEqual(
+        bad,
+        [],
+        'a page has duplicate ids, multiple banner/navigation landmarks, or a navigation landmark around only the menu button',
+      );
+    });
+  });
+
   describe('every page has a title and a language (P125)', () => {
     // WRITTEN TO FAIL, 2026-08-24. Both are Level A and both are broken on
     // every page of the live site.

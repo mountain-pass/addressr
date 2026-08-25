@@ -18,33 +18,29 @@ describe('ADR-055 built-output CSS selector reachability', () => {
     );
   });
 
-  it('fails when the status header loses the id required by its compound selector', () => {
+  it('fails when the status strip loses its styling id', () => {
     const mutated = pages.map(([file, html]) => [
       file,
-      html.replace('<header id="header" class="alt status-header">', '<header class="alt status-header">'),
+      html.replace('<div id="status-header" class="alt status-header">', '<div class="alt status-header">'),
     ]);
     const result = analyseReachability({ pages: mutated, selectors });
     assert.ok(
-      result.forward.some((finding) => finding.includes('status-header')),
-      'removing the status header id did not break forward reachability',
-    );
-    assert.ok(
-      result.reverse.some((selector) => selector.includes('#header.status-header')),
+      result.reverse.some((selector) => selector.includes('#status-header')),
       'removing the status header id did not orphan its site selector',
     );
   });
 
-  it('fails when the responsive menu wrapper is no longer a nav', () => {
+  it('fails when the responsive menu wrapper loses its class', () => {
     const mutated = pages.map(([file, html]) => [
       file,
       html.replace(
-        /<nav><button([^>]*class="menu-link"[\s\S]*?<\/button>)<\/nav>/g,
-        '<div class="nav"><button$1</div>',
+        /<div class="nav"><button([^>]*class="menu-link"[\s\S]*?<\/button>)<\/div>/g,
+        '<div><button$1</div>',
       ),
     ]);
     const result = analyseReachability({ pages: mutated, selectors });
     assert.ok(
-      result.reverse.some((selector) => selector.includes('#header nav')),
+      result.reverse.some((selector) => selector.includes('#header .nav')),
       'changing the wrapper did not orphan the responsive header nav selectors',
     );
   });
