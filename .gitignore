@@ -111,6 +111,9 @@ apps/addressr-deployment/deployment/
 .turbo
 install.sh
 
+# Build output for the imported UI packages (ADR-058).
+packages/addressr-*/dist/
+
 # risk-scorer generated reports
 .risk-reports/
 

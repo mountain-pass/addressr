@@ -105,6 +105,26 @@ describe('licence audit', () => {
     assert.match(r.exercised[0], /buffers.*P106/);
   });
 
+  it('reports the exact uri-templates public-domain declaration exception', () => {
+    const r = auditLicenses({
+      packages: [{
+        name: 'uri-templates',
+        version: '0.2.0',
+        license: 'http://geraintluff.github.io/tv4/LICENSE.txt',
+      }],
+      allow: ALLOW,
+      exceptions: {
+        'uri-templates': {
+          reason: 'exact linked text grants unrestricted use, alteration, and distribution',
+          ticket: 'P106',
+        },
+      },
+    });
+
+    assert.equal(r.ok, true);
+    assert.match(r.exercised.join('\n'), /uri-templates@0\.2\.0.*P106/s);
+  });
+
   it('fails an exception that names no reason, so exceptions cannot be casual', () => {
     const r = auditLicenses({
       packages: [{ name: 'buffers', version: '0.1.1' }],

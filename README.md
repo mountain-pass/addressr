@@ -65,7 +65,7 @@ Connect Addressr to Claude, Cursor, VS Code Copilot, or any MCP-compatible AI as
 }
 ```
 
-Three tools available: **search-addresses**, **get-address**, and **health**. See [@mountainpass/addressr-mcp](https://github.com/mountain-pass/addressr-mcp) for full setup instructions.
+Address, locality, postcode, and state tools are available alongside **health**. See the [Addressr MCP package](packages/addressr-mcp/README.md) for full setup instructions.
 
 ## Self Hosted
 

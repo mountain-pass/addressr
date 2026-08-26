@@ -1,0 +1,78 @@
+{
+  "name": "@mountainpass/addressr-react",
+  "version": "0.7.0",
+  "description": "React address autocomplete component for Australian address search via Addressr",
+  "author": {
+    "name": "Mountain Pass",
+    "url": "https://mountain-pass.com.au"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "lint": "eslint -c eslint.config.js src/"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@mountainpass/addressr-core": "0.7.0",
+    "downshift": "^9.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.5.2",
+    "@windyroad/link-header": "^1.0.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jsdom": "^26.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mountain-pass/addressr.git",
+    "directory": "packages/addressr-react"
+  },
+  "keywords": [
+    "react",
+    "address",
+    "autocomplete",
+    "australia",
+    "addressr",
+    "gnaf",
+    "combobox",
+    "hateoas"
+  ]
+}

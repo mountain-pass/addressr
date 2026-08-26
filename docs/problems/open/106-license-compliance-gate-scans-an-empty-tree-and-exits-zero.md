@@ -146,6 +146,10 @@ empty-corpus case is indistinguishable from the all-clear case at the exit-code 
       are upstream clarification, replacement, or an accepted-and-recorded risk. Do not close it by allow-list.
 - [ ] Decide whether the allow-list should tolerate `MIT/X11` and `SEE LICENSE IN LICENSE` explicitly, since
       all of today's candidates needed a human read to clear.
+- [ ] Replace or normalize the exact `uri-templates@0.2.0` declaration
+      (`http://geraintluff.github.io/tv4/LICENSE.txt`), or remove its reasoned self-expiring exception. The
+      linked text grants unrestricted use, alteration, and distribution, but the URL is not an SPDX
+      identifier and must not become a generic URL allow-list.
 - [ ] Re-run the clearance with a recorded, re-derivable matcher covering SPDX expressions, bare `BSD`,
       `Apache 2.0` spelling variants and `UNLICENSED`, so the result is reproducible rather than asserted.
 

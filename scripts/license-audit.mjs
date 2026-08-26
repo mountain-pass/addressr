@@ -66,7 +66,13 @@ export const ALLOW = [
  * have: a permission cannot outlive its subject, so the swap could not land
  * quietly leaving a stale grant behind.
  */
-export const EXCEPTIONS = {};
+export const EXCEPTIONS = {
+  'uri-templates': {
+    ticket: 'P106',
+    reason:
+      '0.2.0 declares http://geraintluff.github.io/tv4/LICENSE.txt; that exact text grants unrestricted use, alteration, and distribution, but is not an SPDX identifier.',
+  },
+};
 
 const normalise = (id) => (id === 'MIT/X11' ? 'MIT' : id);
 

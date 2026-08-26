@@ -53,6 +53,12 @@ const publishablePackages = () => {
   return found;
 };
 
+// Packages whose files[] contain generated output are checked after build by
+// scripts/check-workspace-packages.mjs. This test covers committed shipped files.
+const packagesWithCommittedFiles = () => publishablePackages().filter(({ pkg }) =>
+  !(pkg.files ?? []).every((file) => file.replace(/\/$/, '') === 'dist'),
+);
+
 /** Concatenated text of everything the package's `files` field ships. */
 const shippedText = ({ pkg, dir }) => {
   let text = JSON.stringify(pkg.scripts ?? {});
@@ -60,7 +66,7 @@ const shippedText = ({ pkg, dir }) => {
     if (!existsSync(p)) return;
     if (statSync(p).isDirectory()) {
       for (const e of readdirSync(p)) visit(path.join(p, e));
-    } else if (/\.(js|mjs|cjs|json|ya?ml)$/.test(p)) {
+    } else if (/\.(?:d\.)?(?:js|mjs|cjs|ts)|\.(?:json|ya?ml)$/.test(p)) {
       text += readFileSync(p, 'utf8');
     }
   };
@@ -72,7 +78,7 @@ describe('published packages — every production dependency is actually used', 
   it('finds a publishable package and a shipped file set, so a zero-match pass is impossible', () => {
     // The failure this repo keeps hitting is a check that matches nothing and
     // reports success. Assert the corpus before asserting anything about it.
-    const pkgs = publishablePackages();
+    const pkgs = packagesWithCommittedFiles();
     assert.ok(pkgs.length > 0, 'no publishable workspace package found — the workspaces glob has rotted');
     for (const p of pkgs) {
       assert.ok(
@@ -92,7 +98,7 @@ describe('published packages — every production dependency is actually used', 
 
   it('declares no production dependency the shipped source never mentions', () => {
     const problems = [];
-    for (const p of publishablePackages()) {
+    for (const p of packagesWithCommittedFiles()) {
       const text = shippedText(p);
       for (const dep of Object.keys(p.pkg.dependencies ?? {})) {
         if (text.includes(dep)) continue;

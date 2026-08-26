@@ -333,9 +333,37 @@ jobs:
         # OT fixture above is sufficient.
         run: npm run test:geo
 
+  # ADR-058: every public package imported into this repository must be built,
+  # tested and packed before Changesets can publish it.
+  workspace-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint, test and build the five imported workspaces
+        run: npx turbo run lint test build --filter='./packages/addressr-*'
+      - name: Verify packed files and module entry points
+        run: npm run check:workspace-packages
+      - name: Live RapidAPI package integrations
+        env:
+          ADDRESSR_RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: |
+          if [ -z "$ADDRESSR_RAPIDAPI_KEY" ]; then
+            echo "::notice::UNAVAILABLE: RAPIDAPI_KEY is not available to this run; live package integrations were not exercised."
+            exit 0
+          fi
+          npm run test:integration -w @mountainpass/addressr-core
+          npm run test:integration -w @mountainpass/addressr-mcp
+
   release:
     if: github.ref == 'refs/heads/master'
-    needs: [build-and-test, engine-floor]
+    needs: [build-and-test, engine-floor, workspace-packages]
     runs-on: ubuntu-latest
     # Docker publication is an effect of the API package, not of any npm
     # publication. This job output carries that package-scoped result to the

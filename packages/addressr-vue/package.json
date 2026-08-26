@@ -1,0 +1,72 @@
+{
+  "name": "@mountainpass/addressr-vue",
+  "version": "0.7.0",
+  "description": "Vue address autocomplete component for Australian address search via Addressr",
+  "author": {
+    "name": "Mountain Pass",
+    "url": "https://mountain-pass.com.au"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "lint": "eslint -c ../../eslint.ui.config.js src/"
+  },
+  "peerDependencies": {
+    "vue": ">=3.3"
+  },
+  "dependencies": {
+    "@mountainpass/addressr-core": "0.7.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/vue": "^8.1.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@windyroad/link-header": "^1.0.1",
+    "jsdom": "^26.1.0",
+    "vue": "^3.5.16",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mountain-pass/addressr.git",
+    "directory": "packages/addressr-vue"
+  },
+  "keywords": [
+    "vue",
+    "address",
+    "autocomplete",
+    "australia",
+    "addressr",
+    "gnaf",
+    "combobox",
+    "hateoas"
+  ]
+}

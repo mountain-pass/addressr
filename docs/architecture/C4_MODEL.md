@@ -12,6 +12,8 @@ See ADRs 001-018 in `docs/decisions/` for the full decision context behind this 
 ```mermaid
 flowchart LR
   apiconsumer[API Consumer]
+  mcpconsumer[AI Assistant / MCP Client]
+  uiconsumer[React, Svelte, or Vue Application]
   website[addressr.io]
   uptimerobot[Uptime Robot]
   cfworker[CF Worker]
@@ -23,6 +25,9 @@ flowchart LR
   selfos[Own OpenSearch]
 
   apiconsumer -- API calls --> rapidapi
+  mcpconsumer -- MCP tools --> addressrMcp[Addressr MCP Server]
+  addressrMcp -- HATEOAS API calls --> rapidapi
+  uiconsumer -- Addressr UI SDK --> rapidapi
   website -- JS fetch --> cfworker
   uptimerobot -- 5 min check --> cfworker
   cfworker -- API key --> rapidapi
@@ -38,6 +43,8 @@ flowchart LR
 ```mermaid
 flowchart TB
   apiconsumer["API Consumer<br/>(developer application)"]
+  mcpconsumer["AI Assistant<br/>(MCP client)"]
+  uiconsumer["Web Application<br/>(React, Svelte, or Vue)"]
 
   subgraph external["External Services"]
     rapidapi["RapidAPI Gateway<br/>(auth, billing, rate limit)"]
@@ -63,7 +70,18 @@ flowchart TB
     loader_self["addressr-loader<br/>(G-NAF pipeline)"]
   end
 
+  subgraph sdk["Published npm Workspaces"]
+    mcp["@mountainpass/addressr-mcp<br/>(stdio MCP server)"]
+    core["@mountainpass/addressr-core<br/>(HATEOAS client SDK)"]
+    adapters["React / Svelte / Vue adapters<br/>(accessible comboboxes)"]
+  end
+
   apiconsumer -- API calls --> rapidapi
+  mcpconsumer -- stdio --> mcp
+  mcp -- HTTPS --> rapidapi
+  uiconsumer --> adapters
+  adapters --> core
+  core -- HTTPS --> rapidapi
   netlify -- JS fetch --> cfworker
   uptimerobot -- 5min checks --> cfworker
   cfworker -- x-rapidapi-key --> rapidapi
@@ -109,6 +127,16 @@ flowchart TB
 
   opensearch["OpenSearch 1.3"]
 
+  subgraph clients["Imported Client Packages"]
+    mcpServer["addressr-mcp/src/server.mjs<br/>(MCP tools + HATEOAS traversal)"]
+    coreSdk["addressr-core/src/api.ts<br/>(typed search client)"]
+    reactAdapter["addressr-react<br/>(Downshift comboboxes)"]
+    svelteAdapter["addressr-svelte<br/>(Svelte comboboxes)"]
+    vueAdapter["addressr-vue<br/>(Vue comboboxes)"]
+  end
+
+  rapidapi["RapidAPI HATEOAS endpoint"]
+
   server2 --> waycharter
   waycharter --> addressService
   serverV1 --> swaggerDef
@@ -118,6 +146,11 @@ flowchart TB
   loaderBin --> addressService
   addressService --> streamDown
   esClient --> opensearch
+  mcpServer --> rapidapi
+  coreSdk --> rapidapi
+  reactAdapter --> coreSdk
+  svelteAdapter --> coreSdk
+  vueAdapter --> coreSdk
 ```
 
 ## C4: Code View
@@ -167,4 +200,22 @@ flowchart LR
   swagger --> defaultSvc
   defaultSvc --> addressSvc
   addressSvc --> esClient
+```
+
+### MCP and UI packages
+
+```mermaid
+flowchart LR
+  mcpBin["addressr-mcp/bin/addressr-mcp.mjs"] --> mcpServer["addressr-mcp/src/server.mjs"]
+  mcpServer --> rapidapi["RapidAPI Link-driven API"]
+
+  coreIndex["addressr-core/src/index.ts"] --> coreApi["addressr-core/src/api.ts"]
+  coreApi --> rapidapi
+
+  reactHooks["addressr-react/src/hooks/useSearch.ts"] --> coreIndex
+  reactComponents["addressr-react/src/components/*Autocomplete.tsx"] --> reactHooks
+  svelteStores["addressr-svelte/src/createSearch.ts"] --> coreIndex
+  svelteComponents["addressr-svelte/src/*Autocomplete.svelte"] --> svelteStores
+  vueComposables["addressr-vue/src/useSearch.ts"] --> coreIndex
+  vueComponents["addressr-vue/src/*Autocomplete.vue"] --> vueComposables
 ```

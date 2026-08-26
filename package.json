@@ -101,6 +101,7 @@
     "docker:push": "sh scripts/docker-tags.sh | xargs -n1 docker push",
     "check-schedules": "node scripts/scheduled-workflow-staleness.mjs",
     "check-licenses": "node scripts/license-audit.mjs",
+    "check:workspace-packages": "node scripts/check-workspace-packages.mjs",
     "pre-commit": "lint-staged && npm run check-licenses && npm run check:not-cli2-tags && npm run test:js",
     "check:not-cli2-tags": "node scripts/check-not-cli2-tags.mjs",
     "check-deps": "dry-aged-deps --check",
@@ -153,6 +154,8 @@
     "prettier": "^3.8.1",
     "prettier-config-standard": "^7.0.0",
     "turbo": "^2.8.17",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.68.0",
     "uri-template-lite": "^23.4.0",
     "wait-port": "^1.1.0"
   },

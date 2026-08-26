@@ -245,6 +245,36 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('blocks release on the imported package gate and scopes the RapidAPI secret', () => {
+    assert.deepStrictEqual(
+      release.jobs.release.needs,
+      ['build-and-test', 'engine-floor', 'workspace-packages'],
+    );
+
+    const steps = release.jobs['workspace-packages'].steps;
+    const byName = (name) => steps.find((step) => step.name === name);
+    assert.equal(
+      byName('Lint, test and build the five imported workspaces').run,
+      "npx turbo run lint test build --filter='./packages/addressr-*'",
+    );
+    assert.equal(
+      byName('Verify packed files and module entry points').run,
+      'npm run check:workspace-packages',
+    );
+
+    const live = byName('Live RapidAPI package integrations');
+    assert.equal(live.env.ADDRESSR_RAPIDAPI_KEY, '${{ secrets.RAPIDAPI_KEY }}');
+    assert.equal(live.env.RAPIDAPI_KEY, '${{ secrets.RAPIDAPI_KEY }}');
+    assert.match(live.run, /UNAVAILABLE: RAPIDAPI_KEY/);
+    assert.match(live.run, /addressr-core/);
+    assert.match(live.run, /addressr-mcp/);
+
+    const secretElsewhere = steps
+      .filter((step) => step !== live)
+      .some((step) => JSON.stringify(step).includes('RAPIDAPI_KEY'));
+    assert.equal(secretElsewhere, false);
+  });
+
   it('gates exactly three steps on published OR a deployment bump, under success()', () => {
     // The count catches a gate DELETED from a step that is already there —
     // including "Wait for deployment to stabilize", whose body is `sleep 120`
