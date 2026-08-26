@@ -222,11 +222,58 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
+  it('limits trusted publishing to the release job and its exact toolchain', () => {
+    assert.deepStrictEqual(release.jobs.release.permissions, {
+      contents: 'read',
+      'id-token': 'write',
+    });
+
+    for (const [name, job] of Object.entries(release.jobs)) {
+      if (name !== 'release') {
+        assert.equal(
+          job.permissions?.['id-token'],
+          undefined,
+          `${name} must not receive an OIDC token from the release workflow`,
+        );
+      }
+    }
+
+    const toolchain = stepNamed('Use the trusted-publishing toolchain');
+    assert.equal(
+      toolchain.run,
+      `npm install --global npm@11.13.0
+npx --no-install semver "$(node --version)" -r '>=22.14.0'
+npx --no-install semver "$(npm --version)" -r '>=11.5.1'
+`,
+    );
+
+    const changesets = stepNamed(
+      'Create Release Pull Request or Publish to npm',
+    );
+    assert.equal(changesets.uses, 'changesets/action@v1.9.0');
+    assert.equal(changesets.with.publish, 'npm run turbo:ci:publish');
+    assert.equal(changesets.with.version, 'npm run turbo:ci:version');
+    assert.equal(changesets.with.createGithubReleases, true);
+    assert.equal(changesets.env.GITHUB_TOKEN, '${{ secrets.GH_TOKEN }}');
+    assert.equal(changesets.env.NPM_TOKEN, undefined);
+    assert.equal(changesets.env.NODE_AUTH_TOKEN, undefined);
+
+    const names = releaseSteps.map((step) => step.name);
+    assert.equal(
+      names.indexOf(toolchain.name) + 1,
+      names.indexOf(changesets.name),
+      'the asserted npm toolchain must be immediately before changesets/action',
+    );
+  });
+
   it('checks every public workspace after the release PR is consumed', () => {
     const step = stepNamed(
       'Fail if a publish was expected but did not happen (P044)',
     );
-    assert.equal(step.if, "steps.changesets.outputs.hasChangesets != 'true'");
+    assert.equal(
+      step.if,
+      "always() && steps.changesets.outputs.hasChangesets != 'true'",
+    );
     assert.equal(step.run, 'node scripts/check-workspace-publications.mjs');
 
     const effects = stepNamed('Resolve package-scoped release effects');
@@ -246,10 +293,11 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
   });
 
   it('blocks release on the imported package gate and scopes the RapidAPI secret', () => {
-    assert.deepStrictEqual(
-      release.jobs.release.needs,
-      ['build-and-test', 'engine-floor', 'workspace-packages'],
-    );
+    assert.deepStrictEqual(release.jobs.release.needs, [
+      'build-and-test',
+      'engine-floor',
+      'workspace-packages',
+    ]);
 
     const steps = release.jobs['workspace-packages'].steps;
     const byName = (name) => steps.find((step) => step.name === name);

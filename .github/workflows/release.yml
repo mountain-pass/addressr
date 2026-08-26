@@ -365,6 +365,9 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: [build-and-test, engine-floor, workspace-packages]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     # Docker publication is an effect of the API package, not of any npm
     # publication. This job output carries that package-scoped result to the
     # reusable docker job below.
@@ -492,6 +495,12 @@ jobs:
           PUSHED: ${{ github.sha }}
         run: scripts/detect-deployment-bump.sh "$BEFORE" "$PUSHED" >> "$GITHUB_OUTPUT"
 
+      - name: Use the trusted-publishing toolchain
+        run: |
+          npm install --global npm@11.13.0
+          npx --no-install semver "$(node --version)" -r '>=22.14.0'
+          npx --no-install semver "$(npm --version)" -r '>=11.5.1'
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         # UNGATED since 2026-08-10. This carried `if: inputs.deploy_only != true`
@@ -507,7 +516,6 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # P044 / RFC-002: changesets/action can report a partial or swallowed
       # publish without failing. Once there are no changesets left to version,
@@ -516,7 +524,7 @@ jobs:
       - name: Fail if a publish was expected but did not happen (P044)
         # hasChangesets=true means the action created or updated the release PR;
         # local versions are expected to be ahead until that PR merges.
-        if: steps.changesets.outputs.hasChangesets != 'true'
+        if: always() && steps.changesets.outputs.hasChangesets != 'true'
         run: node scripts/check-workspace-publications.mjs
 
       # Resolve effects only after publication verification. docker-publish uses
