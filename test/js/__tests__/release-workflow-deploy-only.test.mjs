@@ -155,7 +155,7 @@ const pushWatch = read('../../../scripts/push-and-watch.sh');
 // single-definition doctrine requires and what every prior widening and
 // narrowing also did.
 const DEPLOY_GATE =
-  "success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')";
+  "success() && (steps.release-effects.outputs.api-published == 'true' || steps.deployment-version.outputs.changed == 'true')";
 
 const releaseSteps = release.jobs.release.steps;
 const stepNamed = (name) => {
@@ -222,54 +222,26 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     );
   });
 
-  it('restores the P044 assertion to its two original conjuncts', () => {
-    // It carried a third, `&& inputs.deploy_only != true`, exempting the
-    // publish-free dispatch — a run that attempts no publish has no swallowed
-    // publish to detect, so the assertion would have passed vacuously while
-    // claiming to check something the run was not doing. That input is retired,
-    // so the exemption has no subject and is removed rather than left inert.
-    //
-    // IT NOW RUNS ON A DEPLOYMENT-ONLY RELEASE, and that is intended, not an
-    // oversight. Both conjuncts hold on that path, so it fires — and passes,
-    // because it reads packages/addressr/package.json, which a deployment-only
-    // changeset does not bump: the cascade runs INTO the deployment package,
-    // not out of it. This is the likeliest place the new axis goes unexpectedly
-    // red, which is why the exact expression is pinned rather than described.
-    assert.equal(
-      stepNamed('Fail if a publish was expected but did not happen (P044)').if,
-      "steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'",
-    );
-  });
-
-  it('reads the PUBLISHED manifest for the P044 assertion, never the workspace root', () => {
-    // MEASURED FAIL-OPEN, 2026-08-10. This step read `./package.json` for the
-    // name and version it compares against npm. The workspace split made that
-    // the PRIVATE root `addressr-workspace` with no `version` field, so
-    // `npm view` returned empty and the step took its documented
-    // warn-and-`exit 0` branch. The guard that makes a swallowed publish LOUD
-    // disabled itself, silently, on a green run — and it failed OPEN, which is
-    // strictly worse than failing closed.
-    //
-    // The step's own design is what converts the break into a pass, so the fix
-    // cannot be "notice it next time": pin the path. A private root manifest has
-    // no `version`, so any future re-point at the root reintroduces exactly this.
+  it('checks every public workspace after the release PR is consumed', () => {
     const step = stepNamed(
       'Fail if a publish was expected but did not happen (P044)',
     );
-    assert.match(
-      step.run,
-      /require\('\.\/packages\/addressr\/package\.json'\)\.name/,
-      'P044 must read the published package name, not the private workspace root',
+    assert.equal(step.if, "steps.changesets.outputs.hasChangesets != 'true'");
+    assert.equal(step.run, 'node scripts/check-workspace-publications.mjs');
+
+    const effects = stepNamed('Resolve package-scoped release effects');
+    const names = releaseSteps.map((releaseStep) => releaseStep.name);
+    assert.ok(
+      names.indexOf(step.name) < names.indexOf(effects.name),
+      'package effects must be resolved only after registry verification passes',
     );
-    assert.match(
-      step.run,
-      /require\('\.\/packages\/addressr\/package\.json'\)\.version/,
-      'P044 must read the published version, not the private workspace root',
+    assert.equal(
+      effects.env.PUBLISHED,
+      '${{ steps.changesets.outputs.published }}',
     );
-    assert.doesNotMatch(
-      step.run,
-      /require\('\.\/package\.json'\)/,
-      'the workspace root has no `version`, so reading it makes this assertion vacuous and it fails OPEN',
+    assert.equal(
+      effects.env.PUBLISHED_PACKAGES,
+      '${{ steps.changesets.outputs.publishedPackages }}',
     );
   });
 
@@ -533,14 +505,11 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
   });
 
   it('publishes the image on a package release, via workflow_call, exactly once', () => {
-    // ADR-040 Confirmation criterion: the release job declares a job-level
-    // output for steps.changesets.outputs.published, and the docker publish job
-    // reads it via needs.release.outputs. `published` is a STEP output, so
-    // without the declaration the reader silently sees the empty string and the
-    // image is never published on a release — on a green run.
+    // The release job exposes the package-scoped API result, so an MCP or UI
+    // publication cannot re-point an Addressr API image tag.
     assert.equal(
-      release.jobs.release.outputs?.published,
-      '${{ steps.changesets.outputs.published }}',
+      release.jobs.release.outputs?.['api-published'],
+      '${{ steps.release-effects.outputs.api-published }}',
     );
 
     const publish = release.jobs['docker-publish'];
@@ -555,7 +524,7 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // `!cancelled()`, no `always()`, contains the positive comparison, no
     // negated form — are satisfied by:
     //
-    //     !cancelled() || needs.release.outputs.published == 'true'
+    //     !cancelled() || needs.release.outputs.api-published == 'true'
     //
     // On every master push `!cancelled()` is true, so `||` makes the whole gate
     // true, docker-publish runs with publish_semver: true, and the bare
@@ -570,7 +539,7 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // saying so — moving to properties dropped that control without replacing it.
     assert.equal(
       publish.if,
-      "!cancelled() && needs.release.outputs.published == 'true'",
+      "!cancelled() && needs.release.outputs.api-published == 'true'",
       'the docker-publish gate is pinned exactly: the CONJUNCTION is load-bearing, ' +
         'and an || inversion satisfies every property assertion below while publishing ' +
         'the bare :<semver> tag on every master push',
@@ -597,10 +566,13 @@ describe('release.yml — P039 publish-free deploy trigger', () => {
     // The POSITIVE comparison is retained and is separately load-bearing: when
     // the changesets step publishes nothing the output is the empty string, and
     // `'' == 'true'` is false. The NEGATED form is the trap, so assert it is absent.
-    assert.match(publish.if, /needs\.release\.outputs\.published == 'true'/);
+    assert.match(
+      publish.if,
+      /needs\.release\.outputs\.api-published == 'true'/,
+    );
     assert.doesNotMatch(
       publish.if,
-      /published\s*!=/,
+      /api-published\s*!=/,
       "the negated form has an empty-string trap: `'' != 'true'` is TRUE, publishing on a run that released nothing",
     );
     assert.equal(publish.uses, './.github/workflows/docker-image.yml');

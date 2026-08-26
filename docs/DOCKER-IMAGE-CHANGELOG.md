@@ -25,7 +25,7 @@ skipped the image build — the docker publish was gated on the whole release jo
 publish itself. Re-running could not recover it, because the gate only holds on the run that consumes
 the changesets.
 
-The cause is fixed ([ADR 050](decisions/050-the-image-follows-the-publish-not-the-deploy.proposed.md)):
+The cause is fixed ([ADR 050](decisions/050-the-image-follows-the-publish-not-the-deploy.superseded.md)):
 the image now follows the publish rather than the deploy, so a later failure cannot orphan it again.
 Rebuilding 3.3.2's bare tag out of band was **declined deliberately** — it would have meant either a
 second writer of the bare `:<semver>` tag, which is the one thing ADR-040's tag scheme exists to

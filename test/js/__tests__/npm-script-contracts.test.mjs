@@ -288,33 +288,26 @@ describe('turbo root tasks — the release path must actually execute (workspace
   // calls the bare name.
   const turbo = JSON.parse(read('../../../turbo.json'));
 
-  for (const task of ['ci:version', 'ci:publish']) {
-    it(`invokes ${task} as a ROOT task, not a package task`, () => {
-      const script = scripts[`turbo:${task}`];
-      assert.ok(script, `turbo:${task} must exist — it is the release path`);
-      assert.match(
-        script,
-        new RegExp(`turbo run //#${task.replace(':', ':')}`),
-        `must be \`turbo run //#${task}\` — the bare name resolves to zero packages and exits 0`,
-      );
-    });
+  it('runs Changesets version as an explicit root task', () => {
+    assert.equal(scripts['turbo:ci:version'], 'turbo run //#ci:version');
+    assert.ok(Object.hasOwn(turbo.tasks ?? {}, '//#ci:version'));
+    assert.ok(scripts['ci:version']);
+  });
 
-    it(`declares //#${task} in turbo.json so the root task is runnable`, () => {
-      assert.ok(
-        Object.hasOwn(turbo.tasks ?? {}, `//#${task}`),
-        `turbo.json must declare "//#${task}"; without it turbo runs nothing and still exits 0`,
-      );
-    });
-  }
-
-  it('keeps the changesets scripts on the workspace root, where turbo addresses them', () => {
-    // If these ever move into packages/addressr, the //# addressing above stops
-    // resolving and the release path silently empties again.
-    for (const task of ['ci:version', 'ci:publish']) {
-      assert.ok(
-        scripts[task],
-        `${task} must stay in the ROOT manifest — //# addresses the workspace root`,
-      );
-    }
+  it('builds publishable packages before Changesets publish', () => {
+    assert.equal(
+      scripts['build:packages'],
+      "turbo run build --filter='./packages/*'",
+    );
+    assert.ok(Object.hasOwn(turbo.tasks ?? {}, 'build'));
+    assert.match(
+      scripts['turbo:ci:publish'],
+      /npm run build:packages && changeset publish/,
+    );
+    assert.doesNotMatch(
+      scripts['turbo:ci:publish'],
+      /changeset publish\s*\|\|/,
+      'a publish failure must not fall through to a dry-run echo',
+    );
   });
 });

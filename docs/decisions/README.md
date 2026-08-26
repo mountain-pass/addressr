@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 57 (51 in-force, 6 historical)
+**Total ADRs:** 58 (50 in-force, 8 historical)
 
 ---
 
 ## In-force decisions
 
-_51 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_50 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -39,10 +39,6 @@ _51 ADRs. These are the current rules. The architect agent reads this section fi
 **Status:** accepted | **Oversight:** confirmed
 
 ### ADR-007 — ADR 007: Changesets for Version Management and npm Publishing
-
-**Status:** accepted | **Oversight:** confirmed
-
-### ADR-008 — ADR 008: Turbo for Build Orchestration
 
 **Status:** accepted | **Oversight:** confirmed
 
@@ -249,14 +245,6 @@ _51 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** All ten superseded sites in ADR-047 enumerated as an exact set, not a count; the ADR-047 edits add no substance (class test, not a location test); the supersession is mechanically legible from the superseded end via `supersedes-clause` plus the reverse compendium badge; `DECISION-MANAGEMENT.md` § What May Be Amended At All points here rather than restating; the external-citation form shown working by evidence, not assertion.
 **Related:** ADR-047, ADR-048, ADR-046, ADR-045
 
-### ADR-050 — The image follows the publish, not the deploy
-
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-040 (four sites, enumerated in the record); also marks the ADR-039 restatements
-**Decides:** The container image follows the npm publish rather than the deploy — `docker-publish` carries `!cancelled()`, so a failure later in the release job (the deploy, the prod smoke) can no longer skip an image whose publish already succeeded. Registry pushes come from the pipeline: the local `docker:push` break-glass is withdrawn as a sanctioned manual route. No recovery is built for a version orphaned before the fix, deliberately — every recovery shape creates a second writer of the bare `:<semver>` tag — so 3.3.2 has no image.
-**Confirmation:** The gate is pinned EXACTLY in release-workflow-deploy-only.test.mjs, with the property assertions beside it as explanation rather than the control, and mutation-verified against four regressions: implicit success(), always(), the negated comparison, and the `||` inversion that would have written the bare tag on every master push. `docker-image.yml`'s workflow_dispatch still declares no inputs, so no second bare-tag writer exists.
-
-**Related:** ADR-040, ADR-039, ADR-049
-
 ### ADR-051 — A check whose only reader is the maintainer is not a control
 
 **Status:** proposed | **Oversight:** confirmed (2026-08-20)
@@ -306,11 +294,18 @@ _51 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** the dependency peer set resolves; website JSX and TSX reach the 19-entry flat config while generated Gatsby output stays ignored; executable ESLint mutations reject empty Gatsby links and unassociated labels and accept their fixed forms; full website lint exits zero with 48 measured warnings; typecheck, build, built-output and browser checks pass.
 **Related:** ADR-014, ADR-054, ADR-055, ADR-056
 
+### ADR-058 — Unified npm workspaces with package-scoped release effects
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Import the MCP server and linked UI quartet as npm workspaces under `packages/*`, preserve their existing histories in archived source repositories, and make release effects depend on the package actually published. API deploy, production smoke, and Docker publication run only for an API-package publication or the separately governed deployment-package version bump.
+**Confirmation:** all five packages install from the root lockfile and retain their existing behavior; UI keyboard regressions exercise ArrowDown, Enter, Escape, active descendant and input focus; Changesets links only the UI quartet; release tests prove MCP/UI-only publications cannot reach API deploy or Docker; every expected public workspace version is verified against npm; C4 and npm repository metadata identify the consolidated paths before the old repositories are archived.
+**Related:** ADR-007, ADR-045, ADR-046, ADR-050, ADR-053; supersedes ADR-008 and ADR-050
+
 ---
 
 ## Historical decisions
 
-_6 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_8 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
 
 ### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
@@ -319,6 +314,11 @@ _6 ADRs. These were tried and superseded, rejected, or deprecated. Read them as 
 ### ADR-005 — ADR 005: Babel Transpilation for ES Module Support
 
 **Status:** superseded | **Oversight:** confirmed
+
+### ADR-008 — ADR 008: Turbo for Build Orchestration
+
+**Status:** superseded | **Oversight:** confirmed
+**Superseded by:** ADR-058
 
 ### ADR-013 — ADR 013: Docker Image with Alpine and dumb-init
 
@@ -337,3 +337,8 @@ _6 ADRs. These were tried and superseded, rejected, or deprecated. Read them as 
 
 **Status:** superseded | **Oversight:** confirmed
 **Chosen:** Chosen option: **"Anchored span phrase clause"**, because it is the only candidate that fixes the property completely (**0 of 150** violations) while improving partial-prefix recall rather than trading it away, and it does so without a re-i...
+
+### ADR-050 — The image follows the publish, not the deploy
+
+**Status:** superseded | **Oversight:** unconfirmed
+**Superseded by:** ADR-058

@@ -134,7 +134,7 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     assert.deepStrictEqual(wrong, [], wrong.join('; '));
   });
 
-  it('compendium status/oversight badges agree with the frontmatter they mirror', () => {
+  it('compendium lifecycle status and oversight badges agree with their sources', () => {
     // FAIL-OPEN DEFECT, found and fixed 2026-08-08. The previous pattern
     // anchored the oversight capture to end-of-line and excluded `|`, so any
     // entry carrying a THIRD badge field — `| **Supersedes:** ADR-NNN` or
@@ -192,7 +192,10 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       // Leading token only — badges carry annotations like "confirmed (2026-07-27)".
       const badgeStatus = badge.status?.split(/\s+/, 1)[0];
       const badgeOversight = badge.oversight?.split(/\s+/, 1)[0];
-      const fileStatus = frontmatter(text, 'status');
+      // A whole-record supersession is a byte-for-byte rename: the immutable
+      // frontmatter keeps the status it had when ratified, while the filename
+      // and compendium carry the later lifecycle state.
+      const fileStatus = statusOf(f);
       const fileOversight = frontmatter(text, 'human-oversight');
 
       if (badgeStatus !== fileStatus) {
@@ -452,13 +455,33 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
   });
 
   it('filename status suffix matches frontmatter status', () => {
+    const supersededIds = new Set(
+      adrFiles.flatMap((f) => {
+        const text = read(f);
+        const targets = /^supersedes:\s*([\s\S]*?)(?=^[\w-]+:|^---)/m.exec(
+          text,
+        )?.[1] ?? '';
+        return [...targets.matchAll(/\b(\d{3})-/g)].map(
+          (match) => `ADR-${match[1]}`,
+        );
+      }),
+    );
     const split = adrFiles
       .map((f) => ({
         f,
         file: statusOf(f),
         front: frontmatter(read(f), 'status'),
       }))
-      .filter(({ file, front }) => front && file !== front)
+      .filter(
+        ({ f, file, front }) =>
+          front &&
+          file !== front &&
+          !(
+            file === 'superseded' &&
+            (front === 'accepted' || front === 'proposed') &&
+            supersededIds.has(idOf(f))
+          ),
+      )
       .map(
         ({ f, file, front }) =>
           `${f}: filename says ${file}, frontmatter says ${front}`,

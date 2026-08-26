@@ -119,16 +119,11 @@ describe('workflows — `node -e` bodies are JavaScript, not shell', () => {
   // release.yml does.
   //
   // SCANS `node -e` AND `node -p`, and does NOT require `--input-type=module`.
-  // The first version required it, which made the matcher blind to
-  // `release.yml`'s `node -p \"require('./packages/addressr/package.json')…\"` —
-  // inline JavaScript carrying a repo-root-relative referrer, on the
-  // release-critical workflow rather than the nightly one, at a site that HAS
-  // already broken: the workspace split made `./package.json` the private root
-  // with no `version`, so the P044 swallowed-publish assertion took its
-  // warn-and-exit-0 branch and failed OPEN on a green run. A corpus assertion
-  // that counts only the shapes it can see certifies "the matcher has not
-  // rotted" while an entire invocation form goes unscanned — the zero-match
-  // failure class with a green check in front of it.
+  // The first version required it, which made the matcher blind to `node -p`.
+  // The P044 inline invocations that motivated that widening were removed when
+  // publication verification became an executable script. One inline body now
+  // remains, so the population guard asserts non-zero rather than preserving a
+  // historical count after its subjects were deleted.
   //
   // HONEST LIMIT: this checks the two shapes that actually broke — a `#` line
   // and a backtick. It does not parse the body as JavaScript, and does not
@@ -144,7 +139,7 @@ describe('workflows — `node -e` bodies are JavaScript, not shell', () => {
       (n, f) => n + bodies(readFileSync(path.join(workflowDir, f), 'utf8')).length,
       0,
     );
-    assert.ok(total > 2, `only ${total} inline-JS bodies found across ${files.length} workflows — the matcher has rotted`);
+    assert.ok(total > 0, `no inline-JS bodies found across ${files.length} workflows — the matcher has rotted`);
   });
 
   it('contains no `#` comment lines and no backticks', () => {

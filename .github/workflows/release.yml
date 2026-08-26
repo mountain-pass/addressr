@@ -337,13 +337,11 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: [build-and-test, engine-floor]
     runs-on: ubuntu-latest
-    # ADR-040 stage 3. `published` is a STEP output inside this job, so a
-    # declared job-level output is the only way the docker-publish job below can
-    # read it. Do not remove it: without it that job's `if:` silently resolves
-    # to the empty string, never equals 'true', and the image is never published
-    # on a release — on a GREEN run.
+    # Docker publication is an effect of the API package, not of any npm
+    # publication. This job output carries that package-scoped result to the
+    # reusable docker job below.
     outputs:
-      published: ${{ steps.changesets.outputs.published }}
+      api-published: ${{ steps.release-effects.outputs.api-published }}
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -483,81 +481,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # P044 / RFC-002: changesets/action does NOT fail the job when npm publish
-      # fails (e.g. expired NPM_TOKEN) — published stays false and the Deploy +
-      # Smoke steps below silently skip on a green run. If package.json is ahead
-      # of npm while published != 'true', a publish was swallowed: fail loud.
-      # Survives a future P039 decouple — this is the publish-failure assertion,
-      # independent of what the deploy gates on.
+      # P044 / RFC-002: changesets/action can report a partial or swallowed
+      # publish without failing. Once there are no changesets left to version,
+      # every public workspace must match npm exactly. This covers all packages,
+      # including a partial multi-package publish.
       - name: Fail if a publish was expected but did not happen (P044)
-        # Only run on the genuine publish-attempted path: published != 'true'
-        # (no successful publish) AND hasChangesets != 'true' (no changesets to
-        # consume, i.e. the release PR was merged so a publish WAS attempted).
-        # When hasChangesets == 'true', changesets/action created/updated a
-        # release PR (deferred publish per ADR-007) — published=false is the
-        # expected state, NOT a swallowed publish. The action's `hasChangesets`
-        # output is authoritative here because `changeset version` deletes the
-        # .changeset/*.md files IN THE WORKSPACE before this step runs, so an
-        # on-disk check would false-negative (P044 false-positive fix v2).
-        # NARROWED BACK 2026-08-10 to its two original conjuncts. It carried a
-        # third, `&& inputs.deploy_only != true`, to keep the assertion off the
-        # publish-free dispatch; that input is retired, so the exemption has no
-        # subject.
-        #
-        # It DOES now run on a deployment-only release, and that is intended. On
-        # that path `published != 'true'` and `hasChangesets != 'true'` both
-        # hold, so the assertion fires — and passes, because it reads
-        # `packages/addressr/package.json`, which a deployment-only changeset
-        # does not bump: the cascade runs INTO the deployment package, not out of
-        # it. Pinned in test, because this is the likeliest place the new axis
-        # goes unexpectedly red.
-        if: steps.changesets.outputs.published != 'true' && steps.changesets.outputs.hasChangesets != 'true'
-        shell: bash
-        run: |
-          # P044 / RFC-002: changesets/action does NOT fail the job when npm
-          # publish is swallowed (e.g. expired NPM_TOKEN) — published stays
-          # false and the Deploy + Smoke steps below silently skip on a green
-          # run. This step reaches here only when a publish was attempted (no
-          # pending changesets) and did not succeed; fail loud if package.json
-          # is ahead of npm. GitHub's bash runs set -eo pipefail, so we set +e
-          # and guard every read to avoid a transient node/npm read failing it.
-          set +e
+        # hasChangesets=true means the action created or updated the release PR;
+        # local versions are expected to be ahead until that PR merges.
+        if: steps.changesets.outputs.hasChangesets != 'true'
+        run: node scripts/check-workspace-publications.mjs
 
-          # THE PUBLISHED MANIFEST, not the root. The workspace split (2026-08-10)
-          # made ./package.json the PRIVATE workspace root `addressr-workspace`
-          # with no `version` at all, so this read yielded a name npm has never
-          # heard of and an undefined version. `npm view` then returned empty and
-          # the step below took its warn-and-exit-0 branch — the assertion that
-          # makes a swallowed publish LOUD silently disabled itself, and failed
-          # OPEN, on a green run. Exactly the class this assertion exists to catch,
-          # arriving through the assertion itself.
-          name=$(node -p "require('./packages/addressr/package.json').name" 2>/dev/null)
-          local_version=$(node -p "require('./packages/addressr/package.json').version" 2>/dev/null)
-          if [ -z "$name" ] || [ -z "$local_version" ]; then
-            echo "::warning::could not read package.json name/version; skipping publish assertion (P044)"
-            exit 0
-          fi
-          npm_version=$(npm view "$name" version 2>/dev/null)
-          if [ -z "$npm_version" ]; then
-            echo "::warning::npm view returned no published version (first publish or registry read error); skipping publish assertion (P044)"
-            exit 0
-          fi
-
-          # Fail ONLY when package.json is STRICTLY AHEAD of npm (a real version
-          # bump that was not published). Equal or behind is not a swallowed
-          # publish (behind = an out-of-band publish, a different condition).
-          highest=$(printf '%s\n%s\n' "$npm_version" "$local_version" | sort -V | tail -1)
-          if [ "$local_version" != "$npm_version" ] && [ "$highest" = "$local_version" ]; then
-            echo "::error::package.json is at $local_version but npm has $npm_version, no pending changesets, and changesets reported published != 'true'."
-            echo "::error::an npm publish was likely swallowed (e.g. expired NPM_TOKEN) and the deploy skipped — see P044 / RFC-002. Check the changesets step log."
-            exit 1
-          fi
-          echo "No pending publish: package.json $local_version, npm $npm_version (P044 assertion passed)"
+      # Resolve effects only after publication verification. docker-publish uses
+      # !cancelled(), so exporting this earlier could publish an API image after
+      # the registry assertion failed.
+      - name: Resolve package-scoped release effects
+        id: release-effects
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.published }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: node scripts/release-effects.mjs "$PUBLISHED" "$PUBLISHED_PACKAGES" >> "$GITHUB_OUTPUT"
 
       # P039 / ADR 001 amendment 2026-07-26: SINGLE DEFINITION.
       # The deploy path has exactly one set of steps, shared by every entry
-      # point — as of 2026-08-10 that is TWO: the publish path
-      # (`published == 'true'`) and the changesets-armed deployment version bump
+      # point — the API-package publish path and the changesets-armed deployment version bump
       # (ADR-045). Two earlier entry points are gone: ADR-040 stage 3's `deploy/**`
       # infra axis (retired — see the note where its detection step used to sit)
       # and the `deploy_only` dispatch it left as the sole route (superseded by
@@ -579,7 +525,7 @@ jobs:
       # are load-bearing: `&&` binds tighter than `||`, so `success() && A || B`
       # would deploy after an upstream failure.
       - name: Deploy new version
-        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
+        if: success() && (steps.release-effects.outputs.api-published == 'true' || steps.deployment-version.outputs.changed == 'true')
         uses: devcontainers/ci@v0.3
         # P095: tell deploy.sh that a publish just happened on THIS run, so it
         # ships the workspace version rather than reading the registry.
@@ -605,7 +551,7 @@ jobs:
         # Omitting the
         # signal falls back to the registry, so forgetting it fails safe.
         env:
-          ADDRESSR_DEPLOY_JUST_PUBLISHED: ${{ steps.changesets.outputs.published == 'true' && '1' || '0' }}
+          ADDRESSR_DEPLOY_JUST_PUBLISHED: ${{ steps.release-effects.outputs.api-published == 'true' && '1' || '0' }}
           # ADR 029/033/034: v1 basic-auth creds (TF_VAR_elastic_host/username/
           # password) and the v2 master-user creds (TF_VAR_elastic_v2_username/
           # password) were removed 2026-07-11 — FGAC is off (SigV4), the EB app
@@ -643,11 +589,11 @@ jobs:
             TF_TOKEN_app_terraform_io
 
       - name: Wait for deployment to stabilize
-        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
+        if: success() && (steps.release-effects.outputs.api-published == 'true' || steps.deployment-version.outputs.changed == 'true')
         run: sleep 120
 
       - name: Smoke test production
-        if: success() && (steps.changesets.outputs.published == 'true' || steps.deployment-version.outputs.changed == 'true')
+        if: success() && (steps.release-effects.outputs.api-published == 'true' || steps.deployment-version.outputs.changed == 'true')
         run: |
           set -e
           echo "Testing health endpoint..."
@@ -833,7 +779,7 @@ jobs:
   # workflow, so a docker-only rebuild can never re-point a tag a self-hoster
   # has already pinned.
   #
-  # There is no `&& published != 'true'` double-publish guard here, and none is
+  # There is no negated API-publication double-publish guard here, and none is
   # needed: docker-image.yml's own master push filter no longer lists
   # package.json, so a changesets release commit does not match it and this job
   # is the sole publisher on that commit. That is ADR-040 amendment option C.
@@ -848,8 +794,8 @@ jobs:
   # It was realised on 2026-08-19 releasing 3.3.2. The publish succeeded; the
   # deploy failed on an EB instance npm-install; this job was skipped by the
   # implicit success(); and re-running could not recover it, because on a re-run
-  # the changesets step has nothing left to consume and `published` is no longer
-  # 'true'. npm and production went to 3.3.2 and the registry stayed on 3.3.1.
+  # the changesets step has nothing left to consume and `api-published` is no
+  # longer true. npm and production went to 3.3.2 and the registry stayed on 3.3.1.
   # And the break-glass that made it benign is withdrawn — registry pushes come
   # from the pipeline, not a laptop (ADR-050, user direction 2026-08-19).
   #
@@ -857,15 +803,15 @@ jobs:
   #
   # THE POSITIVE `== 'true'` COMPARISON IS UNCHANGED and still load-bearing —
   # see the empty-string note below. Relaxing the implicit success() cannot let
-  # this job run on a swallowed publish: the P044 assertion fires only when
-  # `published != 'true'`, and this gate requires `== 'true'`, so the two are
-  # mutually exclusive by construction. A future reader will not re-derive that.
+  # this job run on a swallowed publish: the public-workspace assertion fails
+  # when any expected npm version is absent, and this gate separately requires
+  # the API package. A future reader will not re-derive that.
   #
   # THE UNPROVEN ASSUMPTION, both branches. This rests on `needs.release.outputs`
   # remaining readable when the release job fails at a LATER step than the one
   # that set them.
   #
-  #   - If it does NOT hold: `published` is the empty string, `'' == 'true'` is
+  #   - If it does NOT hold: `api-published` is the empty string, `'' == 'true'` is
   #     false, the job skips — exactly today's behaviour. Safe, but SILENT: the
   #     next post-publish failure orphans another image and nothing says so.
   #     P108 tracks the missing assertion that would make it loud.
@@ -892,7 +838,7 @@ jobs:
   # because the package is `private: true`.)
   docker-publish:
     needs: release
-    if: "!cancelled() && needs.release.outputs.published == 'true'"
+    if: "!cancelled() && needs.release.outputs.api-published == 'true'"
     permissions:
       contents: read
       packages: write
