@@ -66,35 +66,26 @@ export function PostcodeAutocomplete({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
-  const {
-    query,
-    setQuery,
-    results,
-    isLoading,
-    isLoadingMore,
-    hasMore,
-    loadMore,
-    error,
-  } = usePostcodeSearch({ apiKey, apiUrl, apiHost, debounceMs, fetchImpl });
-
-  const {
-    isOpen,
-    getLabelProps,
-    getMenuProps,
-    getInputProps,
-    highlightedIndex,
-    getItemProps,
-  } = useCombobox<PostcodeSearchResult>({
-    items: results,
-    inputValue: query,
-    onInputValueChange: ({ inputValue }) => setQuery(inputValue ?? ''),
-    onSelectedItemChange: ({ selectedItem }) => {
-      if (selectedItem) {
-        onSelectRef.current(selectedItem);
-      }
-    },
-    itemToString: (item) => item?.postcode ?? '',
+  const { query, setQuery, results, isLoading, isLoadingMore, hasMore, loadMore, error } = usePostcodeSearch({
+    apiKey,
+    apiUrl,
+    apiHost,
+    debounceMs,
+    fetchImpl,
   });
+
+  const { isOpen, getLabelProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } =
+    useCombobox<PostcodeSearchResult>({
+      items: results,
+      inputValue: query,
+      onInputValueChange: ({ inputValue }) => setQuery(inputValue ?? ''),
+      onSelectedItemChange: ({ selectedItem }) => {
+        if (selectedItem) {
+          onSelectRef.current(selectedItem);
+        }
+      },
+      itemToString: (item) => item?.postcode ?? '',
+    });
 
   const handleMenuScroll = useCallback(
     (event: React.UIEvent<HTMLUListElement>) => {
@@ -107,7 +98,9 @@ export function PostcodeAutocomplete({
     [hasMore, isLoadingMore, loadMore],
   );
 
-  const showMenu = isOpen && (results.length > 0 || isLoading || (query.length >= 3 && !isLoading));
+  const showMenu = isOpen && results.length > 0;
+  const showLoading = isOpen && isLoading && results.length === 0;
+  const showNoResults = isOpen && !isLoading && results.length === 0 && query.length >= 3;
 
   return (
     <div className={`${styles.wrapper} ${className ?? ''}`}>
@@ -116,8 +109,10 @@ export function PostcodeAutocomplete({
       </label>
       <input
         {...getInputProps({
+          autoComplete: 'off',
           placeholder,
           name,
+          'aria-expanded': showMenu,
           'aria-describedby': error ? errorId : undefined,
           'aria-required': required || undefined,
           'aria-invalid': error ? true : undefined,
@@ -127,60 +122,75 @@ export function PostcodeAutocomplete({
 
       <div id={statusId} role="status" aria-live="polite" aria-atomic="true" className={styles.srOnly}>
         {isLoading && 'Searching postcodes...'}
-        {!isLoading && results.length > 0 && `${results.length} ${results.length === 1 ? 'postcode' : 'postcodes'} found`}
+        {!isLoading &&
+          results.length > 0 &&
+          `${results.length} ${results.length === 1 ? 'postcode' : 'postcodes'} found`}
         {!isLoading && results.length === 0 && query.length >= 3 && 'No postcodes found'}
       </div>
 
       <ul
         {...getMenuProps({ onScroll: handleMenuScroll })}
+        hidden={!showMenu}
         className={`${styles.menu} ${!showMenu ? styles.menuHidden : ''}`}
       >
         {showMenu && (
           <>
-            {isLoading && (
-              renderLoading ? renderLoading() : (
-                <>
-                  <li className={styles.skeleton} style={{ width: '40%' }} aria-hidden="true" />
-                  <li className={styles.skeleton} style={{ width: '60%' }} aria-hidden="true" />
-                  <li className={styles.skeleton} style={{ width: '50%' }} aria-hidden="true" />
-                </>
-              )
-            )}
-            {!isLoading && results.length === 0 && query.length >= 3 && (
-              renderNoResults ? renderNoResults() : (
-                <li className={styles.noResults}>No postcodes found</li>
-              )
-            )}
             {results.map((item, index) => (
               <li
                 key={`${item.postcode}-${item.localities[0]?.name ?? 'unknown'}`}
                 {...getItemProps({ item, index })}
                 className={`${styles.item} ${highlightedIndex === index ? styles.itemHighlighted : ''}`}
               >
-                {renderItem ? renderItem(item, highlightedIndex === index) : (
+                {renderItem ? (
+                  renderItem(item, highlightedIndex === index)
+                ) : (
                   <span>
                     <strong>{item.postcode}</strong>
                     {item.localities.length > 0 && (
-                      <> {' — '}{item.localities.map((l) => l.name).join(', ')}</>
+                      <>
+                        {' '}
+                        {' — '}
+                        {item.localities.map((l) => l.name).join(', ')}
+                      </>
                     )}
                   </span>
                 )}
               </li>
             ))}
             {isLoadingMore && (
-              <li role="presentation" className={styles.loading}>Loading more...</li>
+              <li role="presentation" className={styles.loading}>
+                Loading more...
+              </li>
             )}
           </>
         )}
       </ul>
 
-      {error && (
-        renderError ? renderError(error) : (
+      {(showLoading || showNoResults) && (
+        <ul className={styles.menu} aria-hidden="true">
+          {showLoading &&
+            (renderLoading ? (
+              renderLoading()
+            ) : (
+              <>
+                <li className={styles.skeleton} style={{ width: '40%' }} />
+                <li className={styles.skeleton} style={{ width: '60%' }} />
+                <li className={styles.skeleton} style={{ width: '50%' }} />
+              </>
+            ))}
+          {showNoResults &&
+            (renderNoResults ? renderNoResults() : <li className={styles.noResults}>No postcodes found</li>)}
+        </ul>
+      )}
+
+      {error &&
+        (renderError ? (
+          renderError(error)
+        ) : (
           <div id={errorId} className={styles.error} role="alert">
             {error.message}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }

@@ -563,6 +563,33 @@ describe('apps/website rendered output', () => {
     }
   });
 
+  describe('the homepage renders the React autocomplete examples', () => {
+    it('emits four distinctly labelled comboboxes with browser autofill disabled', () => {
+      const $ = load(read('index.html'));
+      const controls = $('input[role="combobox"]');
+      const labels = controls
+        .map((_, input) => {
+          const id = $(input).attr('id');
+          assert.ok(id, 'a homepage combobox has no id for its visible label');
+          return $(`label[for="${id}"]`).text().trim();
+        })
+        .get();
+
+      assert.deepEqual(labels, [
+        'Search Australian addresses',
+        'Search Australian suburbs and towns',
+        'Search Australian postcodes',
+        'Search Australian states and territories',
+      ]);
+      assert.deepEqual(
+        controls
+          .map((_, input) => $(input).attr('autocomplete'))
+          .get(),
+        ['off', 'off', 'off', 'off'],
+      );
+    });
+  });
+
   describe('no credential reaches the browser (JTBD-401)', () => {
     it('emits no Slack webhook URL in any built asset', () => {
       // THE HALF THAT ACTUALLY MATTERED in 2019. The exposed webhook was a
@@ -576,50 +603,16 @@ describe('apps/website rendered output', () => {
       assert.deepEqual(offenders, [], 'a Slack webhook URL reaches the browser bundle');
     });
 
-    it('emits no NEW Google API key beyond the one already known', () => {
-      // R2 from the pre-commit risk review, and it is a correction rather than an
-      // addition. The check above was scoped to the single credential ADR-053
-      // already deletes, so a tier advertised as closing the 2019 build-output gap
-      // could not see the one live credential still in the tree: the Google Maps
-      // browser key in Search.js, whose referrer restriction was UNVERIFIED at
-      // the time — JTBD-401 recorded two probes that failed to discriminate, and
-      // wrongly concluded from those two that no probe could. It is VERIFIED as
-      // of 2026-08-24: the endpoint the site actually calls does discriminate,
-      // and the check runs in CI (see below).
-      //
-      // The known key is allowlisted rather than asserted absent, because a Maps
-      // BROWSER key legitimately has to reach the browser — removing it breaks the
-      // demo. What this catches is a SECOND one arriving, which is the class the
-      // job actually guards.
-      //
-      // THE ALLOWLIST IS NO LONGER PROVISIONAL. This comment used to end "when
-      // the restriction is confirmed in the Cloud console, record it in JTBD-401
-      // and this allowlist stops being provisional". Superseded 2026-08-24:
-      // `test/credentials/maps-key-is-restricted.test.mjs` probes the restriction
-      // on every push and reds if the referrer allowlist is widened. Allowlisting
-      // this key therefore rests on an asserted property rather than on an
-      // assumption — which is the whole difference between an allowlist and a
-      // blind spot.
-      const KNOWN = 'AIzaSyBJ9PUm';
+    it('emits no Google API key', () => {
       const keyShape = /AIza[0-9A-Za-z_-]{35}/g;
       const found = new Set();
       for (const f of emitted()) {
         for (const m of readFileSync(f, 'utf8').matchAll(keyShape)) found.add(m[0]);
       }
-      // Encode the floor rather than relying on a point-in-time mutation proof.
-      // Without it `unknown` is empty when no key is present AT ALL, and this
-      // file's own header calls that green a lie about coverage.
-      assert.ok(
-        found.size >= 1,
-        'no Google API key found in build output at all — the known key should ' +
-          'be there, so an empty match set means the scan is broken, not the ' +
-          'bundle clean',
-      );
-      const unknown = [...found].filter((k) => !k.startsWith(KNOWN));
       assert.deepEqual(
-        unknown.map((k) => `${k.slice(0, 12)}…`),
+        [...found].map((key) => `${key.slice(0, 12)}…`),
         [],
-        'an unrecognised Google API key reaches the browser bundle',
+        'a Google API key reaches the browser bundle',
       );
     });
   });

@@ -7,7 +7,7 @@ persona: self-hosted-operator
 date-created: 2026-04-15
 screens:
   - all routes (proxy auth middleware)
-  - "apps/website/src/components/Search.js — the production client of the worker's safeHosts Referer allowlist. ADDED 2026-08-23 on the ADR-053 import. Until then the allowlist lived in this repo and its only production consumer lived in another, so a safeHosts edit that broke the live site was reviewable in neither diff; ADR-018 safelists addressr.io, localhost, addressr.mountain-pass.com.au and addressr.mountainpass.com.au, and this is the surface those entries exist for. The generic entry above does not reach a client, which is why this is listed separately rather than folded into it. NOTE the file is not in the tree yet — ADR-053 records the decision, P120 the prerequisite, and the source lands in a later commit."
+  - "apps/website/src/pages/index.jsx — the production React autocomplete client of the worker's safeHosts Referer allowlist. The website, adapter and core client now live in one repository, so a safeHosts change and its production consumer are reviewable together."
 ---
 
 # JTBD-200: Protect the chosen gateway boundary

@@ -42,6 +42,7 @@ describe('StateAutocomplete', () => {
     const mockFetch = vi.fn();
     render(<StateAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'state');
+    expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
   it('sets aria-required when required is true', () => {
@@ -59,13 +60,12 @@ describe('StateAutocomplete', () => {
   });
 
   it('displays state results after typing', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
@@ -78,13 +78,12 @@ describe('StateAutocomplete', () => {
 
   it('calls onSelect with the StateSearchResult when option chosen', async () => {
     const onSelect = vi.fn();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
@@ -93,39 +92,41 @@ describe('StateAutocomplete', () => {
 
     await waitFor(() => {
       expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'New South Wales', abbreviation: 'NSW' }),
+        expect.objectContaining({
+          name: 'New South Wales',
+          abbreviation: 'NSW',
+        }),
       );
     });
   });
 
   it('announces "Searching states and territories..." while loading', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching states and territories...');
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
     resolve(searchResponse());
   });
 
   it('announces count in status after results arrive', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
@@ -136,7 +137,8 @@ describe('StateAutocomplete', () => {
 
   it('uses custom renderNoResults when provided', async () => {
     const empty = () => mockResponse([], {}, 'https://addressr.p.rapidapi.com/states?q=zzz');
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(empty()));
 
@@ -156,7 +158,8 @@ describe('StateAutocomplete', () => {
   });
 
   it('uses custom renderItem when provided', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
@@ -182,13 +185,12 @@ describe('StateAutocomplete', () => {
         {},
         'https://addressr.p.rapidapi.com/states?q=nsw',
       );
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(oneResult()));
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
@@ -198,13 +200,12 @@ describe('StateAutocomplete', () => {
   });
 
   it('matches results with a 2-letter abbreviation query (minQueryLength=2 default)', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<StateAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'wa');
 
@@ -226,12 +227,18 @@ describe('StateAutocomplete', () => {
         onSelect={() => {}}
         debounceMs={10}
         fetchImpl={mockFetch}
-        renderError={(err) => <div data-testid="err" role="alert">{err.message}</div>}
+        renderError={(err) => (
+          <div data-testid="err" role="alert">
+            {err.message}
+          </div>
+        )}
       />,
     );
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), { timeout: 10000 });
+    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
+      timeout: 10000,
+    });
   });
 });

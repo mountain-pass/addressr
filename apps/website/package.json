@@ -11,6 +11,7 @@
   "scripts": {
     "develop": "gatsby develop",
     "start": "gatsby develop",
+    "prebuild": "npm run build -w @mountainpass/addressr-core && npm run build -w @mountainpass/addressr-react && gatsby clean",
     "build": "gatsby build",
     "serve": "gatsby serve",
     "test:browser": "playwright test",
@@ -22,8 +23,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@mdx-js/react": "^2.3.0",
-    "@mountainpass/waychaser": "^5.0.11",
-    "@windyroad/fetch-link": "^3.0.5",
+    "@mountainpass/addressr-react": "0.7.1",
     "gatsby": "^5.12.4",
     "gatsby-plugin-force-trailing-slashes": "^1.0.6",
     "gatsby-plugin-google-gtag": "^5.12.0",
@@ -36,9 +36,7 @@
     "gatsby-source-filesystem": "^5.12.0",
     "gatsby-transformer-sharp": "^5.12.0",
     "react": "^18.2.0",
-    "react-autosuggest": "^10.1.0",
     "react-dom": "^18.2.0",
-    "react-tabs": "^6.0.2",
     "sass": "^1.67.0",
     "swagger-ui": "^5.7.1",
     "swagger-ui-react": "^5.7.1"

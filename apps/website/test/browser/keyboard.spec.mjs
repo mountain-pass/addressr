@@ -1,5 +1,99 @@
 import { expect, test } from '@playwright/test';
 
+const directApi = 'https://api.addressr.io/**';
+
+const mockAddressr = (page) =>
+  page.route(directApi, async (route) => {
+    const url = new URL(route.request().url());
+    const headers = { 'access-control-allow-origin': '*' };
+
+    switch (url.pathname) {
+    case '/': {
+      await route.fulfill({
+        body: '{}',
+        contentType: 'application/json',
+        headers: {
+          ...headers,
+          'access-control-expose-headers': 'link',
+          link: [
+            '</addresses{?q}>; rel="https://addressr.io/rels/address-search"',
+            '</localities{?q}>; rel="https://addressr.io/rels/locality-search"',
+            '</postcodes{?q}>; rel="https://addressr.io/rels/postcode-search"',
+            '</states{?q}>; rel="https://addressr.io/rels/state-search"',
+          ].join(', '),
+        },
+      });
+      break;
+    }
+    case '/addresses': {
+      await route.fulfill({
+        headers: {
+          ...headers,
+          link: '</addresses/TEST>; rel="canonical"; anchor="#/0"',
+        },
+        json: [
+          {
+            pid: 'TEST',
+            sla: '1 TEST ST, SYDNEY NSW 2000',
+            score: 1,
+            highlight: { sla: '<em>1 TEST ST</em>, SYDNEY NSW 2000' },
+          },
+        ],
+      });
+      break;
+    }
+    case '/addresses/TEST': {
+      await route.fulfill({
+        headers,
+        json: {
+          pid: 'TEST',
+          sla: '1 TEST ST, SYDNEY NSW 2000',
+          mla: ['1 TEST ST', 'SYDNEY NSW 2000'],
+          structured: {
+            locality: { name: 'SYDNEY' },
+            state: { name: 'New South Wales', abbreviation: 'NSW' },
+            postcode: '2000',
+            confidence: 1,
+          },
+        },
+      });
+      break;
+    }
+    case '/localities': {
+      await route.fulfill({
+        headers,
+        json: [
+          {
+            name: 'SYDNEY',
+            state: { name: 'New South Wales', abbreviation: 'NSW' },
+            postcode: '2000',
+            score: 1,
+            pid: 'LOCALITY',
+          },
+        ],
+      });
+      break;
+    }
+    case '/postcodes': {
+      await route.fulfill({
+        headers,
+        json: [{ postcode: '2000', localities: [{ name: 'SYDNEY' }] }],
+      });
+      break;
+    }
+    case '/states': {
+      await route.fulfill({
+        headers,
+        json: [{ name: 'New South Wales', abbreviation: 'NSW' }],
+      });
+      break;
+    }
+    default: {
+      await route.abort();
+    }
+    }
+  });
+
 test.describe(
   'ADR-056 scripted Chromium interactions only; not full keyboard, screen-reader, cross-browser or WCAG conformance',
   () => {
@@ -99,6 +193,82 @@ test.describe(
       await expect
         .poll(() => main.evaluate((element) => element.contains(document.activeElement)))
         .toBe(true);
+    });
+
+    test('all four React autocomplete examples support keyboard selection', async ({
+      page,
+    }) => {
+      await mockAddressr(page);
+      await page.goto('/');
+
+      const examples = [
+        ['Search Australian addresses', '1 test', 'Selected: 1 TEST ST, SYDNEY NSW 2000'],
+        ['Search Australian suburbs and towns', 'syd', 'Selected: SYDNEY, NSW 2000'],
+        ['Search Australian postcodes', '200', 'Selected: 2000 — SYDNEY'],
+        ['Search Australian states and territories', 'ns', 'Selected: New South Wales (NSW)'],
+      ];
+
+      for (const [name, query, selection] of examples) {
+        const input = page.getByRole('combobox', { name });
+        await input.fill(query);
+        let option = page.getByRole('option');
+        await expect(option).toBeVisible();
+
+        await input.press('ArrowDown');
+        await expect(input).toBeFocused();
+        await expect
+          .poll(() =>
+            input.evaluate((element) => {
+              const style = getComputedStyle(element);
+              return [style.color, style.backgroundColor];
+            }),
+          )
+          .toEqual(['rgb(36, 41, 67)', 'rgb(255, 255, 255)']);
+        await expect
+          .poll(() => input.getAttribute('aria-activedescendant'))
+          .toBe(await option.getAttribute('id'));
+        await expect(option).toHaveAttribute('aria-selected', 'true');
+        const strong = option.locator('strong');
+        if ((await strong.count()) > 0) {
+          await expect
+            .poll(() =>
+              strong.evaluate((element) => [
+                getComputedStyle(element).color,
+                getComputedStyle(element.parentElement).color,
+              ]),
+            )
+            .toEqual(['rgb(36, 41, 67)', 'rgb(36, 41, 67)']);
+        }
+        await expect
+          .poll(() =>
+            input.evaluate((element) => {
+              const style = getComputedStyle(element);
+              return [style.outlineColor, style.boxShadow];
+            }),
+          )
+          .toEqual([
+            'rgb(36, 41, 67)',
+            'rgb(155, 241, 255) 0px 0px 0px 4px',
+          ]);
+
+        await input.press('Escape');
+        await expect(input).toBeFocused();
+        await expect(input).toHaveAttribute('aria-expanded', 'false');
+
+        await input.press('ArrowDown');
+        option = page.getByRole('option');
+        await expect(option).toHaveAttribute('aria-selected', 'true');
+        await input.press('Enter');
+        await expect(input).toBeFocused();
+        await expect(page.locator('.autocomplete-selection', { hasText: selection })).toBeVisible();
+      }
+
+      const inputs = examples.map(([name]) => page.getByRole('combobox', { name }));
+      for (let index = 0; index < inputs.length - 1; index += 1) {
+        await inputs[index].focus();
+        await page.keyboard.press('Tab');
+        await expect(inputs[index + 1]).toBeFocused();
+      }
     });
   },
 );

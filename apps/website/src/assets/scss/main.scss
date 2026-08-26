@@ -56,7 +56,6 @@
 @import 'components/form';
 @import 'components/image';
 @import 'components/list';
-@import 'components/table';
 @import 'components/button';
 @import 'components/tiles';
 
@@ -78,118 +77,6 @@
   background-color: _palette(fg) !important;
 }
 
-#react-autowhatever-1 {
-}
-
-#react-autowhatever-1 em {
-  font-weight: bold;
-  font-style: normal;
-}
-
-#react-autowhatever-1 ul {
-  list-style: none
-}
-
-
-.react-autosuggest__container {
-  position: relative;
-}
-
-.react-autosuggest__suggestions-container {
-  display: none;
-}
-
-.react-autosuggest__suggestions-container--open {
-  display: block;
-  border-color: _palette(highlight);
-  box-shadow: 0 0 0 2px _palette(highlight);
-  position: relative;
-  top: 2px;
-}
-
-.react-autosuggest__suggestions-list {
-  margin: 0;
-  padding: 0;
-  list-style-type: none;
-}
-
-.react-autosuggest__suggestion {
-  cursor: pointer;
-  padding: 10px 20px;
-}
-
-.react-autosuggest__suggestion--highlighted {
-  background-color: _palette(bg);
-}
-
-
-table.address, table.address th, table.address td {
-  border: solid 1px _palette(fg);
-}
-
-
-.react-tabs {
-  margin-top: 10px;
-
-  th {
-    text-transform: uppercase;
-    vertical-align: middle;
-    padding: 0.75em 0.75em 0.75em 0.75em;
-  }
-}
-
-.react-tabs__tab-list {
-  border-bottom: 1px solid _palette(fg);
-  margin: 0 0 10px;
-  padding: 0;
-}
-
-.react-tabs__tab {
-  display: inline-block;
-  border: 2px solid transparent;
-  border-bottom: none;
-  bottom: -0px;
-  position: relative;
-  list-style: none;
-  padding: 6px 12px;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-size: 0.7em;
-  font-weight: 600;
-  letter-spacing: 0.25em;
-}
-
-.react-tabs__tab--selected {
-  background: _palette(fg);
-  border-color: 1px solid _palette(fg);
-  color: _palette(bg);
-}
-
-.react-tabs__tab:focus {
-  box-shadow: 0 0 5px hsl(208, 99%, 50%);
-  border-color: hsl(208, 99%, 50%);
-  outline: none;
-}
-
-.react-tabs__tab:focus:after {
-  content: "";
-  position: absolute;
-  height: 5px;
-  left: -4px;
-  right: -4px;
-  bottom: -5px;
-  background: #fff;
-}
-
-.react-tabs__tab-panel {
-  display: none;
-}
-
-.react-tabs__tab-panel--selected {
-  display: block;
-}
-
-
 /* Enterprise call-to-action (ADR-053).
  *
  * The email address repeats as visible text below the button because a mailto:
@@ -206,8 +93,7 @@ table.address, table.address th, table.address td {
  * `.btn:focus { outline: 0; box-shadow: 0 0 0 .2rem rgba(brand,.25) }`. There is
  * no Bootstrap here: it is in neither package.json nor any SCSS import, the
  * only `user-select` in the tree is a name inside a vendor-prefix list in
- * libs/_skel.scss, and the one `outline: none` rule in this file is scoped to
- * `.react-tabs__tab:focus`. So the
+ * libs/_skel.scss. So the
  * address is selectable and the browser's default focus ring reaches these
  * anchors unimpeded. Adding overrides for absent behaviour would be unverified
  * CSS defending against a problem this site does not have.

@@ -7,6 +7,7 @@ import {
 
 const selectedAddress = {
   pid: 'TEST',
+  sla: '1 TEST ST, SYDNEY NSW 2000',
   mla: ['1 TEST ST', 'SYDNEY NSW 2000'],
   smla: ['1 TEST ST', 'SYDNEY NSW 2000'],
   structured: {
@@ -29,7 +30,10 @@ test('site CSS reaches emitted markup in both directions across hydrated states'
         headers: {
           'access-control-allow-origin': '*',
           'access-control-expose-headers': 'link',
-          link: '</addresses{?q}>; rel="https://addressr.io/rels/address-search"',
+          link: [
+            '</addresses{?q}>; rel="https://addressr.io/rels/address-search"',
+            '</localities{?q}>; rel="https://addressr.io/rels/locality-search"',
+          ].join(', '),
         },
       });
     } else if (url.pathname === '/addresses') {
@@ -40,6 +44,19 @@ test('site CSS reaches emitted markup in both directions across hydrated states'
             pid: 'TEST',
             sla: '1 TEST ST, SYDNEY NSW 2000',
             highlight: { sla: '<em>1 TEST ST</em>, SYDNEY NSW 2000' },
+          },
+        ],
+      });
+    } else if (url.pathname === '/localities') {
+      await route.fulfill({
+        headers: { 'access-control-allow-origin': '*' },
+        json: [
+          {
+            name: 'SYDNEY',
+            state: { name: 'New South Wales', abbreviation: 'NSW' },
+            postcode: '2000',
+            score: 1,
+            pid: 'LOCALITY',
           },
         ],
       });
@@ -62,14 +79,23 @@ test('site CSS reaches emitted markup in both directions across hydrated states'
     pages.push(['/ menu open', await page.content()]);
     await page.keyboard.press('Escape');
 
-    const search = page.getByPlaceholder('Address');
+    const search = page.getByRole('combobox', {
+      name: 'Search Australian addresses',
+    });
     await search.fill('1 Test Street');
     await page.getByRole('option').waitFor();
     await page.keyboard.press('ArrowDown');
     pages.push(['/ suggestions highlighted', await page.content()]);
     await page.keyboard.press('Enter');
-    await page.getByRole('tab', { name: 'Structure Address' }).click();
-    pages.push(['/ address tabs', await page.content()]);
+    await page.getByText('Selected: 1 TEST ST, SYDNEY NSW 2000').waitFor();
+    pages.push(['/ address selected', await page.content()]);
+
+    const locality = page.getByRole('combobox', {
+      name: 'Search Australian suburbs and towns',
+    });
+    await locality.fill('syd');
+    await page.getByRole('option').waitFor();
+    pages.push(['/ locality suggestion', await page.content()]);
   }
 
   const result = analyseReachability({ pages, selectors: ownedSelectors() });

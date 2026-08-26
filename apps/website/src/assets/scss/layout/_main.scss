@@ -204,3 +204,33 @@
 p {
   font-family: 'Open Sans', sans-serif !important;
 }
+
+.autocomplete-examples {
+  display: grid;
+  gap: 2em;
+  grid-template-columns: repeat(auto-fit, minmax(16em, 1fr));
+}
+
+.autocomplete-example {
+  --addressr-error-color: #ff8080;
+  --addressr-focus-color: #{_palette(bg)};
+  --addressr-text-color: #{_palette(bg)};
+
+  min-width: 0;
+
+  [role='listbox'] {
+    color: _palette(bg);
+
+    strong {
+      color: inherit;
+    }
+  }
+
+  input[role='combobox']:focus-visible {
+    box-shadow: 0 0 0 4px _palette(highlight);
+  }
+}
+
+.autocomplete-selection {
+  margin: 0.75em 0 0;
+}

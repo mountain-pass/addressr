@@ -31,7 +31,9 @@ const searchResponse = (hasNext = false) =>
       },
     ],
     hasNext
-      ? { link: '</addresses/GANSW123>; rel=canonical; anchor="#/0", </addresses?q=1+george&p=2>; rel=next' }
+      ? {
+          link: '</addresses/GANSW123>; rel=canonical; anchor="#/0", </addresses?q=1+george&p=2>; rel=next',
+        }
       : { link: '</addresses/GANSW123>; rel=canonical; anchor="#/0"' },
     'https://addressr.p.rapidapi.com/addresses?q=1+george',
   );
@@ -74,10 +76,7 @@ describe('AddressAutocomplete CSS tokens', () => {
   beforeAll(async () => {
     const fs = await import('fs');
     const path = await import('path');
-    css = fs.readFileSync(
-      path.resolve(__dirname, './AddressAutocomplete.module.css'),
-      'utf-8',
-    );
+    css = fs.readFileSync(path.resolve(__dirname, './AddressAutocomplete.module.css'), 'utf-8');
   });
 
   it('uses CSS custom properties for all color values', () => {
@@ -133,39 +132,24 @@ describe('AddressAutocomplete CSS tokens', () => {
 describe('AddressAutocomplete', () => {
   it('renders with accessible label and combobox role', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByText('Search Australian addresses')).toBeInTheDocument();
   });
 
   it('renders with custom label', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={() => {}}
-        label="Find your address"
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} label="Find your address" fetchImpl={mockFetch} />);
     expect(screen.getByText('Find your address')).toBeInTheDocument();
   });
 
   it('displays results after typing', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={() => {}}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
 
@@ -175,18 +159,12 @@ describe('AddressAutocomplete', () => {
   });
 
   it('renders highlights with mark elements', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={() => {}}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
 
@@ -198,7 +176,8 @@ describe('AddressAutocomplete', () => {
 
   it('calls onSelect when address is chosen', async () => {
     const onSelect = vi.fn();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation((url: string | Request | URL) => {
         const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
@@ -208,43 +187,28 @@ describe('AddressAutocomplete', () => {
         return Promise.resolve(searchResponse());
       });
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={onSelect}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
     await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
     await userEvent.click(screen.getByRole('option'));
 
     await waitFor(() => {
-      expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ pid: 'GANSW123' }),
-      );
+      expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ pid: 'GANSW123' }));
     });
   });
 
   it('supports keyboard navigation while focus stays on the combobox', async () => {
     const onSelect = vi.fn();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation((url: string | Request | URL) => {
         const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
         return Promise.resolve(urlStr.includes('/addresses/') ? detailResponse() : searchResponse());
       });
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={onSelect}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />);
 
     const input = screen.getByRole('combobox');
     await userEvent.type(input, '1 george');
@@ -266,57 +230,44 @@ describe('AddressAutocomplete', () => {
     expect(option).toHaveAttribute('aria-selected', 'true');
 
     await userEvent.keyboard('{Enter}');
-    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ pid: 'GANSW123' }),
-    ));
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ pid: 'GANSW123' })));
     expect(input).toHaveFocus();
   });
 
   it('has screen reader status announcements', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('has name attribute on input defaulting to "address"', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'address');
+    expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
   it('accepts custom name attribute', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} name="shipping-address" fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} name="shipping-address" fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'shipping-address');
   });
 
   it('sets aria-required when required prop is true', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
   });
 
   it('does not set aria-required by default', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
   });
 
   it('has aria-atomic on status live region', () => {
     const mockFetch = vi.fn();
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('status')).toHaveAttribute('aria-atomic', 'true');
   });
 
@@ -329,34 +280,35 @@ describe('AddressAutocomplete', () => {
       return Promise.resolve(rootResponse());
     });
 
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
 
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveAttribute('aria-invalid', 'true');
-    }, { timeout: 10000 });
+    await waitFor(
+      () => {
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-invalid', 'true');
+      },
+      { timeout: 10000 },
+    );
   });
 
   it('shows skeleton loading instead of text', async () => {
     let resolveSearch: (value: Response) => void;
-    const searchPromise = new Promise<Response>((resolve) => { resolveSearch = resolve; });
+    const searchPromise = new Promise<Response>((resolve) => {
+      resolveSearch = resolve;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(searchPromise);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(searchPromise);
 
-    render(
-      <AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
 
     await waitFor(() => {
       const skeletons = document.querySelectorAll('[class*="skeleton"]');
       expect(skeletons.length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 
     expect(screen.queryByText('Searching...')).not.toBeInTheDocument();
@@ -365,11 +317,11 @@ describe('AddressAutocomplete', () => {
 
   it('uses custom renderLoading when provided', async () => {
     let resolveSearch: (value: Response) => void;
-    const searchPromise = new Promise<Response>((resolve) => { resolveSearch = resolve; });
+    const searchPromise = new Promise<Response>((resolve) => {
+      resolveSearch = resolve;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(searchPromise);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(searchPromise);
 
     render(
       <AddressAutocomplete
@@ -390,10 +342,10 @@ describe('AddressAutocomplete', () => {
   });
 
   it('uses custom renderNoResults when provided', async () => {
-    const emptyResponse = () =>
-      mockResponse([], {}, 'https://addressr.p.rapidapi.com/addresses?q=zzz+nothing');
+    const emptyResponse = () => mockResponse([], {}, 'https://addressr.p.rapidapi.com/addresses?q=zzz+nothing');
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(emptyResponse()));
 
@@ -415,18 +367,12 @@ describe('AddressAutocomplete', () => {
   });
 
   it('loads more results when scrolled near bottom', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse(true)));
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={() => {}}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
     await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
@@ -463,33 +409,36 @@ describe('AddressAutocomplete', () => {
         onSelect={() => {}}
         debounceMs={10}
         fetchImpl={mockFetch}
-        renderError={(err) => <div data-testid="custom-error" role="alert">{err.message}</div>}
+        renderError={(err) => (
+          <div data-testid="custom-error" role="alert">
+            {err.message}
+          </div>
+        )}
       />,
     );
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('custom-error')).toBeInTheDocument();
-    }, { timeout: 10000 });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('custom-error')).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
   });
 
   it('shows loading indicator while fetching more results', async () => {
     let resolvePage2: (value: Response) => void;
-    const page2Promise = new Promise<Response>((resolve) => { resolvePage2 = resolve; });
+    const page2Promise = new Promise<Response>((resolve) => {
+      resolvePage2 = resolve;
+    });
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse(true)));
 
-    render(
-      <AddressAutocomplete
-        apiKey="test"
-        onSelect={() => {}}
-        debounceMs={10}
-        fetchImpl={mockFetch}
-      />,
-    );
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
     await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());

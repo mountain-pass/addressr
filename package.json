@@ -112,9 +112,7 @@
     "release:watch": "bash scripts/release-watch.sh",
     "deploy:watch": "echo 'Retired (ADR-045). There is no deploy-only command: arm an infrastructure deploy by committing a changeset for apps/addressr-deployment, then run npm run release:watch -- merging the release PR is the apply. An alias here would reach prod UNGATED, because the risk gate matches the release:watch command prefix and npm spawns the inner command in a child shell the hook never sees.' >&2 && exit 1",
     "prepare": "husky",
-    "pretest:nodejs:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,test,es node packages/addressr/loader.js",
-    "test:credentials": "node --test test/credentials/*.test.mjs",
-    "pretest:credentials": "node scripts/assert-test-files.mjs"
+    "pretest:nodejs:geo": "ADDRESSR_ENABLE_GEO=1 ES_INDEX_NAME=test-geo COVERED_STATES=OT DEBUG=error,api,test,es node packages/addressr/loader.js"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",

@@ -16,15 +16,29 @@ function mockResponse(body: unknown, headers: Record<string, string> = {}, url =
 const rootResponse = () =>
   mockResponse(
     {},
-    { link: '</localities{?q}>; rel="https://addressr.io/rels/locality-search"' },
+    {
+      link: '</localities{?q}>; rel="https://addressr.io/rels/locality-search"',
+    },
     'https://addressr.p.rapidapi.com/',
   );
 
 const searchResponse = () =>
   mockResponse(
     [
-      { name: 'SYDNEY', state: { name: 'New South Wales', abbreviation: 'NSW' }, postcode: '2000', score: 19, pid: 'LOC-NSW-SYDNEY' },
-      { name: 'SYDNEY SOUTH', state: { name: 'New South Wales', abbreviation: 'NSW' }, postcode: '1234', score: 15, pid: 'LOC-NSW-SYDSOUTH' },
+      {
+        name: 'SYDNEY',
+        state: { name: 'New South Wales', abbreviation: 'NSW' },
+        postcode: '2000',
+        score: 19,
+        pid: 'LOC-NSW-SYDNEY',
+      },
+      {
+        name: 'SYDNEY SOUTH',
+        state: { name: 'New South Wales', abbreviation: 'NSW' },
+        postcode: '1234',
+        score: 15,
+        pid: 'LOC-NSW-SYDSOUTH',
+      },
     ],
     {},
     'https://addressr.p.rapidapi.com/localities?q=syd',
@@ -42,6 +56,7 @@ describe('LocalityAutocomplete', () => {
     const mockFetch = vi.fn();
     render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'locality');
+    expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
   it('sets aria-required when required is true', () => {
@@ -59,13 +74,12 @@ describe('LocalityAutocomplete', () => {
   });
 
   it('displays locality results after typing', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
 
@@ -78,13 +92,12 @@ describe('LocalityAutocomplete', () => {
 
   it('calls onSelect with the LocalitySearchResult when option chosen', async () => {
     const onSelect = vi.fn();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <LocalityAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<LocalityAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
@@ -93,39 +106,42 @@ describe('LocalityAutocomplete', () => {
 
     await waitFor(() => {
       expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'SYDNEY', postcode: '2000', pid: 'LOC-NSW-SYDNEY' }),
+        expect.objectContaining({
+          name: 'SYDNEY',
+          postcode: '2000',
+          pid: 'LOC-NSW-SYDNEY',
+        }),
       );
     });
   });
 
   it('announces "Searching suburbs and towns..." while loading', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
-    render(
-      <LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching suburbs and towns...');
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
     resolve(searchResponse());
   });
 
   it('announces count in status after results arrive', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
 
@@ -136,11 +152,11 @@ describe('LocalityAutocomplete', () => {
 
   it('uses custom renderLoading when provided', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
     render(
       <LocalityAutocomplete
@@ -160,7 +176,8 @@ describe('LocalityAutocomplete', () => {
 
   it('uses custom renderNoResults when provided', async () => {
     const empty = () => mockResponse([], {}, 'https://addressr.p.rapidapi.com/localities?q=zzz');
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(empty()));
 
@@ -180,7 +197,8 @@ describe('LocalityAutocomplete', () => {
   });
 
   it('uses custom renderItem when provided', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
@@ -202,17 +220,24 @@ describe('LocalityAutocomplete', () => {
   it('uses singular wording when exactly one result', async () => {
     const oneResult = () =>
       mockResponse(
-        [{ name: 'SYDNEY', state: { name: 'New South Wales', abbreviation: 'NSW' }, postcode: '2000', score: 19, pid: 'LOC-1' }],
+        [
+          {
+            name: 'SYDNEY',
+            state: { name: 'New South Wales', abbreviation: 'NSW' },
+            postcode: '2000',
+            score: 19,
+            pid: 'LOC-1',
+          },
+        ],
         {},
         'https://addressr.p.rapidapi.com/localities?q=sydney',
       );
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(oneResult()));
 
-    render(
-      <LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), 'sydney');
 
@@ -234,12 +259,18 @@ describe('LocalityAutocomplete', () => {
         onSelect={() => {}}
         debounceMs={10}
         fetchImpl={mockFetch}
-        renderError={(err) => <div data-testid="err" role="alert">{err.message}</div>}
+        renderError={(err) => (
+          <div data-testid="err" role="alert">
+            {err.message}
+          </div>
+        )}
       />,
     );
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), { timeout: 10000 });
+    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
+      timeout: 10000,
+    });
   });
 });

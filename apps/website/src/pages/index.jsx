@@ -1,5 +1,12 @@
 import { Link } from 'gatsby';
-import React from 'react';
+import {
+  AddressAutocomplete,
+  LocalityAutocomplete,
+  PostcodeAutocomplete,
+  StateAutocomplete,
+} from '@mountainpass/addressr-react';
+import '@mountainpass/addressr-react/style.css';
+import React, { useState } from 'react';
 import pic01 from '../assets/images/pic01.jpg';
 import pic02 from '../assets/images/pic02.jpg';
 import pic03 from '../assets/images/pic03.jpg';
@@ -10,10 +17,17 @@ import pic10 from '../assets/images/pic10.jpg';
 import pic11 from '../assets/images/pic11.jpg';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
-import Search from '../components/Search';
 import dataGovLogo from './Data-gov-au.jpg';
 
+const apiUrl = 'https://api.addressr.io/';
+
 const HomeIndex = () => {
+  const [selectedAddress, setSelectedAddress] = useState();
+  const [selectedLocality, setSelectedLocality] = useState();
+  const [selectedPostcode, setSelectedPostcode] = useState();
+  const [selectedState, setSelectedState] = useState();
+  const [selectedMessage, setSelectedMessage] = useState('');
+
   return (
     <Layout>
 
@@ -35,11 +49,85 @@ const HomeIndex = () => {
 
       <div>
         <section id="zero" style={{ padding: '2em 3em 2em 3em' }}>
-          <article>
-            <div className="content">
-              <Search />
+          <header className="major">
+            <h2>Try Addressr autocomplete</h2>
+          </header>
+          <div className="autocomplete-examples">
+            <div className="autocomplete-example">
+              <h3>Address search</h3>
+              <AddressAutocomplete
+                apiUrl={apiUrl}
+                onSelect={(address) => {
+                  setSelectedAddress(address);
+                  setSelectedMessage(`Selected address: ${address.sla}`);
+                }}
+              />
+              {selectedAddress && (
+                <p className="autocomplete-selection">
+                  <strong>Selected:</strong> {selectedAddress.sla}
+                </p>
+              )}
             </div>
-          </article>
+            <div className="autocomplete-example">
+              <h3>Suburb and town search</h3>
+              <LocalityAutocomplete
+                apiUrl={apiUrl}
+                onSelect={(locality) => {
+                  setSelectedLocality(locality);
+                  setSelectedMessage(
+                    `Selected suburb or town: ${locality.name}, ${locality.state.abbreviation} ${locality.postcode}`,
+                  );
+                }}
+              />
+              {selectedLocality && (
+                <p className="autocomplete-selection">
+                  <strong>Selected:</strong> {selectedLocality.name},{' '}
+                  {selectedLocality.state.abbreviation}{' '}
+                  {selectedLocality.postcode}
+                </p>
+              )}
+            </div>
+            <div className="autocomplete-example">
+              <h3>Postcode search</h3>
+              <PostcodeAutocomplete
+                apiUrl={apiUrl}
+                onSelect={(postcode) => {
+                  setSelectedPostcode(postcode);
+                  setSelectedMessage(`Selected postcode: ${postcode.postcode}`);
+                }}
+              />
+              {selectedPostcode && (
+                <p className="autocomplete-selection">
+                  <strong>Selected:</strong> {selectedPostcode.postcode}
+                  {selectedPostcode.localities.length > 0 &&
+                    ` — ${selectedPostcode.localities
+                      .map((locality) => locality.name)
+                      .join(', ')}`}
+                </p>
+              )}
+            </div>
+            <div className="autocomplete-example">
+              <h3>State and territory search</h3>
+              <StateAutocomplete
+                apiUrl={apiUrl}
+                onSelect={(state) => {
+                  setSelectedState(state);
+                  setSelectedMessage(
+                    `Selected state or territory: ${state.name} (${state.abbreviation})`,
+                  );
+                }}
+              />
+              {selectedState && (
+                <p className="autocomplete-selection">
+                  <strong>Selected:</strong>{' '}
+                  {`${selectedState.name} (${selectedState.abbreviation})`}
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {selectedMessage}
+          </p>
         </section>
       </div>
 

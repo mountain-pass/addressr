@@ -8,8 +8,7 @@ date-created: 2026-08-23
 secondary-personas:
   - self-hosted-operator
 screens:
-  - 'apps/website/src/pages/index.jsx — the landing page; the first surface anyone evaluating Addressr sees'
-  - "apps/website/src/components/Search.js — the live demo. The only place a prospect can judge result quality and latency without writing code, and the production client of the worker's safeHosts allowlist (JTBD-200)"
+  - 'apps/website/src/pages/index.jsx — the landing page and live React autocomplete demo. It exposes address, locality, postcode and state examples and is the first surface anyone evaluating Addressr sees.'
   - 'apps/website/src/pages/quick-start.js — the path from convinced to a first call'
   - 'apps/website/src/pages/pricing.js — the tier-choice moment. Its Enterprise call-to-action is a mailto after ADR-053, so the buyer leaves the product surface here'
   - 'apps/website/src/pages/download.js — the self-hosting fork in the road; also a JTBD-202 screen, where it duplicates README.md'

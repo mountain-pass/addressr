@@ -35,12 +35,12 @@ the rest of the repo's conventions and should not be read as a house style the m
 Sass (`.scss`), compiled by `gatsby-plugin-sass`, organised in four layers under
 `apps/website/src/assets/scss/`:
 
-| Layer         | Holds                                                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `libs/`       | `_vars.scss` (all tokens), `_functions.scss`, `_mixins.scss`, `_skel.scss` (the template's grid/breakpoint engine)                                                              |
-| `base/`       | `_page.scss`, `_typography.scss` — element-level defaults                                                                                                                       |
-| `components/` | `_button.scss`, `_form.scss`, `_table.scss`, `_tiles.scss`, `_box.scss`, `_list.scss`, `_icon.scss`, `_image.scss`, `_section.scss`, `_spotlights.scss`, `_contact-method.scss` |
-| `layout/`     | `_header.scss`, `_footer.scss`, `_menu.scss`, `_main.scss`, `_banner.scss`, `_wrapper.scss`, `_contact.scss`                                                                    |
+| Layer         | Holds                                                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `libs/`       | `_vars.scss` (all tokens), `_functions.scss`, `_mixins.scss`, `_skel.scss` (the template's grid/breakpoint engine)                                               |
+| `base/`       | `_page.scss`, `_typography.scss` — element-level defaults                                                                                                        |
+| `components/` | `_button.scss`, `_form.scss`, `_tiles.scss`, `_box.scss`, `_list.scss`, `_icon.scss`, `_image.scss`, `_section.scss`, `_spotlights.scss`, `_contact-method.scss` |
+| `layout/`     | `_header.scss`, `_footer.scss`, `_menu.scss`, `_main.scss`, `_banner.scss`, `_wrapper.scss`, `_contact.scss`                                                     |
 
 `main.scss` imports them in that order. Three things the four-layer picture leaves out:
 
@@ -50,11 +50,10 @@ Sass (`.scss`), compiled by `gatsby-plugin-sass`, organised in four layers under
 - **`main.scss:6` pulls Source Sans Pro from `fonts.googleapis.com` over the network**, which is the actual
   mechanism behind the type token below and a render-blocking third-party request.
 
-**There is a de-facto fifth layer, and naming it matters.** `main.scss` is not an import manifest: lines
-77-237 are ~160 lines of its own rules overriding third-party React widgets — react-autosuggest, react-tabs,
-swagger-ui, plus `.enterprise-cta__address`. "Where do I put an override for a vendor component" is a real
-recurring question and this is the honest answer. It is also not a coincidence that three of the tree's
-hardcoded colours live there: unnamed layers accumulate exceptions.
+**There is a de-facto fifth layer, and naming it matters.** `main.scss` is not only an import manifest: it
+also owns the Swagger UI override and `.enterprise-cta__address`. The autocomplete itself now uses the
+published `@mountainpass/addressr-react/style.css`; homepage-specific layout and palette integration stay
+local to `layout/_main.scss`.
 
 Legacy dead weight, flagged rather than removed because removing is a change and this is a description:
 `ie8.scss`, `ie9.scss`, and their `.css` counterparts.
@@ -166,28 +165,20 @@ ratio depend on what sits behind it, and a single number would be more misleadin
 
 ## Focus indicators — the rule that matters most here
 
-The site removes the native outline in **three** places, not two — `main.scss:104`, `main.scss:190`, and
-`_form.scss:87`. That is legitimate **only** because a visible replacement follows, and each has been
-measured:
+The autocomplete package supplies its own focus-visible outline:
 
 ```scss
-// components/_form.scss:87,98
-outline: 0;
-box-shadow: 0 0 0 2px _palette(highlight); // 11.15:1 against bg — passes 1.4.11
+// @mountainpass/addressr-react/style.css
+outline: 2px solid var(--addressr-focus-color, #005fcc);
+outline-offset: 1px;
 ```
 
 **Do**: pair every `outline: 0` / `outline: none` with a visible replacement ring of at least 3:1 against
 its background, and record the measured ratio.
 
-**Don't**: write a bare `outline: none`. `main.scss:104` does exactly this on
-`.react-autosuggest__input--focused`; `_form.scss:96-99` supplies the ring that saves it, but the two live in
-different files and nothing connects them. If either moves independently the focus indicator disappears
-silently — this is a latent hazard, not a current defect.
-
-The third site, `.react-tabs__tab:focus` at `main.scss:190`, replaces its outline with the hardcoded
-`hsl(208, 99%, 50%)` (#0188FE) from the token table above. Measured: **4.04:1** against `bg` and **3.53:1**
-against the white `.swagger-wrapper` it actually sits on, so it clears 1.4.11 either way. It is a **token
-violation, not a contrast defect** — worth stating precisely so nobody "fixes" a ring that is working.
+**Don't**: override the package outline without measuring the replacement against both the field and page
+backgrounds. Browser automation asserts that each of the four homepage comboboxes retains a visible focus
+indicator.
 
 ## Do / Don't
 

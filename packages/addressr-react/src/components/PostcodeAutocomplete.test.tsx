@@ -16,19 +16,22 @@ function mockResponse(body: unknown, headers: Record<string, string> = {}, url =
 const rootResponse = () =>
   mockResponse(
     {},
-    { link: '</postcodes{?q}>; rel="https://addressr.io/rels/postcode-search"' },
+    {
+      link: '</postcodes{?q}>; rel="https://addressr.io/rels/postcode-search"',
+    },
     'https://addressr.p.rapidapi.com/',
   );
 
 const searchResponse = (hasNext = false) =>
   mockResponse(
     [
-      { postcode: '2000', localities: [{ name: 'SYDNEY' }, { name: 'BARANGAROO' }] },
+      {
+        postcode: '2000',
+        localities: [{ name: 'SYDNEY' }, { name: 'BARANGAROO' }],
+      },
       { postcode: '2001', localities: [{ name: 'SYDNEY' }] },
     ],
-    hasNext
-      ? { link: '</postcodes?q=20&p=2>; rel=next' }
-      : {},
+    hasNext ? { link: '</postcodes?q=20&p=2>; rel=next' } : {},
     'https://addressr.p.rapidapi.com/postcodes?q=20',
   );
 
@@ -59,13 +62,12 @@ describe('PostcodeAutocomplete', () => {
     const mockFetch = vi.fn();
     render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'postcode');
+    expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
   it('accepts custom name attribute', () => {
     const mockFetch = vi.fn();
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} name="billing-postcode" fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} name="billing-postcode" fetchImpl={mockFetch} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'billing-postcode');
   });
 
@@ -84,13 +86,12 @@ describe('PostcodeAutocomplete', () => {
   });
 
   it('displays postcode results after typing', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 
@@ -103,13 +104,12 @@ describe('PostcodeAutocomplete', () => {
 
   it('calls onSelect with the PostcodeSearchResult when option chosen', async () => {
     const onSelect = vi.fn();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={onSelect} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '200');
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
@@ -117,40 +117,37 @@ describe('PostcodeAutocomplete', () => {
     await userEvent.click(screen.getAllByRole('option')[0]);
 
     await waitFor(() => {
-      expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ postcode: '2000' }),
-      );
+      expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ postcode: '2000' }));
     });
   });
 
   it('announces "Searching postcodes..." while loading', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching postcodes...');
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
     resolve(searchResponse());
   });
 
   it('announces count in status after results arrive', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 
@@ -161,11 +158,11 @@ describe('PostcodeAutocomplete', () => {
 
   it('uses custom renderLoading when provided', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
     render(
       <PostcodeAutocomplete
@@ -185,7 +182,8 @@ describe('PostcodeAutocomplete', () => {
 
   it('uses custom renderNoResults when provided', async () => {
     const empty = () => mockResponse([], {}, 'https://addressr.p.rapidapi.com/postcodes?q=zzz');
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(empty()));
 
@@ -205,7 +203,8 @@ describe('PostcodeAutocomplete', () => {
   });
 
   it('uses custom renderItem when provided', async () => {
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(searchResponse()));
 
@@ -238,13 +237,19 @@ describe('PostcodeAutocomplete', () => {
         onSelect={() => {}}
         debounceMs={10}
         fetchImpl={mockFetch}
-        renderError={(err) => <div data-testid="err" role="alert">{err.message}</div>}
+        renderError={(err) => (
+          <div data-testid="err" role="alert">
+            {err.message}
+          </div>
+        )}
       />,
     );
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), { timeout: 10000 });
+    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
+      timeout: 10000,
+    });
   });
 
   it('uses singular wording when exactly one result', async () => {
@@ -254,13 +259,12 @@ describe('PostcodeAutocomplete', () => {
         {},
         'https://addressr.p.rapidapi.com/postcodes?q=2000',
       );
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(oneResult()));
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '2000');
 
@@ -279,23 +283,20 @@ describe('PostcodeAutocomplete', () => {
         {},
         'https://addressr.p.rapidapi.com/postcodes?q=2620',
       );
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce(rootResponse())
       .mockImplementation(() => Promise.resolve(dupResponse()));
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '262');
 
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
 
-    const keyWarning = errorSpy.mock.calls.find((c) =>
-      String(c[0]).includes('the same key'),
-    );
+    const keyWarning = errorSpy.mock.calls.find((c) => String(c[0]).includes('the same key'));
     expect(keyWarning).toBeUndefined();
 
     errorSpy.mockRestore();
@@ -303,15 +304,13 @@ describe('PostcodeAutocomplete', () => {
 
   it('shows skeleton loading instead of text by default', async () => {
     let resolve!: (r: Response) => void;
-    const pending = new Promise<Response>((r) => { resolve = r; });
+    const pending = new Promise<Response>((r) => {
+      resolve = r;
+    });
 
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(rootResponse())
-      .mockReturnValue(pending);
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockReturnValue(pending);
 
-    render(
-      <PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />,
-    );
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 

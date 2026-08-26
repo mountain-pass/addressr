@@ -19,8 +19,8 @@
 // NOT A TEST INSIDE THE SUITE, and this is the whole point: a test in
 // test/js/__tests__/ cannot detect that test/js/__tests__/ did not run. The
 // check has to sit OUTSIDE the thing it checks, which is why it is wired into
-// `pretest:js` and `pretest:credentials` rather than written as another
-// .test.mjs file. Placement follows scripts/check-not-cli2-tags.mjs and
+// `pretest:js` rather than written as another .test.mjs file. Placement follows
+// scripts/check-not-cli2-tags.mjs and
 // scripts/check-gnaf-source.mjs.
 //
 // IT READS THE GLOBS, IT DOES NOT RESTATE THEM — and that is the 2026-08-24
@@ -68,7 +68,6 @@ const pkg = JSON.parse(readFileSync(path.join(REPO, 'package.json'), 'utf8'));
 const FLOORS = {
   'test/js/__tests__': 5,
   'test/integration': 1,
-  'test/credentials': 1,
   'test/precommit': 1,
   'apps/website/test': 1,
   'apps/website/test/__tests__': 1,
@@ -158,7 +157,7 @@ if (derived.length < 5) {
 }
 
 // 1. Every globbed directory must be floored. Catches a new tier added with no
-//    guard — the state `test:credentials` itself was in when it was written.
+//    guard — the state this script's first guarded tier was in when written.
 for (const [script, dir] of derived) {
   if (!(dir in FLOORS)) {
     console.error(

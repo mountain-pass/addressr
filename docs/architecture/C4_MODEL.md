@@ -28,7 +28,9 @@ flowchart LR
   mcpconsumer -- MCP tools --> addressrMcp[Addressr MCP Server]
   addressrMcp -- HATEOAS API calls --> rapidapi
   uiconsumer -- Addressr UI SDK --> rapidapi
-  website -- JS fetch --> cfworker
+  website -- React autocomplete --> addressrReact[Addressr React Adapter]
+  addressrReact --> addressrCore[Addressr Core SDK]
+  addressrCore -- Direct API call --> cfworker
   uptimerobot -- 5 min check --> cfworker
   cfworker -- API key --> rapidapi
   rapidapi -- round-robin --> addressr
@@ -81,8 +83,9 @@ flowchart TB
   mcp -- HTTPS --> rapidapi
   uiconsumer --> adapters
   adapters --> core
-  core -- HTTPS --> rapidapi
-  netlify -- JS fetch --> cfworker
+  core -- RapidAPI clients --> rapidapi
+  core -- addressr.io direct API --> cfworker
+  netlify -- React autocomplete --> adapters
   uptimerobot -- 5min checks --> cfworker
   cfworker -- x-rapidapi-key --> rapidapi
   rapidapi -- round-robin --> v2api

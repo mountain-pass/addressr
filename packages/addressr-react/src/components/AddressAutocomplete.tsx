@@ -87,24 +87,18 @@ export function AddressAutocomplete({
     }
   }, [selectedAddress]);
 
-  const {
-    isOpen,
-    getLabelProps,
-    getMenuProps,
-    getInputProps,
-    highlightedIndex,
-    getItemProps,
-  } = useCombobox<AddressSearchResult>({
-    items: results,
-    inputValue: query,
-    onInputValueChange: ({ inputValue }) => setQuery(inputValue ?? ''),
-    onSelectedItemChange: ({ selectedItem }) => {
-      if (selectedItem) {
-        selectAddress(selectedItem.pid);
-      }
-    },
-    itemToString: (item) => item?.sla ?? '',
-  });
+  const { isOpen, getLabelProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } =
+    useCombobox<AddressSearchResult>({
+      items: results,
+      inputValue: query,
+      onInputValueChange: ({ inputValue }) => setQuery(inputValue ?? ''),
+      onSelectedItemChange: ({ selectedItem }) => {
+        if (selectedItem) {
+          selectAddress(selectedItem.pid);
+        }
+      },
+      itemToString: (item) => item?.sla ?? '',
+    });
 
   const handleMenuScroll = useCallback(
     (event: React.UIEvent<HTMLUListElement>) => {
@@ -117,7 +111,9 @@ export function AddressAutocomplete({
     [hasMore, isLoadingMore, loadMore],
   );
 
-  const showMenu = isOpen && (results.length > 0 || isLoading || (query.length >= 3 && !isLoading));
+  const showMenu = isOpen && results.length > 0;
+  const showLoading = isOpen && isLoading && results.length === 0;
+  const showNoResults = isOpen && !isLoading && results.length === 0 && query.length >= 3;
 
   return (
     <div className={`${styles.wrapper} ${className ?? ''}`}>
@@ -126,8 +122,10 @@ export function AddressAutocomplete({
       </label>
       <input
         {...getInputProps({
+          autoComplete: 'off',
           placeholder,
           name,
+          'aria-expanded': showMenu,
           'aria-describedby': error ? errorId : undefined,
           'aria-required': required || undefined,
           'aria-invalid': error ? true : undefined,
@@ -144,24 +142,11 @@ export function AddressAutocomplete({
 
       <ul
         {...getMenuProps({ onScroll: handleMenuScroll })}
+        hidden={!showMenu}
         className={`${styles.menu} ${!showMenu ? styles.menuHidden : ''}`}
       >
         {showMenu && (
           <>
-            {isLoading && (
-              renderLoading ? renderLoading() : (
-                <>
-                  <li className={styles.skeleton} style={{ width: '80%' }} aria-hidden="true" />
-                  <li className={styles.skeleton} style={{ width: '60%' }} aria-hidden="true" />
-                  <li className={styles.skeleton} style={{ width: '70%' }} aria-hidden="true" />
-                </>
-              )
-            )}
-            {!isLoading && results.length === 0 && query.length >= 3 && (
-              renderNoResults ? renderNoResults() : (
-                <li className={styles.noResults}>No addresses found</li>
-              )
-            )}
             {results.map((item, index) => {
               const segments = parseHighlight(item.highlight?.sla ?? item.sla);
               return (
@@ -170,14 +155,12 @@ export function AddressAutocomplete({
                   {...getItemProps({ item, index })}
                   className={`${styles.item} ${highlightedIndex === index ? styles.itemHighlighted : ''}`}
                 >
-                  {renderItem ? renderItem(item, highlightedIndex === index, segments) : (
+                  {renderItem ? (
+                    renderItem(item, highlightedIndex === index, segments)
+                  ) : (
                     <span>
                       {segments.map((seg, i) =>
-                        seg.highlighted ? (
-                          <mark key={i}>{seg.text}</mark>
-                        ) : (
-                          <span key={i}>{seg.text}</span>
-                        ),
+                        seg.highlighted ? <mark key={i}>{seg.text}</mark> : <span key={i}>{seg.text}</span>,
                       )}
                     </span>
                   )}
@@ -185,19 +168,39 @@ export function AddressAutocomplete({
               );
             })}
             {isLoadingMore && (
-              <li role="presentation" className={styles.loading}>Loading more...</li>
+              <li role="presentation" className={styles.loading}>
+                Loading more...
+              </li>
             )}
           </>
         )}
       </ul>
 
-      {error && (
-        renderError ? renderError(error) : (
+      {(showLoading || showNoResults) && (
+        <ul className={styles.menu} aria-hidden="true">
+          {showLoading &&
+            (renderLoading ? (
+              renderLoading()
+            ) : (
+              <>
+                <li className={styles.skeleton} style={{ width: '80%' }} />
+                <li className={styles.skeleton} style={{ width: '60%' }} />
+                <li className={styles.skeleton} style={{ width: '70%' }} />
+              </>
+            ))}
+          {showNoResults &&
+            (renderNoResults ? renderNoResults() : <li className={styles.noResults}>No addresses found</li>)}
+        </ul>
+      )}
+
+      {error &&
+        (renderError ? (
+          renderError(error)
+        ) : (
           <div id={errorId} className={styles.error} role="alert">
             {error.message}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }
