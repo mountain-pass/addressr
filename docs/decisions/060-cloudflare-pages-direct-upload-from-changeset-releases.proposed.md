@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-27
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-27
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent]
 informed: []
@@ -10,7 +11,7 @@ reassessment-date: 2026-11-27
 
 # Cloudflare Pages direct upload from changeset releases
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per the governance-skill invocation rule, derived-substance amendment 2026-07-06 / the full-substance capture implementation design). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per the governance-skill invocation rule, derived-substance amendment 2026-07-06 / the full-substance capture implementation design). Section content was derived by the capturing agent from the in-session decision context and ratified by Tom Howard on 2026-08-27.
 
 ## Context and Problem Statement
 

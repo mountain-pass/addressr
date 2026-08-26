@@ -310,7 +310,7 @@ _52 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-060 — Cloudflare Pages direct upload from changeset releases
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Keep the Pages project, custom domain, and imported root DNS record in the existing production Terraform state, while `release.yml` uploads Gatsby output with Wrangler only when a release-PR merge consumes a website changeset and bumps `@mountainpass/website`. Use a separate Pages-and-DNS-scoped token, configure no Pages git source, disable Netlify's production integration before cutover, and verify the exact merged SHA at `addressr.io/revision.txt`.
 **Confirmation:** Terraform plan leaves the API worker unchanged; the Pages project is Direct Upload; the token cannot edit Workers resources; executable tests cover positive and negative website arming cases; Netlify and Pages do not deploy ordinary source pushes; the first release returns the merged SHA from `addressr.io/revision.txt`; website routes and `api.addressr.io` pass post-cutover smoke.
 **Related:** ADR-032, ADR-045, ADR-046, ADR-053
