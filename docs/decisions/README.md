@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 58 (50 in-force, 8 historical)
+**Total ADRs:** 59 (51 in-force, 8 historical)
 
 ---
 
 ## In-force decisions
 
-_50 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_51 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -300,6 +300,13 @@ _50 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Import the MCP server and linked UI quartet as npm workspaces under `packages/*`, preserve their existing histories in archived source repositories, and make release effects depend on the package actually published. API deploy, production smoke, and Docker publication run only for an API-package publication or the separately governed deployment-package version bump.
 **Confirmation:** all five packages install from the root lockfile and retain their existing behavior; UI keyboard regressions exercise ArrowDown, Enter, Escape, active descendant and input focus; Changesets links only the UI quartet; release tests prove MCP/UI-only publications cannot reach API deploy or Docker; every expected public workspace version is verified against npm; C4 and npm repository metadata identify the consolidated paths before the old repositories are archived.
 **Related:** ADR-007, ADR-045, ADR-046, ADR-050, ADR-053; supersedes ADR-008 and ADR-050
+
+### ADR-059 — npm trusted publishing for all public workspaces
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Bind all six public npm workspaces to the exact `mountain-pass/addressr` `release.yml` GitHub Actions identity and allow only `npm publish`, because short-lived OIDC authority is visible and exact while the failed and proposed relayed bearer tokens could not prove package scope before publication. Keep npm 10.9.4 for repository installs, versioning, and lockfile generation; use one exact npm 11 version only at the publish boundary.
+**Confirmation:** all six npm trust records read back identically before retry; only the release job has `contents: read` and `id-token: write`; the publish step asserts the Node/npm floor and receives no npm token; the publication verifier enumerates mismatches after a failed Changesets publish while deploy, smoke, and Docker remain success-only; all six registry versions and imported-package provenance are exact before source archival.
+**Related:** ADR-007, ADR-058
 
 ---
 
