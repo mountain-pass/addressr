@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-core",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Framework-agnostic HATEOAS client and types for Australian address search via Addressr",
   "author": {
     "name": "Mountain Pass",
