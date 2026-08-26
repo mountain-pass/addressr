@@ -23,9 +23,8 @@ const runEffects = (published, packages) =>
 describe('release package effects', () => {
   it('arms API effects only when the API package was published', () => {
     assert.equal(
-      runEffects(true, [
-        { name: '@mountainpass/addressr', version: '3.3.2' },
-      ]).stdout,
+      runEffects(true, [{ name: '@mountainpass/addressr', version: '3.3.2' }])
+        .stdout,
       'api-published=true\n',
     );
     assert.equal(
@@ -88,8 +87,14 @@ const fixture = (publishedVersions) => {
   writeFileSync(
     fakeNpm,
     `#!/usr/bin/env node
+const { existsSync, readFileSync, writeFileSync } = require('node:fs');
 const versions = JSON.parse(process.env.FAKE_NPM_VERSIONS);
-const version = versions[process.argv[3]];
+const name = process.argv[3];
+const responses = Array.isArray(versions[name]) ? versions[name] : [versions[name]];
+const state = process.env.FAKE_NPM_STATE + '-' + Buffer.from(name).toString('hex');
+const attempt = existsSync(state) ? Number(readFileSync(state, 'utf8')) : 0;
+writeFileSync(state, String(attempt + 1));
+const version = responses[Math.min(attempt, responses.length - 1)];
 if (!version) process.exit(1);
 process.stdout.write(JSON.stringify(version));
 `,
@@ -101,17 +106,20 @@ process.stdout.write(JSON.stringify(version));
     encoding: 'utf8',
     env: {
       ...process.env,
+      PUBLICATION_CHECK_ATTEMPTS: '3',
+      PUBLICATION_CHECK_DELAY_MS: '0',
       FAKE_NPM_VERSIONS: JSON.stringify(publishedVersions),
+      FAKE_NPM_STATE: path.join(root, 'npm-state'),
       PATH: `${bin}:${process.env.PATH}`,
     },
   });
 };
 
 describe('public workspace publication verification', () => {
-  it('passes only when every public workspace version matches npm', () => {
+  it('retries propagation lag and passes when every public version matches', () => {
     const result = fixture({
       '@mountainpass/addressr': '3.3.2',
-      '@mountainpass/addressr-mcp': '1.0.4',
+      '@mountainpass/addressr-mcp': ['1.0.3', '1.0.4'],
     });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /@mountainpass\/addressr-mcp@1\.0\.4/);

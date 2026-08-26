@@ -258,6 +258,11 @@ npx --no-install semver "$(npm --version)" -r '>=11.5.1'
     assert.equal(changesets.env.NPM_TOKEN, undefined);
     assert.equal(changesets.env.NODE_AUTH_TOKEN, undefined);
 
+    const checkout = releaseSteps.find((step) =>
+      step.uses?.startsWith('actions/checkout'),
+    );
+    assert.equal(checkout.with['persist-credentials'], false);
+
     const names = releaseSteps.map((step) => step.name);
     assert.equal(
       names.indexOf(toolchain.name) + 1,
