@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-vue",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Vue address autocomplete component for Australian address search via Addressr",
   "author": {
     "name": "Mountain Pass",
@@ -37,7 +37,7 @@
     "vue": ">=3.3"
   },
   "dependencies": {
-    "@mountainpass/addressr-core": "0.7.0"
+    "@mountainpass/addressr-core": "0.7.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

@@ -1,5 +1,11 @@
 # @mountainpass/addressr-mcp
 
+## 1.0.5
+
+### Patch Changes
+
+- 572c269: Publish the Addressr MCP server from the Addressr monorepo with repository metadata pointing to its package directory. Runtime tool behavior is unchanged.
+
 ## 1.0.4
 
 ### Patch Changes

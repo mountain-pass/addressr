@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-svelte",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Svelte address autocomplete component for Australian address search via Addressr",
   "author": {
     "name": "Mountain Pass",
@@ -39,7 +39,7 @@
     "svelte": ">=4"
   },
   "dependencies": {
-    "@mountainpass/addressr-core": "0.7.0"
+    "@mountainpass/addressr-core": "0.7.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",

@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-react",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "React address autocomplete component for Australian address search via Addressr",
   "author": {
     "name": "Mountain Pass",
@@ -38,7 +38,7 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@mountainpass/addressr-core": "0.7.0",
+    "@mountainpass/addressr-core": "0.7.1",
     "downshift": "^9.0.0"
   },
   "devDependencies": {

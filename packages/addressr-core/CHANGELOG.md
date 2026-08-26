@@ -1,5 +1,11 @@
 # @mountainpass/addressr-core
 
+## 0.7.1
+
+### Patch Changes
+
+- 572c269: Publish the core, React, Svelte, and Vue packages from the Addressr monorepo. Framework packages now include working `style.css` exports, and observable combobox keyboard tests cover ArrowDown, Enter, Escape, active-descendant state, and retained input focus.
+
 ## 0.7.0
 
 ### Minor Changes
