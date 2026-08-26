@@ -303,7 +303,7 @@ _51 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-059 — npm trusted publishing for all public workspaces
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Bind all six public npm workspaces to the exact `mountain-pass/addressr` `release.yml` GitHub Actions identity and allow only `npm publish`, because short-lived OIDC authority is visible and exact while the failed and proposed relayed bearer tokens could not prove package scope before publication. Keep npm 10.9.4 for repository installs, versioning, and lockfile generation; use one exact npm 11 version only at the publish boundary.
 **Confirmation:** all six npm trust records read back identically before retry; only the release job has `contents: read` and `id-token: write`; the publish step asserts the Node/npm floor and receives no npm token; the publication verifier enumerates mismatches after a failed Changesets publish while deploy, smoke, and Docker remain success-only; all six registry versions and imported-package provenance are exact before source archival.
 **Related:** ADR-007, ADR-058

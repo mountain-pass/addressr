@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-26
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-26
 decision-makers: [Tom Howard]
 consulted: [Codex architecture review]
 informed: []
@@ -10,11 +11,11 @@ reassessment-date: 2026-11-26
 
 # npm trusted publishing for all public workspaces
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per the governance-skill invocation rule, derived-substance amendment 2026-07-06 / the full-substance capture implementation design). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per the governance-skill invocation rule, derived-substance amendment 2026-07-06 / the full-substance capture implementation design). Section content was derived by the capturing agent from the in-session decision context and RATIFIED by the decision-maker on 2026-08-26 at the /wr-architect:review-decisions drain.
 
 ## Context and Problem Statement
 
-The first release after consolidating the Addressr MCP and UI packages passed every build, test, package, licence, live-integration, and website gate, then failed all six npm publish attempts with E404 because the target repository's `NPM_TOKEN` did not have the required package authority. Relaying a token from a source repository was rejected at residual risk 12/25: the token's granular package scope could not be proved before an irreversible concurrent publish, and the available GitHub credential was broader than a one-repository secret update.
+The first release after consolidating the Addressr MCP and UI packages passed every build, test, package, licence, live-integration, and website gate, then failed the five imported-package npm publish attempts with E404; `@mountainpass/addressr` was already current and was not attempted. The response is consistent with a missing, expired, or insufficiently authorised target `NPM_TOKEN`, but does not distinguish those causes. All six public workspaces require trust because the shared token is being removed. Relaying a token from a source repository was rejected at residual risk 12/25: the token's granular package scope could not be proved before an irreversible concurrent publish, and the available GitHub credential was broader than a one-repository secret update.
 
 npm trusted publishing can bind each existing package to this repository's GitHub Actions workflow and authenticate `npm publish` through a short-lived OIDC identity instead of a repository bearer token. The repository otherwise remains deliberately on npm 10.9.4 for root installation, versioning, and lockfile generation; trusted publishing requires npm 11.5.1 or newer only at the publish boundary.
 
@@ -90,7 +91,7 @@ The publication verifier runs after the Changesets step even when that step fail
 ### Create a new granular bearer token in the target repository
 
 - Good, because it preserves the current workflow and npm 10 publish path.
-- Bad, because it creates another expiring, package-scoped secret whose exact authority is not visible in the repository and whose direct-publish role npm is deprecating.
+- Bad, because it creates another expiring, package-scoped secret whose exact authority is not visible in the repository, while npm recommends trusted publishing for CI/CD.
 
 ### Relay source-repository tokens into the target repository
 
