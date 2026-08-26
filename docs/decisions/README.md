@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 59 (51 in-force, 8 historical)
+**Total ADRs:** 60 (52 in-force, 8 historical)
 
 ---
 
 ## In-force decisions
 
-_51 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_52 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -307,6 +307,13 @@ _51 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Bind all six public npm workspaces to the exact `mountain-pass/addressr` `release.yml` GitHub Actions identity and allow only `npm publish`, because short-lived OIDC authority is visible and exact while the failed and proposed relayed bearer tokens could not prove package scope before publication. Keep npm 10.9.4 for repository installs, versioning, and lockfile generation; use one exact npm 11 version only at the publish boundary.
 **Confirmation:** all six npm trust records read back identically before retry; only the release job has `contents: read` and `id-token: write`; the publish step asserts the Node/npm floor and receives no npm token; the publication verifier enumerates mismatches after a failed Changesets publish while deploy, smoke, and Docker remain success-only; all six registry versions and imported-package provenance are exact before source archival.
 **Related:** ADR-007, ADR-058
+
+### ADR-060 — Cloudflare Pages direct upload from changeset releases
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Keep the Pages project, custom domain, and imported root DNS record in the existing production Terraform state, while `release.yml` uploads Gatsby output with Wrangler only when a release-PR merge consumes a website changeset and bumps `@mountainpass/website`. Use a separate Pages-and-DNS-scoped token, configure no Pages git source, disable Netlify's production integration before cutover, and verify the exact merged SHA at `addressr.io/revision.txt`.
+**Confirmation:** Terraform plan leaves the API worker unchanged; the Pages project is Direct Upload; the token cannot edit Workers resources; executable tests cover positive and negative website arming cases; Netlify and Pages do not deploy ordinary source pushes; the first release returns the merged SHA from `addressr.io/revision.txt`; website routes and `api.addressr.io` pass post-cutover smoke.
+**Related:** ADR-032, ADR-045, ADR-046, ADR-053
 
 ---
 
