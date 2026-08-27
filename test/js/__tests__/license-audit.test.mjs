@@ -17,12 +17,24 @@
 // must be deliberate, reasoned and reported rather than silently allowed.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { auditLicenses } from '../../../scripts/license-audit.mjs';
+import { auditLicenses, isDevOnlyPath } from '../../../scripts/license-audit.mjs';
 
 const ALLOW = ['MIT', 'Apache-2.0', 'ISC'];
 const ok = (name) => ({ name, version: '1.0.0', license: 'MIT' });
 
 describe('licence audit', () => {
+  it('uses the lockfile path to exclude only packages marked dev-only', () => {
+    const lock = {
+      packages: {
+        'node_modules/dev-tool': { dev: true },
+        'node_modules/production-package': { dev: false },
+      },
+    };
+    assert.equal(isDevOnlyPath(lock, '/repo', '/repo/node_modules/dev-tool'), true);
+    assert.equal(isDevOnlyPath(lock, '/repo', '/repo/node_modules/production-package'), false);
+    assert.equal(isDevOnlyPath(lock, '/repo', '/repo/node_modules/unlisted-package'), false);
+  });
+
   it('fails on an empty corpus rather than passing vacuously', () => {
     // THE DEFECT THIS REPLACES. license-checker printed "No packages found in
     // this path." and exited 0, so a gate scanning nothing reported success.

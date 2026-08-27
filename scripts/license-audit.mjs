@@ -36,6 +36,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 
 /** SPDX identifiers permitted in the published production tree. */
 export const ALLOW = [
@@ -178,14 +179,20 @@ export function auditLicenses({ packages, allow = ALLOW, exceptions = {} }) {
  * `undici-types`) as extraneous, so the refusal fired on a clean checkout.
  * Extraneous is not a usable dirty-tree signal here.
  *
- * What remains is deliberate: a stale `node_modules` can contribute packages
- * that do not ship, and those surface as spurious FAILURES. That error
- * direction is the safe one — it stops the build, names the package, and is
- * cleared by `npm ci`. Under-reporting is the direction this tool exists to
- * prevent, and no arrangement here can silently shrink the corpus.
+ * npm 10 on Linux also leaks some root dev-only optional dependencies into a
+ * public workspace's `--omit=dev` output. The lockfile's path-specific `dev`
+ * flag is deterministic across npm versions, so it removes only entries that
+ * the committed dependency graph marks exclusively development-only. Missing
+ * lock entries remain included: uncertainty fails toward over-reporting.
  */
+export function isDevOnlyPath(lock, repoRoot, packagePath) {
+  const key = path.relative(repoRoot, packagePath).replaceAll('\\', '/');
+  return lock.packages?.[key]?.dev === true;
+}
+
 export function resolveProductionTree(repoRoot = process.cwd()) {
   const root = JSON.parse(readFileSync(`${repoRoot}/package.json`, 'utf8'));
+  const lock = JSON.parse(readFileSync(`${repoRoot}/package-lock.json`, 'utf8'));
   const seen = new Set();
   const packages = [];
   const excluded = [];
@@ -243,6 +250,7 @@ export function resolveProductionTree(repoRoot = process.cwd()) {
         .trim()
         .split('\n')) {
         if (!p || p === repoRoot) continue; // first line is the repo root, not a package
+        if (isDevOnlyPath(lock, repoRoot, p)) continue;
         let pkg;
         try {
           pkg = JSON.parse(readFileSync(`${p}/package.json`, 'utf8'));
