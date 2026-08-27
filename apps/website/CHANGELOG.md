@@ -1,5 +1,11 @@
 # @mountainpass/website
 
+## 1.0.2
+
+### Patch Changes
+
+- 89d0ba2: Retry the Addressr website release with the Cloudflare Pages upload reading the built site from the correct workspace-relative path.
+
 ## 1.0.1
 
 ### Patch Changes
