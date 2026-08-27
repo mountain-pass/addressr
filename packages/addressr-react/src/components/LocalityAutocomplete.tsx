@@ -14,7 +14,7 @@ export interface LocalityAutocompleteProps {
   className?: string;
   /** Input name attribute for form submission. */
   name?: string;
-  /** Whether the field is required. Sets aria-required. */
+  /** Whether the field is required. Uses native required semantics. */
   required?: boolean;
   debounceMs?: number;
   apiUrl?: string;
@@ -100,18 +100,31 @@ export function LocalityAutocomplete({
 
   const showMenu = isOpen && results.length > 0;
   const showLoading = isOpen && isLoading && results.length === 0;
-  const showNoResults = isOpen && !isLoading && results.length === 0 && query.length >= 3;
+  const showNoResults = isOpen && !error && !isLoading && results.length === 0 && query.length >= 3;
+  const statusMessage = isLoading
+    ? 'Searching suburbs and towns...'
+    : isLoadingMore
+      ? 'Loading more suburbs and towns...'
+      : results.length > 0
+        ? results.length === 1
+          ? '1 suburb or town found'
+          : `${results.length} suburbs and towns found`
+        : !error && query.length >= 3
+          ? 'No suburbs or towns found'
+          : '';
 
   return (
     <div className={`${styles.wrapper} ${className ?? ''}`}>
       <label {...getLabelProps()} className={styles.label}>
         {label}
+        {required && <span aria-hidden="true"> (required)</span>}
       </label>
       <input
         {...getInputProps({
           autoComplete: 'off',
           placeholder,
           name,
+          required: required || undefined,
           'aria-expanded': showMenu,
           'aria-describedby': error ? errorId : undefined,
           'aria-required': required || undefined,
@@ -121,11 +134,7 @@ export function LocalityAutocomplete({
       />
 
       <div id={statusId} role="status" aria-live="polite" aria-atomic="true" className={styles.srOnly}>
-        {isLoading && 'Searching suburbs and towns...'}
-        {!isLoading &&
-          results.length > 0 &&
-          (results.length === 1 ? '1 suburb or town found' : `${results.length} suburbs and towns found`)}
-        {!isLoading && results.length === 0 && query.length >= 3 && 'No suburbs or towns found'}
+        {statusMessage}
       </div>
 
       <ul
@@ -151,7 +160,7 @@ export function LocalityAutocomplete({
               </li>
             ))}
             {isLoadingMore && (
-              <li role="presentation" className={styles.loading}>
+              <li role="presentation" aria-hidden="true" className={styles.loading}>
                 Loading more...
               </li>
             )}
@@ -178,7 +187,7 @@ export function LocalityAutocomplete({
 
       {error &&
         (renderError ? (
-          renderError(error)
+          <div id={errorId}>{renderError(error)}</div>
         ) : (
           <div id={errorId} className={styles.error} role="alert">
             {error.message}

@@ -35,6 +35,15 @@ describe('release package effects', () => {
     );
   });
 
+  it('does not arm API effects for a linked UI publication', () => {
+    const uiPackages = ['core', 'react', 'svelte', 'vue'].map((name) => ({
+      name: `@mountainpass/addressr-${name}`,
+      version: '0.7.3',
+    }));
+
+    assert.equal(runEffects(true, uiPackages).stdout, 'api-published=false\n');
+  });
+
   it('rejects a malformed published-package value', () => {
     const result = runEffects(false, {});
     assert.notEqual(result.status, 0);

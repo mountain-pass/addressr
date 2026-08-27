@@ -14,7 +14,7 @@ export interface StateAutocompleteProps {
   className?: string;
   /** Input name attribute for form submission. */
   name?: string;
-  /** Whether the field is required. Sets aria-required. */
+  /** Whether the field is required. Uses native required semantics. */
   required?: boolean;
   debounceMs?: number;
   apiUrl?: string;
@@ -90,18 +90,29 @@ export function StateAutocomplete({
 
   const showMenu = isOpen && results.length > 0;
   const showLoading = isOpen && isLoading && results.length === 0;
-  const showNoResults = isOpen && !isLoading && results.length === 0 && query.length >= 2;
+  const showNoResults = isOpen && !error && !isLoading && results.length === 0 && query.length >= 2;
+  const statusMessage = isLoading
+    ? 'Searching states and territories...'
+    : results.length > 0
+      ? results.length === 1
+        ? '1 state or territory found'
+        : `${results.length} states or territories found`
+      : !error && query.length >= 2
+        ? 'No states or territories found'
+        : '';
 
   return (
     <div className={`${styles.wrapper} ${className ?? ''}`}>
       <label {...getLabelProps()} className={styles.label}>
         {label}
+        {required && <span aria-hidden="true"> (required)</span>}
       </label>
       <input
         {...getInputProps({
           autoComplete: 'off',
           placeholder,
           name,
+          required: required || undefined,
           'aria-expanded': showMenu,
           'aria-describedby': error ? errorId : undefined,
           'aria-required': required || undefined,
@@ -111,11 +122,7 @@ export function StateAutocomplete({
       />
 
       <div id={statusId} role="status" aria-live="polite" aria-atomic="true" className={styles.srOnly}>
-        {isLoading && 'Searching states and territories...'}
-        {!isLoading &&
-          results.length > 0 &&
-          (results.length === 1 ? '1 state or territory found' : `${results.length} states or territories found`)}
-        {!isLoading && results.length === 0 && query.length >= 2 && 'No states or territories found'}
+        {statusMessage}
       </div>
 
       <ul {...getMenuProps()} hidden={!showMenu} className={`${styles.menu} ${!showMenu ? styles.menuHidden : ''}`}>
@@ -162,7 +169,7 @@ export function StateAutocomplete({
 
       {error &&
         (renderError ? (
-          renderError(error)
+          <div id={errorId}>{renderError(error)}</div>
         ) : (
           <div id={errorId} className={styles.error} role="alert">
             {error.message}

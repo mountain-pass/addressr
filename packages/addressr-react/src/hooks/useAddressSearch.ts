@@ -60,11 +60,21 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
     (q: string) => {
       setQueryState(q);
       clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+      setError(null);
+
+      if (q.length >= minQueryLength) {
+        setIsLoading(true);
+      } else {
+        setIsLoading(false);
+        setResults([]);
+      }
+
       debounceRef.current = setTimeout(() => {
         setDebouncedQuery(q);
       }, debounceMs);
     },
-    [debounceMs],
+    [debounceMs, minQueryLength],
   );
 
   // Prefetch API root on mount so the first search doesn't pay discovery latency
@@ -76,6 +86,8 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
   useEffect(() => {
     if (debouncedQuery.length < minQueryLength) {
       setResults([]);
+      setIsLoading(false);
+      setError(null);
       nextLinkRef.current = null;
       searchPageRef.current = null;
       return;
@@ -154,9 +166,13 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
   );
 
   const clear = useCallback(() => {
+    clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
     setQueryState('');
     setDebouncedQuery('');
     setResults([]);
+    setIsLoading(false);
+    setIsLoadingMore(false);
     setSelectedAddress(null);
     setError(null);
     nextLinkRef.current = null;

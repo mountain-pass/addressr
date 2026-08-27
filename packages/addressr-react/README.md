@@ -34,22 +34,22 @@ function MyForm() {
 
 ### Props
 
-| Prop              | Type                                         | Default                              | Description                               |
-| ----------------- | -------------------------------------------- | ------------------------------------ | ----------------------------------------- |
-| `apiKey`          | `string`                                     | --                                   | RapidAPI key. Omit for direct API access. |
-| `onSelect`        | `(address: AddressDetail) => void`           | **required**                         | Called when an address is selected        |
-| `label`           | `string`                                     | `"Search Australian addresses"`      | Accessible label text                     |
-| `placeholder`     | `string`                                     | `"Start typing an address..."`       | Input placeholder                         |
-| `className`       | `string`                                     | --                                   | Additional CSS class for the wrapper      |
-| `debounceMs`      | `number`                                     | `300`                                | Debounce delay in milliseconds            |
-| `name`            | `string`                                     | `"address"`                          | Input name attribute for form submission  |
-| `required`        | `boolean`                                    | --                                   | Sets `aria-required` on the input         |
-| `apiUrl`          | `string`                                     | `"https://addressr.p.rapidapi.com/"` | API root URL                              |
-| `apiHost`         | `string`                                     | `"addressr.p.rapidapi.com"`          | RapidAPI host header                      |
-| `renderLoading`   | `() => ReactNode`                            | --                                   | Custom loading state renderer             |
-| `renderNoResults` | `() => ReactNode`                            | --                                   | Custom no-results renderer                |
-| `renderError`     | `(error: Error) => ReactNode`                | --                                   | Custom error renderer                     |
-| `renderItem`      | `(item, highlighted, segments) => ReactNode` | --                                   | Custom result item renderer               |
+| Prop              | Type                                         | Default                              | Description                                        |
+| ----------------- | -------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
+| `apiKey`          | `string`                                     | --                                   | RapidAPI key. Omit for direct API access.          |
+| `onSelect`        | `(address: AddressDetail) => void`           | **required**                         | Called when an address is selected                 |
+| `label`           | `string`                                     | `"Search Australian addresses"`      | Accessible label text                              |
+| `placeholder`     | `string`                                     | `"Start typing an address..."`       | Input placeholder                                  |
+| `className`       | `string`                                     | --                                   | Additional CSS class for the wrapper               |
+| `debounceMs`      | `number`                                     | `300`                                | Debounce delay in milliseconds                     |
+| `name`            | `string`                                     | `"address"`                          | Input name attribute for form submission           |
+| `required`        | `boolean`                                    | --                                   | Adds native required state and a visible indicator |
+| `apiUrl`          | `string`                                     | `"https://addressr.p.rapidapi.com/"` | API root URL                                       |
+| `apiHost`         | `string`                                     | `"addressr.p.rapidapi.com"`          | RapidAPI host header                               |
+| `renderLoading`   | `() => ReactNode`                            | --                                   | Custom loading state renderer                      |
+| `renderNoResults` | `() => ReactNode`                            | --                                   | Custom no-results renderer                         |
+| `renderError`     | `(error: Error) => ReactNode`                | --                                   | Custom error renderer                              |
+| `renderItem`      | `(item, highlighted, segments) => ReactNode` | --                                   | Custom result item renderer                        |
 
 ### Render customization
 
@@ -72,7 +72,7 @@ Override any rendering zone while keeping built-in search logic and keyboard nav
 />
 ```
 
-When you provide a custom renderer, you are responsible for accessibility in that zone -- use appropriate roles and contrast ratios.
+When you provide a custom renderer, you are responsible for accessibility in that zone -- use appropriate roles and contrast ratios. Custom error content is automatically associated with the input; keep `role="alert"` on the rendered error so it is announced when it appears.
 
 ## Headless hook
 
@@ -119,7 +119,7 @@ function MyCustomAutocomplete() {
 | `query`           | `string`                         | Current input value                       |
 | `setQuery`        | `(q: string) => void`            | Update query (triggers debounced search)  |
 | `results`         | `AddressSearchResult[]`          | Search results (accumulated across pages) |
-| `isLoading`       | `boolean`                        | Initial search in progress                |
+| `isLoading`       | `boolean`                        | Debounce or initial search in progress    |
 | `isLoadingMore`   | `boolean`                        | Pagination fetch in progress              |
 | `hasMore`         | `boolean`                        | More pages available                      |
 | `loadMore`        | `() => Promise<void>`            | Load next page of results                 |
@@ -169,10 +169,12 @@ The loading state shows animated skeleton lines instead of text. The animation r
 Built with [downshift](https://www.downshift-js.com/) for WAI-ARIA combobox pattern compliance:
 
 - Full keyboard navigation (Arrow keys, Enter, Escape)
-- Screen reader announcements for results count and loading state
+- Screen reader announcements for search, pagination, and settled result counts
 - Visible focus indicators (3:1 contrast)
 - Touch targets >= 44px
 - Accessible label always present
+- Native and visible required-field indication when `required` is set
+- Custom errors remain programmatically associated with the input
 - Infinite scroll with loading indicator
 
 ## Postcode, Locality, and State search

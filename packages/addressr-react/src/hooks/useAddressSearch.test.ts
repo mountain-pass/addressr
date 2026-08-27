@@ -101,6 +101,7 @@ describe('useAddressSearch', () => {
     const { result } = renderSearchHook(mockFetch);
 
     act(() => result.current.setQuery('ab'));
+    expect(result.current.isLoading).toBe(false);
 
     // Wait for debounce
     await new Promise((r) => setTimeout(r, 50));
@@ -117,6 +118,7 @@ describe('useAddressSearch', () => {
     const { result } = renderSearchHook(mockFetch);
 
     act(() => result.current.setQuery('1 george'));
+    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
       expect(result.current.results).toHaveLength(1);

@@ -1,6 +1,6 @@
 // @jtbd JTBD-002 (developer) + JTBD-101 (end-user)
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PostcodeAutocomplete } from './PostcodeAutocomplete';
 
@@ -33,6 +33,13 @@ const searchResponse = (hasNext = false) =>
     ],
     hasNext ? { link: '</postcodes?q=20&p=2>; rel=next' } : {},
     'https://addressr.p.rapidapi.com/postcodes?q=20',
+  );
+
+const page2Response = () =>
+  mockResponse(
+    [{ postcode: '2002', localities: [{ name: 'WORLD SQUARE' }] }],
+    {},
+    'https://addressr.p.rapidapi.com/postcodes?q=20&p=2',
   );
 
 describe('PostcodeAutocomplete', () => {
@@ -71,10 +78,13 @@ describe('PostcodeAutocomplete', () => {
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'billing-postcode');
   });
 
-  it('sets aria-required when required is true', () => {
+  it('uses native and visible required semantics when required', () => {
     const mockFetch = vi.fn();
     render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />);
-    expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
+    const input = screen.getByRole('combobox');
+    expect(input).toBeRequired();
+    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByText('(required)')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('has aria-atomic polite status live region', () => {
@@ -135,6 +145,7 @@ describe('PostcodeAutocomplete', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching postcodes...');
+      expect(screen.getByRole('status')).not.toHaveTextContent('No postcodes found');
       expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -199,7 +210,10 @@ describe('PostcodeAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), 'zzz');
 
-    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument());
+    await waitFor(() => {
+      expect(screen.getByTestId('empty')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('No postcodes found');
+    });
   });
 
   it('uses custom renderItem when provided', async () => {
@@ -247,9 +261,17 @@ describe('PostcodeAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), '200');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
-      timeout: 10000,
-    });
+    await waitFor(
+      () => {
+        const input = screen.getByRole('combobox');
+        const customError = screen.getByTestId('err');
+        const describedBy = input.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toContainElement(customError);
+        expect(screen.getByRole('status')).not.toHaveTextContent('No postcodes found');
+      },
+      { timeout: 10000 },
+    );
   });
 
   it('uses singular wording when exactly one result', async () => {
@@ -319,5 +341,30 @@ describe('PostcodeAutocomplete', () => {
       expect(skeletons.length).toBeGreaterThanOrEqual(3);
     });
     resolve(searchResponse());
+  });
+
+  it('announces loading more and the updated result count', async () => {
+    let resolvePage2!: (r: Response) => void;
+    const page2 = new Promise<Response>((resolve) => {
+      resolvePage2 = resolve;
+    });
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockResolvedValueOnce(searchResponse(true));
+
+    render(<PostcodeAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
+    await userEvent.type(screen.getByRole('combobox'), '200');
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    mockFetch.mockReturnValue(page2);
+
+    const menu = screen.getByRole('listbox');
+    Object.defineProperties(menu, {
+      scrollTop: { value: 100, writable: true },
+      scrollHeight: { value: 150, writable: true },
+      clientHeight: { value: 100, writable: true },
+    });
+    fireEvent.scroll(menu);
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Loading more postcodes...'));
+    resolvePage2(page2Response());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('3 postcodes found'));
   });
 });

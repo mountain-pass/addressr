@@ -45,10 +45,13 @@ describe('StateAutocomplete', () => {
     expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
-  it('sets aria-required when required is true', () => {
+  it('uses native and visible required semantics when required', () => {
     const mockFetch = vi.fn();
     render(<StateAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />);
-    expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
+    const input = screen.getByRole('combobox');
+    expect(input).toBeRequired();
+    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByText('(required)')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('has aria-atomic polite status live region', () => {
@@ -114,6 +117,7 @@ describe('StateAutocomplete', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching states and territories...');
+      expect(screen.getByRole('status')).not.toHaveTextContent('No states or territories found');
       expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -154,7 +158,10 @@ describe('StateAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), 'zzz');
 
-    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument());
+    await waitFor(() => {
+      expect(screen.getByTestId('empty')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('No states or territories found');
+    });
   });
 
   it('uses custom renderItem when provided', async () => {
@@ -237,8 +244,16 @@ describe('StateAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), 'nsw');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
-      timeout: 10000,
-    });
+    await waitFor(
+      () => {
+        const input = screen.getByRole('combobox');
+        const customError = screen.getByTestId('err');
+        const describedBy = input.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toContainElement(customError);
+        expect(screen.getByRole('status')).not.toHaveTextContent('No states or territories found');
+      },
+      { timeout: 10000 },
+    );
   });
 });

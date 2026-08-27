@@ -1,6 +1,6 @@
 // @jtbd JTBD-003 (developer) + JTBD-102 (end-user)
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LocalityAutocomplete } from './LocalityAutocomplete';
 
@@ -22,7 +22,7 @@ const rootResponse = () =>
     'https://addressr.p.rapidapi.com/',
   );
 
-const searchResponse = () =>
+const searchResponse = (hasNext = false) =>
   mockResponse(
     [
       {
@@ -40,8 +40,23 @@ const searchResponse = () =>
         pid: 'LOC-NSW-SYDSOUTH',
       },
     ],
-    {},
+    hasNext ? { link: '</localities?q=syd&p=2>; rel=next' } : {},
     'https://addressr.p.rapidapi.com/localities?q=syd',
+  );
+
+const page2Response = () =>
+  mockResponse(
+    [
+      {
+        name: 'SYDNEY OLYMPIC PARK',
+        state: { name: 'New South Wales', abbreviation: 'NSW' },
+        postcode: '2127',
+        score: 14,
+        pid: 'LOC-NSW-SYDOLYMPIC',
+      },
+    ],
+    {},
+    'https://addressr.p.rapidapi.com/localities?q=syd&p=2',
   );
 
 describe('LocalityAutocomplete', () => {
@@ -59,10 +74,13 @@ describe('LocalityAutocomplete', () => {
     expect(screen.getByRole('combobox')).toHaveAttribute('autocomplete', 'off');
   });
 
-  it('sets aria-required when required is true', () => {
+  it('uses native and visible required semantics when required', () => {
     const mockFetch = vi.fn();
     render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />);
-    expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
+    const input = screen.getByRole('combobox');
+    expect(input).toBeRequired();
+    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByText('(required)')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('has aria-atomic polite status live region', () => {
@@ -129,6 +147,7 @@ describe('LocalityAutocomplete', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Searching suburbs and towns...');
+      expect(screen.getByRole('status')).not.toHaveTextContent('No suburbs or towns found');
       expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -193,7 +212,10 @@ describe('LocalityAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), 'zzz');
 
-    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument());
+    await waitFor(() => {
+      expect(screen.getByTestId('empty')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('No suburbs or towns found');
+    });
   });
 
   it('uses custom renderItem when provided', async () => {
@@ -269,8 +291,47 @@ describe('LocalityAutocomplete', () => {
 
     await userEvent.type(screen.getByRole('combobox'), 'syd');
 
-    await waitFor(() => expect(screen.getByTestId('err')).toBeInTheDocument(), {
-      timeout: 10000,
+    await waitFor(
+      () => {
+        const input = screen.getByRole('combobox');
+        const customError = screen.getByTestId('err');
+        const describedBy = input.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toContainElement(customError);
+        expect(screen.getByRole('status')).not.toHaveTextContent('No suburbs or towns found');
+      },
+      { timeout: 10000 },
+    );
+
+    await userEvent.clear(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-describedby');
     });
+  });
+
+  it('announces loading more and the updated result count', async () => {
+    let resolvePage2!: (r: Response) => void;
+    const page2 = new Promise<Response>((resolve) => {
+      resolvePage2 = resolve;
+    });
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse()).mockResolvedValueOnce(searchResponse(true));
+
+    render(<LocalityAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
+    await userEvent.type(screen.getByRole('combobox'), 'syd');
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    mockFetch.mockReturnValue(page2);
+
+    const menu = screen.getByRole('listbox');
+    Object.defineProperties(menu, {
+      scrollTop: { value: 100, writable: true },
+      scrollHeight: { value: 150, writable: true },
+      clientHeight: { value: 100, writable: true },
+    });
+    fireEvent.scroll(menu);
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Loading more suburbs and towns...'));
+    resolvePage2(page2Response());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('3 suburbs and towns found'));
   });
 });

@@ -42,6 +42,7 @@ describe('useSearch (internal generic)', () => {
       });
     });
     act(() => result.current.setQuery('foo'));
+    expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.results.length).toBe(2));
     const countAfterSettle = renderCount;
     // Force a few more renders by external input; render count should grow linearly, not explode.

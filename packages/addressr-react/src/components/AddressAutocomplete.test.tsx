@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AddressAutocomplete } from './AddressAutocomplete';
 
@@ -253,10 +253,13 @@ describe('AddressAutocomplete', () => {
     expect(screen.getByRole('combobox')).toHaveAttribute('name', 'shipping-address');
   });
 
-  it('sets aria-required when required prop is true', () => {
+  it('uses native and visible required semantics when required', () => {
     const mockFetch = vi.fn();
     render(<AddressAutocomplete apiKey="test" onSelect={() => {}} required fetchImpl={mockFetch} />);
-    expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
+    const input = screen.getByRole('combobox');
+    expect(input).toBeRequired();
+    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByText('(required)')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('does not set aria-required by default', () => {
@@ -307,6 +310,8 @@ describe('AddressAutocomplete', () => {
     await waitFor(() => {
       const skeletons = document.querySelectorAll('[class*="skeleton"]');
       expect(skeletons.length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByRole('status')).toHaveTextContent('Searching addresses...');
+      expect(screen.getByRole('status')).not.toHaveTextContent('No addresses found');
       expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -363,6 +368,7 @@ describe('AddressAutocomplete', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('custom-empty')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('No addresses found');
     });
   });
 
@@ -387,7 +393,7 @@ describe('AddressAutocomplete', () => {
       scrollHeight: { value: 150, writable: true },
       clientHeight: { value: 100, writable: true },
     });
-    menu.dispatchEvent(new Event('scroll', { bubbles: true }));
+    fireEvent.scroll(menu);
 
     await waitFor(() => {
       expect(screen.getAllByRole('option')).toHaveLength(2);
@@ -421,10 +427,21 @@ describe('AddressAutocomplete', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByTestId('custom-error')).toBeInTheDocument();
+        const input = screen.getByRole('combobox');
+        const customError = screen.getByTestId('custom-error');
+        const describedBy = input.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toContainElement(customError);
+        expect(screen.getByRole('status')).not.toHaveTextContent('No addresses found');
       },
       { timeout: 10000 },
     );
+
+    await userEvent.clear(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-describedby');
+    });
   });
 
   it('shows loading indicator while fetching more results', async () => {
@@ -453,10 +470,11 @@ describe('AddressAutocomplete', () => {
       scrollHeight: { value: 150, writable: true },
       clientHeight: { value: 100, writable: true },
     });
-    menu.dispatchEvent(new Event('scroll', { bubbles: true }));
+    fireEvent.scroll(menu);
 
     await waitFor(() => {
       expect(screen.getByText('Loading more...')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('Loading more addresses...');
     });
 
     // Resolve the page 2 fetch
@@ -464,6 +482,7 @@ describe('AddressAutocomplete', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Loading more...')).not.toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('2 addresses found');
     });
   });
 });

@@ -74,11 +74,21 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
     (q: string) => {
       setQueryState(q);
       clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+      setError(null);
+
+      if (q.length >= minQueryLength) {
+        setIsLoading(true);
+      } else {
+        setIsLoading(false);
+        setResults([]);
+      }
+
       debounceRef.current = setTimeout(() => {
         setDebouncedQuery(q);
       }, debounceMs);
     },
-    [debounceMs],
+    [debounceMs, minQueryLength],
   );
 
   useEffect(() => {
@@ -88,6 +98,8 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
   useEffect(() => {
     if (debouncedQuery.length < minQueryLength) {
       setResults([]);
+      setIsLoading(false);
+      setError(null);
       nextLinkRef.current = null;
       setLastPage(null);
       return;
@@ -147,9 +159,13 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
   }, [client, isLoadingMore]);
 
   const clear = useCallback(() => {
+    clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
     setQueryState('');
     setDebouncedQuery('');
     setResults([]);
+    setIsLoading(false);
+    setIsLoadingMore(false);
     setError(null);
     nextLinkRef.current = null;
     setLastPage(null);
