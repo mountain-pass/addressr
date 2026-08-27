@@ -134,19 +134,19 @@ describe('apps/website rendered output', () => {
     const idsIn = (html) =>
       new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
 
-    const attrOf = (attrs, name) =>
-      attrs.match(new RegExp(`\\s${name}="([^"]*)"`, 'i'))?.[1] ?? '';
+    const attributeOf = (attributes, name) =>
+      attributes.match(new RegExp(`\\s${name}="([^"]*)"`, 'i'))?.[1] ?? '';
 
     const textOf = (html) =>
       html
-        .replace(/<img\b([^>]*)>/gi, (_, attrs) => ` ${attrOf(attrs, 'alt')} `)
+        .replace(/<img\b([^>]*)>/gi, (_, attributes) => ` ${attributeOf(attributes, 'alt')} `)
         .replace(/<[^>]+>/g, ' ')
         .replace(/&(?:nbsp|#x20|#32);/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-    const accessibleNameOf = (attrs, content, html) => {
-      const labelledBy = attrOf(attrs, 'aria-labelledby')
+    const accessibleNameOf = (attributes, content, html) => {
+      const labelledBy = attributeOf(attributes, 'aria-labelledby')
         .split(/\s+/)
         .filter(Boolean)
         .map((id) => {
@@ -163,10 +163,10 @@ describe('apps/website rendered output', () => {
         .trim();
 
       return (
-        attrOf(attrs, 'aria-label').trim() ||
+        attributeOf(attributes, 'aria-label').trim() ||
         labelledBy ||
         textOf(content) ||
-        attrOf(attrs, 'title').trim()
+        attributeOf(attributes, 'title').trim()
       );
     };
 
@@ -188,11 +188,11 @@ describe('apps/website rendered output', () => {
       const bad = [];
       for (const [file, html] of pagesOf()) {
         for (const m of html.matchAll(/<(\w+)([^>]*\saria-controls="menu"[^>]*)>/g)) {
-          const [, tag, attrs] = m;
+          const [, tag, attributes] = m;
           const focusable =
             tag === 'button' ||
-            (tag === 'a' && /\shref="/.test(attrs)) ||
-            /\stabindex="0"/.test(attrs);
+            (tag === 'a' && /\shref="/.test(attributes)) ||
+            /\stabindex="0"/.test(attributes);
           if (!focusable) bad.push(`${file}: <${tag}>`);
         }
       }
@@ -509,6 +509,14 @@ describe('apps/website rendered output', () => {
           'mispronouncing the content for anyone whose default is not English.',
       );
     });
+
+    it('gives every page exactly one top-level heading', () => {
+      const offenders = pages()
+        .map(([file, route, html]) => [file, route, load(html)('h1').length])
+        .filter(([, , count]) => count !== 1)
+        .map(([file, route, count]) => `${file} (${route}): ${count}`);
+      assert.deepEqual(offenders, [], 'every page needs exactly one h1');
+    });
   });
 
   describe('Enterprise call-to-action (ADR-053 criterion 8)', () => {
@@ -547,7 +555,12 @@ describe('apps/website rendered output', () => {
   });
 
   describe('deleted routes leave no live links', () => {
-    for (const route of ['/enterprise-price-request/', '/r/account/', '/callback/']) {
+    for (const route of [
+      '/enterprise-price-request/',
+      '/r/account/',
+      '/callback/',
+      '/community-support/',
+    ]) {
       it(`no emitted page links to ${route}`, () => {
         const offenders = emitted()
           .filter((f) => f.endsWith('.html'))
@@ -587,6 +600,38 @@ describe('apps/website rendered output', () => {
           .get(),
         ['off', 'off', 'off', 'off'],
       );
+    });
+  });
+
+  describe('the hosted API journey is present without client-side rendering', () => {
+    it('leads the homepage with the buyer outcome and public evidence', () => {
+      const $ = load(read('index.html'));
+      assert.equal(
+        $('h1').text().trim(),
+        'Improve Australian address quality without maintaining G-NAF yourself',
+      );
+      assert.match($('.evidence-section').text(), /current package activity on npm/);
+      assert.match($('.evidence-section').text(), /do not establish customer counts/);
+    });
+
+    it('renders a semantic hosted plan comparison', () => {
+      const $ = load(read('pricing/index.html'));
+      assert.equal($('table caption').text().trim(), 'Addressr delivery options');
+      assert.deepEqual(
+        $('tbody th[scope="row"]').map((_, cell) => $(cell).text().trim()).get(),
+        ['Hosted API', 'Self-hosted', 'Commercial support'],
+      );
+    });
+
+    it('renders the hosted first request and static endpoint guide', () => {
+      const quickStart = read('quick-start/index.html');
+      const docs = read('api-docs/index.html');
+      assert.match(quickStart, /x-rapidapi-key/);
+      assert.match(quickStart, /RapidAPI handles your hosted account/);
+      for (const endpoint of ['/addresses', '/localities', '/postcodes', '/states']) {
+        assert.ok(docs.includes(endpoint), `${endpoint} is absent from API guide`);
+      }
+      assert.doesNotMatch(docs, /id="swagger"/);
     });
   });
 

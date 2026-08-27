@@ -11,11 +11,10 @@ const PUBLIC = path.join(WEBSITE, 'public');
 const MAIN_SCSS = path.join(WEBSITE, 'src/assets/scss/main.scss');
 
 // Named ownership boundaries from ADR-055. Font Awesome remains an @import in
-// Sass output, Swagger UI is imported by api-docs.js, and skel emits the Meyer
+// Sass output, and skel emits the Meyer
 // reset. None is site-authored selector inventory.
 export const THIRD_PARTY_SOURCES = [
   'font-awesome.min.css',
-  'swagger-ui.css',
   'libs/_skel.scss',
 ];
 

@@ -1,5 +1,4 @@
 import {
-  faDocker,
   faGithub,
   faGitter,
   faNpm,
@@ -23,33 +22,31 @@ const Footer = () => (
               <Link to="/pricing/">Pricing</Link>
             </li>
             <li>
+              <Link to="/quick-start/#hosted">Hosted API quick start</Link>
+            </li>
+            <li>
+              <Link to="/api-docs/">API Docs</Link>
+            </li>
+            <li>
+              <Link to="/quick-start/#self-hosted">Self-hosted guide</Link>
+            </li>
+            <li>
               <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing">
-                Sign up
+                Sign up for Addressr on RapidAPI
               </a>
             </li>
             <li>
-              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
-                API Docs
+              <a href="https://app.gitter.im/#/room/#mountainpass-addressr_community:gitter.im">
+                Community support on Gitter <FontAwesomeIcon icon={faGitter} />
               </a>
-            </li>
-            <li>
-              <Link to="/download/">Download</Link>
-            </li>
-            <li>
-              <Link to="/quick-start/">Quick Start</Link>
-            </li>
-            <li>
-              <Link to="/community-support/">
-                Community Support <FontAwesomeIcon icon={faGitter} />
-              </Link>
             </li>
           </ul>
         </div>
         <div className="col-3">
           <ul className="links">
             <li>
-              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
-                RapidAPI
+              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing">
+                Addressr plans on RapidAPI
               </a>
             </li>
             <li>
@@ -59,12 +56,7 @@ const Footer = () => (
             </li>
             <li>
               <a href="https://www.npmjs.com/package/@mountainpass/addressr">
-                NPM <FontAwesomeIcon icon={faNpm} />
-              </a>
-            </li>
-            <li>
-              <a href="https://hub.docker.com/r/mountainpass/addressr">
-                Docker Hub <FontAwesomeIcon icon={faDocker} />
+                Addressr on npm <FontAwesomeIcon icon={faNpm} />
               </a>
             </li>
           </ul>

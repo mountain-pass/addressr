@@ -1,6 +1,6 @@
 # Voice and Tone
 
-> Last reviewed: 2026-04-17
+> Last reviewed: 2026-08-28
 > This guide is read by the `wr-voice-tone:agent` to review user-facing copy before it is published.
 
 This guide defines how Addressr sounds across GitHub issues, documentation, README copy, API error messages, and any other external-facing communication. It inherits the Windy Road base voice (direct, confident, specific, no em-dashes) and adds product-specific rules.
@@ -37,7 +37,7 @@ Not: "Comprehensive coverage of Australian addresses."
 
 ### Peer-to-peer
 
-Addressr speaks to developers as equals. Not a support bot, not a vendor pitching. Someone who built the thing and knows how it works.
+Addressr speaks to product owners, data owners and developers as capable peers. Not a support bot, not a vendor pitching. Someone who understands the business consequence and the implementation detail.
 
 > "If you're running against AWS OpenSearch, this won't affect you. Our CI pipelines confirm it."
 
@@ -45,7 +45,7 @@ Not: "We value your feedback and have escalated this to our technical team for i
 
 ### Dry when warranted
 
-Self-aware humour is in character, used sparingly. The Quick Start caveat in the README ("OK, so we stretched the truth a bit") is the reference point. Don't force it.
+Self-aware humour is in character, used sparingly. Never use it in setup steps, errors, pricing, security guidance or a handoff to another service. Clarity wins.
 
 ---
 
@@ -71,7 +71,26 @@ Not: `"We're sorry, but the address you requested could not be found in our syst
 
 ### README and documentation
 
-**Tone: Practical and direct.** Describe what the thing does, what the user needs to do, and what to expect. The Quick Start caveat tone is fine for genuinely awkward facts (indexing takes an hour). Don't dress it up.
+**Tone: Practical and direct.** Describe what the thing does, what the user needs to do, and what to expect. Give honest durations and checkpoints. Do not turn an awkward setup requirement into a joke.
+
+### Marketing website
+
+**Tone: Outcome-led and evidence-backed.** Start with the address-quality outcome, then explain the implementation. Write for the product or data owner deciding whether Addressr solves a business problem. Give developers a direct route to the first request and reference material.
+
+- Lead with hosted Addressr unless the page is specifically about self-hosting
+- Explain G-NAF on first use
+- Prefer measured proof to adjectives
+- Name RapidAPI before a link hands the visitor to RapidAPI
+- Separate hosted and self-hosted responsibilities
+- Use one primary action per section
+
+> "Improve Australian address quality without maintaining G-NAF yourself."
+
+Not: "Powerful, mission-critical address intelligence for every business."
+
+### Pricing and provider handoffs
+
+**Tone: Predictable and explicit.** State what the plan includes, who it suits, the currency, request allowance and where the next action happens. Hosted signup, API keys, billing and plan changes currently happen on RapidAPI. Say that before the link.
 
 ### Release notes and changelogs
 
@@ -85,11 +104,31 @@ Not: "Exciting improvement to search quality!"
 
 ## Audience
 
-Addressr communications reach two groups:
+Addressr communications reach three groups:
 
-**Developers (primary):** Engineers integrating the API into their applications, self-hosting the package or Docker image, or contributing to the project. Mix of experience levels. Assume they can read a stack trace and run curl. Don't hand-hold on basics; do be precise about Addressr-specific behaviour.
+**Product and data owners (primary):** People accountable for address quality, form completion, delivery data, data governance or the platform capability their teams consume. Start with the operational outcome and decision. Define implementation terms without talking down to them.
 
-**Non-technical reporters (secondary):** Users who found Addressr via the RapidAPI listing or addressr.io and are reporting address data issues or unexpected behaviour. They may not know what G-NAF is or what an Elasticsearch index is. Adjust language accordingly without being condescending.
+**Developers (implementation audience):** Engineers integrating the hosted API, self-hosting the package or Docker image, or contributing to the project. Assume they can read a stack trace and run curl. Don't hand-hold on basics; be precise about Addressr-specific behaviour and provide a fast first-request path.
+
+**Non-technical reporters (secondary):** Users who found Addressr via RapidAPI or addressr.io and are reporting address data issues or unexpected behaviour. They may not know what G-NAF or OpenSearch is. Adjust language accordingly without being condescending.
+
+## Evidence and claims
+
+Every public service, adoption or customer claim needs a reproducible source.
+`RISK-POLICY.md` prohibits persisting absolute business metrics and pricing
+details in this public repository, including when a third-party source is
+public.
+
+- Name the source: for example UptimeRobot, npm or GitHub
+- Link to the authoritative current source instead of copying prohibited figures
+- Call public package activity "adoption", not "customers"
+- Do not infer customers, subscribers, reliability or business outcomes from downloads, stars or page visits
+- Omit evidence that cannot be verified
+- Keep measurement methodology close to performance claims
+
+Prefer: "View current package activity on npm."
+
+Not: "Trusted by thousands of customers."
 
 ---
 
@@ -144,6 +183,8 @@ Not: "This issue has been closed due to inability to reproduce."
 | Explaining a limitation | "Unfortunately we don't have an elastic.co account so we're afraid we may not be able to assist." | "We don't have an elastic.co account, so we can't reproduce or verify a fix."                             |
 | API error message       | "The requested address was not found in our database."                                            | `"not found"`                                                                                             |
 | Feature description     | "Powerful real-time autocomplete with intelligent fuzzy matching capabilities."                   | "Real-time autocomplete with fuzzy matching."                                                             |
+| Hosted signup handoff   | "Get started"                                                                                     | "Start a hosted plan on RapidAPI"                                                                         |
+| Adoption evidence       | "Trusted by thousands"                                                                            | "Link to current package activity on npm"                                                                 |
 
 ---
 
@@ -158,6 +199,8 @@ Not: "This issue has been closed due to inability to reproduce."
 | address ID     | "address identifier", "pid" (in user-facing copy)                     |
 | loader         | "data loader", "indexer" (pick one; "loader" matches the CLI command) |
 | self-hosted    | "on-premise", "local installation"                                    |
+| hosted API     | "SaaS" when writing for product or data owners                        |
+| API request    | "req" in prices or plan descriptions                                  |
 | not found      | "does not exist", "could not be located"                              |
 
 ### Avoid

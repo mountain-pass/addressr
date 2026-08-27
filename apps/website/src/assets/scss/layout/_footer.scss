@@ -15,7 +15,13 @@
 
     li {
       border-left: solid 1px _palette(border);
-      color: _palette(fg-light);
+      color: _palette(fg);
+
+      a {
+        color: _palette(highlight);
+        display: inline-block;
+        min-height: 24px;
+      }
     }
   }
   .copyright {

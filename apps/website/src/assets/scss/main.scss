@@ -54,10 +54,8 @@
 
 @import 'components/section';
 @import 'components/form';
-@import 'components/image';
 @import 'components/list';
 @import 'components/button';
-@import 'components/tiles';
 
 // Layout.
 
@@ -67,52 +65,6 @@
 @import 'layout/footer';
 @import 'layout/wrapper';
 @import 'layout/menu';
-
-.swagger-ui {
-  //   background-color: _palette(fg) !important;
-}
-
-.swagger-wrapper {
-  padding: 1px 0;
-  background-color: _palette(fg) !important;
-}
-
-/* Enterprise call-to-action (ADR-053).
- *
- * The email address repeats as visible text below the button because a mailto:
- * is inert for webmail users and anyone with no mail client configured; a bare
- * button leaves them nothing to copy. It sits OUTSIDE the button deliberately.
- *
- * `overflow-wrap` is the only rule here that is load-bearing: the address is a
- * 29-character unbreakable token and the Enterprise card is narrow at 320px and
- * at 400% zoom (WCAG 1.4.10 Reflow).
- *
- * DELIBERATELY NOT ADDED, having checked rather than assumed. An accessibility
- * review recommended `user-select: text` and a `:focus-visible` outline
- * override, both predicated on Bootstrap — `.btn { user-select: none }` and
- * `.btn:focus { outline: 0; box-shadow: 0 0 0 .2rem rgba(brand,.25) }`. There is
- * no Bootstrap here: it is in neither package.json nor any SCSS import, the
- * only `user-select` in the tree is a name inside a vendor-prefix list in
- * libs/_skel.scss. So the
- * address is selectable and the browser's default focus ring reaches these
- * anchors unimpeded. Adding overrides for absent behaviour would be unverified
- * CSS defending against a problem this site does not have.
- *
- * AMENDED 2026-08-24 — read this before acting on the paragraph above. Its
- * Bootstrap reasoning still holds; its conclusion no longer generalises. Two
- * things changed. The controls it calls "these anchors" are buttons now
- * (P131). And "unimpeded" is not "visible": the UA default ring was measured
- * against this palette at 1.33-1.82:1 in Chrome, 1.87-2.54:1 in Firefox and
- * 2.12-2.88:1 in Safari, all under the 3:1 WCAG 1.4.11 requires. So a scoped
- * `:focus-visible` ring WAS added for the two converted controls, in
- * layout/_header.scss and layout/_menu.scss beside the box models it depends
- * on. The rule above was declining an override for an ABSENT cause; that one
- * is added for a measured one. A site-wide focus token remains out of scope.
- */
-.enterprise-cta__address {
-  margin-top: 1.5rem;
-  overflow-wrap: anywhere;
-}
 
 @media (forced-colors: active) {
   #header .nav button.menu-link {

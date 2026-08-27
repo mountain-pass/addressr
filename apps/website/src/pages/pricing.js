@@ -3,350 +3,141 @@ import React from 'react';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
 
-const Pricing = () => {
-  return (
-    <Layout>
-      <Banner>
-        <header className="major">
-          <h1>Pricing</h1>
-        </header>
-      </Banner>
+/* eslint-disable jsx-a11y-x/no-noninteractive-tabindex -- labelled overflow regions must be keyboard-scrollable. */
 
-      <div id="main" className="alt">
-        <section id="one">
-          <div className="inner">
-            <h2 style={{ textAlign: 'center' }}>SaaS</h2>
-            <div className="grid-wrapper">
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el" data-hover="">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    Trial
-                  </h3>
-                  <p className="pricing__sentence">100% Free. FOREVER</p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$</span>
-                    <span>0</span>
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">
-                        100 API Calls / month
-                      </li>
-                      <li className="pricing__feature">
-                        Automatic Data Updates
-                      </li>
-                      <li className="pricing__feature">Community support</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <a
-                      href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Get Started Free
-                    </a>
-                  </div>
-                </div>
-              </div>
+const rapidApiPricing =
+  'https://rapidapi.com/addressr-addressr-default/api/addressr/pricing';
 
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    PRO
-                  </h3>
-                  <p className="pricing__sentence">Only pay for what you use</p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$USD</span>
-                    <span>0.005/req</span>
-                    {/* <span className="pricing__currency">(USD)</span> */}
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">
-                        Only pay for what you use
-                      </li>
-                      <li className="pricing__feature">
-                        Automatic Data Updates
-                      </li>
-                      <li
-                        className="pricing__feature"
-                        style={{ fontWeight: '600' }}
-                      >
-                        24×7 AEST SUPPORT
-                      </li>
-                    </ul>
-                  </div>
-                  <div>
-                    <a
-                      href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Get Started
-                    </a>
-                  </div>
-                </div>
-              </div>
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="one-b">
-          <div className="inner">
-            <div className="grid-wrapper">
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    Ultra
-                  </h3>
-                  <p className="pricing__sentence">
-                    Includes 20,000 requests/month
-                  </p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$USD</span>
-                    <span>49/month</span>
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">
-                        $USD 0.005/additional request
-                      </li>
-                      <li className="pricing__feature">
-                        Automatic Data Updates
-                      </li>
-                      <li
-                        className="pricing__feature"
-                        style={{ fontWeight: '600' }}
-                      >
-                        24×7 AEST SUPPORT
-                      </li>
-                    </ul>
-                  </div>
-                  <div>
-                    <a
-                      href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Get Started
-                    </a>
-                  </div>
-                </div>
-              </div>
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    Mega
-                  </h3>
-                  <p className="pricing__sentence">
-                    Includes 200,000 requests/month
-                  </p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$USD</span>
-                    <span>299/month</span>
-                    {/* <span className="pricing__currency">(USD)</span> */}
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">
-                        $USD 0.005/additional request
-                      </li>
-                      <li className="pricing__feature">
-                        Automatic Data Updates
-                      </li>
-                      <li
-                        className="pricing__feature"
-                        style={{ fontWeight: '600' }}
-                      >
-                        24×7 AEST SUPPORT
-                      </li>
-                    </ul>
-                  </div>
-                  <div>
-                    <a
-                      href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Get Started
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="two">
-          <div className="inner">
-            <h2 style={{ textAlign: 'center' }}>Self hosted</h2>
-            <div className="grid-wrapper">
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el" data-hover="">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    FREE
-                  </h3>
-                  <p className="pricing__sentence">100% Free. FOREVER</p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$</span>
-                    <span>0</span>
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">Unlimited API Calls</li>
-                      <li className="pricing__feature">Containerised</li>
-                      <li className="pricing__feature">
-                        Run On-Prem or in Your Own Cloud
-                      </li>
-                      <li className="pricing__feature">
-                        Manual or Automatic Data Updates
-                      </li>
-                      <li className="pricing__feature">Community support</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <Link
-                      to="/quick-start/"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Get Started Free
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-4 price-styles" style={{ display: 'block;' }}>
-                <div className="pricing__item price-four-el">
-                  <h3 className="pricing__title mbr-title-font mbr-primary-color">
-                    ENTERPRISE
-                  </h3>
-                  <p className="pricing__sentence">Mission Critical Support</p>
-                  <div className="pricing__price mbr-title-font">
-                    <span className="pricing__currency">$</span>
-                    <span>Contact Us</span>
-                  </div>
-                  <div>
-                    <ul className="pricing__feature-list mbr-text-font">
-                      <li className="pricing__feature">Address Validation</li>
-                      <li className="pricing__feature">Address Autocomplete</li>
-                      <li className="pricing__feature">Address Search</li>
-                      <li className="pricing__feature">
-                        Geo-location Enhanced Address Search
-                      </li>
-                      <li className="pricing__feature">Unlimited API Calls</li>
-                      <li className="pricing__feature">Containerised</li>
-                      <li className="pricing__feature">
-                        Run On-Prem or in Your Own Cloud
-                      </li>
-                      <li className="pricing__feature">
-                        Manual or Automatic Data Updates
-                      </li>
-                      <li
-                        className="pricing__feature"
-                        style={{ fontWeight: '600' }}
-                      >
-                        24×7 AEST SUPPORT
-                      </li>
-                    </ul>
-                  </div>
-                  {/*
-                   * A plain <a>, NOT a Gatsby <Link>. Link runs `to` through
-                   * reach-router path resolution, which does not recognise the
-                   * mailto: scheme and yields a site-relative path, and its
-                   * shouldNavigate() preventDefaults an unmodified left-click —
-                   * so a Link here renders a broken href AND swallows the
-                   * click. Pinned by test/js/__tests__/pricing.test.mjs.
-                   *
-                   * The address repeats as visible text on purpose (ADR-053
-                   * criterion 8): a mailto: is a no-op for webmail users and
-                   * anyone with no mail client, and a bare button leaves them
-                   * with nothing to copy. It sits OUTSIDE the button because
-                   * Bootstrap's .btn sets user-select: none — nested inside, it
-                   * would be visible and uncopyable, satisfying the criterion
-                   * on paper while defeating its purpose.
-                   *
-                   * The second link carries no ?subject= so "Copy link address"
-                   * yields a clean address.
-                   */}
-                  <div className="enterprise-cta">
-                    <a
-                      href="mailto:addressr@mountain-pass.com.au?subject=Addressr%20Enterprise%20quote%20request"
-                      className="button btn special mbr-title-font btn-primary next"
-                    >
-                      Email Us for a Quote
-                    </a>
-                    <p className="mbr-text enterprise-cta__address">
-                      Opens your email app. If nothing happens, write to{' '}
-                      <a href="mailto:addressr@mountain-pass.com.au">
-                        addressr@mountain-pass.com.au
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-2 price-styles" style={{ display: 'block;' }}>
-                &nbsp;
-              </div>
-            </div>
-          </div>
-        </section>
+const Pricing = () => (
+  <Layout>
+    <Banner>
+      <header className="major">
+        <h1>Pricing</h1>
+      </header>
+      <div className="content">
+        <p>
+          Start with the hosted API when you want address quality without
+          operating G-NAF infrastructure. Self-host when your team needs to run
+          the data and service itself.
+        </p>
       </div>
-    </Layout>
-  );
-};
+    </Banner>
 
-// The <title> half of P125. A Gatsby `Head` export, NOT react-helmet:
-// helmet needed `gatsby-plugin-react-helmet` to reach server-rendered
-// output, that plugin was never installed, so the title this page has
-// declared since 2019 went into the DOM after hydration and never into
-// the document. The <html lang> half cannot live here — Head emits only
-// children of <head> — and is in gatsby-ssr.js.
+    <div id="main" className="alt docs-page">
+      <section aria-labelledby="hosted-pricing-title">
+        <div className="inner">
+          <header className="major">
+            <h2 id="hosted-pricing-title">Hosted API plans</h2>
+          </header>
+          <p>
+            Addressr provides the API and updates the address data. RapidAPI
+            handles signup, API keys, billing and plan changes. Its plan page
+            is the authoritative source for current prices and request limits.
+          </p>
+          <div
+            className="pricing-table-wrapper"
+            role="region"
+            aria-label="Addressr delivery option comparison"
+            tabIndex="0"
+          >
+            <table className="pricing-table">
+              <caption>Addressr delivery options</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Option</th>
+                  <th scope="col">Who operates it</th>
+                  <th scope="col">Best for</th>
+                  <th scope="col">Current terms</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Hosted API</th>
+                  <td>Addressr</td>
+                  <td>Teams that do not want to operate G-NAF infrastructure</td>
+                  <td><a href={rapidApiPricing}>Review plans on RapidAPI</a></td>
+                </tr>
+                <tr>
+                  <th scope="row">Self-hosted</th>
+                  <td>Your team</td>
+                  <td>Teams that need infrastructure and data-update control</td>
+                  <td>Apache-2.0 licence; your infrastructure costs apply</td>
+                </tr>
+                <tr>
+                  <th scope="row">Commercial support</th>
+                  <td>Mountain Pass with your team</td>
+                  <td>Self-hosted teams that want implementation or operations help</td>
+                  <td>Contact Mountain Pass for a quote</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <a href={rapidApiPricing} className="button cta-primary next">
+              Compare and select Addressr plans on RapidAPI
+            </a>
+          </p>
+        </div>
+      </section>
+
+      <section aria-labelledby="self-hosted-pricing-title">
+        <div className="inner">
+          <header className="major">
+            <h2 id="self-hosted-pricing-title">Self-hosted options</h2>
+          </header>
+          <div className="path-grid">
+            <article className="path">
+              <h3>Open-source software</h3>
+              <p>
+                Run Addressr and OpenSearch in your infrastructure under the
+                Apache-2.0 licence. Your team owns hosting, monitoring and data
+                updates.
+              </p>
+              <Link to="/quick-start/#self-hosted" className="button next">
+                Review self-host deployment
+              </Link>
+            </article>
+            <article className="path">
+              <h3>Commercial support</h3>
+              <p><strong>Contact Mountain Pass for a quote</strong></p>
+              <p>
+                Discuss implementation or operational support for a
+                self-hosted deployment.
+              </p>
+              <a
+                href="mailto:addressr@mountain-pass.com.au?subject=Addressr%20support%20quote"
+                className="button next"
+              >
+                Email Mountain Pass about Addressr support
+              </a>
+              <p className="contact-fallback">
+                If the email app does not open, write to{' '}
+                <a href="mailto:addressr@mountain-pass.com.au">
+                  addressr@mountain-pass.com.au
+                </a>.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </div>
+  </Layout>
+);
+
+/* eslint-enable jsx-a11y-x/no-noninteractive-tabindex */
+
 export const Head = () => (
   <>
-    <title>Pricing - Addressr by Mountain Pass</title>
-    <meta name="description" content="Pricing for Addressr by Mountain Pass" />
+    <title>Hosted and self-hosted pricing - Addressr</title>
+    <meta
+      name="description"
+      content="Compare Addressr hosted API plans on RapidAPI with Apache-licensed self-hosted deployment and commercial support."
+    />
+    <link rel="canonical" href="https://addressr.io/pricing/" />
+    <meta property="og:title" content="Hosted and self-hosted pricing - Addressr" />
+    <meta property="og:description" content="Compare hosted Addressr API plans with self-hosted deployment." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://addressr.io/pricing/" />
   </>
 );
 

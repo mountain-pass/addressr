@@ -1,188 +1,149 @@
+import { Link } from 'gatsby';
 import React from 'react';
-import howItWorks from '../assets/images/addressr.svg';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
-// import { getProfile } from '../utils/auth';
 
-const QuickStart = () => {
-  const user = undefined; //getProfile();
+/* eslint-disable jsx-a11y-x/no-noninteractive-tabindex -- labelled code regions must be keyboard-scrollable. */
 
-  return (
-    <Layout user={user}>
-      <Banner>
-        <header className="major">
-          <h1>Quick Start</h1>
-        </header>
-      </Banner>
+const hostedRequest = String.raw`curl "https://addressr.p.rapidapi.com/addresses?q=300+Barangaroo+Ave" \
+  -H "x-rapidapi-key: $RAPIDAPI_KEY" \
+  -H "x-rapidapi-host: addressr.p.rapidapi.com"`;
 
-      <div id="main" className="alt">
-        <section>
-          <div className="inner" id="saas">
-            <h2>SaaS</h2>
-            <div style={{ width: 'fit-content' }}>
-              <a
-                href="https://rapidapi.com/addressr-addressr-default/api/addressr"
-                className="button next"
-              >
-                Try it now online for free
-              </a>
-              <p
-                style={{
-                  marginTop: '0.5em',
-                  fontSize: 'smaller',
-                  color: '#5393a8',
-                  textAlign: 'center',
-                }}
-              >
-                <em>No credit card required</em>
-              </p>
-            </div>
-          </div>
-        </section>
-        <section>
-          <div className="inner" id="self-hosted">
-            <h2>Self hosted</h2>
-            <ol>
-              <li>
-                Install addressr
-                <pre>
-                  <code>npm install @mountainpass/addressr -g</code>
-                </pre>
-                NOTE: If you are running windows, you&apos;ll need to use{' '}
-                <a
-                  href="https://docs.microsoft.com/en-us/windows/wsl/install-win10"
-                  rel="nofollow"
-                >
-                  wsl
-                </a>
-              </li>
-              <li>
-                Start opensearch. For example run:
-                <pre>
-                  <code>
-                    {
-                      'docker pull opensearchproject/opensearch:1.2.4docker pull opensearchproject/opensearch:1.2.4\n'
-                    }
-                    {
-                      'docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "plugins.security.disabled=true" opensearchproject/opensearch:1.2.4'
-                    }
-                  </code>
-                </pre>
-              </li>
-              <li>
-                Start API server. In a second window run:
-                <pre>
-                  <code>
-                    {'export ELASTIC_PORT=9200\n'}
-                    {'export ELASTIC_HOST=localhost\n'}
-                    {'addressr-server-2\n'}
-                  </code>
-                </pre>
-              </li>
-              <li>
-                Setup the env vars for the data loader. In a third window run:
-                <pre>
-                  <code>
-                    {'export ELASTIC_PORT=9200\n'}
-                    {'export ELASTIC_HOST=localhost\n'}
-                    {'export ADDRESSR_INDEX_TIMEOUT=30s\n'}
-                    {'export ADDRESSR_INDEX_BACKOFF=1000\n'}
-                    {'export ADDRESSR_INDEX_BACKOFF_INCREMENT=1000\n'}
-                    {'export ADDRESSR_INDEX_BACKOFF_MAX=10000\n'}
-                  </code>
-                </pre>
-                <ol>
-                  <li>
-                    Optional - enable geocodes by setting the following env vars
-                    for the data loader.
-                    <strong> NOTE:</strong> with geocodes enabled, indexing
-                    takes much longer and needs much more memory. Only use turn
-                    them on if you need them. You can always add them later.
-                  </li>
-                </ol>
-                <pre>
-                  <code>
-                    {'export ADDRESSR_ENABLE_GEO=1\n'}
-                    {'export NODE_OPTIONS=--max_old_space_size=8196'}
-                  </code>
-                </pre>
-                <ol start="2">
-                  <li>
-                    Optional - limit the addresses to a single state by setting
-                    the <code>COVERED_STATES</code> env var for the data loader.
-                    This dramatically speeds up indexing. For example:
-                  </li>
-                </ol>
-                <pre>
-                  <code>COVERED_STATES=VIC,SA</code>
-                </pre>
-                Valid values are:
-                <ul>
-                  <li>ACT</li>
-                  <li>NSW</li>
-                  <li>NT</li>
-                  <li>OT</li>
-                  <li>QLD</li>
-                  <li>SA</li>
-                  <li>TAS</li>
-                  <li>VIC</li>
-                  <li>WA</li>
-                </ul>
-              </li>
-              <li>
-                Run data Loader
-                <pre>
-                  <code>addressr-loader</code>
-                </pre>
-              </li>
-              <li>
-                OK, so we stretched the truth a bit with the &quot;Quick
-                Start&quot; heading. The truth is that it takes quite a while to
-                download, store and index the 13+ million addresses from
-                data.gov.au. So make a coffee, or tea, or find something else to
-                do and come back in about an hour when it&apos;s done.
-              </li>
-              <li>
-                Search for an address
-                <pre>
-                  <code>
-                    curl -i http://localhost:8080/addresses?q=LEVEL+25,+TOWER+3
-                  </code>
-                </pre>
-              </li>
-              <li>An updated G-NAF is released every 3 months. Put addressr-loader in a cron job or similar to keep addressr regularly updated</li>
-              <li>Wire you address form up to the address-server api.</li>
-            </ol>
+const openSearch = String.raw`docker run --name addressr-opensearch \
+  -p 9200:9200 -p 9300:9300 \
+  -e "discovery.type=single-node" \
+  -e "plugins.security.disabled=true" \
+  opensearchproject/opensearch:3.5.0`;
 
-            <h2>How it Works</h2>
-            <img src={howItWorks} alt="architectural diagram" />
-            <h2>System requirements</h2>
-            <h3>Open Search:</h3>
-            <p>opensearch ≥ 1.2.4 with 1.4GiB of memory</p>
-            <h3>Addressr Loader</h3>
-            <h4>Default</h4>
-            <p>Node JS &gt;= 12.11.0 with 1GiB of memory</p>
-            <h4>With Geocoding enabled</h4>
-            <p>Node JS &gt;= 12.11.0 with 8GiB of memory</p>
-            <h3>Addressr Server</h3>
-            <p>Node JS &gt;= 12.11.0 with 64MiB of memory</p>
-          </div>
-        </section>
+const QuickStart = () => (
+  <Layout>
+    <Banner>
+      <header className="major">
+        <h1>Make your first Addressr request</h1>
+      </header>
+      <div className="content">
+        <p>
+          The hosted API is the shortest path. Self-hosting is available when
+          your team needs to own the service and data pipeline.
+        </p>
       </div>
-    </Layout>
-  );
-};
+    </Banner>
 
-// The <title> half of P125. A Gatsby `Head` export, NOT react-helmet:
-// helmet needed `gatsby-plugin-react-helmet` to reach server-rendered
-// output, that plugin was never installed, so the title this page has
-// declared since 2019 went into the DOM after hydration and never into
-// the document. The <html lang> half cannot live here — Head emits only
-// children of <head> — and is in gatsby-ssr.js.
+    <div id="main" className="alt docs-page">
+      <section id="hosted" aria-labelledby="hosted-title">
+        <div className="inner">
+          <header className="major">
+            <h2 id="hosted-title">Hosted API: make a request</h2>
+          </header>
+          <p>
+            Addressr documents the request and response. RapidAPI handles your
+            hosted account, API key, billing and plan changes.
+          </p>
+          <ol className="setup-steps">
+            <li>
+              <strong>Start an Addressr plan on RapidAPI.</strong>{' '}
+              <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/pricing">
+                Compare and select an Addressr plan on RapidAPI
+              </a>. RapidAPI is the authoritative source for current prices and
+              request limits.
+            </li>
+            <li>
+              <strong>Copy the API key from RapidAPI.</strong> Store it in the
+              <code> RAPIDAPI_KEY</code> environment variable; do not put it in
+              browser code or commit it to source control.
+            </li>
+            <li>
+              <strong>Search for an address.</strong>
+              <pre role="region" aria-label="Hosted address search command" tabIndex="0" className="code-example"><code>{hostedRequest}</code></pre>
+            </li>
+            <li>
+              <strong>Use the result.</strong> Each match includes a
+              human-readable address in <code>sla</code> and a stable address
+              identifier in <code>pid</code>. Follow the response links or use
+              the identifier with the address-detail endpoint for structured
+              fields and geocoding.
+            </li>
+          </ol>
+          <ul className="actions">
+            <li><Link to="/api-docs/" className="button next">Read the Addressr API guide</Link></li>
+            <li><Link to="/pricing/" className="button">Compare pricing</Link></li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="self-hosted" aria-labelledby="self-hosted-title">
+        <div className="inner">
+          <header className="major">
+            <h2 id="self-hosted-title">Self-hosted: run the service</h2>
+          </header>
+          <p>
+            Choose this path when your team can operate Node.js, OpenSearch and
+            quarterly G-NAF updates. Allow about an hour for the first full
+            download and index; timing depends on your machine and options.
+          </p>
+          <p>
+            Addressr requires Node.js 22 or newer. Continuous integration tests
+            the current release with OpenSearch 2.19.5 and 3.5.0.
+          </p>
+          <ol className="setup-steps">
+            <li>
+              <strong>Install Addressr.</strong>
+              <pre role="region" aria-label="Addressr installation command" tabIndex="0" className="code-example"><code>npm install --global @mountainpass/addressr</code></pre>
+            </li>
+            <li>
+              <strong>Start OpenSearch for local evaluation.</strong>
+              <pre role="region" aria-label="Local OpenSearch command" tabIndex="0" className="code-example"><code>{openSearch}</code></pre>
+              <p>
+                This example disables OpenSearch security and is for a local
+                machine only. Do not expose it to a network or use it as a
+                production security configuration.
+              </p>
+            </li>
+            <li>
+              <strong>Start the API in a second terminal.</strong>
+              <pre role="region" aria-label="Addressr API server commands" tabIndex="0" className="code-example"><code>{`export ELASTIC_HOST=localhost
+export ELASTIC_PORT=9200
+addressr-server-2`}</code></pre>
+            </li>
+            <li>
+              <strong>Load G-NAF in a third terminal.</strong>
+              <pre role="region" aria-label="G-NAF loader commands" tabIndex="0" className="code-example"><code>{`export ELASTIC_HOST=localhost
+export ELASTIC_PORT=9200
+addressr-loader`}</code></pre>
+              <p>
+                The loader downloads and indexes the Australian address data.
+                Keep this terminal open until it completes.
+              </p>
+            </li>
+            <li>
+              <strong>Check the local API.</strong>
+              <pre role="region" aria-label="Local address search command" tabIndex="0" className="code-example"><code>{`curl "http://localhost:8080/addresses?q=300+Barangaroo+Ave"`}</code></pre>
+            </li>
+          </ol>
+          <p>
+            For geocoding, state filters, cached data and scheduled updates,
+            use the maintained{' '}
+            <a href="https://github.com/mountain-pass/addressr#self-hosted">
+              self-hosting reference in the Addressr repository
+            </a>.
+          </p>
+        </div>
+      </section>
+    </div>
+  </Layout>
+);
+
+/* eslint-enable jsx-a11y-x/no-noninteractive-tabindex */
+
 export const Head = () => (
   <>
-    <title>Quick Start - Addressr by Mountain Pass</title>
-    <meta name="description" content="Quick Start for Addressr by Mountain Pass" />
+    <title>Make your first Addressr API request</title>
+    <meta name="description" content="Make a hosted Addressr request through RapidAPI or deploy Addressr with Node.js and OpenSearch." />
+    <link rel="canonical" href="https://addressr.io/quick-start/" />
+    <meta property="og:title" content="Make your first Addressr API request" />
+    <meta property="og:description" content="Start with the hosted API or follow the self-hosted deployment path." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://addressr.io/quick-start/" />
   </>
 );
 

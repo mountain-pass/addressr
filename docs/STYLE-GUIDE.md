@@ -1,21 +1,20 @@
 # Style Guide
 
-**Last reviewed**: 2026-08-25
-**human-oversight**: confirmed
-**oversight-date**: 2026-08-24
-**Status**: Ratified
+**Last reviewed**: 2026-08-28
+**human-oversight**: pending
+**oversight-date**: pending
+**Status**: Proposed update
 
-> **Read this first.** This guide **describes the conventions already in `apps/website`**; it does not
-> propose new ones. It was written because the style gate blocks `.jsx`/`.tsx` edits until it exists, and it
-> was blocking a WCAG Level A fix ([P125](problems/closed/125-every-page-of-the-website-ships-without-a-title-element.md)).
-> Everything here was read out of the tree, and every number was measured rather than asserted.
+> **Read this first.** This guide records the binding conventions for `apps/website`. It began as a
+> description of the imported HTML5 UP implementation and now also defines the marketing hierarchy,
+> content structure and accessibility floor for new work. Measured facts remain labelled as measurements.
 >
-> **Ratified by the maintainer 2026-08-24**, and `wr-style-guide:agent` now reads it as binding rather than
-> advisory. Two things a reader should know about what that ratification covers:
+> The inherited conventions were ratified by the maintainer on 2026-08-24. The marketing additions dated
+> 2026-08-28 remain proposed until reviewed. Two things a reader should know about the inherited ratification:
 >
-> - It ratifies a **description**, not a design. Where the existing CSS is inconsistent this guide says so
->   rather than picking a winner, and those open questions stay open — ratifying the description does not
->   settle them. They are listed under _Known gaps_.
+> - It ratifies the inherited visual identity and the rules below, not every historical implementation
+>   detail. Where the existing CSS is inconsistent this guide says so rather than picking a winner, and
+>   those open questions stay open. They are listed under _Known gaps_.
 > - The Do/Don't rules are now enforceable. The **live defects** those rules describe are tracked as tickets
 >   and are not conventions to preserve — see
 >   [P131](problems/closed/131-the-site-menu-cannot-be-opened-or-closed-by-keyboard-on-any-page.md) and
@@ -29,6 +28,58 @@ One surface: `apps/website`, a Gatsby 5 marketing site imported by
 [ADR-053](decisions/053-website-imported-as-an-app-with-hosting-unchanged.proposed.md). Nothing else in this
 repo ships UI. The site derives from a HTML5 UP template, which is why the architecture below is older than
 the rest of the repo's conventions and should not be read as a house style the maintainer chose.
+
+## Marketing structure
+
+The website is a **Persuade** surface. Its primary visitor is a product or data owner improving Australian
+address quality. Developers are the implementation audience. Hosted Addressr leads; self-hosting is a clear
+secondary path, not a competing first action.
+
+The homepage follows this order:
+
+1. Outcome-led proposition and a hosted first-request action
+2. One primary live address demonstration
+3. Verified service and public-adoption evidence
+4. Hosted versus self-hosted decision
+5. Supporting search types and implementation routes
+6. A specific close that names the next action
+
+Use one primary action per section. CTA text names the outcome and destination. A link to RapidAPI must say
+RapidAPI in visible text or adjacent explanatory copy before the handoff.
+
+Do not use equal-weight feature tiles as the page structure. Proof, choice and action have different jobs
+and must have visibly different hierarchy. Background photography is decorative; factual proof stays in
+text, data and working product demonstrations.
+
+Pricing begins with the hosted/self-hosted decision. Plans state who they suit, meaningful differences,
+currency, included requests, overage and support. Repeated feature lists do not substitute for comparison.
+
+Documentation is a **Read** surface. Quick Start gets a hosted user to the first authenticated request.
+Self-host deployment instructions are separate, sequential, versioned and include expected checkpoints.
+The local API documentation explains tasks and endpoints but does not replace the runtime OpenAPI contract
+or RapidAPI's provider role.
+
+## Content hierarchy
+
+- One page-specific `h1` in server-rendered output
+- Major page sections use `h2`; items within them use `h3`
+- Body copy targets 65 to 75 characters per line
+- All-caps and `0.25em` tracking are reserved for short navigation or control labels, not paragraphs
+- Product and data outcomes precede implementation terminology
+- Claims follow `docs/VOICE-AND-TONE.md` and `RISK-POLICY.md`: use an evidence source without committing prohibited business metrics
+- Visible labels and accessible names use the same action and destination
+
+## Responsive and interaction floor
+
+- No horizontal page overflow at 320 CSS pixels
+- Images use `max-width: 100%; height: auto`
+- Long code examples may scroll horizontally, are keyboard focusable and have a visible focus indicator
+- Interactive targets provide at least a 24 by 24 CSS pixel target, with 44 by 44 preferred for primary controls
+- Desktop and mobile navigation never expose duplicate hidden links in the tab order
+- Route changes, skip links, menu focus and autocomplete keyboard behaviour retain browser-level tests
+- All readable text meets WCAG 2.2 AA contrast; `fg-light` is decorative only and never used for links or legal copy
+- Filled primary actions use `highlight` with `bg` text, or another measured pair meeting 4.5:1
+- Focus indicators meet 3:1 against adjacent colours
 
 ## CSS architecture
 
@@ -51,20 +102,20 @@ Sass (`.scss`), compiled by `gatsby-plugin-sass`, organised in four layers under
   mechanism behind the type token below and a render-blocking third-party request.
 
 **There is a de-facto fifth layer, and naming it matters.** `main.scss` is not only an import manifest: it
-also owns the Swagger UI override and `.enterprise-cta__address`. The autocomplete itself now uses the
+also owns a small set of global accessibility and generated-markup rules. The autocomplete itself uses the
 published `@mountainpass/addressr-react/style.css`; homepage-specific layout and palette integration stay
-local to `layout/_main.scss`.
+local to `layout/_main.scss`. The former client-rendered Swagger UI and its local overrides have been
+removed. API guidance is now ordinary semantic page markup.
 
 Legacy dead weight, flagged rather than removed because removing is a change and this is a description:
 `ie8.scss`, `ie9.scss`, and their `.css` counterparts.
 
 **Not BEM, not utility-first, not CSS modules.** Plain semantic class names (`.menu-link`, `.major`,
-`.inner`, `.price-styles`) with descendant selectors. No Tailwind, no styled-components, no CSS modules.
+`.inner`, `.evidence-grid`) with descendant selectors. No Tailwind, no styled-components, no CSS modules.
 
-Styling is _mostly_ global — but not entirely, and the qualifier is load-bearing. An earlier draft of this
-paragraph ended "there is no component-scoped CSS anywhere in the tree", which is false: `index.jsx` and
-`Header.js` carry inline `style={{}}` props covering colour, padding and sizing. Those are component-scoped
-styling of the least overridable kind. See the hardcoded-values table below.
+Styling is _mostly_ global, but not entirely. `Header.js` retains two small inline layout resets. They do not
+set colour and should not be copied into new components. New website presentation belongs in the existing
+Sass layers; autocomplete presentation belongs in the published React package stylesheet.
 
 ## Design tokens
 
@@ -72,27 +123,19 @@ All tokens live in one place — `libs/_vars.scss` — as Sass maps, read throug
 (`_palette(highlight)`, `_size(border-radius)`, `_font(family)`). The accessor discipline is real and worth
 keeping: most of the tree goes through it, and a token change propagates.
 
-**But it is not universal, and an earlier draft of this guide claimed it was.** That draft said "there are no
-hardcoded hex values scattered through components" and "there is no component-scoped CSS anywhere in the
-tree". Both are false. The grep behind them matched 6-digit hex in `.scss` only — missing named colours,
-3-digit hex, `rgba()`, a second `hsl()` on the very next line, and JSX inline styles entirely. There are at
-least ten hardcoded colour values across five files:
+**But it is not universal.** The imported template and autocomplete integration retain a small number of
+literal colours. Keep this inventory honest so a new literal is not mistaken for precedent:
 
-| Location                      | Value                                         |
-| ----------------------------- | --------------------------------------------- |
-| `main.scss:188` and `:189`    | `hsl(208, 99%, 50%)`, twice, in the same rule |
-| `main.scss:200`               | `background: #fff`                            |
-| `main.scss:183`               | `color: GrayText` (system keyword)            |
-| `layout/_header.scss:353-354` | `background: rebeccapurple; color: white`     |
-| `layout/_header.scss:59`      | `rgba(0, 0, 0, 0.15)`                         |
-| `layout/_menu.scss:102`       | `rgba(0, 0, 0, 0)`                            |
-| `libs/_mixins.scss:219-227`   | `red`, `blue`, `green` (debug mixin)          |
-| `layout/_main.scss:232`       | `// color: #4caf50` (commented out)           |
-| `index.jsx` and `Header.js`   | `'#f2f2f2'` — JSX inline styles               |
+| Location              | Value                                      |
+| --------------------- | ------------------------------------------ |
+| `layout/_header.scss` | `rebeccapurple` and `white` for the ribbon |
+| `layout/_header.scss` | `rgba(0, 0, 0, 0.15)` shadow               |
+| `layout/_menu.scss`   | transparent tap-highlight `rgba()`         |
+| `layout/_main.scss`   | autocomplete error and muted CSS variables |
+| `libs/_mixins.scss`   | `red`, `blue`, `green` in a debug mixin    |
 
-Strictly there are no CSS modules and no styled-components. But inline `style={{}}` props **are**
-component-scoped styling, and they are the least overridable kind there is. Saying otherwise stops a reader
-from looking.
+The minified imported Font Awesome and compatibility CSS also contain literals. Do not edit vendor output
+to make it look tokenised.
 
 ### Palette
 
@@ -227,7 +270,7 @@ preserve.
 ## Naming
 
 - SCSS partials: `_kebab-case.scss`, grouped by the four layers above.
-- Classes: lowercase, hyphenated, semantic (`.price-styles`, `.swagger-wrapper`, `.menu-link`).
+- Classes: lowercase, hyphenated, semantic (`.evidence-grid`, `.code-example`, `.menu-link`).
 - Components: `PascalCase.js` in `src/components/`. Note `layout.js` is the one lowercase exception.
 - Pages: `kebab-case` in `src/pages/`, matching the route.
 
@@ -235,22 +278,21 @@ preserve.
 
 - **No spacing scale.** Ad-hoc `em` values throughout.
 - **No dark/light mode.** The site is dark-only; there is no `prefers-color-scheme` handling.
-- **Nothing lints accessibility.** `jsx-a11y` is not installed, and `eslint.config.js` puts
-  `apps/website/**` in `globalIgnores` — a decision ADR-053 took deliberately for phase 1, recording
-  `jsx-a11y` as the obvious later addition.
+- **Accessibility coverage is layered rather than complete.** Source linting, built-output CSS reachability
+  and focused Playwright keyboard checks exist under ADR-054 through ADR-057. Manual judgment and browser
+  testing are still required for semantics, contrast, responsive behaviour and generated third-party UI.
 - **`ie8.scss` / `ie9.scss`** are dead.
 - **`_skel.scss`** is the template's own breakpoint engine and is effectively unowned code.
 
 ## For the reviewer agent
 
-`wr-style-guide:agent` reads this file, and as of 2026-08-24 it is **ratified**, so the Do/Don't rules are
-binding on new work rather than advisory.
+`wr-style-guide:agent` reads this file. The inherited Do/Don't rules remain binding; the marketing additions
+dated 2026-08-28 are proposed pending maintainer oversight.
 
-Two standing qualifications, because a ratified description is not the same as a clean tree:
+Two standing qualifications, because a ratified guide is not the same as a clean tree:
 
 - **Existing violations are tracked defects, not precedent.** The tree currently breaks rules 1, 2, 3 and 4
   in known places, recorded in P131, P132 and P126. Meeting one of them in a file is not evidence the rule
   does not apply; do not let it license a new instance.
 - **The _Known gaps_ section is genuinely unresolved**, not tacitly approved. Ratification covers the
-  description of what the tree does. It does not decide the spacing scale, the dark-only question, or the
-  absence of accessibility linting.
+  inherited identity and the rules above. It does not decide the spacing scale or the dark-only question.

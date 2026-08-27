@@ -38,23 +38,5 @@ header {
       width: fit-content;
     }
 
-    > p {
-      font-size: 0.7em;
-      font-weight: _font(weight-bold);
-      letter-spacing: _font(letter-spacing-alt);
-      margin-bottom: 0;
-      text-transform: uppercase;
-    }
-
-  }
-
-  @include breakpoint(small) {
-    &.major {
-      > p {
-        br {
-          display: none;
-        }
-      }
-    }
   }
 }

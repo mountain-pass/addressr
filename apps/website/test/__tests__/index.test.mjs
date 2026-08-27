@@ -1,4 +1,5 @@
-// The home page's title, pinned as an editorial decision rather than a shape.
+// The home page's buyer-led title, pinned as an editorial decision rather than
+// a shape.
 //
 // WHY THIS IS SEPARATE from `../rendered-output.test.mjs`. That file asserts the
 // PROPERTIES every page must have — a non-empty title, a distinct one, a lang.
@@ -14,7 +15,9 @@
 //
 // 87 characters, brand first. A browser tab shows roughly the first 25, so every
 // tab of this site read "Addressr by Mountain Pas" and none was distinguishable
-// from the others. The unique part now leads.
+// from the others. The unique part now leads. The 2026-08-28 marketing review
+// then replaced the feature list with the buyer outcome: Australian address
+// quality through a hosted API.
 //
 // Two things were deliberately NOT done, and both were closer calls than the
 // reorder:
@@ -48,8 +51,7 @@ const page = () => readFileSync(path.join(PUBLIC, 'index.html'), 'utf8');
 const titleOf = (html) =>
   (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim();
 
-const EXPECTED =
-  'Free Australian Address Validation, Search and Autocomplete - Addressr by Mountain Pass';
+const EXPECTED = 'Australian address quality API - Addressr by Mountain Pass';
 
 describe('home page title (P125)', () => {
   before(() => {

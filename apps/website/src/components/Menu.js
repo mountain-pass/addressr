@@ -41,13 +41,13 @@ const Menu = ({ onDismiss, onNavigate, onKeyDown, menuRef }) => {
             </Link>
           </li>
           <li>
-            <Link onClick={onNavigate} to="/api-docs/">
-              API Docs
+            <Link onClick={onNavigate} to="/quick-start/">
+              Quick Start
             </Link>
           </li>
           <li>
-            <Link onClick={onNavigate} to="/download/">
-              Download
+            <Link onClick={onNavigate} to="/api-docs/">
+              API Docs
             </Link>
           </li>
           <li>
@@ -56,13 +56,8 @@ const Menu = ({ onDismiss, onNavigate, onKeyDown, menuRef }) => {
             </a>
           </li>
           <li>
-            <Link onClick={onNavigate} to="/quick-start/">
-              Quick Start
-            </Link>
-          </li>
-          <li>
             <a href="https://app.gitter.im/#/room/#mountainpass-addressr_community:gitter.im">
-              Community Support <FontAwesomeIcon icon={faGitter} />
+              Community support on Gitter <FontAwesomeIcon icon={faGitter} />
             </a>
           </li>
           <li>

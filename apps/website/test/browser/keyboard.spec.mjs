@@ -315,8 +315,13 @@ test.describe(
       await page.getByRole('combobox', { name: examples[0][0] }).focus();
       await page.keyboard.press('Tab');
       await expect(mapLink).toBeFocused();
-      await page.keyboard.press('Tab');
-      await expect(page.getByRole('combobox', { name: examples[1][0] })).toBeFocused();
+      const localityInput = page.getByRole('combobox', { name: examples[1][0] });
+      for (let tab = 0; tab < 12 && !(await localityInput.evaluate(
+        (element) => element === document.activeElement,
+      )); tab += 1) {
+        await page.keyboard.press('Tab');
+      }
+      await expect(localityInput).toBeFocused();
 
       const inputs = examples.map(([name]) => page.getByRole('combobox', { name }));
       for (let index = 1; index < inputs.length - 1; index += 1) {

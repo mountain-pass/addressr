@@ -25,184 +25,80 @@
   }
 }
 
-/* Pricing */
+/* Marketing and task pages */
 
-.price-styles {
-  margin-bottom: 30px;
+.marketing-main .inner,
+.docs-page .inner {
+  max-width: 72em;
 }
 
-.pricing__item {
-  margin: 0;
-  padding: 40px 40px 40px;
+.section-intro {
+  max-width: 48em;
+}
+
+.evidence-grid,
+.path-grid {
+  display: grid;
+  gap: 1.5em;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18em), 1fr));
+}
+
+.evidence-grid > div,
+.path {
+  border: 1px solid _palette(border);
+  min-width: 0;
+  padding: 1.5em;
+}
+
+.evidence-grid dt {
+  font-weight: _font(weight-bold);
+}
+
+.evidence-grid dd {
+  margin: 0.5em 0 0;
+}
+
+.path--primary {
+  border-color: _palette(highlight);
+}
+
+.pricing-table-wrapper,
+.code-example {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.pricing-table-wrapper:focus-visible,
+.code-example:focus-visible {
+  outline: 3px solid _palette(highlight);
+  outline-offset: 3px;
+}
+
+.pricing-table {
+  min-width: 48em;
+}
+
+.pricing-table caption {
+  color: _palette(fg-bold);
+  font-weight: _font(weight-bold);
+  padding-bottom: 0.75em;
   text-align: left;
-  color: _palette(bg);
-  background: _palette(fg);
-  position: relative;
-  box-shadow: 0px 0px 10px _palette(border-bg);
-  border: none;
-  border-radius: 3px;
 }
 
-.pricing__title {
-  margin: 0px 0px 10px;
-  color: _palette(accent1);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-.pricing__price {
-  font-size: 65px;
-  font-weight: 700;
-  padding: 10px 0 20px;
-  color: _palette(bg);
-  text-align: center;
-}
-
-.pricing__currency {
-  font-size: 25px;
-  vertical-align: super;
-  color: _palette(bg);
-  margin-left: -0.7em;
-}
-
-.pricing__sentence {
-  padding: 0 0 0.5em;
-  margin: 0;
-  color: _palette(bg);
-  text-align: center;
-}
-
-.pricing__feature-list {
-  font-size: 0.95em;
-  margin: 0;
-  padding: 0 0 2.5em;
-  list-style: none;
-  color: _palette(bg-alt);
-}
-
-.pricing__feature {
-  position: relative;
-  display: block;
-  padding: 0px 0px 5px 20px;
-  line-height: 1.5;
-}
-
-.pricing__feature::before {
-  content: '';
-  position: absolute;
-  width: 6px;
-  height: 2px;
+.code-example {
   background: _palette(bg);
-  opacity: 0.2;
-  left: 0;
-  top: 50%;
-  margin: -2px 0 0 0;
+  border: 1px solid _palette(border);
+  padding: 1em;
 }
 
-.pricing__item .btn {
-  width: 100%;
-  margin: 0 auto;
-  position: relative;
-  bottom: 0px;
-  left: 0px;
-  right: 0px;
-  color: _palette(fg);
+.setup-steps > li,
+.endpoint {
+  margin-bottom: 2em;
 }
 
-@media only screen and (min-width: 768px) and (max-width: 992px) {
-  .pricing__price {
-    padding: 35px 0 30px;
-    line-height: 20px;
-  }
-  .pricing__item {
-    margin: 0;
-    padding: 30px 30px 30px;
-  }
-}
-
-@media only screen and (min-width: 280px) and (max-width: 767px) {
-  .pricing__item {
-    margin: 0 0 47px;
-    padding: 30px 30px 30px;
-  }
-}
-
-@media (max-width: 767px) {
-  .price-styles {
-    display: block;
-    max-width: 360px;
-    margin: 0 auto;
-  }
-}
-
-.price-four-el {
-  padding: 40px 15px 15px 15px;
-}
-
-.price-four-el h3 {
-  text-align: center;
-}
-
-@media (min-width: 767px) {
-  .pricing__price {
-    line-height: 35px;
-    font-size: 50px;
-  }
-  .pricing__title {
-  }
-  .pricing__item p {
-    font-size: 12px;
-    line-height: 20px;
-  }
-  .pricing__item a.btn {
-    padding-left: 5px;
-    padding-right: 5px;
-  }
-}
-
-@media (max-width: 991px) {
-  .pricing__price {
-    line-height: 35px;
-    font-size: 50px;
-  }
-  .pricing__title {
-    font-size: 16px;
-  }
-  .pricing__item p {
-    font-size: 12px;
-    line-height: 20px;
-  }
-  .pricing__item a.btn {
-    padding-left: 5px;
-    padding-right: 5px;
-  }
-}
-
-.btn-primary {
-  color: _palette(fg) !important;
-}
-
-.btn.btn-primary {
-  background-color: _palette(dk-accent1);
-  border-color: _palette(dk-accent1);
-}
-
-// a {
-//   color: #4caf50;
-// }
-
-.mbr-primary-color {
-  color: _palette(dk-accent1) !important;
-}
-
-.mbr-title-font {
-  font-family: 'Lato', sans-serif !important;
-}
-
-.mbr-text-font,
-p {
-  font-family: 'Open Sans', sans-serif !important;
+.contact-fallback {
+  margin-top: 1em;
+  overflow-wrap: anywhere;
 }
 
 .autocomplete-examples {

@@ -7,17 +7,8 @@ import {
 } from '@mountainpass/addressr-react';
 import '@mountainpass/addressr-react/style.css';
 import React, { useState } from 'react';
-import pic01 from '../assets/images/pic01.jpg';
-import pic02 from '../assets/images/pic02.jpg';
-import pic03 from '../assets/images/pic03.jpg';
-import pic04 from '../assets/images/pic04.jpg';
-import pic05 from '../assets/images/pic05.jpg';
-import pic06 from '../assets/images/pic06.jpg';
-import pic10 from '../assets/images/pic10.jpg';
-import pic11 from '../assets/images/pic11.jpg';
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
-import dataGovLogo from './Data-gov-au.jpg';
 
 const apiUrl = 'https://api.addressr.io/';
 
@@ -155,30 +146,42 @@ const HomeIndex = () => {
 
   return (
     <Layout>
-
       <Banner className="major">
         <header className="major">
-          <h1>Addressr</h1>
+          <h1>Improve Australian address quality without maintaining G-NAF yourself</h1>
         </header>
         <div className="content">
-          <p>Australian Address Validation, Search and Autocomplete</p>
+          <p>
+            Addressr gives product and data teams hosted address search,
+            autocomplete and validation built from Australia&apos;s official
+            Geocoded National Address File.
+          </p>
           <ul className="actions">
             <li>
-              <Link to="/pricing/" className="button next">
-                Get Started Free
+              <Link to="/quick-start/#hosted" className="button cta-primary next">
+                Make your first hosted request
               </Link>
+            </li>
+            <li>
+              <a href="#address-demo" className="button">
+                Try address search
+              </a>
             </li>
           </ul>
         </div>
       </Banner>
 
-      <div>
-        <section id="zero" style={{ padding: '2em 3em 2em 3em' }}>
-          <header className="major">
-            <h2>Try Addressr autocomplete</h2>
-          </header>
-          <div className="autocomplete-examples">
-            <div className="autocomplete-example">
+      <div id="main" className="marketing-main">
+        <section id="address-demo" className="product-demo">
+          <div className="inner">
+            <header className="major">
+              <h2>See the address data your forms can use</h2>
+            </header>
+            <p className="section-intro">
+              Search a real Australian address. Select a result to see its
+              structured fields, address ID and available geocode.
+            </p>
+            <div className="autocomplete-example autocomplete-example--primary">
               <h3>Address search</h3>
               <AddressAutocomplete
                 apiUrl={apiUrl}
@@ -189,6 +192,98 @@ const HomeIndex = () => {
               />
               {selectedAddress && <AddressDetails address={selectedAddress} />}
             </div>
+          </div>
+        </section>
+
+        <section className="evidence-section" aria-labelledby="evidence-title">
+          <div className="inner">
+            <header className="major">
+              <h2 id="evidence-title">Public service and adoption evidence</h2>
+            </header>
+            <dl className="evidence-grid">
+              <div>
+                <dt>30-day uptime</dt>
+                <dd>
+                  <a href="https://stats.uptimerobot.com/PK1GwT4YmX">
+                    100% reported by UptimeRobot
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt>Main npm package</dt>
+                <dd>
+                  <a href="https://www.npmjs.com/package/@mountainpass/addressr">
+                    View current package activity on npm
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt>Open-source adoption</dt>
+                <dd>
+                  <a href="https://github.com/mountain-pass/addressr">
+                    View source, releases and community activity on GitHub
+                  </a>
+                </dd>
+              </div>
+            </dl>
+            <p className="evidence-note">
+              Public package and repository activity are adoption signals. They
+              do not establish customer counts or business outcomes.
+            </p>
+          </div>
+        </section>
+
+        <section className="path-section" aria-labelledby="choose-path-title">
+          <div className="inner">
+            <header className="major">
+              <h2 id="choose-path-title">Choose how your team runs Addressr</h2>
+            </header>
+            <div className="path-grid">
+              <article id="hosted-api" className="path path--primary">
+                <h3>Hosted API</h3>
+                <p>
+                  Use Addressr without running an address index or update job.
+                  RapidAPI currently handles signup, API keys, billing and plan
+                  changes.
+                </p>
+                <ul>
+                  <li>Compare current plan terms on RapidAPI</li>
+                  <li>Use hosted address, locality, postcode and state search</li>
+                  <li>Move to usage or volume pricing when needed</li>
+                </ul>
+                <Link to="/quick-start/#hosted" className="button cta-primary next">
+                  Make a hosted API request
+                </Link>
+              </article>
+              <article id="self-hosted" className="path">
+                <h3>Self-hosted</h3>
+                <p>
+                  Run the API, OpenSearch and G-NAF updates in infrastructure
+                  your team controls. The software is Apache-2.0 licensed.
+                </p>
+                <ul>
+                  <li>No hosted request limit</li>
+                  <li>Choose manual or scheduled data updates</li>
+                  <li>Use community or commercial support</li>
+                </ul>
+                <Link to="/quick-start/#self-hosted" className="button next">
+                  Review self-host deployment
+                </Link>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="supporting-search" aria-labelledby="search-types-title">
+          <div className="inner">
+          <header className="major">
+              <h2 id="search-types-title">Search more than street addresses</h2>
+          </header>
+            <p className="section-intro">
+              The same hosted API can help teams standardise suburbs and towns,
+              postcodes, states and territories.
+            </p>
+            <div className="autocomplete-examples">
             <div className="autocomplete-example">
               <h3>Suburb and town search</h3>
               <LocalityAutocomplete
@@ -230,145 +325,27 @@ const HomeIndex = () => {
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {selectedMessage}
           </p>
+          </div>
         </section>
-      </div>
 
-      <div id="main">
-        <section id="one" className="tiles">
-          <article style={{ backgroundImage: `url(${pic01})` }}>
-            <header className="major">
-              <h3 id="australian-data-source-title">Australian Data Source</h3>
-
-              <p>
-                Addresses validated against the Geocoded National Address File
-                (referred to as G-NAF), Australia’s{' '}
-                <strong>authoritative</strong>{' '}
-                address file.
-              </p>
-              <span
-                className="image fit"
-                style={{
-                  display: 'block',
-                  background: '#f2f2f2',
-                  width: '100%',
-                  padding: '0.5em 0em',
-                  marginTop: '0.6em',
-                }}
-              >
-                <img
-                  src={dataGovLogo}
-                  alt="data.gov.au logo"
-                  style={{
-                    width: '20%',
-                    margin: 'auto',
-                  }}
-                />
-              </span>
-            </header>
-            <a
-              href="https://data.gov.au/dataset/ds-dga-19432f89-dc3a-4ef3-b943-5326ef1dbecc/details"
-              className="link primary"
-              aria-labelledby="australian-data-source-title"
-            >
-              <span className="sr-only">Australian Data Source</span>
-            </a>
-          </article>
-          <article style={{ backgroundImage: `url(${pic02})` }}>
-            <header className="major">
-              <h3>
-                Software As or{' '}
-                <strong>NOT</strong>{' '}
-                As A Service
-              </h3>
-              <p>
-                We love{' '}
-                <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
-                  SaaS
-                </a>
-                , but we know its not for everyone.
-              </p>
-              <p>
-                <a href="https://rapidapi.com/addressr-addressr-default/api/addressr/">
-                  SaaS
-                </a>{' '}
-                or <Link to="quick-start/#self-hosted">self hosted</Link>,
-                we&apos;ve got you covered.
-              </p>
-            </header>
-          </article>
-          <article style={{ backgroundImage: `url(${pic11})` }}>
-            <header className="major">
-              <h3>Always Up-To-Date</h3>
-              <p>
-                Addressr automatically updates with the latest data, so
-                you&apos;re never out-of-date.
-              </p>
-            </header>
-          </article>
-          <article style={{ backgroundImage: `url(${pic03})` }}>
-            <header className="major">
-              <h3>Real-time Address Validation</h3>
-              <p>
-                Add address autocomplete, search and validation to your forms.
-              </p>
-            </header>
-          </article>
-          <article style={{ backgroundImage: `url(${pic04})` }}>
-            <header className="major">
-              <h3 id="easy-to-use-api-title">Easy To Use API</h3>
-              <p>Build your solution quickly, with our straightforward API.</p>
-            </header>
-            <Link
-              to="/api-docs/"
-              className="link primary"
-              aria-labelledby="easy-to-use-api-title"
-            >
-              <span className="sr-only">Easy To Use API</span>
-            </Link>
-          </article>
-          <article style={{ backgroundImage: `url(${pic05})` }}>
-            <header className="major">
-              <h3>Run On Your Own Infrastructure or Use Ours</h3>
-              <p>
-                On-premise or in the cloud, run Addressr on your own
-                infrastructure, or leave all the hard work to us.
-              </p>
-            </header>
-          </article>
-          <article style={{ backgroundImage: `url(${pic06})` }}>
-            <header className="major">
-              <h3>Completely Free or Pay for Support</h3>
-              <p>
-                That&apos;s right, Addressr is completely free.{' '}
-                <strong>Forever.</strong>
-                &nbsp;
-                <br />
-                Or for peace of mind for your mission critical solutions, get
-                commercial support you can truly rely on.
-              </p>
-            </header>
-          </article>
-          <article style={{ backgroundImage: `url(${pic10})` }}>
-            <header className="major" />
-          </article>
-        </section>
-        <section id="two">
+        <section className="closing-section">
           <div className="inner">
             <header className="major">
-              <h2>
-                Begin Validating
-                <br />
-                Australian Addresses
-              </h2>
+              <h2>Start with one hosted request</h2>
             </header>
             <p>
-              Get Addressr. Start validating addresses and adding address
-              autocomplete to your forms <strong>today</strong>.
+              Addressr explains the request and response here. RapidAPI handles
+              the hosted account, API key and plan.
             </p>
             <ul className="actions">
               <li>
-                <Link to="/pricing/" className="button next">
-                  Get Started Free
+                <Link to="/quick-start/#hosted" className="button cta-primary next">
+                  Make your first hosted request
+                </Link>
+              </li>
+              <li>
+                <Link to="/pricing/" className="button">
+                  Compare pricing
                 </Link>
               </li>
             </ul>
@@ -398,14 +375,16 @@ const HomeIndex = () => {
 // justification for any of this work.
 export const Head = () => (
   <>
-    <title>
-      Free Australian Address Validation, Search and Autocomplete - Addressr by
-      Mountain Pass
-    </title>
+    <title>Australian address quality API - Addressr by Mountain Pass</title>
     <meta
       name="description"
-      content="Free Australian Address Validation, Search and Autocomplete"
+      content="Improve Australian address quality with hosted address search, autocomplete and validation built from official G-NAF data."
     />
+    <link rel="canonical" href="https://addressr.io/" />
+    <meta property="og:title" content="Australian address quality API - Addressr" />
+    <meta property="og:description" content="Hosted Australian address search, autocomplete and validation built from official G-NAF data." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://addressr.io/" />
   </>
 );
 

@@ -37,9 +37,7 @@
     "gatsby-transformer-sharp": "^5.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sass": "^1.67.0",
-    "swagger-ui": "^5.7.1",
-    "swagger-ui-react": "^5.7.1"
+    "sass": "^1.67.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
