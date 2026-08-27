@@ -212,11 +212,24 @@ p {
 }
 
 .autocomplete-example {
-  --addressr-error-color: #ff8080;
-  --addressr-focus-color: #{_palette(bg)};
-  --addressr-text-color: #{_palette(bg)};
+  --addressr-border-color: #{_palette(fg)};
+  --addressr-border-radius: 0;
+  --addressr-error-color: #ffb4a8;
+  --addressr-focus-color: #{_palette(highlight)};
+  --addressr-muted-color: #cfd8ff;
+  --addressr-text-color: #{_palette(fg)};
 
   min-width: 0;
+
+  input[role='combobox'] {
+    background-color: _palette(bg);
+    border-width: 2px;
+
+    &::placeholder {
+      color: #cfd8ff;
+      opacity: 1;
+    }
+  }
 
   [role='listbox'] {
     color: _palette(bg);
@@ -231,6 +244,44 @@ p {
   }
 }
 
-.autocomplete-selection {
-  margin: 0.75em 0 0;
+.autocomplete-details {
+  background: _palette(bg);
+  border: 1px solid _palette(fg);
+  margin-top: 1em;
+  padding: 1em;
+
+  h4 {
+    margin-bottom: 0.75em;
+  }
+
+  dl {
+    margin-bottom: 1em;
+  }
+
+  dt {
+    color: _palette(fg-bold);
+    font-weight: _font(weight-bold);
+  }
+
+  dd {
+    margin: 0 0 0.75em;
+    overflow-wrap: anywhere;
+  }
+}
+
+.address-lines {
+  font-weight: _font(weight-bold);
+  margin-bottom: 1em;
+}
+
+.address-map {
+  margin: 1em 0 0;
+
+  iframe {
+    border: 0;
+    display: block;
+    height: 20em;
+    margin-top: 0.5em;
+    width: 100%;
+  }
 }

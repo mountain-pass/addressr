@@ -67,6 +67,13 @@ variable "cloudflare_api_token" {
   description = "Cloudflare API token with Workers Scripts Edit + Workers Routes Edit + Workers Secrets Edit scopes on the addressr account/zone. Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_api_token (per reference_addressr_secrets)."
 }
 
+variable "cloudflare_pages_api_token" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  description = "ADR-060: Cloudflare API token limited to Pages Write on the Addressr account and DNS Write on the addressr.io zone. It must not have Workers permissions."
+}
+
 variable "cloudflare_account_id" {
   type        = string
   nullable    = false

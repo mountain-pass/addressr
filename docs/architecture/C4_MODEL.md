@@ -52,7 +52,7 @@ flowchart TB
     rapidapi["RapidAPI Gateway<br/>(auth, billing, rate limit)"]
     cfworker["Cloudflare Worker<br/>(API key proxy)"]
     uptimerobot["Uptime Robot<br/>(availability monitor)"]
-    netlify["addressr.io<br/>(Gatsby on Netlify)"]
+    pages["addressr.io<br/>(Gatsby on Cloudflare Pages)"]
     gnaf["G-NAF Dataset<br/>(data.gov.au)"]
   end
 
@@ -85,7 +85,7 @@ flowchart TB
   adapters --> core
   core -- RapidAPI clients --> rapidapi
   core -- addressr.io direct API --> cfworker
-  netlify -- React autocomplete --> adapters
+  pages -- React autocomplete --> adapters
   uptimerobot -- 5min checks --> cfworker
   cfworker -- x-rapidapi-key --> rapidapi
   rapidapi -- round-robin --> v2api

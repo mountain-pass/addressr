@@ -11,3 +11,10 @@ provider "aws" {
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
+
+# ADR-060 — least-privilege provider for the static website. This token has
+# Pages Write + DNS Write only and cannot mutate the API worker above.
+provider "cloudflare" {
+  alias     = "pages"
+  api_token = var.cloudflare_pages_api_token
+}

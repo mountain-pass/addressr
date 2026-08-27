@@ -21,6 +21,131 @@ import dataGovLogo from './Data-gov-au.jpg';
 
 const apiUrl = 'https://api.addressr.io/';
 
+const isPresent = (value) => value !== undefined && value !== null && value !== '';
+const joinParts = (...parts) => parts.filter(isPresent).join(' ');
+const formatNumber = (number) =>
+  number && joinParts(number.prefix, number.number, number.suffix);
+
+const DetailList = ({ items }) => (
+  <dl>
+    {items.filter(([, value]) => isPresent(value)).map(([label, value]) => (
+      <React.Fragment key={label}>
+        <dt>{label}</dt>
+        <dd>{value}</dd>
+      </React.Fragment>
+    ))}
+  </dl>
+);
+
+const AddressDetails = ({ address }) => {
+  const structured = address.structured;
+  const geocode =
+    address.geocoding?.geocodes.find((item) => item.default) ??
+    address.geocoding?.geocodes[0];
+  const latitude = Number(geocode?.latitude);
+  const longitude = Number(geocode?.longitude);
+  const hasMap = Number.isFinite(latitude) && Number.isFinite(longitude);
+  const mapOffset = 0.002;
+  const mapQuery = hasMap
+    ? new URLSearchParams({
+      bbox: [
+        longitude - mapOffset,
+        latitude - mapOffset,
+        longitude + mapOffset,
+        latitude + mapOffset,
+      ].join(','),
+      layer: 'mapnik',
+      marker: `${latitude},${longitude}`,
+    }).toString()
+    : '';
+  const mapUrl = hasMap
+    ? `https://www.openstreetmap.org/export/embed.html?${mapQuery}`
+    : '';
+  const mapLink = hasMap
+    ? `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=18/${latitude}/${longitude}`
+    : '';
+
+  return (
+    <div className="autocomplete-details">
+      <h4>Selected address</h4>
+      <div className="address-lines">
+        {address.mla.map((line) => <div key={line}>{line}</div>)}
+      </div>
+      <DetailList
+        items={[
+          ['Address ID', address.pid],
+          ['Building', structured.buildingName],
+          ['Lot', formatNumber(structured.lotNumber)],
+          ['Flat', structured.flat && joinParts(structured.flat.type?.name, formatNumber(structured.flat))],
+          ['Level', structured.level && joinParts(structured.level.type?.name, formatNumber(structured.level))],
+          ['Street number', joinParts(formatNumber(structured.number), formatNumber(structured.number?.last))],
+          ['Street', structured.street && joinParts(structured.street.name, structured.street.type?.name ?? structured.street.type?.code, structured.street.suffix?.name)],
+          ['Suburb or town', structured.locality?.name],
+          ['State or territory', joinParts(structured.state?.name, structured.state?.abbreviation && `(${structured.state.abbreviation})`)],
+          ['Postcode', structured.postcode],
+          ['Geocoding level', address.geocoding?.level?.name],
+          ['Latitude', hasMap ? latitude : undefined],
+          ['Longitude', hasMap ? longitude : undefined],
+          ['Geocode type', geocode?.type?.name],
+          ['Geocode reliability', geocode?.reliability?.name],
+        ]}
+      />
+      {hasMap && (
+        <figure className="address-map">
+          <figcaption>
+            <a href={mapLink}>View {address.sla} on OpenStreetMap</a>
+          </figcaption>
+          <iframe
+            title={`Map showing ${address.sla}`}
+            loading="lazy"
+            src={mapUrl}
+            tabIndex="-1"
+          />
+        </figure>
+      )}
+    </div>
+  );
+};
+
+const LocalityDetails = ({ locality }) => (
+  <div className="autocomplete-details">
+    <h4>Selected suburb or town</h4>
+    <DetailList
+      items={[
+        ['Name', locality.name],
+        ['Class', locality.class && joinParts(locality.class.name, `(${locality.class.code})`)],
+        ['State or territory', joinParts(locality.state.name, `(${locality.state.abbreviation})`)],
+        ['Postcode', locality.postcode],
+        ['Locality ID', locality.pid],
+      ]}
+    />
+  </div>
+);
+
+const PostcodeDetails = ({ postcode }) => (
+  <div className="autocomplete-details">
+    <h4>Selected postcode</h4>
+    <DetailList items={[["Postcode", postcode.postcode]]} />
+    {postcode.localities.length > 0 && (
+      <>
+        <h5>Suburbs and towns</h5>
+        <ul>
+          {postcode.localities.map((locality) => (
+            <li key={locality.name}>{locality.name}</li>
+          ))}
+        </ul>
+      </>
+    )}
+  </div>
+);
+
+const StateDetails = ({ state }) => (
+  <div className="autocomplete-details">
+    <h4>Selected state or territory</h4>
+    <DetailList items={[["Name", state.name], ["Abbreviation", state.abbreviation]]} />
+  </div>
+);
+
 const HomeIndex = () => {
   const [selectedAddress, setSelectedAddress] = useState();
   const [selectedLocality, setSelectedLocality] = useState();
@@ -59,14 +184,10 @@ const HomeIndex = () => {
                 apiUrl={apiUrl}
                 onSelect={(address) => {
                   setSelectedAddress(address);
-                  setSelectedMessage(`Selected address: ${address.sla}`);
+                  setSelectedMessage(`Address details shown for ${address.sla}`);
                 }}
               />
-              {selectedAddress && (
-                <p className="autocomplete-selection">
-                  <strong>Selected:</strong> {selectedAddress.sla}
-                </p>
-              )}
+              {selectedAddress && <AddressDetails address={selectedAddress} />}
             </div>
             <div className="autocomplete-example">
               <h3>Suburb and town search</h3>
@@ -75,17 +196,11 @@ const HomeIndex = () => {
                 onSelect={(locality) => {
                   setSelectedLocality(locality);
                   setSelectedMessage(
-                    `Selected suburb or town: ${locality.name}, ${locality.state.abbreviation} ${locality.postcode}`,
+                    `Suburb or town details shown for ${locality.name}, ${locality.state.abbreviation} ${locality.postcode}`,
                   );
                 }}
               />
-              {selectedLocality && (
-                <p className="autocomplete-selection">
-                  <strong>Selected:</strong> {selectedLocality.name},{' '}
-                  {selectedLocality.state.abbreviation}{' '}
-                  {selectedLocality.postcode}
-                </p>
-              )}
+              {selectedLocality && <LocalityDetails locality={selectedLocality} />}
             </div>
             <div className="autocomplete-example">
               <h3>Postcode search</h3>
@@ -93,18 +208,10 @@ const HomeIndex = () => {
                 apiUrl={apiUrl}
                 onSelect={(postcode) => {
                   setSelectedPostcode(postcode);
-                  setSelectedMessage(`Selected postcode: ${postcode.postcode}`);
+                  setSelectedMessage(`Postcode details shown for ${postcode.postcode}`);
                 }}
               />
-              {selectedPostcode && (
-                <p className="autocomplete-selection">
-                  <strong>Selected:</strong> {selectedPostcode.postcode}
-                  {selectedPostcode.localities.length > 0 &&
-                    ` — ${selectedPostcode.localities
-                      .map((locality) => locality.name)
-                      .join(', ')}`}
-                </p>
-              )}
+              {selectedPostcode && <PostcodeDetails postcode={selectedPostcode} />}
             </div>
             <div className="autocomplete-example">
               <h3>State and territory search</h3>
@@ -113,16 +220,11 @@ const HomeIndex = () => {
                 onSelect={(state) => {
                   setSelectedState(state);
                   setSelectedMessage(
-                    `Selected state or territory: ${state.name} (${state.abbreviation})`,
+                    `State or territory details shown for ${state.name} (${state.abbreviation})`,
                   );
                 }}
               />
-              {selectedState && (
-                <p className="autocomplete-selection">
-                  <strong>Selected:</strong>{' '}
-                  {`${selectedState.name} (${selectedState.abbreviation})`}
-                </p>
-              )}
+              {selectedState && <StateDetails state={selectedState} />}
             </div>
           </div>
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">

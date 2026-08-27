@@ -50,10 +50,23 @@ const mockAddressr = (page) =>
           sla: '1 TEST ST, SYDNEY NSW 2000',
           mla: ['1 TEST ST', 'SYDNEY NSW 2000'],
           structured: {
+            buildingName: 'TEST BUILDING',
+            number: { number: 1 },
+            street: { name: 'TEST', type: { code: 'ST', name: 'STREET' } },
             locality: { name: 'SYDNEY' },
             state: { name: 'New South Wales', abbreviation: 'NSW' },
             postcode: '2000',
             confidence: 1,
+          },
+          geocoding: {
+            level: { code: 'ADDRESS', name: 'ADDRESS' },
+            geocodes: [{
+              default: true,
+              type: { code: 'PC', name: 'PROPERTY CENTROID' },
+              reliability: { code: '2', name: 'WITHIN ADDRESS SITE' },
+              latitude: -33.8688,
+              longitude: 151.2093,
+            }],
           },
         },
       });
@@ -202,14 +215,32 @@ test.describe(
       await page.goto('/');
 
       const examples = [
-        ['Search Australian addresses', '1 test', 'Selected: 1 TEST ST, SYDNEY NSW 2000'],
-        ['Search Australian suburbs and towns', 'syd', 'Selected: SYDNEY, NSW 2000'],
-        ['Search Australian postcodes', '200', 'Selected: 2000 — SYDNEY'],
-        ['Search Australian states and territories', 'ns', 'Selected: New South Wales (NSW)'],
+        ['Search Australian addresses', '1 test', 'Selected address'],
+        ['Search Australian suburbs and towns', 'syd', 'Selected suburb or town'],
+        ['Search Australian postcodes', '200', 'Selected postcode'],
+        ['Search Australian states and territories', 'ns', 'Selected state or territory'],
       ];
 
-      for (const [name, query, selection] of examples) {
+      for (const [name, query, detailsHeading] of examples) {
         const input = page.getByRole('combobox', { name });
+        await expect
+          .poll(() =>
+            input.evaluate((element) => {
+              const style = getComputedStyle(element);
+              return [
+                style.color,
+                style.backgroundColor,
+                style.borderColor,
+                style.borderRadius,
+              ];
+            }),
+          )
+          .toEqual([
+            'rgb(255, 255, 255)',
+            'rgb(36, 41, 67)',
+            'rgb(255, 255, 255)',
+            '0px',
+          ]);
         await input.fill(query);
         let option = page.getByRole('option');
         await expect(option).toBeVisible();
@@ -223,7 +254,7 @@ test.describe(
               return [style.color, style.backgroundColor];
             }),
           )
-          .toEqual(['rgb(36, 41, 67)', 'rgb(255, 255, 255)']);
+          .toEqual(['rgb(255, 255, 255)', 'rgb(36, 41, 67)']);
         await expect
           .poll(() => input.getAttribute('aria-activedescendant'))
           .toBe(await option.getAttribute('id'));
@@ -247,7 +278,7 @@ test.describe(
             }),
           )
           .toEqual([
-            'rgb(36, 41, 67)',
+            'rgb(155, 241, 255)',
             'rgb(155, 241, 255) 0px 0px 0px 4px',
           ]);
 
@@ -260,11 +291,35 @@ test.describe(
         await expect(option).toHaveAttribute('aria-selected', 'true');
         await input.press('Enter');
         await expect(input).toBeFocused();
-        await expect(page.locator('.autocomplete-selection', { hasText: selection })).toBeVisible();
+        await expect(page.getByRole('heading', { name: detailsHeading })).toBeVisible();
       }
 
+      const addressDetails = page.locator('.autocomplete-details', {
+        has: page.getByRole('heading', { name: 'Selected address' }),
+      });
+      await expect(addressDetails).toContainText('TEST BUILDING');
+      await expect(addressDetails).toContainText('PROPERTY CENTROID');
+      const mapLink = addressDetails.getByRole('link', {
+        name: 'View 1 TEST ST, SYDNEY NSW 2000 on OpenStreetMap',
+      });
+      await expect(mapLink).toBeVisible();
+      const map = addressDetails.getByTitle('Map showing 1 TEST ST, SYDNEY NSW 2000');
+      await expect(map).toHaveAttribute('loading', 'lazy');
+      await expect(map).toHaveAttribute('tabindex', '-1');
+      await expect(map).toHaveAttribute('src', /openstreetmap\.org\/export\/embed\.html/);
+
+      await expect(page.locator('.autocomplete-details', { hasText: 'Selected suburb or town' })).toContainText('Locality ID');
+      await expect(page.locator('.autocomplete-details', { hasText: 'Selected postcode' })).toContainText('SYDNEY');
+      await expect(page.locator('.autocomplete-details', { hasText: 'Selected state or territory' })).toContainText('NSW');
+
+      await page.getByRole('combobox', { name: examples[0][0] }).focus();
+      await page.keyboard.press('Tab');
+      await expect(mapLink).toBeFocused();
+      await page.keyboard.press('Tab');
+      await expect(page.getByRole('combobox', { name: examples[1][0] })).toBeFocused();
+
       const inputs = examples.map(([name]) => page.getByRole('combobox', { name }));
-      for (let index = 0; index < inputs.length - 1; index += 1) {
+      for (let index = 1; index < inputs.length - 1; index += 1) {
         await inputs[index].focus();
         await page.keyboard.press('Tab');
         await expect(inputs[index + 1]).toBeFocused();

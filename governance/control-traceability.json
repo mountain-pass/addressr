@@ -236,7 +236,7 @@
     },
     {
       "control_id": "C-AR12-DEPLOYED-BUILD-SHA-VERIFY",
-      "description": "Verify release/prod service /health build SHA equals workflow commit SHA after deploy to prevent wrong-revision validation.",
+      "description": "Verify each deployed production surface reports the workflow commit SHA after deploy (`/health` for services and `/revision.txt` for the website) to prevent wrong-revision validation.",
       "risks": ["AR12", "AR15", "AR17", "R24"],
       "enforcement_locations": [
         ".github/workflows/release.yml",

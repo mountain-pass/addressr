@@ -45,14 +45,17 @@ const git = (cwd, ...args) =>
   execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 
 /** Run the detector in `cwd`; return { stdout, status }. */
-const detect = (cwd, before_) => {
+const detect = (cwd, before_, head = undefined, manifest = undefined) => {
   try {
     // Invoked DIRECTLY, not via `sh SCRIPT`, so a lost exec bit fails these
     // cases. Both call sites — release.yml and release-watch.sh — run it as a
     // bare path, which needs mode 100755; going through `sh` would pass
     // regardless and mask the loss. This repo lost a shebang to `eslint --fix`
     // once already.
-    const stdout = execFileSync(SCRIPT, [before_ ?? ''], {
+    const args = [before_ ?? ''];
+    if (head !== undefined || manifest !== undefined) args.push(head ?? 'HEAD');
+    if (manifest !== undefined) args.push(manifest);
+    const stdout = execFileSync(SCRIPT, args, {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -112,6 +115,40 @@ describe('detect-deployment-bump — the positive case', () => {
     const beforeSha = git(dir, 'rev-parse', 'HEAD');
     bump(dir, '1.0.1', ['fuzzy-pandas.md']);
     assert.equal(verdict(detect(dir, beforeSha)), 'changed=true');
+  });
+
+  it('ARMS the website manifest only when its version changed and a changeset was consumed', () => {
+    const dir = seed('website-arm', '1.0.0', ['website.md']);
+    mkdirSync(path.join(dir, 'apps', 'website'), { recursive: true });
+    writeFileSync(
+      path.join(dir, 'apps', 'website', 'package.json'),
+      JSON.stringify({ name: '@mountainpass/website', version: '1.0.0' }),
+    );
+    git(dir, 'add', '-A');
+    git(dir, 'commit', '-qm', 'add website');
+    const beforeSha = git(dir, 'rev-parse', 'HEAD');
+    writeFileSync(
+      path.join(dir, 'apps', 'website', 'package.json'),
+      JSON.stringify({ name: '@mountainpass/website', version: '1.0.1' }),
+    );
+    rmSync(path.join(dir, '.changeset', 'website.md'));
+    git(dir, 'add', '-A');
+    git(dir, 'commit', '-qm', 'chore: release');
+
+    assert.equal(
+      verdict(detect(dir, beforeSha, 'HEAD', 'apps/website/package.json')),
+      'changed=true',
+    );
+  });
+
+  it('DENIES when the requested manifest cannot be read', () => {
+    const dir = seed('missing-manifest', '1.0.0', ['website.md']);
+    const beforeSha = git(dir, 'rev-parse', 'HEAD');
+    bump(dir, '1.0.1', ['website.md']);
+    assert.equal(
+      verdict(detect(dir, beforeSha, 'HEAD', 'apps/website/package.json')),
+      'changed=false',
+    );
   });
 
   it('arms on a locally-run `changeset version` pushed direct to master', () => {
@@ -191,7 +228,10 @@ describe('detect-deployment-bump — the changeset-release branch shape', () => 
     // nothing and must be re-derived, not deleted.
     const dir = seed('trap-leg', '1.0.0', ['already-queued.md']);
     const pushedBase = git(dir, 'rev-parse', 'HEAD');
-    writeFileSync(path.join(dir, '.changeset', 'newly-pushed.md'), '---\n---\nnew\n');
+    writeFileSync(
+      path.join(dir, '.changeset', 'newly-pushed.md'),
+      '---\n---\nnew\n',
+    );
     git(dir, 'add', '-A');
     git(dir, 'commit', '-qm', 'feat: something, with a changeset');
     const pushedSha = git(dir, 'rev-parse', 'HEAD');
@@ -211,7 +251,10 @@ describe('detect-deployment-bump — the changeset-release branch shape', () => 
   it('answers about the PUSHED sha when given it, and DENIES', () => {
     const dir = seed('pushed-sha', '1.0.0', ['already-queued.md']);
     const pushedBase = git(dir, 'rev-parse', 'HEAD');
-    writeFileSync(path.join(dir, '.changeset', 'newly-pushed.md'), '---\n---\nnew\n');
+    writeFileSync(
+      path.join(dir, '.changeset', 'newly-pushed.md'),
+      '---\n---\nnew\n',
+    );
     git(dir, 'add', '-A');
     git(dir, 'commit', '-qm', 'feat: something, with a changeset');
     const pushedSha = git(dir, 'rev-parse', 'HEAD');
@@ -263,7 +306,10 @@ describe('detect-deployment-bump — the changesets-consumed conjunct', () => {
     // were ADDED and the deletions would vanish — denying silently.
     const dir = seed('mixed', '1.0.0', ['consumed.md']);
     const beforeSha = git(dir, 'rev-parse', 'HEAD');
-    writeFileSync(path.join(dir, '.changeset', 'new-one.md'), '---\n---\nnext\n');
+    writeFileSync(
+      path.join(dir, '.changeset', 'new-one.md'),
+      '---\n---\nnext\n',
+    );
     bump(dir, '1.0.1', ['consumed.md']);
     assert.equal(verdict(detect(dir, beforeSha)), 'changed=true');
   });
@@ -302,7 +348,9 @@ describe('detect-deployment-bump — fail closed (ADR-045 criterion 3)', () => {
     // VALUE comparison cannot: the HEAD-side read fails, so the script denies.
     const dir = seed('rename', '1.0.0', ['x.md']);
     const beforeSha = git(dir, 'rev-parse', 'HEAD');
-    mkdirSync(path.join(dir, 'apps', 'renamed-deployment'), { recursive: true });
+    mkdirSync(path.join(dir, 'apps', 'renamed-deployment'), {
+      recursive: true,
+    });
     git(dir, 'mv', MANIFEST, 'apps/renamed-deployment/package.json');
     rmSync(path.join(dir, '.changeset', 'x.md'));
     git(dir, 'add', '-A');
@@ -315,7 +363,9 @@ describe('detect-deployment-bump — fail closed (ADR-045 criterion 3)', () => {
     git(dir, 'rm', '-q', MANIFEST);
     git(dir, 'commit', '-qm', 'remove');
     const beforeSha = git(dir, 'rev-parse', 'HEAD');
-    mkdirSync(path.join(dir, 'apps', 'addressr-deployment'), { recursive: true });
+    mkdirSync(path.join(dir, 'apps', 'addressr-deployment'), {
+      recursive: true,
+    });
     bump(dir, '1.0.1', ['x.md']);
     assert.equal(verdict(detect(dir, beforeSha)), 'changed=false');
   });
@@ -356,7 +406,11 @@ describe('detect-deployment-bump — the stdout contract', () => {
     bump(dir, '1.0.1', ['x.md']);
     for (const arg of [beforeSha, '', 'not-a-sha']) {
       const lines = detect(dir, arg).stdout.split('\n').filter(Boolean);
-      assert.equal(lines.length, 1, `expected one line, got ${JSON.stringify(lines)}`);
+      assert.equal(
+        lines.length,
+        1,
+        `expected one line, got ${JSON.stringify(lines)}`,
+      );
       assert.match(lines[0], /^changed=(true|false)$/);
     }
   });

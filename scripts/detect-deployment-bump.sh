@@ -2,7 +2,7 @@
 # @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 #
 #
-# Decide whether this push arms a production Terraform apply. Prints exactly one
+# Decide whether this push arms a production deployment. Prints exactly one
 # line on stdout: `changed=true` or `changed=false`.
 #
 # ADR-045: an infrastructure change reaches production when the deployment
@@ -48,7 +48,7 @@
 
 set -u
 
-MANIFEST=apps/addressr-deployment/package.json
+MANIFEST="${3:-apps/addressr-deployment/package.json}"
 BEFORE="${1:-}"
 # The head-side ref. Defaults to HEAD, which is what the workflow wants — it
 # runs on the checked-out commit. `release-watch.sh` passes `origin/master`

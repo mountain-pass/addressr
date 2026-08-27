@@ -194,7 +194,7 @@ const untrackedPaths = () =>
     { cwd: REPO, encoding: 'utf8' },
   )
     .split('\n')
-    .filter(Boolean)
+    .filter((line) => line.startsWith('?? '))
     .map((line) => line.slice(3));
 
 /**
@@ -240,7 +240,9 @@ before(() => {
   harness.work = mkdtempSync(path.join(tmpdir(), 'planonly-'));
   harness.deployDir = path.join(harness.work, 'apps', 'addressr-deployment');
   mkdirSync(path.join(harness.work, 'apps'), { recursive: true });
-  mkdirSync(path.join(harness.work, 'packages', 'addressr'), { recursive: true });
+  mkdirSync(path.join(harness.work, 'packages', 'addressr'), {
+    recursive: true,
+  });
   copyTrackedInto(harness.deployDir);
   // The REAL manifest, not a fixture — this suite is about deploy.sh's control
   // flow, and a fake version would make the resolution it performs unrealistic.

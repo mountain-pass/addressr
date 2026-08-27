@@ -111,19 +111,11 @@ jobs:
   # resolved as a site-relative path by Gatsby's Link, a deleted route still
   # linked, or a credential inlined into a bundle. All three are asserted here.
   #
-  # NOT in `release`'s `needs`, deliberately. The website deploys via Netlify
-  # independently of this pipeline in phase 1. P123 records what happens when an
-  # unrelated job gates the release job.
-  #
-  # BUT `needs` IS NOT THE WHOLE GATE, and an earlier version of this comment
-  # said this failure reds the run "without blocking an API release" — false.
-  # release.yml triggers on `pull_request: ['*']`, so this job also runs as a
-  # check on the changesets release PR, and release-watch.sh's release-PR check
-  # loop default-denies those checks (exempting only `check-deps`) and exits 1
-  # at "Release PR checks did not pass" — before `gh pr merge`. A red here therefore CAN block a publish and a Terraform
-  # apply. The credential step below carries an `if:` that skips it on the
-  # release PR for exactly this reason; anything else added to this job needs
-  # the same consideration.
+  # ADR-060 makes this a prerequisite of the release job. The same workflow
+  # later rebuilds only when a consumed website changeset arms direct upload;
+  # this earlier job is the independent behavioural gate over emitted output.
+  # A red therefore blocks the release PR merge before either Terraform or the
+  # website can reach production.
   website-build:
     runs-on: ubuntu-latest
     steps:
@@ -276,7 +268,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/master'
-    needs: [build-and-test, engine-floor, workspace-packages]
+    needs: [build-and-test, engine-floor, website-build, workspace-packages]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -411,6 +403,14 @@ jobs:
           PUSHED: ${{ github.sha }}
         run: scripts/detect-deployment-bump.sh "$BEFORE" "$PUSHED" >> "$GITHUB_OUTPUT"
 
+      - name: Detect a website version bump
+        id: website-version
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          PUSHED: ${{ github.sha }}
+        run: scripts/detect-deployment-bump.sh "$BEFORE" "$PUSHED" apps/website/package.json >> "$GITHUB_OUTPUT"
+
       - name: Use the trusted-publishing toolchain
         run: |
           npm install --global npm@11.13.0
@@ -519,6 +519,7 @@ jobs:
           # the existing dashboard value (no rotation during the P042 cutover,
           # per ADR 032 Scope). Sourced via 1P Voder per reference_addressr_secrets.
           TF_VAR_cloudflare_api_token: ${{ secrets.TF_VAR_cloudflare_api_token }}
+          TF_VAR_cloudflare_pages_api_token: ${{ secrets.TF_VAR_cloudflare_pages_api_token }}
           TF_VAR_cloudflare_account_id: ${{ secrets.TF_VAR_cloudflare_account_id }}
           TF_VAR_cloudflare_zone_id: ${{ secrets.TF_VAR_cloudflare_zone_id }}
           TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
@@ -535,6 +536,7 @@ jobs:
             TF_VAR_proxy_auth_header
             TF_VAR_proxy_auth_value
             TF_VAR_cloudflare_api_token
+            TF_VAR_cloudflare_pages_api_token
             TF_VAR_cloudflare_account_id
             TF_VAR_cloudflare_zone_id
             TF_VAR_cloudflare_rapidapi_key
@@ -712,6 +714,51 @@ jobs:
           echo "top hit '$top_sla' (street-level, expected)"
 
           echo "Smoke tests passed."
+
+      # ADR-060: website delivery is a distinct release effect. A source push
+      # merely updates the changesets release PR; only the merge commit that
+      # consumes a website changeset changes the package version and enters
+      # these steps.
+      - name: Build website release
+        if: success() && steps.website-version.outputs.changed == 'true'
+        run: |
+          npm run build -w @mountainpass/website
+          printf '%s\n' "$GITHUB_SHA" > apps/website/public/revision.txt
+
+      - name: Deploy website to Cloudflare Pages
+        if: success() && steps.website-version.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.TF_VAR_cloudflare_account_id }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.TF_VAR_cloudflare_pages_api_token }}
+        run: >-
+          npx --no-install wrangler pages deploy apps/website/public
+          --project-name=addressr
+          --branch=master
+          --commit-hash="$GITHUB_SHA"
+          --commit-dirty=false
+
+      - name: Smoke test website production revision
+        if: success() && steps.website-version.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          for attempt in {1..30}; do
+            actual=$(curl -fsS "https://addressr.io/revision.txt?sha=$GITHUB_SHA" || true)
+            if [ "$actual" = "$GITHUB_SHA" ]; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "::error::addressr.io is not serving release $GITHUB_SHA (got '$actual')"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          for route in / /quick-start/ /pricing/ /api-docs/; do
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null "https://addressr.io$route?verify=$GITHUB_SHA"
+          done
+          curl -fsS --retry 3 --retry-delay 5 \
+            -H 'Referer: https://addressr.io/' \
+            'https://api.addressr.io/addresses?q=sydney' | jq -e 'length > 0' >/dev/null
 
       # TODO: RapidAPI OpenAPI spec sync is deferred — see ADR 023.
       # The REST provisioning API is defunct and the GitHub Action

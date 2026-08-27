@@ -156,6 +156,8 @@ const pushWatch = read('../../../scripts/push-and-watch.sh');
 // narrowing also did.
 const DEPLOY_GATE =
   "success() && (steps.release-effects.outputs.api-published == 'true' || steps.deployment-version.outputs.changed == 'true')";
+const WEBSITE_GATE =
+  "success() && steps.website-version.outputs.changed == 'true'";
 
 const releaseSteps = release.jobs.release.steps;
 const stepNamed = (name) => {
@@ -301,6 +303,7 @@ npx --no-install semver "$(npm --version)" -r '>=11.5.1'
     assert.deepStrictEqual(release.jobs.release.needs, [
       'build-and-test',
       'engine-floor',
+      'website-build',
       'workspace-packages',
     ]);
 
@@ -368,7 +371,10 @@ npx --no-install semver "$(npm --version)" -r '>=11.5.1'
     const touchesProduction = (step) =>
       /deploy:prod|TF_VAR_|backend\.addressr\.io/.test(stepBody(step));
     const unguarded = releaseSteps
-      .filter((s) => touchesProduction(s) && s.if !== DEPLOY_GATE)
+      .filter(
+        (s) =>
+          touchesProduction(s) && s.if !== DEPLOY_GATE && s.if !== WEBSITE_GATE,
+      )
       .map((s) => s.name ?? s.uses);
     assert.deepStrictEqual(
       unguarded,
@@ -395,6 +401,30 @@ npx --no-install semver "$(npm --version)" -r '>=11.5.1'
       />>\s*"\$GITHUB_OUTPUT"/,
       'the verdict must reach the step output the gate reads',
     );
+  });
+
+  it('gates build, direct upload, and exact-revision smoke on a consumed website changeset', () => {
+    const detector = stepNamed('Detect a website version bump');
+    assert.equal(detector.id, 'website-version');
+    assert.equal(detector.if, "github.event_name == 'push'");
+    assert.match(
+      detector.run,
+      /detect-deployment-bump\.sh"?\s+"\$BEFORE"\s+"\$PUSHED"\s+apps\/website\/package\.json/,
+    );
+
+    const gated = releaseSteps.filter((step) => step.if === WEBSITE_GATE);
+    assert.deepStrictEqual(
+      gated.map((step) => step.name),
+      [
+        'Build website release',
+        'Deploy website to Cloudflare Pages',
+        'Smoke test website production revision',
+      ],
+    );
+    assert.match(stepBody(gated[0]), /revision\.txt/);
+    assert.match(stepBody(gated[1]), /wrangler pages deploy/);
+    assert.match(stepBody(gated[2]), /addressr\.io\/revision\.txt/);
+    assert.match(stepBody(gated[2]), /api\.addressr\.io/);
   });
 
   it('scopes detection to push events (the non-push fail-closed leg)', () => {

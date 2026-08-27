@@ -1,15 +1,15 @@
 # Addressr Web Site
 
-## 🚀 Quick start
-    - [Documentation](https://www.gatsbyjs.com/docs/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
-    - [Tutorials](https://www.gatsbyjs.com/docs/tutorial/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
-    - [Guides](https://www.gatsbyjs.com/docs/how-to/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
-    - [API Reference](https://www.gatsbyjs.com/docs/api-reference/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
-    - [Plugin Library](https://www.gatsbyjs.com/plugins?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
-    - [Cheat Sheet](https://www.gatsbyjs.com/docs/cheat-sheet/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter-ts)
+## Local development
 
-## 🚀 Quick start (Netlify)
+From the repository root:
 
-Deploy this starter with one click on [Netlify](https://app.netlify.com/signup):
+```sh
+npm ci
+npm run start -w @mountainpass/website
+```
 
-[<img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" />](https://app.netlify.com/start/deploy?repository=https://github.com/gatsbyjs/gatsby-starter-minimal-ts)
+Production deploys are direct uploads to Cloudflare Pages from the changesets
+release workflow. A website changeset updates the release PR; merging that PR
+builds and deploys the site and verifies the exact merged revision at
+`https://addressr.io/revision.txt`.

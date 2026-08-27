@@ -708,6 +708,47 @@ module "cloudflare_worker" {
   rapidapi_key = var.cloudflare_rapidapi_key
 }
 
+# ADR-060 — persistent website hosting resources live in the existing
+# production state because addressr.io and api.addressr.io share one zone.
+# Website assets are uploaded separately by release.yml with Wrangler; omitting
+# `source` is what keeps this a Direct Upload project with no git integration.
+resource "cloudflare_pages_project" "website" {
+  provider = cloudflare.pages
+
+  account_id        = var.cloudflare_account_id
+  name              = "addressr"
+  production_branch = "master"
+}
+
+resource "cloudflare_pages_domain" "website" {
+  provider = cloudflare.pages
+
+  account_id   = var.cloudflare_account_id
+  project_name = cloudflare_pages_project.website.name
+  name         = "addressr.io"
+}
+
+# Adopt the existing apex record through the release-PR plan/apply. Terraform
+# then performs the Netlify-to-Pages target change in place instead of trying to
+# create a duplicate production record.
+resource "cloudflare_dns_record" "website_apex" {
+  provider = cloudflare.pages
+
+  depends_on = [cloudflare_pages_domain.website]
+
+  zone_id = var.cloudflare_zone_id
+  name    = "addressr.io"
+  type    = "CNAME"
+  content = "${cloudflare_pages_project.website.name}.pages.dev"
+  ttl     = 1
+  proxied = true
+}
+
+import {
+  to = cloudflare_dns_record.website_apex
+  id = "${var.cloudflare_zone_id}/7996e1b39da5b6473cd6b4ace99d8fd9"
+}
+
 # ADR 029 Stage 0d: search-parity dashboard. Built to compare two domains during
 # a migration overlap, and it has served three: v1-vs-v2, v2-vs-v3, and most
 # recently v3-vs-v4 for the ADR 041 analyzer migration. It is SINGLE-DOMAIN again

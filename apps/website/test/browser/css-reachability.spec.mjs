@@ -17,7 +17,16 @@ const selectedAddress = {
     state: { name: 'NEW SOUTH WALES' },
     street: { name: 'TEST', type: { code: 'ST' } },
   },
-  geocoding: { level: { name: 'ADDRESS' }, geocodes: [] },
+  geocoding: {
+    level: { name: 'ADDRESS' },
+    geocodes: [{
+      default: true,
+      type: { name: 'PROPERTY CENTROID' },
+      reliability: { name: 'WITHIN ADDRESS SITE' },
+      latitude: -33.8688,
+      longitude: 151.2093,
+    }],
+  },
 };
 
 test('site CSS reaches emitted markup in both directions across hydrated states', async ({ page }) => {
@@ -87,7 +96,7 @@ test('site CSS reaches emitted markup in both directions across hydrated states'
     await page.keyboard.press('ArrowDown');
     pages.push(['/ suggestions highlighted', await page.content()]);
     await page.keyboard.press('Enter');
-    await page.getByText('Selected: 1 TEST ST, SYDNEY NSW 2000').waitFor();
+    await page.getByRole('heading', { name: 'Selected address' }).waitFor();
     pages.push(['/ address selected', await page.content()]);
 
     const locality = page.getByRole('combobox', {

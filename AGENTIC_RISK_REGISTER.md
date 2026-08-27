@@ -136,7 +136,7 @@ Boundary rule:
 - Release readiness gate (`.github/workflows/release.yml` + `.github/workflows/release.yml`)
 - Publish single-flight serialization (`concurrency` in `.github/workflows/release.yml`)
 - Immutable artifact promotion (single image digest deployed to release and prod in `.github/workflows/release.yml`)
-- Deployed SHA verification via `/health` on release/prod before promotion (`.github/workflows/release.yml`)
+- Deployed SHA verification via `/health` for services and `/revision.txt` for the production website (`.github/workflows/release.yml`)
 - Parallel check fanout gate in `release` (independent checks run concurrently before build/release steps)
 - In-flight pipeline gate (`scripts/inflight-pipeline-gate.ts` via `.githooks/pre-push`)
 - App correctness unit-test gate (`npm run test`) in both pipelines
