@@ -422,7 +422,7 @@ npx --no-install semver "$(npm --version)" -r '>=11.5.1'
       ],
     );
     assert.match(stepBody(gated[0]), /revision\.txt/);
-    assert.match(stepBody(gated[1]), /wrangler pages deploy/);
+    assert.match(stepBody(gated[1]), /wrangler pages deploy \.\.\/website\/public/);
     assert.match(stepBody(gated[2]), /addressr\.io\/revision\.txt/);
     assert.match(stepBody(gated[2]), /api\.addressr\.io/);
   });

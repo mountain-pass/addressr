@@ -731,7 +731,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.TF_VAR_cloudflare_account_id }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.TF_VAR_cloudflare_pages_api_token }}
         run: >-
-          npm exec -w @mountainpass/addressr-deployment -- wrangler pages deploy apps/website/public
+          npm exec -w @mountainpass/addressr-deployment -- wrangler pages deploy ../website/public
           --project-name=addressr
           --branch=master
           --commit-hash="$GITHUB_SHA"
