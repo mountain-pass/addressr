@@ -133,6 +133,7 @@ test.describe(
       page,
     }) => {
       await page.goto('/');
+      await expect(page.locator('.body')).not.toHaveClass(/is-loading/);
 
       const opener = page.getByRole('button', { name: 'Menu', exact: true });
       const menu = page.locator('nav#menu');
@@ -187,6 +188,7 @@ test.describe(
       page,
     }) => {
       await page.goto('/');
+      await expect(page.locator('.body')).not.toHaveClass(/is-loading/);
 
       const opener = page.getByRole('button', { name: 'Menu', exact: true });
       await opener.focus();
