@@ -1,5 +1,12 @@
 # @mountainpass/website
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [3061317]
+  - @mountainpass/addressr-react@0.7.3
+
 ## 1.0.2
 
 ### Patch Changes

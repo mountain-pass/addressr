@@ -1,5 +1,11 @@
 # @mountainpass/addressr-react
 
+## 0.7.3
+
+### Patch Changes
+
+- 3061317: Make every React autocomplete expose native and visible required state, keep custom errors associated with their input, and announce debounced searches and pagination without premature or contradictory no-results messages.
+
 ## 0.7.2
 
 ### Patch Changes

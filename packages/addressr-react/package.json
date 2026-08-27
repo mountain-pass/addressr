@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-react",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "React address autocomplete component for Australian address search via Addressr",
   "author": {
     "name": "Mountain Pass",
