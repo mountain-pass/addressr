@@ -1,6 +1,6 @@
-# @mountainpass/addressr-deployment
+# @mountainpass/website
 
-## 1.0.3
+## 1.0.1
 
 ### Patch Changes
 
@@ -12,16 +12,5 @@
 
   Move website production delivery from Netlify's push integration to a changeset-gated Cloudflare Pages direct upload, with an exact-release revision check before the deployment is accepted.
 
-## 1.0.2
-
-### Patch Changes
-
-- Updated dependencies [635084c]
-  - @mountainpass/addressr@3.3.2
-
-## 1.0.1
-
-### Patch Changes
-
-- Updated dependencies [33d06d5]
-  - @mountainpass/addressr@3.3.1
+- Updated dependencies [1b9f160]
+  - @mountainpass/addressr-react@0.7.2
