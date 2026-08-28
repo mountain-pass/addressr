@@ -635,6 +635,33 @@ describe('apps/website rendered output', () => {
     });
   });
 
+  describe('the Addressr account route has an accessible static shell', () => {
+    it('emits the account route with its unique title and heading', () => {
+      const $ = load(read('account/index.html'));
+      assert.equal($('title').text().trim(), 'Account and billing - Addressr');
+      assert.equal($('h1').text().trim(), 'Account and billing');
+      assert.equal($('h1').length, 1);
+      assert.equal(
+        $('link[rel="canonical"]').attr('href'),
+        'https://app.addressr.io/account/',
+      );
+    });
+
+    it('keeps announcement targets mounted without emitting an API key', () => {
+      const $ = load(read('account/index.html'));
+      assert.equal($('[role="status"][aria-live="polite"]').length, 1);
+      assert.equal($('[role="alert"]').length, 1);
+      assert.doesNotMatch($.html(), /addr_[A-Za-z0-9]{12}_[A-Za-z0-9_-]{32}/);
+    });
+
+    it('resolves the static account section heading reference', () => {
+      const $ = load(read('account/index.html'));
+      const reference = $('section[aria-labelledby]').attr('aria-labelledby');
+      assert.equal(reference, 'account-loading-title');
+      assert.equal($(`#${reference}`).text().trim(), 'Account management');
+    });
+  });
+
   describe('no credential reaches the browser (JTBD-401)', () => {
     it('emits no Slack webhook URL in any built asset', () => {
       // THE HALF THAT ACTUALLY MATTERED in 2019. The exposed webhook was a

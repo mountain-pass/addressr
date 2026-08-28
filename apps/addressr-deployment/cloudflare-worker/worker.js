@@ -30,12 +30,65 @@
 // smoke probe in the same changeset.
 
 import { ipInList } from './ip-matcher.mjs';
+import { handleManagedRequest, isManagedRequest } from './managed-account.mjs';
 import { safeHosts, safeIps } from './safe-ips.mjs';
+import {
+  authorizeCustomer,
+  chooseOrigin,
+  customerKeyFrom,
+  directOriginRequest,
+  isManagedConfigAvailable,
+  managedOrigins,
+  reserveUsage,
+  settleUsage,
+  throttleCustomerAbuse,
+  unavailable,
+} from './customer-channel.mjs';
+import { runMeterOperations } from './stripe-channel.mjs';
 
 const UPSTREAM_HOST = 'addressr.p.rapidapi.com';
 
 export default {
   async fetch(request, environment) {
+    if (isManagedRequest(request)) {
+      return handleManagedRequest(request, environment);
+    }
+
+    if (customerKeyFrom(request)) {
+      if (!isManagedConfigAvailable(environment)) {
+        return unavailable('managed_channel_not_configured').response;
+      }
+
+      const throttle = await throttleCustomerAbuse(request, environment);
+      if (throttle) return throttle;
+
+      const customer = await authorizeCustomer(request, environment);
+      if (customer.kind === 'rejected') return customer.response;
+
+      const usage = await reserveUsage(environment, customer, request);
+      if (!usage.ok) return usage.response;
+
+      const origin = chooseOrigin(request, managedOrigins(environment));
+      const originRequest = directOriginRequest(request, environment, origin);
+
+      let response;
+      try {
+        response = await fetch(originRequest);
+      } catch {
+        if (!(await settleUsage(environment, usage.id, 599))) {
+          return unavailable('usage_store_unavailable').response;
+        }
+        return Response.json({ error: 'origin_unavailable' }, { status: 502 });
+      }
+
+      if (!(await settleUsage(environment, usage.id, response.status))) {
+        return unavailable('usage_store_unavailable').response;
+      }
+
+      logPrincipal('customer', request, response.status);
+      return copyResponse(response);
+    }
+
     if (!environment || !environment.RAPIDAPI_KEY) {
       return new Response('RAPIDAPI_KEY not configured', { status: 500 });
     }
@@ -59,6 +112,33 @@ export default {
       );
     }
 
+    const principal = ipOk ? 'monitor' : 'demo';
+    const limiter = ipOk
+      ? environment.MONITOR_RATE_LIMITER
+      : environment.DEMO_RATE_LIMITER;
+    if (!limiter) {
+      return Response.json(
+        { error: `${principal}_limit_not_configured` },
+        { status: 503 },
+      );
+    }
+    try {
+      const allowed = await limiter.limit({
+        key: sourceIp || orgHost || referenceHost || principal,
+      });
+      if (!allowed?.success) {
+        return Response.json(
+          { error: `${principal}_rate_limited` },
+          { status: 429, headers: { 'Retry-After': '60' } },
+        );
+      }
+    } catch {
+      return Response.json(
+        { error: `${principal}_limit_unavailable` },
+        { status: 503 },
+      );
+    }
+
     const url = new URL(request.url);
     url.hostname = UPSTREAM_HOST;
 
@@ -68,11 +148,8 @@ export default {
 
     try {
       const response = await fetch(upstreamRequest);
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: new Headers(response.headers),
-      });
+      logPrincipal(principal, request, response.status);
+      return copyResponse(response);
     } catch (error) {
       return Response.json(
         { error: error.message },
@@ -82,7 +159,19 @@ export default {
       );
     }
   },
+
+  async scheduled(_controller, environment, context) {
+    context.waitUntil(runMeterOperations(environment));
+  },
 };
+
+function copyResponse(response) {
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: new Headers(response.headers),
+  });
+}
 
 function safeUrlHost(value) {
   try {
@@ -90,4 +179,15 @@ function safeUrlHost(value) {
   } catch {
     return;
   }
+}
+
+function logPrincipal(principal, request, status) {
+  console.log(
+    JSON.stringify({
+      principal,
+      method: request.method,
+      path: new URL(request.url).pathname,
+      status,
+    }),
+  );
 }

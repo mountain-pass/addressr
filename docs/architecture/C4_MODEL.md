@@ -5,7 +5,7 @@ This repo uses a hybrid C4 approach:
 - C1/C2 are curated for intent and business context.
 - C3/C4 are hand-curated (the C4 generator supports TypeScript only; addressr is JavaScript).
 
-See ADRs 001-018 in `docs/decisions/` for the full decision context behind this architecture.
+See `docs/decisions/README.md` for the decision context behind this architecture.
 
 ## C1: System Context
 
@@ -14,9 +14,12 @@ flowchart LR
   apiconsumer[API Consumer]
   mcpconsumer[AI Assistant / MCP Client]
   uiconsumer[React, Svelte, or Vue Application]
-  website[addressr.io]
+  website[addressr.io + app.addressr.io]
   uptimerobot[Uptime Robot]
   cfworker[CF Worker]
+  d1[Cloudflare D1]
+  clerk[Clerk]
+  stripe[Stripe]
   rapidapi[RapidAPI]
   addressr[Addressr API]
   opensearch[OpenSearch]
@@ -24,7 +27,9 @@ flowchart LR
   selfhosted[Self-hosted]
   selfos[Own OpenSearch]
 
-  apiconsumer -- API calls --> rapidapi
+  apiconsumer -- RapidAPI subscription --> rapidapi
+  apiconsumer -- Addressr API key --> cfworker
+  apiconsumer -- account and organisation --> website
   mcpconsumer -- MCP tools --> addressrMcp[Addressr MCP Server]
   addressrMcp -- HATEOAS API calls --> rapidapi
   uiconsumer -- Addressr UI SDK --> rapidapi
@@ -33,6 +38,12 @@ flowchart LR
   addressrCore -- Direct API call --> cfworker
   uptimerobot -- 5 min check --> cfworker
   cfworker -- API key --> rapidapi
+  cfworker -- managed entitlement and quota --> d1
+  website -- sign-in and active organisation --> clerk
+  website -- account actions --> cfworker
+  cfworker -- checkout, portal, meter events --> stripe
+  stripe -- signed subscription webhooks --> cfworker
+  cfworker -- managed request --> addressr
   rapidapi -- round-robin --> addressr
   addressr -- search --> opensearch
   gnaf -- CSV --> addressr
@@ -51,18 +62,20 @@ flowchart TB
   subgraph external["External Services"]
     rapidapi["RapidAPI Gateway<br/>(auth, billing, rate limit)"]
     cfworker["Cloudflare Worker<br/>(API key proxy)"]
+    d1["Cloudflare D1<br/>(organisations, entitlements,<br/>API-key hashes, usage)"]
     uptimerobot["Uptime Robot<br/>(availability monitor)"]
-    pages["addressr.io<br/>(Gatsby on Cloudflare Pages)"]
+    pages["addressr.io + app.addressr.io<br/>(Gatsby on Cloudflare Pages)"]
+    clerk["Clerk<br/>(identity and organisations)"]
+    stripe["Stripe<br/>(hosted billing and usage meter)"]
     gnaf["G-NAF Dataset<br/>(data.gov.au)"]
   end
 
   subgraph aws["AWS ap-southeast-2"]
     subgraph eb["Elastic Beanstalk<br/>(2-4x t2/t3.nano, Spot)"]
-      v2api["addressr-server-2<br/>(v2 HATEOAS API)<br/>WayCharter + Express"]
-      v1api["addressr-server<br/>(v1 Swagger API)<br/>packaged but not deployed"]
+      v2api["addressr-server-2<br/>(HATEOAS API)<br/>WayCharter + Express"]
     end
     loader_aws["addressr-loader<br/>(G-NAF pipeline)"]
-    opensearch["AWS OpenSearch 1.3<br/>(addressr3 domain)<br/>t3.small.search x2"]
+    opensearch["AWS OpenSearch 3.5<br/>(addressr6 domain)<br/>m6g.large.search x2"]
   end
 
   subgraph selfhost["Self-hosted Consumer"]
@@ -78,7 +91,9 @@ flowchart TB
     adapters["React / Svelte / Vue adapters<br/>(accessible comboboxes)"]
   end
 
-  apiconsumer -- API calls --> rapidapi
+  apiconsumer -- RapidAPI subscription --> rapidapi
+  apiconsumer -- Addressr API key --> cfworker
+  apiconsumer -- account and billing UI --> pages
   mcpconsumer -- stdio --> mcp
   mcp -- HTTPS --> rapidapi
   uiconsumer --> adapters
@@ -86,8 +101,14 @@ flowchart TB
   core -- RapidAPI clients --> rapidapi
   core -- addressr.io direct API --> cfworker
   pages -- React autocomplete --> adapters
+  pages -- Clerk session and organisation --> clerk
+  pages -- managed account API --> cfworker
   uptimerobot -- 5min checks --> cfworker
   cfworker -- x-rapidapi-key --> rapidapi
+  cfworker -- authorise and reserve quota --> d1
+  cfworker -- checkout, portal and meter batches --> stripe
+  stripe -- signed object-current webhooks --> cfworker
+  cfworker -- managed request + origin secret --> v2api
   rapidapi -- round-robin --> v2api
   v2api -- search, get --> opensearch
   loader_aws -- bulk index --> opensearch
@@ -100,35 +121,64 @@ flowchart TB
 
 ## C3: Component View
 
+### Managed customer channel
+
+```mermaid
+flowchart LR
+  account["account.jsx<br/>(account, billing, API keys)"]
+  managed["managed-account.mjs<br/>(Clerk session and org authorization)"]
+  customer["customer-channel.mjs<br/>(API-key auth, abuse, quota, origin)"]
+  stripeChannel["stripe-channel.mjs<br/>(Checkout, portal, webhooks,<br/>meter batches and reconciliation)"]
+  worker["worker.js<br/>(principal routing and scheduled work)"]
+  customerLimiter["Customer Rate Limiter<br/>(abuse protection only)"]
+  demoLimiter["Website-demo Rate Limiter"]
+  monitorLimiter["Monitoring Rate Limiter"]
+  d1["Cloudflare D1<br/>(commercial source of truth)"]
+  clerk[Clerk]
+  stripe[Stripe]
+  origin["Direct Addressr origin"]
+
+  account --> clerk
+  account --> managed
+  worker --> managed
+  worker --> customer
+  worker --> stripeChannel
+  worker --> demoLimiter
+  worker --> monitorLimiter
+  managed --> clerk
+  managed --> d1
+  managed --> stripeChannel
+  customer --> customerLimiter
+  customer --> d1
+  customer --> origin
+  stripeChannel --> stripe
+  stripeChannel --> d1
+```
+
 ```mermaid
 flowchart TB
-  subgraph api["v2 API Server (src/)"]
+  subgraph api["API Server (packages/addressr/src/)"]
     server2["server2.js<br/>(entry point)"]
-    waycharter["waycharterServer.js<br/>(HATEOAS routes)"]
+    waycharter["waycharter-server.js<br/>(HATEOAS routes)"]
   end
 
-  subgraph service["Service Layer (service/)"]
+  subgraph service["Service Layer (packages/addressr/service/)"]
     addressService["address-service.js<br/>(search, get, load, index)"]
-    defaultService["DefaultService.js<br/>(swagger controller)"]
-    printVersion["printVersion.js"]
-    setLinkOptions["setLinkOptions.js"]
+    defaultService["DefaultService.js<br/>(root link service)"]
+    printVersion["print-version.js"]
+    setLinkOptions["set-link-options.js"]
   end
 
-  subgraph client["Client Layer (client/)"]
+  subgraph client["Client Layer (packages/addressr/client/)"]
     esClient["elasticsearch.js<br/>(OpenSearch connection,<br/>custom analyzers,<br/>bulk indexing)"]
   end
 
   subgraph data["Data Pipeline"]
-    loaderBin["bin/addressr-loader.js"]
-    streamDown["utils/stream-down.js<br/>(HTTP download)"]
+    loaderBin["packages/addressr/bin/addressr-loader.js"]
+    streamDown["packages/addressr/utils/stream-down.js<br/>(HTTP download)"]
   end
 
-  subgraph swagger["v1 API Server"]
-    serverV1["server.js<br/>(entry point)"]
-    swaggerDef["swagger.js<br/>(swagger-tools middleware)"]
-  end
-
-  opensearch["OpenSearch 1.3"]
+  opensearch["OpenSearch 3.5"]
 
   subgraph clients["Imported Client Packages"]
     mcpServer["addressr-mcp/src/server.mjs<br/>(MCP tools + HATEOAS traversal)"]
@@ -142,8 +192,7 @@ flowchart TB
 
   server2 --> waycharter
   waycharter --> addressService
-  serverV1 --> swaggerDef
-  swaggerDef --> defaultService
+  waycharter --> defaultService
   defaultService --> addressService
   addressService --> esClient
   loaderBin --> addressService
@@ -158,15 +207,15 @@ flowchart TB
 
 ## C4: Code View
 
-### v2 API (production path)
+### API (production path)
 
 ```mermaid
 flowchart LR
-  server2["src/server2.js"]
-  waycharter["src/waycharterServer.js"]
-  addressSvc["service/address-service.js"]
-  esClient["client/elasticsearch.js"]
-  version["version.js"]
+  server2["packages/addressr/src/server2.js"]
+  waycharter["packages/addressr/src/waycharter-server.js"]
+  addressSvc["packages/addressr/service/address-service.js"]
+  esClient["packages/addressr/client/elasticsearch.js"]
+  version["packages/addressr/version.js"]
 
   server2 --> waycharter
   server2 --> esClient
@@ -179,46 +228,30 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  loader["loader.js"]
-  addressSvc["service/address-service.js"]
-  esClient["client/elasticsearch.js"]
-  streamDown["utils/stream-down.js"]
+  loader["packages/addressr/loader.js"]
+  addressSvc["packages/addressr/service/address-service.js"]
+  esClient["packages/addressr/client/elasticsearch.js"]
+  streamDown["packages/addressr/utils/stream-down.js"]
 
   loader --> addressSvc
   addressSvc --> esClient
   addressSvc --> streamDown
 ```
 
-### v1 API (packaged, not deployed)
-
-```mermaid
-flowchart LR
-  server["server.js"]
-  swagger["swagger.js"]
-  defaultSvc["service/DefaultService.js"]
-  addressSvc["service/address-service.js"]
-  esClient["client/elasticsearch.js"]
-
-  server --> swagger
-  swagger --> defaultSvc
-  defaultSvc --> addressSvc
-  addressSvc --> esClient
-```
-
 ### MCP and UI packages
 
 ```mermaid
 flowchart LR
-  mcpBin["addressr-mcp/bin/addressr-mcp.mjs"] --> mcpServer["addressr-mcp/src/server.mjs"]
+  mcpBin["packages/addressr-mcp/bin/addressr-mcp.mjs"] --> mcpServer["packages/addressr-mcp/src/server.mjs"]
   mcpServer --> rapidapi["RapidAPI Link-driven API"]
 
-  coreIndex["addressr-core/src/index.ts"] --> coreApi["addressr-core/src/api.ts"]
+  coreIndex["packages/addressr-core/src/index.ts"] --> coreApi["packages/addressr-core/src/api.ts"]
   coreApi --> rapidapi
 
-  reactHooks["addressr-react/src/hooks/useSearch.ts"] --> coreIndex
-  reactComponents["addressr-react/src/components/*Autocomplete.tsx"] --> reactHooks
-  svelteStores["addressr-svelte/src/createSearch.ts"] --> coreIndex
-  svelteComponents["addressr-svelte/src/*Autocomplete.svelte"] --> svelteStores
-  vueComposables["addressr-vue/src/useSearch.ts"] --> coreIndex
-  vueComponents["addressr-vue/src/*Autocomplete.vue"] --> vueComposables
+  reactHooks["packages/addressr-react/src/hooks/useSearch.ts"] --> coreIndex
+  reactComponents["packages/addressr-react/src/components/*Autocomplete.tsx"] --> reactHooks
+  svelteStores["packages/addressr-svelte/src/createSearch.ts"] --> coreIndex
+  svelteComponents["packages/addressr-svelte/src/*Autocomplete.svelte"] --> svelteStores
+  vueComposables["packages/addressr-vue/src/useSearch.ts"] --> coreIndex
+  vueComponents["packages/addressr-vue/src/*Autocomplete.vue"] --> vueComposables
 ```

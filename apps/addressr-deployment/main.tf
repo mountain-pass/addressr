@@ -696,6 +696,24 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   }
 }
 
+# ADR-064 — local commercial state for the Addressr-managed channel. The
+# Oceania primary keeps authoritative request-time writes near the launch
+# traffic measured by ADR-077; activation still depends on its measured gate.
+resource "cloudflare_d1_database" "managed_channel" {
+  account_id            = var.cloudflare_account_id
+  name                  = "addressr-managed-channel"
+  primary_location_hint = "oc"
+
+  read_replication = {
+    mode = "disabled"
+  }
+}
+
+output "managed_channel_d1_id" {
+  value       = cloudflare_d1_database.managed_channel.id
+  description = "D1 database identifier used by deploy.sh to apply versioned managed-channel migrations."
+}
+
 # ADR 032 / P042 — Cloudflare Worker as API key proxy, brought under Terraform.
 # Worker source lives in deploy/cloudflare-worker/. Cutover via `terraform import`
 # of the existing dashboard-managed worker (script + route) — see ADR 032
@@ -706,6 +724,27 @@ module "cloudflare_worker" {
   account_id   = var.cloudflare_account_id
   zone_id      = var.cloudflare_zone_id
   rapidapi_key = var.cloudflare_rapidapi_key
+
+  customer_database_id             = cloudflare_d1_database.managed_channel.id
+  customer_rate_limit_namespace_id = var.customer_rate_limit_namespace_id
+  customer_rate_limit              = var.customer_rate_limit
+  demo_rate_limit_namespace_id     = var.demo_rate_limit_namespace_id
+  demo_rate_limit                  = var.demo_rate_limit
+  monitor_rate_limit_namespace_id  = var.monitor_rate_limit_namespace_id
+  monitor_rate_limit               = var.monitor_rate_limit
+  managed_origin_urls              = var.managed_origin_urls
+  origin_auth_header               = var.proxy_auth_header
+  origin_auth_value                = var.proxy_auth_value
+  billable_statuses                = var.managed_billable_statuses
+  clerk_publishable_key            = var.clerk_publishable_key
+  clerk_jwt_key                    = var.clerk_jwt_key
+  stripe_secret_key                = var.stripe_secret_key
+  stripe_webhook_secret            = var.stripe_webhook_secret
+  stripe_plan_catalogue            = var.stripe_plan_catalogue
+  stripe_payment_method_types      = var.stripe_payment_method_types
+  stripe_meter_event_name          = var.stripe_meter_event_name
+  stripe_meter_id                  = var.stripe_meter_id
+  managed_app_url                  = var.managed_app_url
 }
 
 # ADR-060 — persistent website hosting resources live in the existing
@@ -728,6 +767,14 @@ resource "cloudflare_pages_domain" "website" {
   name         = "addressr.io"
 }
 
+resource "cloudflare_pages_domain" "website_app" {
+  provider = cloudflare.pages
+
+  account_id   = var.cloudflare_account_id
+  project_name = cloudflare_pages_project.website.name
+  name         = "app.addressr.io"
+}
+
 # Adopt the existing apex record through the release-PR plan/apply. Terraform
 # then performs the Netlify-to-Pages target change in place instead of trying to
 # create a duplicate production record.
@@ -738,6 +785,19 @@ resource "cloudflare_dns_record" "website_apex" {
 
   zone_id = var.cloudflare_zone_id
   name    = "addressr.io"
+  type    = "CNAME"
+  content = "${cloudflare_pages_project.website.name}.pages.dev"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "website_app" {
+  provider = cloudflare.pages
+
+  depends_on = [cloudflare_pages_domain.website_app]
+
+  zone_id = var.cloudflare_zone_id
+  name    = "app.addressr.io"
   type    = "CNAME"
   content = "${cloudflare_pages_project.website.name}.pages.dev"
   ttl     = 1

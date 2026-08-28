@@ -23,6 +23,129 @@ variable "rapidapi_key" {
   description = "RapidAPI key injected by the worker as the x-rapidapi-key header. Sourced from var.cloudflare_rapidapi_key at the root (1P Voder → GHA secret TF_VAR_cloudflare_rapidapi_key). Replaces the prior hardcoded value in the dashboard worker source (ADR 018 line 48 Bad consequence)."
 }
 
+variable "customer_database_id" {
+  type        = string
+  nullable    = false
+  description = "ADR-064 D1 database bound to the Worker as CUSTOMER_DB."
+}
+
+variable "customer_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  description = "Cloudflare-local ADR-065 abuse-counter namespace, separate from D1 commercial accounting."
+}
+
+variable "customer_rate_limit" {
+  type        = number
+  nullable    = false
+  description = "Maximum customer-channel requests per source and Cloudflare location per minute."
+}
+
+variable "demo_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  description = "ADR-074 namespace for public website-demo traffic."
+}
+
+variable "demo_rate_limit" {
+  type        = number
+  nullable    = false
+  description = "Maximum website-demo requests per source and Cloudflare location per minute."
+}
+
+variable "monitor_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  description = "ADR-074 namespace for availability-monitor traffic."
+}
+
+variable "monitor_rate_limit" {
+  type        = number
+  nullable    = false
+  description = "Maximum monitoring requests per source and Cloudflare location per minute."
+}
+
+variable "managed_origin_urls" {
+  type        = list(string)
+  sensitive   = true
+  nullable    = false
+  description = "ADR-073 direct origin base URLs. Kept out of source and supplied through the production workspace."
+}
+
+variable "origin_auth_header" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  description = "ADR-024 shared origin-auth header name injected only after customer authentication."
+}
+
+variable "origin_auth_value" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  description = "ADR-024 shared origin-auth value injected only after customer authentication."
+}
+
+variable "billable_statuses" {
+  type        = set(number)
+  sensitive   = true
+  nullable    = false
+  description = "ADR-072 origin HTTP statuses verified as billable against the confidential RapidAPI catalogue readback."
+}
+
+variable "clerk_publishable_key" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "clerk_jwt_key" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_secret_key" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_webhook_secret" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_plan_catalogue" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_payment_method_types" {
+  type      = list(string)
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_meter_event_name" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "stripe_meter_id" {
+  type      = string
+  sensitive = true
+  nullable  = false
+}
+
+variable "managed_app_url" {
+  type     = string
+  nullable = false
+}
+
 variable "worker_dir" {
   type        = string
   default     = "../../cloudflare-worker"

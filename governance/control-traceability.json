@@ -44,28 +44,19 @@
     },
     {
       "control_id": "C-AR1-C4-ARCHITECTURE-DRIFT-GATE",
-      "description": "Generate architecture artifacts from code and enforce architecture-conformance policy rules (forbidden/required dependencies) via portable Claude skills (/c4, /c4-check) and architect agent advisory.",
+      "description": "Require manual architecture review of architecture-bearing changes and keep the hand-curated C4 model aligned with the reviewed implementation.",
       "risks": ["AR1", "R15"],
       "enforcement_locations": [
-        ".claude/skills/c4/scripts/c4-lib.mjs",
-        ".claude/skills/c4/scripts/c4-generate.mjs",
-        ".claude/skills/c4-check/scripts/c4-check.mjs",
-        "governance/architecture-conformance-policy.json",
         "docs/architecture/C4_MODEL.md",
-        ".claude/agents/architect.md",
+        "AGENTS.md",
         "AGENTIC_RISK_REGISTER.md"
       ],
       "control_owner": "Engineering Lead",
-      "verification_cadence": "Per change (hooks + CI)",
-      "last_verified_date": "2026-03-10",
-      "effectiveness_kpi": "architecture_policy_violation_count and pass_rate for conformance checks",
-      "effectiveness_target": "architecture_policy_violation_count == 0",
-      "evidence_locations": [
-        ".claude/skills/c4/scripts/c4-lib.mjs",
-        ".claude/skills/c4-check/scripts/c4-check.mjs",
-        "governance/architecture-conformance-policy.json",
-        "docs/architecture/C4_MODEL.md"
-      ]
+      "verification_cadence": "Per architecture-bearing change (manual review)",
+      "last_verified_date": "2026-08-29",
+      "effectiveness_kpi": "architecture_review_completion and confirmed_model_drift_count",
+      "effectiveness_target": "architecture_review_completion == 1 and confirmed_model_drift_count == 0",
+      "evidence_locations": ["docs/architecture/C4_MODEL.md", "AGENTS.md"]
     },
     {
       "control_id": "C-AR1-DECISION-COMPLETENESS",

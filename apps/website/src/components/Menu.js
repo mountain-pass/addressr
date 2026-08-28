@@ -51,6 +51,9 @@ const Menu = ({ onDismiss, onNavigate, onKeyDown, menuRef }) => {
             </Link>
           </li>
           <li>
+            <a href="https://app.addressr.io/account/">Account</a>
+          </li>
+          <li>
             <a href="https://github.com/mountain-pass/addressr">
               Code <FontAwesomeIcon icon={faGithub} />
             </a>

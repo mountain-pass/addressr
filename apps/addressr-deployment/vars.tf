@@ -64,7 +64,7 @@ variable "cloudflare_api_token" {
   type        = string
   sensitive   = true
   nullable    = false
-  description = "Cloudflare API token with Workers Scripts Edit + Workers Routes Edit + Workers Secrets Edit scopes on the addressr account/zone. Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_api_token (per reference_addressr_secrets)."
+  description = "Cloudflare API token with Workers Scripts Edit + Workers Routes Edit + Workers Secrets Edit + D1 Edit scopes on the addressr account/zone. Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_api_token (per reference_addressr_secrets)."
 }
 
 variable "cloudflare_pages_api_token" {
@@ -91,6 +91,134 @@ variable "cloudflare_rapidapi_key" {
   sensitive   = true
   nullable    = false
   description = "RapidAPI key consumed by the worker (replaces the prior hardcoded value in the dashboard worker source, ADR 018 line 48 Bad consequence). Sourced via 1P Voder → GHA secret TF_VAR_cloudflare_rapidapi_key. The current production value is reused at cutover (no rotation during the P042 migration, per P042 ticket §16)."
+}
+
+variable "managed_origin_urls" {
+  type        = list(string)
+  sensitive   = true
+  nullable    = false
+  default     = []
+  description = "ADR-073 direct origin base URLs, supplied confidentially by the production workspace. Empty keeps the customer branch fail-closed."
+}
+
+variable "managed_billable_statuses" {
+  type        = set(number)
+  sensitive   = true
+  nullable    = false
+  default     = []
+  description = "ADR-072 origin HTTP statuses proved billable by confidential RapidAPI catalogue parity evidence. Empty keeps the customer branch fail-closed."
+}
+
+variable "clerk_publishable_key" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR-066 Clerk publishable key. Empty keeps managed account journeys unavailable."
+}
+
+variable "clerk_jwt_key" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR-066 Clerk PEM JWT public key used for networkless session verification."
+}
+
+variable "stripe_secret_key" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR-068 Stripe secret key for Checkout, Customer Portal, projection and metering."
+}
+
+variable "stripe_webhook_secret" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR-069 signing secret for the managed-channel Stripe webhook endpoint."
+}
+
+variable "stripe_plan_catalogue" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = "{}"
+  description = "ADR-072 confidential JSON plan-key to Stripe-price and quota mapping. Empty keeps checkout unavailable."
+}
+
+variable "stripe_payment_method_types" {
+  type        = list(string)
+  sensitive   = true
+  nullable    = false
+  default     = []
+  description = "ADR-082 explicitly verified immediate-outcome Stripe payment-method allowlist."
+}
+
+variable "stripe_meter_event_name" {
+  type        = string
+  sensitive   = true
+  nullable    = false
+  default     = ""
+  description = "ADR-071 Stripe meter event name. Empty keeps delivery unavailable."
+}
+
+variable "stripe_meter_id" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "Stripe meter identifier used for provider-side usage reconciliation. Empty keeps reconciliation disabled."
+}
+
+variable "managed_app_url" {
+  type        = string
+  nullable    = false
+  default     = "https://app.addressr.io"
+  description = "ADR-061 stable account and billing origin used for Stripe return URLs."
+}
+
+variable "customer_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  default     = "1001"
+  description = "Positive integer namespace for the managed-channel Cloudflare rate-limit binding."
+}
+
+variable "customer_rate_limit" {
+  type        = number
+  nullable    = false
+  default     = 600
+  description = "Per-source, per-Cloudflare-location managed-channel abuse ceiling each minute. D1 remains authoritative for quota."
+}
+
+variable "demo_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  default     = "1002"
+  description = "ADR-074 namespace for website-demo throttling, isolated from customer accounting and monitoring."
+}
+
+variable "demo_rate_limit" {
+  type        = number
+  nullable    = false
+  default     = 120
+  description = "Per-source website-demo request ceiling each minute."
+}
+
+variable "monitor_rate_limit_namespace_id" {
+  type        = string
+  nullable    = false
+  default     = "1003"
+  description = "ADR-074 namespace for monitoring throttling, isolated from customer accounting and website demos."
+}
+
+variable "monitor_rate_limit" {
+  type        = number
+  nullable    = false
+  default     = 30
+  description = "Per-source monitoring request ceiling each minute."
 }
 
 variable "elastic_v4_name" {

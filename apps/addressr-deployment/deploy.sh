@@ -31,7 +31,9 @@ deploy_pkg=$(node -e "console.log(require(require('path').resolve('../../package
 : "${deploy_pkg:?could not read the published package name}"
 
 tmpfile=$(mktemp --tmpdir=. XXXXXX.auto.tfvars)
-trap "rm -f $tmpfile" 0 2 3 15
+wrangler_config=$(mktemp --tmpdir=. XXXXXX.wrangler.toml)
+wrangler_config_path="$(pwd)/$wrangler_config"
+trap "rm -f $tmpfile $wrangler_config" 0 2 3 15
 
 cat > "$tmpfile" <<- EOM
 elasticapp         = "mountainpass-addressr"
@@ -129,7 +131,28 @@ if test -z "$*"; then
     if [ $retVal -eq 2 ]; then
         { terraform apply -auto-approve -input=false; retVal="$?"; }
     fi
-    exit $retVal    
+    [ "$retVal" -eq 0 ] || exit "$retVal"
+
+    # ADR-064: Terraform owns the D1 database and Worker binding; Wrangler owns
+    # the ordered SQL migration ledger. Use the freshly-read Terraform output
+    # so no database identifier is committed or copied between environments.
+    managed_channel_d1_id=$(terraform output -raw managed_channel_d1_id) || exit 1
+    cat > "$wrangler_config" <<- EOM
+name = "addressr-managed-channel-migrations"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "CUSTOMER_DB"
+database_name = "addressr-managed-channel"
+database_id = "${managed_channel_d1_id}"
+migrations_dir = "cloudflare-worker/migrations"
+EOM
+    (
+        cd ../.. || exit 1
+        CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$TF_VAR_cloudflare_api_token}" \
+            npx wrangler d1 migrations apply CUSTOMER_DB --remote --config "$wrangler_config_path"
+    ) || exit 1
+    exit 0
 else
     terraform "$@"
 fi

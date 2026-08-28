@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 74 (65 in-force, 9 historical)
+**Total ADRs:** 83 (74 in-force, 9 historical)
 
 ---
 
 ## In-force decisions
 
-_65 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_74 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -320,94 +320,157 @@ _65 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-062 — Hosted customer access enforced at the gateway
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** The Addressr-managed gateway authenticates customer requests and checks locally projected entitlement before forwarding, injecting the same ADR-024 header/value pair RapidAPI uses so the origin authenticates a trusted gateway rather than an individual customer — keeping hosted identity, billing, plan and API-key logic out of the reusable search server and leaving self-hosted behaviour unchanged when ADR-024's variables are unset.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** The Addressr-managed gateway authenticates customer requests and checks locally projected entitlement before forwarding, injecting the same ADR-024 header/value pair RapidAPI uses so origins authenticate a trusted gateway rather than an individual customer — keeping hosted identity, billing, plan and API-key logic out of the reusable search server and leaving self-hosted behaviour unchanged when ADR-024's variables are unset.
 **Confirmation:** Missing, invalid, revoked or unentitled credentials rejected at the gateway and never reach an origin; a valid entitled request reaches an origin with the configured ADR-024 header/value pair; both gateways and both origins participate in shared-secret rotation evidence; no search-server module imports or calls direct-channel customer, identity, billing, plan or API-key code; the default self-hosted server still runs with ADR-024's variables unset; missing gateway secret, entitlement data or origin configuration fails closed with a distinguishable operational error; production activation stays blocked until a separate numeric gateway performance-budget ADR is ratified.
 **Related:** ADR-024, ADR-061, ADR-063, ADR-069, ADR-073
 
 ### ADR-063 — Existing Cloudflare Worker extended for the managed API
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** The Addressr-managed customer path is added to the already-deployed Cloudflare Worker rather than a second gateway stack, so one edge, route and Terraform path serve all Addressr-operated traffic; routing and principal isolation are left to separate decisions, and ADR-018's demo-proxy behaviour and ADR-032's Terraform ownership both remain in force.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** The Addressr-managed customer path is added to the already-deployed Cloudflare Worker rather than a second gateway stack, so one edge, route and Terraform path serve all Addressr-operated traffic; the trade is reduced failure-domain isolation, since one Worker defect can affect several request paths. Routing and principal isolation are left to separate decisions, and ADR-018's demo-proxy behaviour and ADR-032's Terraform ownership both remain in force.
 **Confirmation:** Terraform plan updates the existing Worker and route in place and creates no parallel unmanaged gateway; existing demo and monitoring probes retain their documented behaviour; rollback to the preceding Worker artefact restores prior demo and monitoring behaviour
 **Related:** ADR-018, ADR-024, ADR-032, ADR-062, ADR-073, ADR-074
 
 ### ADR-064 — Commercial request state stored in Cloudflare D1
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Cloudflare D1 is the gateway's local system of record for API-key hashes, organisation linkage, entitlement snapshots, quota state and idempotent usage events, chosen because it is relational and native to the Worker request path, keeping commercial state out of the search server while giving quota hard-stops and idempotency the constraints and conditional writes they need. If production-like concurrency testing cannot prove those semantics, implementation stops for a superseding storage decision rather than implicitly adding a second store.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Cloudflare D1 is the gateway's local system of record for API-key hashes, organisation linkage, entitlement snapshots, quota state and idempotent usage events, chosen because it is relational and native to the Worker request path, keeping commercial state out of the search server while giving quota hard-stops and idempotency the constraints and conditional writes they need. Identity and billing providers stay authoritative for their own domains; if production-like concurrency testing cannot prove those semantics, implementation stops for a superseding storage decision rather than implicitly adding a second store.
 **Confirmation:** Terraform provisions the D1 database and binds it to the existing Worker; no API-key plaintext or provider secret stored; unique constraints reject duplicate organisation links, event identities and key hashes; concurrency tests prove quota transition and idempotent replay; a missing binding or load-bearing read/write failure fails closed and is operationally distinguishable.
 **Related:** ADR-062, ADR-065
 
 ### ADR-065 — Abuse throttling separated from commercial accounting
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Cloudflare rate limiting protects availability and cost, while D1 conditional records decide customer quota and billable usage — a rate-limit event is never itself a billing event, because approximate distributed counters are not accurate enough to be invoice evidence.
 **Confirmation:** Abuse tests exercise rate limiting without creating usage records for rejected traffic; quota and billing tests use D1 state and never assert on rate-limit counters; responses and logs distinguish abuse throttling from exhausted entitlement; disabling abuse throttling in a test environment leaves commercial quota enforcement intact.
 **Related:** ADR-064, ADR-071
 
 ### ADR-066 — Clerk as the application identity provider
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Clerk is authoritative for user identity, sessions, invitations and membership, so Addressr avoids owning password, recovery and session infrastructure; Clerk does not decide subscriptions, entitlements, API keys or billable usage.
-**Confirmation:** Clerk-supported sign-in, sign-out, expiry, recovery and invitation journeys; no passwords or reset secrets in any Addressr database; Clerk outage never blocks an already authenticated API request; Clerk claims alone cannot create or extend a paid entitlement; keyboard and screen-reader tests cover the account journeys before launch.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Clerk is authoritative for user identity, authenticated sessions, invitations and membership, so Addressr avoids building password, recovery and session infrastructure; Clerk does not decide subscriptions, entitlements, API keys or billable usage.
+**Confirmation:** Sign-in, sign-out, session expiry, recovery and invitation journeys use Clerk-supported flows; no Addressr database stores passwords or reset secrets; Clerk outage never forces a synchronous Clerk call on an already authenticated API request; Clerk claims alone cannot create or extend a paid entitlement; keyboard and screen-reader tests cover the integrated account journeys before launch.
 **Related:** ADR-067
 
 ### ADR-067 — Organisations as the commercial ownership boundary
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Commercial state belongs to an Addressr organisation, not an individual — one organisation maps to one Stripe Customer and owns its subscriptions, API-key namespace, entitlement and usage, with people gaining access through membership. This keeps ownership stable across staff changes, isolates customers from each other, and lets one person belong to several organisations.
 **Confirmation:** Every Stripe Customer, subscription, API key, entitlement and usage event references exactly one organisation; membership grants no cross-organisation access; removing a person neither deletes nor transfers organisation-owned resources; one person can switch between authorised organisations without sharing keys or usage.
 **Related:** ADR-066, ADR-070
 
 ### ADR-068 — Stripe-hosted billing interactions
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Use Stripe Checkout for new direct-channel subscriptions and the Stripe Customer Portal for payment-method, invoice, cancellation and plan management, so Addressr never collects card details or builds custom billing UI.
-**Confirmation:** No Addressr page accepts or stores card details; new subscriptions start via Stripe Checkout; supported billing self-service tasks use the Customer Portal; return URLs preserve the owning organisation and block cross-organisation access; test-mode journeys cover success, cancel and abandon.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Use Stripe Checkout to create direct-channel subscriptions and the Stripe Customer Portal for payment-method, invoice, cancellation and plan management, so Addressr owns the surrounding account journey without collecting card details or building custom billing UI.
+**Confirmation:** No Addressr page accepts or stores card details; new subscriptions start through Stripe Checkout; supported payment-method, invoice, cancellation and plan tasks use the Customer Portal; return URLs preserve the owning organisation and prevent cross-organisation access; test-mode browser journeys cover successful, cancelled and abandoned interactions.
 **Related:** ADR-067, ADR-069
 
 ### ADR-069 — Stripe state projected through signed webhooks
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Verified Stripe webhooks update D1 entitlement snapshots through idempotent, order-aware processing, and the gateway authorizes from that local projection rather than calling Stripe or Clerk synchronously — keeping provider latency and outages out of the request path. Failed-payment access policy is explicitly deferred to a separate human decision before production activation.
-**Confirmation:** Invalidly signed webhooks cannot change entitlement; checkout completion alone does not authorize before the verified projection exists; duplicate and out-of-order deliveries converge without duplicate subscriptions or credits; authorization succeeds from local state while Stripe and Clerk are unavailable; reconciliation repairs a missing projection without hand-editing entitlement
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Verified Stripe webhooks update D1 entitlement snapshots through idempotent, order-aware processing, and the gateway authorises from that local projection instead of calling Stripe or Clerk synchronously — keeping provider latency and outages out of the request path. Failed-payment access policy is explicitly deferred to a separate human decision before production activation.
+**Confirmation:** Invalidly signed webhooks cannot change entitlement; checkout completion alone does not authorise before the verified projection exists; duplicate and out-of-order deliveries converge without duplicate subscriptions or credits; authorisation succeeds from local state while Stripe and Clerk are unavailable; reconciliation repairs a missing projection without hand-editing entitlement
 **Related:** ADR-064, ADR-068
 
 ### ADR-070 — Organisation-scoped one-time-visible hashed API keys
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Direct-channel clients authenticate with opaque API keys that belong to exactly one organisation, are shown once at creation and stored only as a secure hash, so a database read never yields reusable credentials and each integration can be named, rotated and revoked independently.
-**Confirmation:** Plaintext appears only in the creation response, never in later reads; no full plaintext in database records or logs; each key maps to one organisation with a unique customer-visible name; revoking one key leaves siblings usable; authentication uses a slow secure hash with constant-time verification.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Direct-channel clients authenticate with opaque API keys owned by exactly one organisation, shown once at creation and stored only as a secure hash, so a database read never yields reusable credentials. Each key carries a customer-visible name and can be rotated or revoked independently of its siblings.
+**Confirmation:** Plaintext appears only in the creation response, never in later reads; no full plaintext in database records or logs; each key references one organisation with a unique customer-visible name; revoking one key leaves siblings usable while entitlement is active; authentication uses a slow secure hash with constant-time verification.
 **Related:** ADR-064, ADR-067
 
 ### ADR-071 — Stripe meter events emitted from idempotent usage records
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Billable usage is committed as an authoritative record with a stable idempotency identity, then delivered asynchronously to Stripe as a meter event by a separate process, so Stripe latency and availability stay out of the request path and undelivered records can be safely replayed.
-**Confirmation:** No synchronous Stripe meter call in the request path; at most one authoritative usage identity per billable request; replay cannot double-count Stripe quantity; reconciliation reports and safely retries missing, rejected and mismatched events; non-billable and abuse-rejected requests emit nothing.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** The gateway commits an authoritative usage record with a stable idempotency identity, and a separate delivery process emits the matching Stripe meter event, keeping Stripe latency and availability out of the request path while letting undelivered records be replayed without double-billing.
+**Confirmation:** No synchronous Stripe meter call in the request path; at most one authoritative usage identity per billable request; replay cannot increase Stripe quantity twice; reconciliation reports and safely retries missing, rejected and mismatched events; non-billable and abuse-rejected requests emit nothing.
 **Related:** ADR-065, ADR-072
 
 ### ADR-072 — RapidAPI catalogue parity at launch
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Mirror the verified RapidAPI catalogue in the Addressr-managed Stripe channel at launch — same customer-facing plan names and commercial semantics — so buyers can compare channels without a second plan architecture and launch stays focused on channel ownership rather than pricing redesign. Parity is established from an authenticated RapidAPI readback held in an approved confidential location, and any difference returns to human review rather than being normalised silently; existing RapidAPI subscribers stay on RapidAPI under ADR-061 with no migration or cross-channel account link.
-**Confirmation:** Authenticated export records every current and grandfathered RapidAPI plan version's name, price, currency, allowance, overage, limit behaviour, billable outcomes and reset timing in an approved confidential location; Stripe products stay inactive until a reviewer confirms parity against that record; every difference is stated for human decision with no silent rounding or substitution; no confidential price, allowance, subscriber or traffic figure is committed to the public repository; launch and later catalogue changes leave existing RapidAPI subscribers, keys and billing relationships untouched.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Mirror the verified RapidAPI catalogue in the Addressr-managed Stripe channel at launch — same customer-facing plan names and commercial semantics — verified from an authenticated RapidAPI readback held in an approved confidential location, so buyers can compare channels without a second plan architecture and launch stays focused on channel ownership rather than pricing redesign. Any difference returns to human review rather than being normalised silently; existing RapidAPI subscribers stay on RapidAPI under ADR-061 with no migration or cross-channel account link.
+**Confirmation:** Authenticated export records every current and grandfathered RapidAPI plan version's name, price, currency, allowance, overage, hard/soft-limit behaviour, billable outcomes and reset timing in an approved confidential location; Stripe products stay inactive until a reviewer confirms parity against that record; every difference is stated for human decision with no silent rounding or substitution; no confidential price, allowance, subscriber or traffic figure is committed to the public repository; launch and later catalogue changes leave existing RapidAPI subscribers, keys and billing relationships untouched.
 **Related:** ADR-061, ADR-068, ADR-071
 
 ### ADR-073 — Managed gateway routes directly to the origins
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** The Addressr-managed gateway forwards entitled customer requests straight to both existing search origins under the ADR-024 origin-secret contract, rather than hopping through RapidAPI or standing up separate origins — keeping the two commercial channels operationally independent and free of a marketplace dependency.
 **Confirmation:** Valid managed requests reach both origins directly under ADR-024; no managed request needs a RapidAPI credential or hop; RapidAPI traffic and subscriber credentials unchanged; missing origin config fails closed with a distinguishable operational error.
 **Related:** ADR-024, ADR-061, ADR-062, ADR-063
 
 ### ADR-074 — Customer, demo and monitoring use distinct principals
 
-**Status:** proposed | **Oversight:** unconfirmed
-**Decides:** Customer, demo and monitoring traffic get separate authentication, routes, limits and usage classification rather than one Worker-wide principal, so a browser hint or operational credential can never cross the paid authorization boundary. `Referer` and `Origin` are routing or policy signals only and cannot authorize paid traffic.
-**Confirmation:** `Referer`/`Origin` alone never authorizes a paid request; customer, demo and monitoring credentials are not interchangeable; each principal has separate routes, limits and usage classification before authorization or accounting; demo and monitoring requests create no entitlement or billable-usage record; logs distinguish retained customer activity from demo and audit traffic without exposing credentials.
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Customer, demo and monitoring traffic each get their own authentication, routes, limits and usage classification rather than sharing one Worker-wide principal, so a browser hint or operational credential can never cross the paid authorization boundary. `Referer` and `Origin` are routing or policy signals only and cannot authorize paid traffic.
+**Confirmation:** `Referer`/`Origin` alone never authorizes a paid request; customer, demo and monitoring credentials are not interchangeable; each principal has separate routes, limits and usage classification before authorization or accounting runs; demo and monitoring requests create no customer entitlement or billable-usage record; logs distinguish retained customer activity from demo and audit traffic without exposing credentials.
 **Related:** ADR-018, ADR-063, ADR-065, ADR-071
+
+### ADR-075 — Past-due access follows Stripe recovery
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Managed API access follows Stripe's own subscription status rather than an Addressr-managed grace clock — `active`, `trialing` and `past_due` retain access (subject to ADR-081 and ADR-082) while `incomplete`, `incomplete_expired`, `unpaid`, `paused`, `canceled`, missing, malformed and unknown states deny it. A recoverable card failure therefore does not interrupt a working integration, and `invoice.payment_failed` alone never revokes an entitled customer.
+**Confirmation:** Behavioural test covers every documented status plus missing/malformed/unknown; `invoice.payment_failed` alone does not revoke; `cancel_at_period_end` retains access only until `canceled`; recovery restores entitlement idempotently; denied and unknown states fail closed before any origin request or billable usage record.
+**Related:** ADR-069, ADR-076, ADR-079, ADR-081, ADR-082
+
+### ADR-076 — Stripe Smart Retries own payment-recovery timing
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Let Stripe Smart Retries choose retry timing for `past_due` subscriptions rather than a fixed schedule or an Addressr-run one, so recovery adapts to provider signals without Addressr owning a scheduler; Addressr projects the resulting events but runs no competing retry or grace-period timer.
+**Confirmation:** Authenticated Stripe settings readback proves Smart Retries before production activation; signed-webhook behavioural tests cover duplicate, reordered and retry events with no Addressr timer; sandbox or Test Clock exercise demonstrates the transition after authenticated proof of the enabled configuration; Addressr schedules no invoice retries and expires no grace period independently; configuration drift blocks activation and raises an operational alert.
+**Related:** ADR-069, ADR-075, ADR-079, ADR-083
+
+### ADR-077 — Managed gateway added-latency budget
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Managed commercial enforcement must add no more than 25 ms p95 and 50 ms p99 on a paired Australian/Oceania request path, with total search p95 still within JTBD-001's 200 ms outcome — an absolute bound so a fast gateway cannot excuse a slow end-to-end path, and a relative-only budget cannot legitimise a large regression.
+**Confirmation:** Paired A/B benchmark of identical valid requests with enforcement off and on; warm runs, multiple replicates, valid non-empty responses; evidence records p50/p95/p99, sample size, region, Worker version and D1 location; both the added-latency budget and the 200 ms total p95 gate pass before activation; no cross-region averaging can hide a failing region.
+**Related:** ADR-062, ADR-078, ADR-080, JTBD-001
+
+### ADR-078 — Managed gateway Worker compute envelope
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Gate the managed request path with a local compute envelope — 10 ms p95 Worker CPU and p99 shared-isolate memory at or below 64 MiB under a representative concurrency test — so runaway auth, entitlement or accounting compute is caught before activation rather than as a customer-visible provider termination.
+**Confirmation:** Worker evidence reports CPU and wall time for the exercised path; representative concurrency test holds p99 isolate memory ≤ 64 MiB and p95 CPU ≤ 10 ms; twice the verified peak concurrency causes no limit outcome and no entitlement bypass; missing compute evidence or an overload outcome blocks activation; authenticated production-plan and CPU-limit readback recorded before activation.
+**Related:** ADR-062, ADR-077, ADR-080
+
+### ADR-079 — Exhausted payment recovery marks subscriptions unpaid
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** When Stripe exhausts its configured payment recovery, the subscription moves to the recoverable `unpaid` state rather than staying `past_due` or being cancelled, so managed access ends deterministically without destroying the customer relationship.
+**Confirmation:** Authenticated settings readback proves the `unpaid` recovery-exhausted action before activation; signed-webhook behavioural tests cover duplicate, reordered and recovery-exhausted events; a sandbox or Test Clock exercise reaches `unpaid`; ADR-075 denies access at `unpaid` before origin forwarding or usage accounting; supported recovery restores access idempotently; setting drift blocks activation and alerts.
+**Related:** ADR-075, ADR-076, ADR-083
+
+### ADR-080 — Managed gateway D1 query envelope
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Gate managed-request database work explicitly: every request outcome — accepted, invalid, revoked, exhausted or malformed — may run at most three D1 statements and receive at most 4 KiB of response data, with every request-time lookup index-backed, so scans and chatty queries fail before activation rather than becoming a customer-visible provider limit.
+**Confirmation:** D1 metadata reports statements, rows read/written and response bytes; per-outcome evidence proves ≤3 statements and ≤4 KiB across accepted, invalid, revoked, exhausted and malformed; `EXPLAIN QUERY PLAN` shows indexed searches with no full table scan; twice confidential verified peak concurrency causes no D1 overload or entitlement bypass; missing or overloaded state fails closed before origin forwarding or billable accounting.
+**Related:** ADR-062, ADR-064, ADR-077, ADR-078
+
+### ADR-081 — Stripe collection pausing prohibited for managed subscriptions
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Managed-channel code and operations must never set Stripe's `pause_collection`, because a status-only entitlement projection would otherwise leave access open while collection is suspended; a managed subscription observed with collection paused fails closed and raises an operational alert until the unsupported state is removed or separately governed.
+**Confirmation:** No managed action sets `pause_collection`; authenticated readback shows no paused collection before activation; a paused-collection projection denies access before origin forwarding or usage accounting; the unsupported condition alerts without logging customer secrets; removing the pause idempotently restores status-based evaluation.
+**Related:** ADR-069, ADR-075
+
+### ADR-082 — Managed-channel launch uses immediate-outcome payment methods
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Checkout is configured with an explicit allowlist limited to payment methods whose success or failure drives the subscription states ADR-075 governs, so subscription status alone stays sufficient for launch authorization; anything outside the allowlist fails closed rather than risking a delayed asynchronous failure that leaves access apparently active.
+**Confirmation:** Checkout uses an explicit authenticated allowlist, not dynamic provider selection; each enabled method's success and failure paths drive ADR-075 states in Stripe test mode; out-of-allowlist methods and projected subscription configuration are rejected before origin forwarding or usage accounting; configuration drift blocks activation and alerts; no asynchronous-method claim without provider evidence for the exact enabled configuration.
+**Related:** ADR-068, ADR-069, ADR-075
+
+### ADR-083 — Past-due recovery lasts at most fourteen days
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** Stripe Smart Retries may pick attempt timing, but managed-subscription payment recovery is capped at eight attempts within fourteen days — Stripe's recommended default, chosen to put an explicit numeric ceiling on the unpaid-access exposure ADR-075 creates.
+**Confirmation:** Authenticated Stripe settings readback proves eight attempts within fourteen days before activation; signed-webhook behavioural tests keep past_due access inside the window and deny at recovery-exhausted; sandbox evidence exercises recovery and exhaustion for the enabled configuration; no local timer extends or shortens the Stripe window; retry-count or duration drift blocks activation and alerts.
+**Related:** ADR-075, ADR-076, ADR-079
 
 ---
 

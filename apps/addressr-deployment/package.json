@@ -5,7 +5,9 @@
   "description": "Terraform + Elastic Beanstalk + Cloudflare deployment of the Addressr production service",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mountainpass/addressr": "3.3.2"
+    "@clerk/backend": "^3.16.12",
+    "@mountainpass/addressr": "3.3.2",
+    "stripe": "^22.6.0"
   },
   "devDependencies": {
     "wrangler": "4.126.0"

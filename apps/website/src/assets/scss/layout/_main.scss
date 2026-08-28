@@ -181,3 +181,42 @@
     width: 100%;
   }
 }
+
+.account-page {
+  overflow-wrap: anywhere;
+
+  .inner > section {
+    margin-bottom: 3em;
+  }
+}
+
+:is(input, select) {
+  background: _palette(bg);
+  border: 2px solid _palette(fg);
+  border-radius: 0;
+  color: _palette(fg-bold);
+  display: block;
+  margin-bottom: 1em;
+  min-height: 3em;
+  padding: 0.5em 0.75em;
+  width: min(100%, 36em);
+
+  &:focus-visible {
+    outline: 3px solid _palette(highlight);
+    outline-offset: 3px;
+  }
+}
+
+.account-alert:empty {
+  display: none;
+}
+
+.account-alert {
+  color: _palette(error);
+}
+
+@media (forced-colors: active) {
+  :is(input, select) {
+    border-color: CanvasText;
+  }
+}
