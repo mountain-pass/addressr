@@ -1,6 +1,6 @@
 import { useId, useEffect, useRef, useCallback } from 'react';
 import { useCombobox } from 'downshift';
-import { useAddressSearch } from '../hooks/useAddressSearch';
+import { normaliseAddressQuery, useAddressSearch } from '../hooks/useAddressSearch';
 import { parseHighlight } from '@mountainpass/addressr-core';
 import type { AddressDetail, AddressSearchResult, HighlightSegment } from '@mountainpass/addressr-core';
 import styles from './AddressAutocomplete.module.css';
@@ -113,14 +113,15 @@ export function AddressAutocomplete({
 
   const showMenu = isOpen && results.length > 0;
   const showLoading = isOpen && isLoading && results.length === 0;
-  const showNoResults = isOpen && !error && !isLoading && results.length === 0 && query.length >= 3;
+  const hasSearchableQuery = normaliseAddressQuery(query).length >= 3;
+  const showNoResults = isOpen && !error && !isLoading && results.length === 0 && hasSearchableQuery;
   const statusMessage = isLoading
     ? 'Searching addresses...'
     : isLoadingMore
       ? 'Loading more addresses...'
       : results.length > 0
         ? `${results.length} addresses found`
-        : !error && query.length >= 3
+        : !error && hasSearchableQuery
           ? 'No addresses found'
           : '';
 

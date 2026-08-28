@@ -28,6 +28,8 @@ export interface UseAddressSearchReturn {
   clear: () => void;
 }
 
+export const normaliseAddressQuery = (query: string) => query.trim().replace(/\s+/g, ' ');
+
 export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSearchReturn {
   const {
     apiKey,
@@ -43,6 +45,7 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
   const [results, setResults] = useState<AddressSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<AddressDetail | null>(null);
 
@@ -58,20 +61,24 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
 
   const setQuery = useCallback(
     (q: string) => {
+      const normalisedQuery = normaliseAddressQuery(q);
       setQueryState(q);
       clearTimeout(debounceRef.current);
       abortRef.current?.abort();
       setError(null);
 
-      if (q.length >= minQueryLength) {
+      if (normalisedQuery.length >= minQueryLength) {
         setIsLoading(true);
       } else {
         setIsLoading(false);
         setResults([]);
+        nextLinkRef.current = null;
+        searchPageRef.current = null;
+        setHasMore(false);
       }
 
       debounceRef.current = setTimeout(() => {
-        setDebouncedQuery(q);
+        setDebouncedQuery(normalisedQuery);
       }, debounceMs);
     },
     [debounceMs, minQueryLength],
@@ -122,8 +129,6 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
 
     return () => controller.abort();
   }, [debouncedQuery, minQueryLength, client]);
-
-  const [hasMore, setHasMore] = useState(false);
 
   // Keep hasMore in sync with nextLinkRef
   useEffect(() => {

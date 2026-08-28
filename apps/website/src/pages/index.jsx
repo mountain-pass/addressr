@@ -198,7 +198,7 @@ const HomeIndex = () => {
         <section className="evidence-section" aria-labelledby="evidence-title">
           <div className="inner">
             <header className="major">
-              <h2 id="evidence-title">Public service and adoption evidence</h2>
+              <h2 id="evidence-title">Check Addressr before you integrate</h2>
             </header>
             <dl className="evidence-grid">
               <div>

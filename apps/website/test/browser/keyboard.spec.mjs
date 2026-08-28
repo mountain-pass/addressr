@@ -332,5 +332,27 @@ test.describe(
         await expect(inputs[index + 1]).toBeFocused();
       }
     });
+
+    test('address search waits for three normalised characters', async ({ page }) => {
+      const addressSearches = [];
+      page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.origin === 'https://api.addressr.io' && url.pathname === '/addresses') {
+          addressSearches.push(url.toString());
+        }
+      });
+      await mockAddressr(page);
+      await page.goto('/');
+      await expect(page.locator('.body')).not.toHaveClass(/is-loading/);
+
+      const input = page.getByRole('combobox', { name: 'Search Australian addresses' });
+      await input.focus();
+      await page.keyboard.type('17 ');
+      await page.waitForTimeout(400);
+
+      expect(addressSearches).toEqual([]);
+      await expect(page.getByText('No addresses found')).toHaveCount(0);
+      await expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
   },
 );

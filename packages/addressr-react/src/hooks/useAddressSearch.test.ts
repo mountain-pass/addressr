@@ -96,15 +96,16 @@ describe('useAddressSearch', () => {
     });
   });
 
-  it('does not search when query is too short', async () => {
+  it('does not search when the normalised query is too short', async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(MOCK_ROOT_RESPONSE);
     const { result } = renderSearchHook(mockFetch);
 
-    act(() => result.current.setQuery('ab'));
+    act(() => result.current.setQuery('17 '));
     expect(result.current.isLoading).toBe(false);
 
-    // Wait for debounce
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
     // Only the prefetch call should have happened, no search call
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(result.current.results).toEqual([]);
@@ -117,13 +118,14 @@ describe('useAddressSearch', () => {
 
     const { result } = renderSearchHook(mockFetch);
 
-    act(() => result.current.setQuery('1 george'));
+    act(() => result.current.setQuery('  1   george  '));
     expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
       expect(result.current.results).toHaveLength(1);
     });
     expect(result.current.results[0].sla).toBe('1 GEORGE ST, SYDNEY NSW 2000');
+    expect(mockFetch.mock.calls[1][0]).toContain('q=1%20george');
   });
 
   it('selects an address and fetches detail', async () => {

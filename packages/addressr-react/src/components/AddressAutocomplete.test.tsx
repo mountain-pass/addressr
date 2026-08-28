@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AddressAutocomplete } from './AddressAutocomplete';
 
@@ -318,6 +318,22 @@ describe('AddressAutocomplete', () => {
 
     expect(screen.queryByText('Searching...')).not.toBeInTheDocument();
     resolveSearch!(searchResponse());
+  });
+
+  it('does not search or show an empty state for a sub-threshold normalised query', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce(rootResponse());
+
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
+
+    await userEvent.type(screen.getByRole('combobox'), '17 ');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByText('No addresses found')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('uses custom renderLoading when provided', async () => {
