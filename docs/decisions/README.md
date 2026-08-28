@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 60 (52 in-force, 8 historical)
+**Total ADRs:** 63 (55 in-force, 8 historical)
 
 ---
 
 ## In-force decisions
 
-_52 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_55 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -314,6 +314,27 @@ _52 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Keep the Pages project, custom domain, and imported root DNS record in the existing production Terraform state, while `release.yml` uploads Gatsby output with Wrangler only when a release-PR merge consumes a website changeset and bumps `@mountainpass/website`. Use a separate Pages-and-DNS-scoped token, configure no Pages git source, disable Netlify's production integration before cutover, and verify the exact merged SHA at `addressr.io/revision.txt`.
 **Confirmation:** Terraform plan leaves the API worker unchanged; the Pages project is Direct Upload; the token cannot edit Workers resources; executable tests cover positive and negative website arming cases; Netlify and Pages do not deploy ordinary source pushes; the first release returns the merged SHA from `addressr.io/revision.txt`; website routes and `api.addressr.io` pass post-cutover smoke.
 **Related:** ADR-032, ADR-045, ADR-046, ADR-053
+
+### ADR-061 — RapidAPI and Addressr-managed dual distribution
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Run RapidAPI and an Addressr-managed channel in parallel rather than replacing either, so Addressr owns a first-party buyer journey on `api.addressr.io` / `app.addressr.io` while RapidAPI keeps its marketplace discovery and its existing subscribers' keys, plans and billing untouched. If ratified it supersedes ADR-017 in full; channel performance is measured as three separate acquisition counts, never joined into person-level attribution.
+**Confirmation:** Both signup paths offered on `addressr.io`; `api.`/`app.addressr.io` serve API and account journeys with no `direct.addressr.io` surface; no migration, shared key namespace or billing transfer touches a RapidAPI subscriber; existing RapidAPI keys and plans keep working after launch; three acquisition measures reported separately with period and source; no cross-channel person-level attribution without a consented common identifier.
+**Related:** ADR-017, ADR-062, ADR-063
+
+### ADR-062 — Cloudflare edge customer gateway with origin-independent server
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-018, ADR-032 (on ratification)
+**Decides:** Expand the existing Cloudflare Worker at `api.addressr.io` into the Addressr-managed customer gateway — validating Addressr-issued API keys, resolving organisation entitlement, applying limits and writing durable idempotent usage records in D1 before forwarding to the existing origins — so hosted commercial concerns stay at the edge and the search server stays free of Clerk, Stripe and customer accounts for self-hosted users. Terraform is retained as the deployment mechanism; the origin continues to authenticate a trusted gateway via ADR-024's shared header, and the website demo and monitoring become separate non-customer principals rather than authenticated by `Referer`.
+**Confirmation:** Valid key reaches origin with the same ADR-024 header as RapidAPI, rotation covering both gateways and origins; invalid/revoked/over-limit keys rejected at the gateway; no server module imports Clerk or Stripe and self-hosted default still runs; RapidAPI still reaches both origins; `Referer`/`Origin` alone cannot authorize paid requests; missing secrets, bindings or origin config fail closed distinguishably; D1 holds no key plaintext and enforces hard quotas and non-double-billed usage under concurrency; tests separate abuse throttling from authoritative accounting; a production-like benchmark records p50/p95 latency, CPU, storage ops and failure rate against a budget documented before activation; Terraform evidence shows in-place Worker update with no parallel gateway and two origins preserved.
+**Related:** ADR-018, ADR-024, ADR-032, ADR-061, ADR-063
+
+### ADR-063 — Organisation-owned identity and Stripe billing with RapidAPI-plan parity
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Clerk supplies users, organisations, membership and roles while Stripe Checkout and Customer Portal own payment collection, with signed webhooks copying subscription state into local D1 entitlement records so no request path calls either provider; the organisation is the commercial owner (one org to one Stripe Customer, owning its hashed API keys, usage and invoices), and the launch catalogue mirrors the verified RapidAPI plans rather than inventing a new price architecture.
+**Confirmation:** authenticated RapidAPI readback records every plan version and its pricing, allowance, overage and reset semantics confidentially before any Stripe product activates; proposed Stripe catalogue matches or returns to human review; one Clerk organisation maps to exactly one Stripe Customer with no cross-organisation access; only a verified idempotent webhook (not checkout completion) creates entitlement; duplicate, delayed and out-of-order deliveries converge; key plaintext shown once only and revocation is per-key; authorization succeeds from local state while Clerk and Stripe are unavailable; each Stripe plan enforces the same allowance, metering and hard/soft limit semantics as its RapidAPI counterpart; replayed usage or meter events cannot double-bill and reconciliation reports mismatches; grace duration, terminal states, cancellation, refunds, tax and support runbook documented and exercised in test mode; every billing and membership journey has observable end-to-end tests with no source-text proxies
+**Related:** ADR-061, ADR-062
 
 ---
 
