@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.5
+
+### Patch Changes
+
+- 16098ac: Allow the managed-channel D1 schema to deploy through Cloudflare's remote migration parser while preserving atomic quota enforcement and refunds.
+
 ## 1.0.4
 
 ### Patch Changes
