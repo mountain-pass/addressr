@@ -94,9 +94,9 @@ BEGIN
   SET quota_used = quota_used + 1
   WHERE organization_id = NEW.organization_id
     AND quota_used < quota_limit;
-  SELECT CASE
+  SELECT (CASE
     WHEN changes() != 1 THEN RAISE(ABORT, 'quota_exhausted')
-  END;
+  END);
 END;
 
 CREATE TRIGGER release_usage_quota
