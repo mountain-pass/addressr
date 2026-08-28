@@ -37,6 +37,7 @@ import {
   chooseOrigin,
   customerKeyFrom,
   directOriginRequest,
+  isManagedChannelEnabled,
   isManagedConfigAvailable,
   managedOrigins,
   reserveUsage,
@@ -55,6 +56,9 @@ export default {
     }
 
     if (customerKeyFrom(request)) {
+      if (!isManagedChannelEnabled(environment)) {
+        return unavailable('managed_channel_not_active').response;
+      }
       if (!isManagedConfigAvailable(environment)) {
         return unavailable('managed_channel_not_configured').response;
       }

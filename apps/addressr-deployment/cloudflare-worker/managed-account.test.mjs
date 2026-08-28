@@ -7,6 +7,69 @@ import { authorizeSession, handleManagedRequest } from './managed-account.mjs';
 const APP_ORIGIN = 'https://app.addressr.io';
 
 describe('managed account boundary', () => {
+  it('gates account routes exactly while leaving signed webhooks available', async () => {
+    for (const [activation, isActive] of [
+      [undefined, false],
+      ['false', false],
+      ['true', true],
+    ]) {
+      const configured = environment();
+      if (activation === undefined) delete configured.MANAGED_CHANNEL_ENABLED;
+      else configured.MANAGED_CHANNEL_ENABLED = activation;
+
+      const configResponse = await handleManagedRequest(
+        request('/managed/config'),
+        configured,
+      );
+      const config = await configResponse.json();
+      assert.equal(config.available, isActive, String(activation));
+      assert.deepEqual(
+        config.plans,
+        isActive ? [{ key: 'developer', name: 'Developer' }] : [],
+      );
+      assert.equal(
+        config.clerkPublishableKey,
+        isActive ? 'pk_test_addressr' : undefined,
+      );
+
+      let isAuthenticated = false;
+      const accountResponse = await handleManagedRequest(
+        request('/managed/account'),
+        configured,
+        {
+          clerk: {
+            async authenticateRequest() {
+              isAuthenticated = true;
+              return authenticatedState({ orgId: null, orgRole: null });
+            },
+          },
+        },
+      );
+      assert.equal(accountResponse.status, isActive ? 403 : 503);
+      assert.equal(isAuthenticated, isActive);
+
+      const webhookResponse = await handleManagedRequest(
+        new Request('https://api.addressr.io/managed/stripe-webhook', {
+          method: 'POST',
+          headers: { 'stripe-signature': 'signed' },
+          body: '{}',
+        }),
+        configured,
+        {
+          stripe: {
+            webhooks: {
+              async constructEventAsync() {
+                return { id: 'evt_readiness', type: 'ping' };
+              },
+            },
+          },
+        },
+      );
+      assert.equal(webhookResponse.status, 200);
+      assert.deepEqual(await webhookResponse.json(), { received: true });
+    }
+  });
+
   it('publishes only sanitized runtime plan metadata to the allowed app', async () => {
     const response = await handleManagedRequest(
       request('/managed/config'),
@@ -130,6 +193,7 @@ function request(path, options = {}) {
 
 function environment(database = managedDatabase()) {
   return {
+    MANAGED_CHANNEL_ENABLED: 'true',
     CUSTOMER_DB: database,
     CLERK_PUBLISHABLE_KEY: 'pk_test_addressr',
     CLERK_JWT_KEY: 'public-key',
@@ -137,6 +201,7 @@ function environment(database = managedDatabase()) {
     STRIPE_SECRET_KEY: 'sk_test_addressr',
     STRIPE_WEBHOOK_SECRET: 'whsec_addressr',
     STRIPE_METER_EVENT_NAME: 'addressr_request',
+    STRIPE_METER_ID: 'mtr_addressr',
     STRIPE_PAYMENT_METHOD_TYPES: '["card"]',
     STRIPE_PLAN_CATALOGUE: JSON.stringify({
       developer: {

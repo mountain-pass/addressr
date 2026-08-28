@@ -42,8 +42,37 @@ describe('cloudflare-worker/worker — module shape', () => {
 
     assert.equal(response.status, 503);
     assert.deepEqual(await response.json(), {
-      error: 'managed_channel_not_configured',
+      error: 'managed_channel_not_active',
     });
+  });
+
+  it('opens customer traffic only for the exact activation value', async (context) => {
+    const module_ = await import('./worker.js');
+    context.mock.method(globalThis, 'fetch', async () => Response.json([]));
+
+    for (const [activation, expectedStatus] of [
+      [undefined, 503],
+      ['false', 503],
+      ['true', 200],
+    ]) {
+      const database = await customerDatabase(VALID_KEY);
+      const environment = customerEnvironment(database);
+      if (activation === undefined) delete environment.MANAGED_CHANNEL_ENABLED;
+      else environment.MANAGED_CHANNEL_ENABLED = activation;
+
+      const response = await module_.default.fetch(
+        new Request('https://api.addressr.io/addresses?q=main', {
+          headers: { 'x-addressr-api-key': VALID_KEY },
+        }),
+        environment,
+      );
+
+      assert.equal(response.status, expectedStatus, String(activation));
+      assert.deepEqual(
+        database.operations,
+        activation === 'true' ? ['auth', 'reserve', 'finalize'] : [],
+      );
+    }
   });
 
   it('valid customer traffic uses D1 and the direct origin without forwarding credentials', async (context) => {
@@ -312,6 +341,7 @@ function allowingLimiter(expectedKey) {
 
 function customerEnvironment(database) {
   return {
+    MANAGED_CHANNEL_ENABLED: 'true',
     CUSTOMER_DB: database,
     MANAGED_ORIGIN_URLS: JSON.stringify([
       'https://origin-a.example',

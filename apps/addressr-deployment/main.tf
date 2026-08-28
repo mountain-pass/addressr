@@ -733,6 +733,7 @@ module "cloudflare_worker" {
   monitor_rate_limit_namespace_id  = var.monitor_rate_limit_namespace_id
   monitor_rate_limit               = var.monitor_rate_limit
   managed_origin_urls              = var.managed_origin_urls
+  managed_channel_enabled          = var.managed_channel_enabled
   origin_auth_header               = var.proxy_auth_header
   origin_auth_value                = var.proxy_auth_value
   billable_statuses                = var.managed_billable_statuses

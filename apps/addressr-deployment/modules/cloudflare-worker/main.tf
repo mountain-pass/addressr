@@ -32,6 +32,27 @@ resource "cloudflare_workers_script" "proxy" {
   main_module        = var.main_module
   compatibility_date = var.compatibility_date
 
+  lifecycle {
+    precondition {
+      condition = !var.managed_channel_enabled || (
+        length(var.managed_origin_urls) > 0 &&
+        alltrue([for origin in var.managed_origin_urls : can(regex("^https://[^/]+/?$", origin))]) &&
+        length(var.billable_statuses) > 0 &&
+        var.origin_auth_header != "" &&
+        var.origin_auth_value != "" &&
+        var.clerk_publishable_key != "" &&
+        var.clerk_jwt_key != "" &&
+        var.stripe_secret_key != "" &&
+        var.stripe_webhook_secret != "" &&
+        try(length(keys(jsondecode(var.stripe_plan_catalogue))) > 0, false) &&
+        length(var.stripe_payment_method_types) > 0 &&
+        var.stripe_meter_event_name != "" &&
+        var.stripe_meter_id != ""
+      )
+      error_message = "managed_channel_enabled requires complete origin, Clerk, Stripe catalogue, payment-method and metering configuration."
+    }
+  }
+
   # Deployed content is the esbuild bundle (single ES module), NOT the raw
   # worker.js. The CF Terraform provider's cloudflare_workers_script (v5)
   # accepts only a single `content` string — there is no multi-module upload
@@ -85,6 +106,11 @@ resource "cloudflare_workers_script" "proxy" {
       name = "MANAGED_ORIGIN_URLS"
       type = "plain_text"
       text = jsonencode(var.managed_origin_urls)
+    },
+    {
+      name = "MANAGED_CHANNEL_ENABLED"
+      type = "plain_text"
+      text = tostring(var.managed_channel_enabled)
     },
     {
       name = "ORIGIN_AUTH_HEADER"

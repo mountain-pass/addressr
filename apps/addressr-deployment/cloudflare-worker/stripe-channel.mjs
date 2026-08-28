@@ -18,6 +18,7 @@ export function isStripeConfigAvailable(environment) {
     createStripeClient(environment) &&
     environment?.STRIPE_WEBHOOK_SECRET &&
     environment?.STRIPE_METER_EVENT_NAME &&
+    environment?.STRIPE_METER_ID &&
     planCatalogue(environment).size > 0 &&
     paymentMethods(environment).length > 0,
   );

@@ -1,6 +1,9 @@
 /* eslint-disable n/no-unsupported-features/node-builtins -- Cloudflare Workers provides Web Crypto and randomUUID. */
 import { createClerkClient } from '@clerk/backend';
-import { createCustomerKey } from './customer-channel.mjs';
+import {
+  createCustomerKey,
+  isManagedChannelEnabled,
+} from './customer-channel.mjs';
 import {
   createCheckout,
   createPortal,
@@ -32,19 +35,31 @@ export async function handleManagedRequest(
   }
   if (request.method === 'OPTIONS') return preflight(request, environment);
   if (path === '/managed/config' && request.method === 'GET') {
-    const plans = [...planCatalogue(environment)].map(([key, plan]) => ({
-      key,
-      name:
-        typeof plan.name === 'string' && plan.name.trim()
-          ? plan.name.trim().slice(0, 80)
-          : key,
-    }));
+    const enabled = isManagedChannelEnabled(environment);
+    const plans = enabled
+      ? [...planCatalogue(environment)].map(([key, plan]) => ({
+          key,
+          name:
+            typeof plan.name === 'string' && plan.name.trim()
+              ? plan.name.trim().slice(0, 80)
+              : key,
+        }))
+      : [];
     return withCors(
       Response.json({
         available: isManagedAccountConfigAvailable(environment),
-        clerkPublishableKey: environment?.CLERK_PUBLISHABLE_KEY || undefined,
+        clerkPublishableKey: enabled
+          ? environment?.CLERK_PUBLISHABLE_KEY || undefined
+          : undefined,
         plans,
       }),
+      request,
+      environment,
+    );
+  }
+  if (!isManagedChannelEnabled(environment)) {
+    return withCors(
+      problem(503, 'managed_channel_not_active'),
       request,
       environment,
     );
@@ -117,6 +132,7 @@ export async function handleManagedRequest(
 export function isManagedAccountConfigAvailable(environment) {
   if (!environment) return false;
   return Boolean(
+    isManagedChannelEnabled(environment) &&
     environment.CUSTOMER_DB &&
     environment.CLERK_PUBLISHABLE_KEY &&
     environment.CLERK_JWT_KEY &&

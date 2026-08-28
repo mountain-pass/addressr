@@ -163,8 +163,13 @@ export function managedOrigins(environment) {
   }
 }
 
+export function isManagedChannelEnabled(environment) {
+  return environment?.MANAGED_CHANNEL_ENABLED === 'true';
+}
+
 export function isManagedConfigAvailable(environment) {
   return Boolean(
+    isManagedChannelEnabled(environment) &&
     environment?.CUSTOMER_DB &&
     managedOrigins(environment).length > 0 &&
     environment?.ORIGIN_AUTH_HEADER &&

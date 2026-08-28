@@ -72,6 +72,12 @@ variable "managed_origin_urls" {
   description = "ADR-073 direct origin base URLs. Kept out of source and supplied through the production workspace."
 }
 
+variable "managed_channel_enabled" {
+  type        = bool
+  nullable    = false
+  description = "Explicit production switch for the Addressr-managed customer and account routes."
+}
+
 variable "origin_auth_header" {
   type        = string
   sensitive   = true

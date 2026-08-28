@@ -101,6 +101,13 @@ variable "managed_origin_urls" {
   description = "ADR-073 direct origin base URLs, supplied confidentially by the production workspace. Empty keeps the customer branch fail-closed."
 }
 
+variable "managed_channel_enabled" {
+  type        = bool
+  nullable    = false
+  default     = false
+  description = "Explicit ADR-062 production activation switch. False keeps every customer-facing managed route closed even when provider configuration is present."
+}
+
 variable "managed_billable_statuses" {
   type        = set(number)
   sensitive   = true
