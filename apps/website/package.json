@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/website",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "type": "commonjs",
   "description": "addressr.io",
@@ -23,7 +23,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@mdx-js/react": "^2.3.0",
-    "@mountainpass/addressr-react": "0.7.3",
+    "@mountainpass/addressr-react": "0.7.4",
     "gatsby": "^5.12.4",
     "gatsby-plugin-force-trailing-slashes": "^1.0.6",
     "gatsby-plugin-google-gtag": "^5.12.0",

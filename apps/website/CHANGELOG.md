@@ -1,5 +1,13 @@
 # @mountainpass/website
 
+## 1.0.5
+
+### Patch Changes
+
+- 5350902: Wait until an address query contains at least three characters after whitespace normalisation before searching or showing an empty result. Replace the homepage evidence heading with buyer-focused copy.
+- Updated dependencies [5350902]
+  - @mountainpass/addressr-react@0.7.4
+
 ## 1.0.4
 
 ### Patch Changes
