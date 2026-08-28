@@ -188,7 +188,7 @@ Revisit this decision if any of the following occur:
 
 - [ADR 013](013-docker-image.superseded.md) — Docker image distribution (self-hosted topology; must remain zero-config)
 - [ADR 016](./016-uptime-robot-monitoring.accepted.md) — UptimeRobot monitoring (unaffected; monitor path goes through the Cloudflare Worker → RapidAPI → origin, and `/health` is allowlisted in any case)
-- [ADR 017](./017-rapidapi-distribution.accepted.md) — RapidAPI distribution (the current fronted topology this ADR protects)
+- [ADR 017](./017-rapidapi-distribution.superseded.md) — RapidAPI distribution (the current fronted topology this ADR protects)
 - [ADR 018](./018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (unaffected; worker still calls `addressr.p.rapidapi.com`, not the upstream directly)
 - [ADR 023](./023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec RapidAPI CI sync (imposes constraint that `/api-docs` must remain unauthenticated; honoured by the allowlist)
 - [Problem 008](../problems/closed/008-rapidapi-gateway-rejecting-all-keys-for-listing.md) — outage that formally raised this follow-up

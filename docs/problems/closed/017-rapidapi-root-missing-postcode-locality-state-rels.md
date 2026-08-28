@@ -133,7 +133,7 @@ Short-term (regardless of root cause): publish the three endpoints' contract (pa
 ## Related
 
 - [P006: RapidAPI CI sync deferred](006-rapidapi-ci-sync-deferred.md) — marketplace listing drift; may compound this issue if RapidAPI still points at a pre-v2 listing
-- [ADR 017: RapidAPI Distribution](../../decisions/017-rapidapi-distribution.accepted.md)
+- [ADR 017: RapidAPI Distribution](../../decisions/017-rapidapi-distribution.superseded.md)
 - [ADR 022: Locality/Postcode from Address Details](../../decisions/022-locality-postcode-from-address-details.proposed.md)
 - [ADR 023: OpenAPI Spec RapidAPI CI Sync](../../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md)
 - Commits that added the v2 search endpoints: `231a409`, `b1e9ab1`, `d36ad8c`, `6956daf`, `00f6ff0`, `0249fa6`, `38764f5`, `ad2e5c0`

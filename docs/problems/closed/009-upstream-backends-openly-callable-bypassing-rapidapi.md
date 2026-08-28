@@ -114,7 +114,7 @@ Gateway-agnostic opt-in header enforcement at the Express origin:
 
 ## Related
 
-- [ADR 017](../../decisions/017-rapidapi-distribution.accepted.md) — RapidAPI as monetization gateway (this problem exposes a gap in its enforcement)
+- [ADR 017](../../decisions/017-rapidapi-distribution.superseded.md) — RapidAPI as monetization gateway (this problem exposes a gap in its enforcement)
 - [ADR 018](../../decisions/018-cloudflare-worker-api-proxy.accepted.md) — Cloudflare Worker key proxy (references the upstream hostnames this problem seeks to protect)
 - [ADR 023](../../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md) — OpenAPI spec sync (imposes constraint that `/api-docs` must remain unauthenticated)
 - [ADR 024](../../decisions/024-origin-gateway-auth-header-enforcement.accepted.md) — accepted with v2.1.5; records the gateway-agnostic enforcement decision this problem required

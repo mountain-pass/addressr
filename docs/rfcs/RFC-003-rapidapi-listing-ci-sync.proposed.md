@@ -53,5 +53,5 @@ Staged implementation:
 
 - [P006: RapidAPI CI sync deferred](../problems/closed/006-rapidapi-ci-sync-deferred.md) — driving Known Error
 - [ADR 023: OpenAPI Spec RapidAPI CI Sync](../decisions/023-openapi-spec-rapidapi-ci-sync.proposed.md) — ratified decision this RFC implements; update its Implementation Notes when the sync ships
-- [ADR 017: RapidAPI Distribution](../decisions/017-rapidapi-distribution.accepted.md)
+- [ADR 017: RapidAPI Distribution](../decisions/017-rapidapi-distribution.superseded.md)
 - Single-commit grain per wr-itil ADR-014 (framework decision — distinct from addressr's own ADR 014, ESLint 9 Flat Configuration)

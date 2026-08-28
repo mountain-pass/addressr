@@ -75,4 +75,4 @@ Chosen option: **Option A** — emit `Access-Control-Max-Age` (env var `ADDRESSR
 - [P023](../problems/verifying/023-cross-origin-root-not-browser-cached.md) — root-cause analysis + Fix Strategy.
 - [RFC-008](../rfcs/RFC-008-cors-preflight-max-age-at-origin.proposed.md) — the fix vehicle tracing P023.
 - [ADR 024](024-origin-gateway-auth-header-enforcement.accepted.md) — proxy-auth enforcement narrowed by this decision (OPTIONS method-level exemption).
-- [ADR 017](017-rapidapi-distribution.accepted.md) — RapidAPI distribution; the gateway layer that owns the GET disk-cache-miss half of P023.
+- [ADR 017](017-rapidapi-distribution.superseded.md) — RapidAPI distribution; the gateway layer that owns the GET disk-cache-miss half of P023.

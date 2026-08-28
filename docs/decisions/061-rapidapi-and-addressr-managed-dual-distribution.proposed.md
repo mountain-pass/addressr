@@ -1,11 +1,13 @@
 ---
 status: 'proposed'
 date: 2026-08-28
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-28
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent]
 informed: []
 reassessment-date: 2026-11-28
+supersedes: [017-rapidapi-distribution]
 ---
 
 # RapidAPI and Addressr-managed dual distribution
@@ -35,7 +37,7 @@ Addressr now wants to sell the hosted API from `addressr.io` using its own accou
 
 Chosen option: **"Operate RapidAPI and an Addressr-managed channel in parallel."**
 
-If ratified, this decision supersedes ADR-017 in full. Until then, ADR-017 remains the in-force distribution decision.
+This decision supersedes ADR-017 in full.
 
 RapidAPI remains an independently available sales and delivery channel. Addressr adds its own channel without migrating RapidAPI subscribers, keys, plans, usage or billing history. Neither channel is described as temporary or as the canonical source of the other's customer records.
 
@@ -101,6 +103,8 @@ Reassess if either channel produces no new subscribers for two consecutive quart
 
 ## Related
 
-- [ADR-017 — RapidAPI as the Primary API Distribution Channel](017-rapidapi-distribution.accepted.md) — remains in force until this proposal is ratified; this proposal would then supersede it in full.
-- [ADR-062 — Cloudflare edge customer gateway with origin-independent server](062-cloudflare-edge-customer-gateway-with-origin-independent-server.proposed.md) — separates direct-channel enforcement from the origin.
-- [ADR-063 — Organisation-owned identity and Stripe billing with RapidAPI-plan parity](063-organisation-owned-identity-and-stripe-billing-with-rapidapi-plan-parity.proposed.md) — defines the Addressr-managed commercial channel.
+- [ADR-017 — RapidAPI as the Primary API Distribution Channel](017-rapidapi-distribution.superseded.md) — superseded in full by this dual-channel decision.
+- [ADR-062 — Hosted customer access enforced at the gateway](062-hosted-customer-access-enforced-at-the-gateway.proposed.md) — places direct-channel enforcement outside the search server.
+- [ADR-066 — Clerk as the application identity provider](066-clerk-as-the-application-identity-provider.proposed.md) — supplies identity for the Addressr-managed channel.
+- [ADR-068 — Stripe-hosted billing interactions](068-stripe-hosted-billing-interactions.proposed.md) — supplies checkout and billing self-service.
+- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.proposed.md) — keeps the launch offer comparable across channels.
