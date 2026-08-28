@@ -730,6 +730,7 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.TF_VAR_cloudflare_account_id }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.TF_VAR_cloudflare_pages_api_token }}
+          WRANGLER_CACHE_DIR: ${{ runner.temp }}/wrangler-cache
         run: >-
           npm exec -w @mountainpass/addressr-deployment -- wrangler pages deploy ../website/public
           --project-name=addressr
