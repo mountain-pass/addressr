@@ -1,5 +1,11 @@
 # @mountainpass/addressr-react
 
+## 0.7.5
+
+### Patch Changes
+
+- 2079904: Keep address, locality, and postcode pagination tied to the current search so stale pages cannot overwrite new results or produce contradictory screen-reader status messages.
+
 ## 0.7.4
 
 ### Patch Changes

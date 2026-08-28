@@ -1,5 +1,13 @@
 # @mountainpass/website
 
+## 1.0.7
+
+### Patch Changes
+
+- e998686: Keep keyboard focus on the destination page when navigating from the site menu, even when the menu's inert state and Gatsby route update complete in different frames.
+- Updated dependencies [2079904]
+  - @mountainpass/addressr-react@0.7.5
+
 ## 1.0.6
 
 ### Patch Changes
