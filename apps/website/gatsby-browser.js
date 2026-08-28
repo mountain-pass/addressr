@@ -7,9 +7,9 @@
 export const onRouteUpdate = ({ location, prevLocation }) => {
   if (!prevLocation || prevLocation.pathname === location.pathname) return;
 
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     document.querySelector('#content')?.focus({ preventScroll: true });
-  });
+  }, 0);
 };
 
 // class SessionCheck extends React.Component {
