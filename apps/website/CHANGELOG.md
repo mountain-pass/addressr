@@ -1,5 +1,11 @@
 # @mountainpass/website
 
+## 1.0.8
+
+### Patch Changes
+
+- 1273b22: Deploy website releases with Wrangler's cache in the writable GitHub runner temporary directory, avoiding a post-upload permission failure after the containerised production deployment.
+
 ## 1.0.7
 
 ### Patch Changes
