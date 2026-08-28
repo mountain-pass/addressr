@@ -7,8 +7,8 @@ import Header from './Header';
 import Menu from './Menu';
 
 class Layout extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor(properties) {
+    super(properties);
     this.state = {
       isMenuVisible: false,
       loading: 'is-loading',
@@ -116,10 +116,15 @@ class Layout extends React.Component {
     });
   }
 
-  // Navigation: a menu link was followed. Close, but do NOT restore focus —
-  // the page is changing and the destination owns focus from here.
+  // Navigation: a menu link was followed. Close, but do NOT restore focus to
+  // the opener. Wait until React removes `inert`, then move focus into the
+  // destination; Gatsby's route hook can otherwise race this state commit.
   handleNavigateFromMenu() {
-    this.setState({ isMenuVisible: false });
+    this.setState({ isMenuVisible: false }, () => {
+      requestAnimationFrame(() => {
+        document.getElementById('content')?.focus({ preventScroll: true });
+      });
+    });
   }
 
   // THE HANDLER IS NOT BELT-AND-BRACES; without it the skip link does not work.
