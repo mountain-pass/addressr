@@ -7,9 +7,32 @@
 export const onRouteUpdate = ({ location, prevLocation }) => {
   if (!prevLocation || prevLocation.pathname === location.pathname) return;
 
-  setTimeout(() => {
-    document.querySelector('#content')?.focus({ preventScroll: true });
-  }, 0);
+  // ponytail: 10 frames bounds Gatsby focus recovery; instrument before widening.
+  let framesRemaining = 10;
+  let focusedFrames = 0;
+  const focusContent = () => {
+    const content = document.querySelector('#content');
+    if (!content || framesRemaining === 0) return;
+    framesRemaining -= 1;
+
+    if (
+      content.contains(document.activeElement) &&
+      document.activeElement !== content
+    )
+      return;
+
+    if (document.activeElement === content) {
+      focusedFrames += 1;
+      if (focusedFrames === 2) return;
+    } else {
+      focusedFrames = 0;
+      if (!content.closest('[inert]')) content.focus({ preventScroll: true });
+    }
+
+    requestAnimationFrame(focusContent);
+  };
+
+  requestAnimationFrame(focusContent);
 };
 
 // class SessionCheck extends React.Component {
