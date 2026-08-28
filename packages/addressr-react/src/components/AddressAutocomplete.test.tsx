@@ -416,6 +416,53 @@ describe('AddressAutocomplete', () => {
     });
   });
 
+  it('does not paginate stale results after the query changes', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(rootResponse())
+      .mockImplementation(() => Promise.resolve(searchResponse(true)));
+
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
+
+    await userEvent.type(screen.getByRole('combobox'), '1 george');
+    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+
+    const menu = screen.getByRole('listbox');
+    Object.defineProperties(menu, {
+      scrollTop: { value: 100, writable: true },
+      scrollHeight: { value: 150, writable: true },
+      clientHeight: { value: 100, writable: true },
+    });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '2 george' } });
+    fireEvent.scroll(menu);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Searching addresses...');
+    expect(screen.queryByText('Loading more...')).not.toBeInTheDocument();
+    expect(
+      mockFetch.mock.calls.some(([url]) => String(url instanceof Request ? url.url : url).includes('p=2')),
+    ).toBe(false);
+  });
+
+  it('preserves settled results when only query whitespace changes', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(rootResponse())
+      .mockImplementation(() => Promise.resolve(searchResponse(true)));
+
+    render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
+
+    await userEvent.type(screen.getByRole('combobox'), '1 george');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 addresses found'));
+    const callsAfterSearch = mockFetch.mock.calls.length;
+
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '  1   george  ' } });
+
+    expect(screen.getByRole('combobox')).toHaveValue('  1   george  ');
+    expect(screen.getByRole('option')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('1 addresses found');
+    expect(mockFetch).toHaveBeenCalledTimes(callsAfterSearch);
+  });
+
   it('accepts renderError prop', async () => {
     const mockFetch = vi.fn().mockImplementation((url: string | Request | URL) => {
       const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
@@ -487,6 +534,9 @@ describe('AddressAutocomplete', () => {
       clientHeight: { value: 100, writable: true },
     });
     fireEvent.scroll(menu);
+
+    // Downshift may replay the controlled value while pagination is pending.
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1 george' } });
 
     await waitFor(() => {
       expect(screen.getByText('Loading more...')).toBeInTheDocument();

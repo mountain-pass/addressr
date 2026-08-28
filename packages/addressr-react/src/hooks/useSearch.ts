@@ -55,8 +55,12 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
   const [error, setError] = useState<Error | null>(null);
   const [lastPage, setLastPage] = useState<SearchPage<T> | null>(null);
 
+  const queryRef = useRef('');
+  const queryGenerationRef = useRef(0);
+  const settledGenerationRef = useRef<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
+  const paginationAbortRef = useRef<AbortController>(undefined);
   const nextLinkRef = useRef<Link | null>(null);
 
   // Keep searchFn in a ref so its identity does not feed into the search effect's
@@ -72,10 +76,19 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
 
   const setQuery = useCallback(
     (q: string) => {
+      if (q === queryRef.current) return;
+      queryRef.current = q;
+      queryGenerationRef.current += 1;
+      settledGenerationRef.current = null;
       setQueryState(q);
       clearTimeout(debounceRef.current);
       abortRef.current?.abort();
+      paginationAbortRef.current?.abort();
       setError(null);
+      setIsLoadingMore(false);
+      nextLinkRef.current = null;
+      setLastPage(null);
+      setHasMore(false);
 
       if (q.length >= minQueryLength) {
         setIsLoading(true);
@@ -108,16 +121,19 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    const generation = queryGenerationRef.current;
 
     setIsLoading(true);
     setError(null);
 
     searchFnRef.current(client, debouncedQuery, controller.signal)
       .then((page) => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && generation === queryGenerationRef.current) {
           setResults(page.results);
           nextLinkRef.current = page.nextLink;
           setLastPage(page);
+          settledGenerationRef.current = generation;
+          setHasMore(page.nextLink !== null);
           setIsLoading(false);
         }
       })
@@ -134,33 +150,39 @@ export function useSearch<T>(options: UseSearchOptions<T>): UseSearchReturn<T> {
     return () => controller.abort();
   }, [debouncedQuery, minQueryLength, client]);
 
-  useEffect(() => {
-    setHasMore(nextLinkRef.current !== null);
-  }, [results]);
-
   const loadMore = useCallback(async () => {
     const nextLink = nextLinkRef.current;
-    if (!nextLink || isLoadingMore) return;
+    const generation = settledGenerationRef.current;
+    if (!nextLink || isLoading || isLoadingMore || generation === null || generation !== queryGenerationRef.current) {
+      return;
+    }
 
+    const controller = new AbortController();
+    paginationAbortRef.current = controller;
     setIsLoadingMore(true);
     try {
-      const page = await client.fetchNextPage<T>(nextLink);
+      const page = await client.fetchNextPage<T>(nextLink, controller.signal);
+      if (controller.signal.aborted || generation !== queryGenerationRef.current) return;
       setResults((prev) => [...prev, ...page.results]);
       nextLinkRef.current = page.nextLink;
       setLastPage(page);
       setHasMore(page.nextLink !== null);
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
+      if (generation === queryGenerationRef.current && err instanceof Error && err.name !== 'AbortError') {
         setError(err);
       }
     } finally {
-      setIsLoadingMore(false);
+      if (generation === queryGenerationRef.current) setIsLoadingMore(false);
     }
-  }, [client, isLoadingMore]);
+  }, [client, isLoading, isLoadingMore]);
 
   const clear = useCallback(() => {
+    queryRef.current = '';
+    queryGenerationRef.current += 1;
+    settledGenerationRef.current = null;
     clearTimeout(debounceRef.current);
     abortRef.current?.abort();
+    paginationAbortRef.current?.abort();
     setQueryState('');
     setDebouncedQuery('');
     setResults([]);

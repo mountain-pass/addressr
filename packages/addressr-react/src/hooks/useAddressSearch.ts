@@ -49,8 +49,12 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
   const [error, setError] = useState<Error | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<AddressDetail | null>(null);
 
+  const queryRef = useRef('');
+  const queryGenerationRef = useRef(0);
+  const settledGenerationRef = useRef<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
+  const paginationAbortRef = useRef<AbortController>(undefined);
   const nextLinkRef = useRef<Link | null>(null);
   const searchPageRef = useRef<SearchPage | null>(null);
 
@@ -61,11 +65,22 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
 
   const setQuery = useCallback(
     (q: string) => {
+      if (q === queryRef.current) return;
+      const previousNormalisedQuery = normaliseAddressQuery(queryRef.current);
       const normalisedQuery = normaliseAddressQuery(q);
+      queryRef.current = q;
       setQueryState(q);
+      if (normalisedQuery === previousNormalisedQuery) return;
+      queryGenerationRef.current += 1;
+      settledGenerationRef.current = null;
       clearTimeout(debounceRef.current);
       abortRef.current?.abort();
+      paginationAbortRef.current?.abort();
       setError(null);
+      setIsLoadingMore(false);
+      nextLinkRef.current = null;
+      searchPageRef.current = null;
+      setHasMore(false);
 
       if (normalisedQuery.length >= minQueryLength) {
         setIsLoading(true);
@@ -103,6 +118,7 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    const generation = queryGenerationRef.current;
 
     setIsLoading(true);
     setError(null);
@@ -110,10 +126,12 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
     client
       .searchAddresses(debouncedQuery, controller.signal)
       .then((page) => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && generation === queryGenerationRef.current) {
           setResults(page.results);
           nextLinkRef.current = page.nextLink;
           searchPageRef.current = page;
+          settledGenerationRef.current = generation;
+          setHasMore(page.nextLink !== null);
           setIsLoading(false);
         }
       })
@@ -130,30 +148,31 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
     return () => controller.abort();
   }, [debouncedQuery, minQueryLength, client]);
 
-  // Keep hasMore in sync with nextLinkRef
-  useEffect(() => {
-    setHasMore(nextLinkRef.current !== null);
-  }, [results]);
-
   const loadMore = useCallback(async () => {
     const nextLink = nextLinkRef.current;
-    if (!nextLink || isLoadingMore) return;
+    const generation = settledGenerationRef.current;
+    if (!nextLink || isLoading || isLoadingMore || generation === null || generation !== queryGenerationRef.current) {
+      return;
+    }
 
+    const controller = new AbortController();
+    paginationAbortRef.current = controller;
     setIsLoadingMore(true);
     try {
-      const page = await client.fetchNextPage(nextLink);
+      const page = await client.fetchNextPage(nextLink, controller.signal);
+      if (controller.signal.aborted || generation !== queryGenerationRef.current) return;
       setResults((prev) => [...prev, ...page.results]);
       nextLinkRef.current = page.nextLink;
       searchPageRef.current = page;
       setHasMore(page.nextLink !== null);
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
+      if (generation === queryGenerationRef.current && err instanceof Error && err.name !== 'AbortError') {
         setError(err);
       }
     } finally {
-      setIsLoadingMore(false);
+      if (generation === queryGenerationRef.current) setIsLoadingMore(false);
     }
-  }, [client, isLoadingMore]);
+  }, [client, isLoading, isLoadingMore]);
 
   const selectAddress = useCallback(
     async (pid: string) => {
@@ -171,8 +190,12 @@ export function useAddressSearch(options: UseAddressSearchOptions): UseAddressSe
   );
 
   const clear = useCallback(() => {
+    queryRef.current = '';
+    queryGenerationRef.current += 1;
+    settledGenerationRef.current = null;
     clearTimeout(debounceRef.current);
     abortRef.current?.abort();
+    paginationAbortRef.current?.abort();
     setQueryState('');
     setDebouncedQuery('');
     setResults([]);

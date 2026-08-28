@@ -54,6 +54,47 @@ describe('useSearch (internal generic)', () => {
 });
 
 describe('useSearch (more)', () => {
+  it('discards a pending page when the query changes', async () => {
+    let resolvePage2: (value: Response) => void;
+    const page2 = new Promise<Response>((resolve) => {
+      resolvePage2 = resolve;
+    });
+    const firstPage = {
+      ...MOCK_SEARCH_RESPONSE,
+      headers: new Headers({
+        link: '</addresses/PID1>; rel=canonical; anchor="#/0", </addresses?q=foo&p=2>; rel=next',
+      }),
+    };
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(MOCK_ROOT_RESPONSE)
+      .mockResolvedValueOnce(firstPage)
+      .mockReturnValueOnce(page2);
+    const { result } = renderHook(() =>
+      useSearch({
+        apiKey: 'k',
+        fetchImpl: mockFetch,
+        debounceMs: 1,
+        minQueryLength: 2,
+        searchFn: (client, query, signal) => client.searchAddresses(query, signal),
+      }),
+    );
+
+    act(() => result.current.setQuery('foo'));
+    await waitFor(() => expect(result.current.hasMore).toBe(true));
+    act(() => void result.current.loadMore());
+    await waitFor(() => expect(result.current.isLoadingMore).toBe(true));
+
+    act(() => result.current.setQuery('x'));
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLoadingMore).toBe(false);
+    expect(result.current.hasMore).toBe(false);
+    expect(result.current.results).toEqual([]);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+
+    resolvePage2!(MOCK_SEARCH_RESPONSE as Response);
+    await waitFor(() => expect(result.current.results).toEqual([]));
+  });
+
   it('returns the generic type from searchFn', async () => {
     type Item = { id: number; name: string };
     const mockFetch = vi.fn()
