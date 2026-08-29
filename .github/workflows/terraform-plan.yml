@@ -175,6 +175,8 @@ jobs:
           TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
           TF_VAR_clerk_publishable_key: ${{ secrets.TF_VAR_clerk_publishable_key }}
           TF_VAR_clerk_jwt_key: ${{ secrets.TF_VAR_clerk_jwt_key }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          TF_VAR_stripe_catalogue_terms: ${{ secrets.TF_VAR_stripe_catalogue_terms }}
           TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
         with:
           runCmd: |
@@ -194,6 +196,8 @@ jobs:
             TF_VAR_cloudflare_rapidapi_key
             TF_VAR_clerk_publishable_key
             TF_VAR_clerk_jwt_key
+            STRIPE_API_KEY
+            TF_VAR_stripe_catalogue_terms
             TF_TOKEN_app_terraform_io
 
       # WHITELIST projection, never a redaction of the full document. `terraform

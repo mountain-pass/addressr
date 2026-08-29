@@ -18,6 +18,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
+    stripe = {
+      source  = "stripe/stripe"
+      version = "= 0.2.3"
+    }
   }
   required_version = ">= 1.5"
 }

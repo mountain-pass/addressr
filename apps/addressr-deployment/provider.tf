@@ -18,3 +18,7 @@ provider "cloudflare" {
   alias     = "pages"
   api_token = var.cloudflare_pages_api_token
 }
+
+# ADR-085: the release pipeline supplies STRIPE_API_KEY directly to the
+# official provider. The runtime Worker key remains a separate secret.
+provider "stripe" {}

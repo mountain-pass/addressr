@@ -179,6 +179,58 @@ variable "stripe_meter_id" {
   description = "Stripe meter identifier used for provider-side usage reconciliation. Empty keeps reconciliation disabled."
 }
 
+variable "stripe_catalogue_terms" {
+  type = map(object({
+    currency            = string
+    unit_amount_decimal = optional(string)
+    tiers = optional(list(object({
+      up_to               = string
+      flat_amount_decimal = optional(string)
+      unit_amount_decimal = optional(string)
+    })))
+  }))
+  sensitive   = true
+  nullable    = false
+  description = "ADR-085 confidential public-plan price terms supplied by the release pipeline."
+
+  validation {
+    condition = length(var.stripe_catalogue_terms) == 4 && alltrue([
+      for plan in ["basic", "pro", "ultra", "mega"] : contains(keys(var.stripe_catalogue_terms), plan)
+    ])
+    error_message = "Stripe catalogue terms must define exactly basic, pro, ultra and mega."
+  }
+
+  validation {
+    condition = alltrue([
+      for terms in values(var.stripe_catalogue_terms) : can(regex("^[a-z]{3}$", terms.currency))
+    ])
+    error_message = "Every Stripe catalogue currency must be a lowercase three-letter code."
+  }
+
+  validation {
+    condition = alltrue([
+      for plan in ["basic", "pro"] :
+      can(regex("^[0-9]+(?:\\.[0-9]+)?$", var.stripe_catalogue_terms[plan].unit_amount_decimal)) &&
+      var.stripe_catalogue_terms[plan].tiers == null
+    ])
+    error_message = "Basic and pro must each define one non-negative decimal unit amount and no tiers."
+  }
+
+  validation {
+    condition = alltrue([
+      for plan in ["ultra", "mega"] :
+      var.stripe_catalogue_terms[plan].unit_amount_decimal == null &&
+      length(var.stripe_catalogue_terms[plan].tiers) == 2 &&
+      var.stripe_catalogue_terms[plan].tiers[0].up_to != "inf" &&
+      var.stripe_catalogue_terms[plan].tiers[1].up_to == "inf" &&
+      can(regex("^[0-9]+(?:\\.[0-9]+)?$", var.stripe_catalogue_terms[plan].tiers[0].flat_amount_decimal)) &&
+      can(regex("^[0-9]+(?:\\.[0-9]+)?$", var.stripe_catalogue_terms[plan].tiers[0].unit_amount_decimal)) &&
+      can(regex("^[0-9]+(?:\\.[0-9]+)?$", var.stripe_catalogue_terms[plan].tiers[1].unit_amount_decimal))
+    ])
+    error_message = "Ultra and mega must each define two graduated tiers ending at inf, with non-negative decimal amounts."
+  }
+}
+
 variable "managed_app_url" {
   type        = string
   nullable    = false

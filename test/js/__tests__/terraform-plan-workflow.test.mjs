@@ -33,6 +33,14 @@ import { load } from 'js-yaml';
 const PATH = '.github/workflows/terraform-plan.yml';
 const raw = readFileSync(PATH, 'utf8');
 const wf = load(raw);
+const stripeCatalogue = readFileSync(
+  'apps/addressr-deployment/stripe-catalogue.tf',
+  'utf8',
+);
+const terraformVersions = readFileSync(
+  'apps/addressr-deployment/versions.tf',
+  'utf8',
+);
 
 // `on:` parses as boolean true in YAML 1.1 — the same coercion trap release.yml
 // documents. Read it by either key rather than assuming which one lands.
@@ -162,6 +170,24 @@ describe('terraform-plan.yml', () => {
     assert.ok(
       !/deploy_only/.test(code),
       'must not invoke the release deploy path',
+    );
+  });
+});
+
+describe('dormant Stripe catalogue', () => {
+  it('uses the pinned official provider and creates only inactive sale objects', () => {
+    assert.match(terraformVersions, /source\s*=\s*"stripe\/stripe"/);
+    assert.match(terraformVersions, /version\s*=\s*"= 0\.2\.3"/);
+    assert.equal(
+      [...stripeCatalogue.matchAll(/\bactive\s*=\s*false\b/g)].length,
+      3,
+      'the product and both price declarations must remain inactive',
+    );
+    assert.match(stripeCatalogue, /resource "stripe_billing_meter" "addressr_requests"/);
+    assert.doesNotMatch(
+      stripeCatalogue,
+      /resource\s+"stripe_(?:customer|subscription|payment_intent|invoice)"/,
+      'catalogue provisioning must not create customer financial state',
     );
   });
 });
