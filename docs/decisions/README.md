@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 84 (75 in-force, 9 historical)
+**Total ADRs:** 85 (76 in-force, 9 historical)
 
 ---
 
 ## In-force decisions
 
-_75 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_76 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -478,6 +478,13 @@ _75 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** `org:admin` alone may mutate membership, billing and API keys; `org:member` may view and use authorised organisation resources but cannot change commercial state.
 **Confirmation:** Members receive HTTP 403 for Checkout, Customer Portal and API-key mutations; administrators succeed for their active organisation; Clerk membership controls preserve the same boundary; cross-organisation access fails; removing a member preserves organisation-owned resources.
 **Related:** ADR-066, ADR-067, ADR-068, ADR-070, JTBD-005
+
+### ADR-085 — Terraform owns the Stripe catalogue
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Manage live Stripe products, prices and billing meters with the official `stripe/stripe` Terraform provider pinned at stable version `0.2.3`, using the existing changeset-armed release-PR plan and apply path rather than dashboard or imperative API mutations.
+**Confirmation:** The provider and committed lockfile resolve exactly `0.2.3`; the release-PR plan contains only intended inactive catalogue resources; confidential terms and credentials come from protected secrets; `managed_channel_enabled` remains false; no customer, subscription or charge is created.
+**Related:** ADR-045, ADR-068, ADR-071, ADR-072
 
 ---
 
