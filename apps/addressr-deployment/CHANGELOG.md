@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.8
+
+### Patch Changes
+
+- 9fccb51: Supply the production Clerk publishable key and JWT verification key to the matching Terraform plan and release paths, allowing identity configuration to reach the managed-channel Worker while the customer channel remains disabled.
+
 ## 1.0.7
 
 ### Patch Changes
