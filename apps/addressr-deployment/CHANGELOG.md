@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.7
+
+### Patch Changes
+
+- c2b1da6: Provision Addressr's Clerk production DNS records through the existing Terraform release path so managed-account authentication, the account portal and verification email can be activated without dashboard-only infrastructure.
+
 ## 1.0.6
 
 ### Patch Changes
