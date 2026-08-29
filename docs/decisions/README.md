@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 83 (74 in-force, 9 historical)
+**Total ADRs:** 84 (75 in-force, 9 historical)
 
 ---
 
 ## In-force decisions
 
-_74 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_75 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -471,6 +471,13 @@ _74 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Stripe Smart Retries may pick attempt timing, but managed-subscription payment recovery is capped at eight attempts within fourteen days — Stripe's recommended default, chosen to put an explicit numeric ceiling on the unpaid-access exposure ADR-075 creates.
 **Confirmation:** Authenticated Stripe settings readback proves eight attempts within fourteen days before activation; signed-webhook behavioural tests keep past_due access inside the window and deny at recovery-exhausted; sandbox evidence exercises recovery and exhaustion for the enabled configuration; no local timer extends or shortens the Stripe window; retry-count or duration drift blocks activation and alerts.
 **Related:** ADR-075, ADR-076, ADR-079
+
+### ADR-084 — Commercial administration requires the organisation administrator role
+
+**Status:** proposed | **Oversight:** confirmed
+**Decides:** `org:admin` alone may mutate membership, billing and API keys; `org:member` may view and use authorised organisation resources but cannot change commercial state.
+**Confirmation:** Members receive HTTP 403 for Checkout, Customer Portal and API-key mutations; administrators succeed for their active organisation; Clerk membership controls preserve the same boundary; cross-organisation access fails; removing a member preserves organisation-owned resources.
+**Related:** ADR-066, ADR-067, ADR-068, ADR-070, JTBD-005
 
 ---
 

@@ -805,6 +805,27 @@ resource "cloudflare_dns_record" "website_app" {
   proxied = true
 }
 
+# ADR-066: Clerk's production frontend API, account portal and mail records.
+# These must remain DNS-only so Clerk can verify them and issue certificates.
+resource "cloudflare_dns_record" "clerk" {
+  provider = cloudflare.pages
+
+  for_each = {
+    "clerk"           = "frontend-api.clerk.services"
+    "accounts"        = "accounts.clerk.services"
+    "clkmail"         = "mail.h9zbjfqi9ui4.clerk.services"
+    "clk._domainkey"  = "dkim1.h9zbjfqi9ui4.clerk.services"
+    "clk2._domainkey" = "dkim2.h9zbjfqi9ui4.clerk.services"
+  }
+
+  zone_id = var.cloudflare_zone_id
+  name    = "${each.key}.addressr.io"
+  type    = "CNAME"
+  content = each.value
+  ttl     = 1
+  proxied = false
+}
+
 import {
   to = cloudflare_dns_record.website_apex
   id = "${var.cloudflare_zone_id}/7996e1b39da5b6473cd6b4ace99d8fd9"

@@ -19,9 +19,10 @@ Builds customer-facing web/mobile apps that need fast, accurate Australian addre
 
 ### Proposed
 
-| ID       | Job                                                  | File                                                                                     |
-| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| JTBD-004 | Evaluate Addressr and reach a first working API call | [JTBD-004](web-app-developer/JTBD-004-evaluate-and-reach-first-working-call.proposed.md) |
+| ID       | Job                                                  | File                                                                                            |
+| -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| JTBD-004 | Evaluate Addressr and reach a first working API call | [JTBD-004](web-app-developer/JTBD-004-evaluate-and-reach-first-working-call.proposed.md)        |
+| JTBD-005 | Create and access a managed hosted API account       | [JTBD-005](web-app-developer/JTBD-005-create-and-access-managed-hosted-api-account.proposed.md) |
 
 ## Data Quality Analyst
 
