@@ -44,16 +44,23 @@ before(async () => {
     `import { open } from 'node:fs/promises';
 if (process.env.ADDRESSR_BENCHMARK_API_KEY) process.exit(91);
 let offset = 0;
+let reading = false;
 setInterval(async () => {
+  if (reading) return;
+  reading = true;
   const file = await open(process.env.FAKE_TAIL_EVENTS, 'r');
-  const size = (await file.stat()).size;
-  if (size > offset) {
-    const next = Buffer.alloc(size - offset);
-    await file.read(next, 0, next.length, offset);
-    offset = size;
-    process.stdout.write(next);
+  try {
+    const size = (await file.stat()).size;
+    if (size > offset) {
+      const next = Buffer.alloc(size - offset);
+      await file.read(next, 0, next.length, offset);
+      offset = size;
+      process.stdout.write(next);
+    }
+  } finally {
+    await file.close();
+    reading = false;
   }
-  await file.close();
 }, 10);
 process.on('SIGINT', () => process.exit(0));
 `,
