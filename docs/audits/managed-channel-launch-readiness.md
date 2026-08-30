@@ -1,9 +1,9 @@
 # Addressr-managed channel launch readiness
 
-- **As at:** 2026-08-30 22:12 AEST
-- **Source revision:** `9ac8d0db566df2be7dc8d2a08f693d4e612814a1`
+- **As at:** 2026-08-30 22:32 AEST
+- **Source revision:** `572d6f2485b6268b261526393e441efb85ed0b96`
 - **Release candidate:** PR #534 at
-  `04415205f765e60a2ab7c6af4357733b8679b7d8`
+  `edf964a982218caee56a274813e85d3e8d98ca65`
 - **Activation decision:** Do not activate.
 
 This is a point-in-time evidence ledger, not an activation control or an
@@ -76,13 +76,15 @@ terms, subscriber data and traffic volumes.
 
 ## Current pipeline evidence
 
-- Master source revision `9ac8d0db566df2be7dc8d2a08f693d4e612814a1`:
-  run 33310493390 passed workspace packages, website build and browser checks,
+- Master source revision `572d6f2485b6268b261526393e441efb85ed0b96`:
+  run 33311149136 passed workspace packages, website build and browser checks,
   both OpenSearch matrices, engine-floor checks and the release-PR update. The
   dependency-age check failed in its documented advisory role.
-- Release PR #534 at `04415205f765e60a2ab7c6af4357733b8679b7d8`:
-  its plan and release checks were in progress at 2026-08-30 22:12 AEST. No
-  result is inferred from their pending state.
+- Release PR #534 at `edf964a982218caee56a274813e85d3e8d98ca65`:
+  run 33311448675 passed every substantive release check, with release and
+  deployment correctly skipped on the pull request; run 33311448567 passed the
+  Terraform plan-only gate. The dependency-age check failed in its documented
+  advisory role.
 - A green plan proves the proposed infrastructure change is accepted by
   Terraform. It does not prove apply, provider state, activation or production
   behaviour.
