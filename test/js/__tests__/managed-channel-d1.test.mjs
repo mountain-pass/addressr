@@ -1,75 +1,96 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { after, test } from 'node:test';
+import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../..',
 );
-const wrangler = path.join(root, 'node_modules/.bin/wrangler');
-const migration = path.join(
+const migrations = path.join(
   root,
-  'apps/addressr-deployment/cloudflare-worker/migrations/0001-managed-channel.sql',
+  'apps/addressr-deployment/cloudflare-worker/migrations',
 );
-const work = mkdtempSync(path.join(tmpdir(), 'addressr-d1-'));
+const reserve = `
+  INSERT INTO usage_records (
+    id, organization_id, api_key_id, request_path, outcome, created_at
+  ) VALUES (?, 'org', 'key', '/addresses', 'reserved', 'now')
+`;
 
-// eslint-disable-next-line security/detect-non-literal-fs-filename -- isolated test directory created above.
-writeFileSync(
-  path.join(work, 'wrangler.toml'),
-  'name = "managed-channel-test"\ncompatibility_date = "2026-08-29"\n[[d1_databases]]\nbinding = "CUSTOMER_DB"\ndatabase_name = "test"\ndatabase_id = "local"\n',
-);
-run('--file', migration);
-run(
-  '--command',
-  "INSERT INTO organizations VALUES ('org','clerk','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,1,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
-);
+test('D1 atomically enforces quota and idempotency under concurrent reservations', async () => {
+  const miniflare = new Miniflare(
+    convertV4MiniflareOptions({
+      name: 'managed-channel-test',
+      compatibilityDate: '2026-08-29',
+      modules: [
+        {
+          type: 'ESModule',
+          path: path.join(migrations, 'migration-worker.mjs'),
+          contents: String.raw`import migration from './0001-managed-channel.sql'; export default { async fetch(_request, environment) { await environment.CUSTOMER_DB.exec(migration.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
+        },
+        {
+          type: 'Text',
+          path: path.join(migrations, '0001-managed-channel.sql'),
+        },
+      ],
+      d1Databases: { CUSTOMER_DB: 'managed-channel-test' },
+    }),
+  );
 
-after(() => rmSync(work, { recursive: true, force: true }));
+  try {
+    const database = await miniflare.getD1Database('CUSTOMER_DB');
+    const migrated = await miniflare.dispatchFetch('http://localhost/migrate');
+    assert.equal(migrated.status, 204);
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','clerk','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,1,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
+    );
 
-test('D1 atomically enforces and refunds the organisation quota', () => {
-  run(
-    '--command',
-    "INSERT INTO usage_records (id,organization_id,api_key_id,request_path,outcome,created_at) VALUES ('one','org','key','/addresses','reserved','now');",
-  );
-  const rejected = execute(
-    '--command',
-    "INSERT INTO usage_records (id,organization_id,api_key_id,request_path,outcome,created_at) VALUES ('two','org','key','/addresses','reserved','now');",
-  );
-  assert.notEqual(rejected.status, 0);
-  assert.match(rejected.stderr + rejected.stdout, /quota_exhausted/);
-  const result = run(
-    '--command',
-    "DELETE FROM usage_records WHERE id='one'; INSERT INTO usage_records (id,organization_id,api_key_id,request_path,outcome,created_at) VALUES ('two','org','key','/addresses','reserved','now'); SELECT quota_used FROM entitlements WHERE organization_id='org';",
-  );
-  assert.equal(JSON.parse(result).at(-1).results[0].quota_used, 1);
+    const quotaRace = await Promise.allSettled([
+      database.prepare(reserve).bind('concurrent-one').run(),
+      database.prepare(reserve).bind('concurrent-two').run(),
+    ]);
+    assert.equal(fulfilled(quotaRace), 1);
+    assert.match(rejection(quotaRace), /quota_exhausted/);
+    await assertState(database, 1, 1);
+
+    await database.exec(
+      "DELETE FROM usage_records; UPDATE entitlements SET quota_limit=2, quota_used=0 WHERE organization_id='org';",
+    );
+    const replayRace = await Promise.allSettled([
+      database.prepare(reserve).bind('same-request').run(),
+      database.prepare(reserve).bind('same-request').run(),
+    ]);
+    assert.equal(fulfilled(replayRace), 1);
+    assert.match(rejection(replayRace), /UNIQUE constraint failed/);
+    await assertState(database, 1, 1);
+
+    await database.prepare('DELETE FROM usage_records').run();
+    await database.prepare(reserve).bind('refundable').run();
+    await database
+      .prepare("DELETE FROM usage_records WHERE id='refundable'")
+      .run();
+    await assertState(database, 0, 0);
+  } finally {
+    await miniflare.dispose();
+  }
 });
 
-function run(flag, sql) {
-  const result = execute(flag, sql);
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
+function fulfilled(outcomes) {
+  return outcomes.filter(({ status }) => status === 'fulfilled').length;
 }
 
-function execute(flag, sql) {
-  return spawnSync(
-    wrangler,
-    [
-      'd1',
-      'execute',
-      'CUSTOMER_DB',
-      '--local',
-      '--persist-to',
-      path.join(work, 'state'),
-      '--config',
-      path.join(work, 'wrangler.toml'),
-      flag,
-      sql,
-      '--json',
-    ],
-    { cwd: root, encoding: 'utf8' },
-  );
+function rejection(outcomes) {
+  return String(outcomes.find(({ status }) => status === 'rejected')?.reason);
+}
+
+async function assertState(database, quotaUsed, usageCount) {
+  const entitlement = await database
+    .prepare("SELECT quota_used FROM entitlements WHERE organization_id='org'")
+    .first();
+  const usage = await database
+    .prepare('SELECT COUNT(*) AS usage_count FROM usage_records')
+    .first();
+  assert.equal(entitlement.quota_used, quotaUsed);
+  assert.equal(usage.usage_count, usageCount);
 }
