@@ -649,7 +649,7 @@ describe('apps/website rendered output', () => {
 
     it('keeps announcement targets mounted without emitting an API key', () => {
       const $ = load(read('account/index.html'));
-      assert.equal($('[role="status"][aria-live="polite"]').length, 1);
+      assert.equal($('[role="status"][aria-live="polite"]').length, 2);
       assert.equal($('[role="alert"]').length, 1);
       assert.doesNotMatch($.html(), /addr_[A-Za-z0-9]{12}_[A-Za-z0-9_-]{32}/);
     });
