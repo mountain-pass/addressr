@@ -18,13 +18,26 @@ test('account page explains the managed-channel fallback', async ({ page }) => {
       name: 'Addressr accounts are not available yet',
     }),
   ).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText(
-    'Account management is not available yet.',
-  );
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Account management is not available yet.' }),
+  ).toHaveText('Account management is not available yet.');
   await expect(
     page.getByRole('link', { name: 'Review Addressr plans on RapidAPI' }),
   ).toHaveAttribute('href', /rapidapi\.com/);
 });
+
+for (const [outcome, notice] of [
+  ['success', 'Checkout completed. Your subscription is updating.'],
+  ['cancelled', 'Checkout was cancelled. No plan change was made.'],
+]) {
+  test(`account page announces a ${outcome} Stripe return`, async ({ page }) => {
+    await page.goto(`/account/?checkout=${outcome}`);
+
+    await expect(page.getByRole('status').filter({ hasText: notice })).toHaveText(notice);
+  });
+}
 
 test('account page preserves the working skip link', async ({ page }) => {
   await page.goto('/account/');

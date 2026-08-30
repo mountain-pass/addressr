@@ -105,7 +105,14 @@ const Account = () => {
             >
               {error}
             </p>
-            {checkoutNotice && <p className="account-notice">{checkoutNotice}</p>}
+            <p
+              className={checkoutNotice ? 'account-notice' : 'sr-only'}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {checkoutNotice}
+            </p>
             {!config && !error && (
               <section aria-labelledby="account-loading-title">
                 <header className="major">
