@@ -27,7 +27,7 @@ Feature: Addresses v2
     Scenario: Search
         When the root api is requested
         And the "https://addressr.io/rels/address-search" link template is followed with:
-            | q | MURRAY RD, CHRISTMAS ISLAND ISLAND |
+            | q | 1 MURRAY RD, CHRISTMAS ISLAND |
         Then the returned address list will contain many addresses
         And the returned address list will include:
             """
@@ -38,9 +38,8 @@ Feature: Addresses v2
             """
         And the response will contain the following links:
             | rel                                     | uri                                                       |
-            | self                                    | /addresses?q=MURRAY%20RD%2C%20CHRISTMAS%20ISLAND%20ISLAND |
-            | first                                   | /addresses?q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND         |
-            | next                                    | /addresses?page=1&q=MURRAY+RD%2C+CHRISTMAS+ISLAND+ISLAND  |
+            | self                                    | /addresses?q=1%20MURRAY%20RD%2C%20CHRISTMAS%20ISLAND |
+            | first                                   | /addresses?q=1+MURRAY+RD%2C+CHRISTMAS+ISLAND         |
             | https://addressr.io/rels/address-search | /addresses{?q}                                            |
         Then the response will contain the following headers:
             | cache-control | public, max-age=604800 |
@@ -408,4 +407,3 @@ Feature: Addresses v2
             | /localities/loc9984d8beb142 |
             | /postcodes/6798             |
             | /states/OT                  |
-
