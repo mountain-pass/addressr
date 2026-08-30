@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.9
+
+### Patch Changes
+
+- cf0cf27: Provision Addressr's inactive Stripe launch catalogue through the governed Terraform release pipeline. This does not enable the managed channel or create customers, subscriptions or charges.
+
 ## 1.0.8
 
 ### Patch Changes
