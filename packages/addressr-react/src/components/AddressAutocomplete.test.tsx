@@ -397,7 +397,7 @@ describe('AddressAutocomplete', () => {
     render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
-    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 addresses found'));
 
     // Now swap the mock to return page 2 for the next call
     mockFetch.mockImplementation(() => Promise.resolve(page2Response()));
@@ -425,7 +425,7 @@ describe('AddressAutocomplete', () => {
     render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
-    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 addresses found'));
 
     const menu = screen.getByRole('listbox');
     Object.defineProperties(menu, {
@@ -521,7 +521,7 @@ describe('AddressAutocomplete', () => {
     render(<AddressAutocomplete apiKey="test" onSelect={() => {}} debounceMs={10} fetchImpl={mockFetch} />);
 
     await userEvent.type(screen.getByRole('combobox'), '1 george');
-    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 addresses found'));
 
     // Swap mock to return a delayed promise for the next page fetch
     mockFetch.mockReturnValue(page2Promise);
@@ -534,9 +534,6 @@ describe('AddressAutocomplete', () => {
       clientHeight: { value: 100, writable: true },
     });
     fireEvent.scroll(menu);
-
-    // Downshift may replay the controlled value while pagination is pending.
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1 george' } });
 
     await waitFor(() => {
       expect(screen.getByText('Loading more...')).toBeInTheDocument();
