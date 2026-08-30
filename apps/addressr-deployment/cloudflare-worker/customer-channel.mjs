@@ -146,7 +146,9 @@ export async function settleUsage(environment, usageId, originStatus) {
 
   try {
     const result = await statement.run();
-    return result?.meta?.changes === 1;
+    return (
+      Number.isSafeInteger(result?.meta?.changes) && result.meta.changes > 0
+    );
   } catch {
     return false;
   }
