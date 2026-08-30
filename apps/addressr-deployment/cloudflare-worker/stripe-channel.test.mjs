@@ -447,8 +447,9 @@ describe('Stripe projection and metering', () => {
     let customerCreates = 0;
     const stripe = {
       customers: {
-        async create(_payload, options) {
+        async create(payload, options) {
           customerCreates += 1;
+          assert.equal(payload.metadata.addressr_channel, 'managed');
           assert.equal(options.idempotencyKey, 'customer:org-addressr');
           return { id: 'cus_addressr' };
         },

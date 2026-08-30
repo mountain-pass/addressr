@@ -171,6 +171,7 @@ async function ensureStripeCustomer(environment, organization, stripe) {
   const customer = await stripe.customers.create(
     {
       metadata: {
+        addressr_channel: 'managed',
         addressr_organization_id: organization.id,
         clerk_organization_id: organization.clerk_organization_id,
       },
