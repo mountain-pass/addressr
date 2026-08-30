@@ -12,6 +12,38 @@ than a number in a document.
   `sigv4-signing-bench.mjs`, plus the terminal `exact-vs-range-margin-probe.mjs`.
   Documented immediately below.
 
+## Managed gateway latency and CPU launch probe (ADR-077 / ADR-078)
+
+`managed-gateway-latency-compute-probe.mjs` runs paired warm searches against
+an explicit direct-origin baseline and an explicit managed-gateway candidate.
+It correlates candidate invocations with transient Wrangler tail events and
+prints aggregates only. It has no production target default and accepts no
+arguments; targets and credentials must come from the environment.
+
+```bash
+ADDRESSR_BENCHMARK_BASELINE_URL=https://direct-origin.example/addresses \
+ADDRESSR_BENCHMARK_CANDIDATE_URL=https://candidate.example/addresses \
+ADDRESSR_BENCHMARK_BASELINE_HEADER_NAME=x-origin-auth \
+ADDRESSR_BENCHMARK_BASELINE_HEADER_VALUE=... \
+ADDRESSR_BENCHMARK_API_KEY=... \
+ADDRESSR_BENCHMARK_WORKER=worker-name \
+ADDRESSR_BENCHMARK_REGION=au-oceania \
+ADDRESSR_BENCHMARK_D1_LOCATION=... \
+CLOUDFLARE_ACCOUNT_ID=... \
+CLOUDFLARE_API_TOKEN=... \
+node test/perf/managed-gateway-latency-compute-probe.mjs
+```
+
+Run each required region separately. A run fails unless every paired response
+is successful and non-empty, every measured candidate request has exactly one
+complete tail event from one Worker version, and the ADR-077/078 latency and CPU
+gates pass. Raw request events, headers and credentials are never persisted or
+printed.
+
+This probe does not establish isolate-memory p99, representative or twice-peak
+concurrency, provider plan/CPU-limit readback, or ADR-080 D1 statement, byte,
+query-plan and overload evidence. Those remain separate activation blockers.
+
 ## Primary-path invariant harness (ADR-031 / ADR-033)
 
 Measures the synchronous cost read-shadow adds to `/addresses`, against ADR-031's
