@@ -498,8 +498,10 @@ const ManagedAccount = ({
         )}
 
         {newKey && (
-          <div className="account-new-key" ref={newKeyReference} tabIndex="-1">
-            <h3>New API key created</h3>
+          <div className="account-new-key">
+            <h3 ref={newKeyReference} tabIndex="-1">
+              Copy this API key now
+            </h3>
             <p>
               <strong>Copy this key now.</strong> It will not be shown again.
             </p>
