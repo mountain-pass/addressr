@@ -175,6 +175,12 @@ jobs:
           TF_VAR_cloudflare_rapidapi_key: ${{ secrets.TF_VAR_cloudflare_rapidapi_key }}
           TF_VAR_clerk_publishable_key: ${{ secrets.TF_VAR_clerk_publishable_key }}
           TF_VAR_clerk_jwt_key: ${{ secrets.TF_VAR_clerk_jwt_key }}
+          TF_VAR_managed_origin_urls: ${{ secrets.TF_VAR_managed_origin_urls }}
+          TF_VAR_managed_billable_statuses: ${{ secrets.TF_VAR_managed_billable_statuses }}
+          TF_VAR_stripe_secret_key: ${{ secrets.TF_VAR_stripe_secret_key }}
+          TF_VAR_stripe_webhook_secret: ${{ secrets.TF_VAR_stripe_webhook_secret }}
+          TF_VAR_stripe_plan_quotas: ${{ secrets.TF_VAR_stripe_plan_quotas }}
+          TF_VAR_stripe_payment_method_types: ${{ secrets.TF_VAR_stripe_payment_method_types }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
           TF_VAR_stripe_catalogue_terms: ${{ secrets.TF_VAR_stripe_catalogue_terms }}
           TF_TOKEN_app_terraform_io: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
@@ -196,6 +202,12 @@ jobs:
             TF_VAR_cloudflare_rapidapi_key
             TF_VAR_clerk_publishable_key
             TF_VAR_clerk_jwt_key
+            TF_VAR_managed_origin_urls
+            TF_VAR_managed_billable_statuses
+            TF_VAR_stripe_secret_key
+            TF_VAR_stripe_webhook_secret
+            TF_VAR_stripe_plan_quotas
+            TF_VAR_stripe_payment_method_types
             STRIPE_API_KEY
             TF_VAR_stripe_catalogue_terms
             TF_TOKEN_app_terraform_io

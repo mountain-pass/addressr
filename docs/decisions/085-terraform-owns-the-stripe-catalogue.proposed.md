@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-08-30
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-08-30
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent, wr-jtbd:agent]
 informed: []
@@ -10,7 +11,7 @@ reassessment-date: 2026-11-30
 
 # Terraform owns the Stripe catalogue
 
-> Captured via /wr-architect:capture-adr. Section content was derived from the in-session decision context and awaits human ratification.
+> Captured via /wr-architect:capture-adr. Human-ratified 2026-08-30.
 
 ## Context and Problem Statement
 

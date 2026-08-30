@@ -741,10 +741,10 @@ module "cloudflare_worker" {
   clerk_jwt_key                    = var.clerk_jwt_key
   stripe_secret_key                = var.stripe_secret_key
   stripe_webhook_secret            = var.stripe_webhook_secret
-  stripe_plan_catalogue            = var.stripe_plan_catalogue
+  stripe_plan_catalogue            = local.worker_stripe_plan_catalogue
   stripe_payment_method_types      = var.stripe_payment_method_types
-  stripe_meter_event_name          = var.stripe_meter_event_name
-  stripe_meter_id                  = var.stripe_meter_id
+  stripe_meter_event_name          = stripe_billing_meter.addressr_requests.event_name
+  stripe_meter_id                  = stripe_billing_meter.addressr_requests.id
   managed_app_url                  = var.managed_app_url
 }
 

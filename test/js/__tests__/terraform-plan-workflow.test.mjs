@@ -37,6 +37,11 @@ const stripeCatalogue = readFileSync(
   'apps/addressr-deployment/stripe-catalogue.tf',
   'utf8',
 );
+const terraformMain = readFileSync('apps/addressr-deployment/main.tf', 'utf8');
+const terraformVariables = readFileSync(
+  'apps/addressr-deployment/vars.tf',
+  'utf8',
+);
 const terraformVersions = readFileSync(
   'apps/addressr-deployment/versions.tf',
   'utf8',
@@ -189,6 +194,19 @@ describe('dormant Stripe catalogue', () => {
       /resource\s+"stripe_(?:customer|subscription|payment_intent|invoice)"/,
       'catalogue provisioning must not create customer financial state',
     );
+  });
+
+  it('derives Worker provider identifiers and accepts only protected quotas', () => {
+    assert.match(
+      terraformMain,
+      /stripe_plan_catalogue\s*=\s*local\.worker_stripe_plan_catalogue/,
+    );
+    assert.match(
+      terraformMain,
+      /stripe_meter_id\s*=\s*stripe_billing_meter\.addressr_requests\.id/,
+    );
+    assert.match(terraformVariables, /variable "stripe_plan_quotas"/);
+    assert.doesNotMatch(terraformVariables, /variable "stripe_plan_catalogue"/);
   });
 });
 

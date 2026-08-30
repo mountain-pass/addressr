@@ -130,6 +130,36 @@ describe('Stripe projection and metering', () => {
     assert.equal(database.batchStatements, undefined);
   });
 
+  it('acknowledges a verified subscription owned by another Stripe integration', async () => {
+    const database = stripeDatabase();
+    const unrelated = subscription();
+    unrelated.metadata = { voder_workspace_id: 'workspace-voder' };
+    const response = await handleStripeWebhook(
+      webhookRequest(),
+      environment(database),
+      subscriptionWebhookStripe(unrelated),
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { received: true, ignored: true });
+    assert.equal(database.batchStatements, undefined);
+  });
+
+  it('rejects a malformed subscription carrying Addressr metadata', async () => {
+    const database = stripeDatabase();
+    const malformed = subscription();
+    delete malformed.metadata.addressr_organization_id;
+    const response = await handleStripeWebhook(
+      webhookRequest(),
+      environment(database),
+      subscriptionWebhookStripe(malformed),
+    );
+
+    assert.equal(response.status, 422);
+    assert.deepEqual(await response.json(), { error: 'unmapped_subscription' });
+    assert.equal(database.batchStatements, undefined);
+  });
+
   it('converges an older webhook to the object-current subscription state', async () => {
     const database = stripeDatabase();
     const current = subscription();
@@ -557,6 +587,26 @@ function subscription() {
           price: { id: 'price_developer' },
         },
       ],
+    },
+  };
+}
+
+function subscriptionWebhookStripe(current) {
+  return {
+    webhooks: {
+      async constructEventAsync() {
+        return {
+          id: 'evt_subscription',
+          type: 'customer.subscription.updated',
+          created: 1_787_900_000,
+          data: { object: { id: current.id } },
+        };
+      },
+    },
+    subscriptions: {
+      async retrieve() {
+        return current;
+      },
     },
   };
 }

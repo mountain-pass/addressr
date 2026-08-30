@@ -9,6 +9,16 @@ locals {
   }
   stripe_per_unit_plans = toset(["basic", "pro"])
   stripe_tiered_plans   = toset(["ultra", "mega"])
+  stripe_price_ids = merge(
+    { for plan, price in stripe_price.per_unit : plan => price.id },
+    { for plan, price in stripe_price.tiered : plan => price.id },
+  )
+  worker_stripe_plan_catalogue = length(var.stripe_plan_quotas) == 4 ? jsonencode({
+    for plan in keys(local.stripe_plan_names) : plan => {
+      priceId = local.stripe_price_ids[plan]
+      quota   = var.stripe_plan_quotas[plan]
+    }
+  }) : "{}"
 }
 
 resource "stripe_billing_meter" "addressr_requests" {

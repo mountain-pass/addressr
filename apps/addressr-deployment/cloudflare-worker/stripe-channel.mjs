@@ -148,6 +148,9 @@ export async function handleStripeWebhook(
 
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    if (!hasAddressrMarker(subscription)) {
+      return Response.json({ received: true, ignored: true });
+    }
     const projection = subscriptionProjection(subscription, event, environment);
     if (!projection) {
       return Response.json({ error: 'unmapped_subscription' }, { status: 422 });
@@ -163,6 +166,12 @@ export async function handleStripeWebhook(
     }
     return Response.json({ error: 'projection_failed' }, { status: 503 });
   }
+}
+
+function hasAddressrMarker(subscription) {
+  return Object.keys(subscription?.metadata || {}).some((key) =>
+    key.startsWith('addressr_'),
+  );
 }
 
 async function ensureStripeCustomer(environment, organization, stripe) {

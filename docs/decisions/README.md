@@ -481,7 +481,7 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-085 — Terraform owns the Stripe catalogue
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed
 **Decides:** Manage live Stripe products, prices and billing meters with the official `stripe/stripe` Terraform provider pinned at stable version `0.2.3`, using the existing changeset-armed release-PR plan and apply path rather than dashboard or imperative API mutations.
 **Confirmation:** The provider and committed lockfile resolve exactly `0.2.3`; the release-PR plan contains only intended inactive catalogue resources; confidential terms and credentials come from protected secrets; `managed_channel_enabled` remains false; no customer, subscription or charge is created.
 **Related:** ADR-045, ADR-068, ADR-071, ADR-072

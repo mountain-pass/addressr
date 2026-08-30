@@ -148,12 +148,21 @@ variable "stripe_webhook_secret" {
   description = "ADR-069 signing secret for the managed-channel Stripe webhook endpoint."
 }
 
-variable "stripe_plan_catalogue" {
-  type        = string
+variable "stripe_plan_quotas" {
+  type        = map(number)
   sensitive   = true
   nullable    = false
-  default     = "{}"
-  description = "ADR-072 confidential JSON plan-key to Stripe-price and quota mapping. Empty keeps checkout unavailable."
+  default     = {}
+  description = "ADR-072 confidential plan-key to monthly request quota mapping. Terraform supplies its owned Stripe price IDs. Empty keeps checkout unavailable."
+
+  validation {
+    condition = length(var.stripe_plan_quotas) == 0 || (
+      length(var.stripe_plan_quotas) == 4 &&
+      alltrue([for plan in ["basic", "pro", "ultra", "mega"] : contains(keys(var.stripe_plan_quotas), plan)]) &&
+      alltrue([for quota in values(var.stripe_plan_quotas) : quota > 0 && quota == floor(quota)])
+    )
+    error_message = "Stripe plan quotas must be empty or define positive whole-number quotas for exactly basic, pro, ultra and mega."
+  }
 }
 
 variable "stripe_payment_method_types" {
@@ -162,21 +171,6 @@ variable "stripe_payment_method_types" {
   nullable    = false
   default     = []
   description = "ADR-082 explicitly verified immediate-outcome Stripe payment-method allowlist."
-}
-
-variable "stripe_meter_event_name" {
-  type        = string
-  sensitive   = true
-  nullable    = false
-  default     = ""
-  description = "ADR-071 Stripe meter event name. Empty keeps delivery unavailable."
-}
-
-variable "stripe_meter_id" {
-  type        = string
-  sensitive   = true
-  default     = ""
-  description = "Stripe meter identifier used for provider-side usage reconciliation. Empty keeps reconciliation disabled."
 }
 
 variable "stripe_catalogue_terms" {
