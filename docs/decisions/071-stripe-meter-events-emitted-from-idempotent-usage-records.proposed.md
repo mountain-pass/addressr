@@ -81,4 +81,4 @@ Reassess if Stripe meter semantics change materially, reconciliation discrepanci
 ## Related
 
 - [ADR-065 — Abuse throttling separated from commercial accounting](065-abuse-throttling-separated-from-commercial-accounting.proposed.md)
-- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.proposed.md)
+- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.superseded.md)

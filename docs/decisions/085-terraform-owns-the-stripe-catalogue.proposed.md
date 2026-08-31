@@ -89,4 +89,4 @@ Reassess if the official provider cannot represent a required current plan witho
 - [ADR-045 — Changesets-armed release-PR merge as the production deploy entry point](045-changesets-armed-release-pr-merge-as-the-production-deploy-entry-point.proposed.md)
 - [ADR-068 — Stripe-hosted billing interactions](068-stripe-hosted-billing-interactions.proposed.md)
 - [ADR-071 — Stripe meter events emitted from idempotent usage records](071-stripe-meter-events-emitted-from-idempotent-usage-records.proposed.md)
-- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.proposed.md)
+- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.superseded.md)

@@ -11,7 +11,7 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 85 (76 in-force, 9 historical)
+**Total ADRs:** 86 (76 in-force, 10 historical)
 
 ---
 
@@ -388,13 +388,6 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** No synchronous Stripe meter call in the request path; at most one authoritative usage identity per billable request; replay cannot increase Stripe quantity twice; reconciliation reports and safely retries missing, rejected and mismatched events; non-billable and abuse-rejected requests emit nothing.
 **Related:** ADR-065, ADR-072
 
-### ADR-072 — RapidAPI catalogue parity at launch
-
-**Status:** proposed | **Oversight:** confirmed
-**Decides:** Mirror the verified RapidAPI catalogue in the Addressr-managed Stripe channel at launch — same customer-facing plan names and commercial semantics — verified from an authenticated RapidAPI readback held in an approved confidential location, so buyers can compare channels without a second plan architecture and launch stays focused on channel ownership rather than pricing redesign. Any difference returns to human review rather than being normalised silently; existing RapidAPI subscribers stay on RapidAPI under ADR-061 with no migration or cross-channel account link.
-**Confirmation:** Authenticated export records every current and grandfathered RapidAPI plan version's name, price, currency, allowance, overage, hard/soft-limit behaviour, billable outcomes and reset timing in an approved confidential location; Stripe products stay inactive until a reviewer confirms parity against that record; every difference is stated for human decision with no silent rounding or substitution; no confidential price, allowance, subscriber or traffic figure is committed to the public repository; launch and later catalogue changes leave existing RapidAPI subscribers, keys and billing relationships untouched.
-**Related:** ADR-061, ADR-068, ADR-071
-
 ### ADR-073 — Managed gateway routes directly to the origins
 
 **Status:** proposed | **Oversight:** confirmed
@@ -486,11 +479,18 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** The provider and committed lockfile resolve exactly `0.2.3`; the release-PR plan contains only intended inactive catalogue resources; confidential terms and credentials come from protected secrets; `managed_channel_enabled` remains false; no customer, subscription or charge is created.
 **Related:** ADR-045, ADR-068, ADR-071, ADR-072
 
+### ADR-086 — Current RapidAPI catalogue parity at launch
+
+**Status:** proposed | **Oversight:** confirmed | **Supersedes:** ADR-072
+**Decides:** Verify the current public RapidAPI catalogue in USD for the Addressr-managed launch. Historical and grandfathered plan versions remain on RapidAPI and are outside the launch comparison.
+**Confirmation:** An authenticated confidential record captures every current public plan's USD price, allowance, overage and hard/soft-limit behaviour; exact monthly reset timing and billable outcomes remain activation gates; no existing RapidAPI subscriber, key, plan version or billing relationship changes.
+**Related:** ADR-061, ADR-068, ADR-071, ADR-072
+
 ---
 
 ## Historical decisions
 
-_9 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_10 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
 
 ### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
@@ -533,3 +533,11 @@ _9 ADRs. These were tried and superseded, rejected, or deprecated. Read them as 
 
 **Status:** superseded | **Oversight:** unconfirmed
 **Superseded by:** ADR-058
+
+### ADR-072 — RapidAPI catalogue parity at launch
+
+**Status:** superseded | **Oversight:** confirmed
+**Superseded by:** ADR-086
+**Decides:** Mirror every current and grandfathered RapidAPI plan version at launch.
+**Confirmation:** Superseded by ADR-086, which limits launch parity to current public plans in USD while retaining reset timing and billable outcomes as activation gates.
+**Related:** ADR-061, ADR-068, ADR-071

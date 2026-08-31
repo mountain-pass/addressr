@@ -107,4 +107,4 @@ Reassess if either channel produces no new subscribers for two consecutive quart
 - [ADR-062 — Hosted customer access enforced at the gateway](062-hosted-customer-access-enforced-at-the-gateway.proposed.md) — places direct-channel enforcement outside the search server.
 - [ADR-066 — Clerk as the application identity provider](066-clerk-as-the-application-identity-provider.proposed.md) — supplies identity for the Addressr-managed channel.
 - [ADR-068 — Stripe-hosted billing interactions](068-stripe-hosted-billing-interactions.proposed.md) — supplies checkout and billing self-service.
-- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.proposed.md) — keeps the launch offer comparable across channels.
+- [ADR-072 — RapidAPI catalogue parity at launch](072-rapidapi-catalogue-parity-at-launch.superseded.md) — keeps the launch offer comparable across channels.
