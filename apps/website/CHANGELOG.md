@@ -1,5 +1,12 @@
 # @mountainpass/website
 
+## 1.0.9
+
+### Patch Changes
+
+- ffbb37b: Announce completed and cancelled hosted-plan checkouts to screen readers when customers return to the account page.
+- 0a49e82: Move focus to the visible “Copy this API key now” heading after creating a managed API key, so keyboard and screen-reader users land on the one-time key instructions.
+
 ## 1.0.8
 
 ### Patch Changes

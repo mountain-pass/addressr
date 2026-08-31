@@ -1,5 +1,16 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.11
+
+### Patch Changes
+
+- 61f4ed1: Prepare the dormant managed API for production billing configuration by wiring its Stripe runtime inputs through the same reviewed plan and release path. Terraform now supplies the catalogue price and meter identifiers it already owns, while customer access remains disabled.
+
+  Verified subscription events from other integrations sharing the Stripe account are acknowledged without changing Addressr entitlements.
+
+- dc31658: Provision the managed billing webhook through Terraform and pass its signing secret directly to the gateway, removing manual secret copying. Customer access and catalogue sales remain disabled pending launch verification.
+- 86abeb5: Keep successful managed API responses available when D1 reports both the usage settlement and its quota-trigger side effect. Missing or failed settlements still fail closed.
+
 ## 1.0.10
 
 ### Patch Changes
