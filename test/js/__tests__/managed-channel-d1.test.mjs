@@ -9,7 +9,10 @@ import {
   reserveUsage,
   settleUsage,
 } from '../../../apps/addressr-deployment/cloudflare-worker/customer-channel.mjs';
-import { handleStripeWebhook } from '../../../apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs';
+import {
+  handleStripeWebhook,
+  reconcileEntitlements,
+} from '../../../apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs';
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -383,6 +386,73 @@ test('subscription projection persists explicit policy and preserves usage on re
     entitlement = await database.prepare('SELECT * FROM entitlements').first();
     assert.equal(entitlement.payment_method_policy, 'unsupported');
     assert.equal(entitlement.hard_limit, 1);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test('repeated reconciliation repairs policy while preserving usage and ownership', async () => {
+  const { miniflare, database } = await migratedDatabase('repeated-repair');
+  try {
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now');",
+    );
+    const subscription = {
+      id: 'sub_synthetic',
+      customer: 'stripe',
+      status: 'active',
+      metadata: {
+        addressr_organization_id: 'org',
+        addressr_plan_key: 'synthetic',
+        addressr_payment_method_policy: 'immediate',
+      },
+      payment_settings: { payment_method_types: ['card'] },
+      items: {
+        data: [{ price: { id: 'price_synthetic' }, current_period_start: 100 }],
+      },
+    };
+    const stripe = {
+      subscriptions: {
+        async list() {
+          return { data: [subscription] };
+        },
+      },
+    };
+    const environment = {
+      CUSTOMER_DB: database,
+      STRIPE_PAYMENT_METHOD_TYPES: '["card"]',
+      STRIPE_PLAN_CATALOGUE: JSON.stringify({
+        synthetic: { priceId: 'price_synthetic', quota: 2, hardLimit: true },
+      }),
+    };
+    const repair = () => reconcileEntitlements(environment, stripe);
+    const success = { checked: 1, repaired: 1, errors: 0 };
+    assert.deepEqual(await repair(), success);
+    await database.exec('UPDATE entitlements SET quota_used=2');
+    environment.STRIPE_PLAN_CATALOGUE = JSON.stringify({
+      synthetic: { priceId: 'price_synthetic', quota: 0, hardLimit: false },
+    });
+    assert.deepEqual(await Promise.all([repair(), repair()]), [
+      success,
+      success,
+    ]);
+    const repaired = await database
+      .prepare('SELECT * FROM entitlements')
+      .first();
+    assert.equal(repaired.quota_limit, 0);
+    assert.equal(repaired.hard_limit, 0);
+    assert.equal(repaired.quota_used, 2);
+    assert.equal(repaired.payment_method_policy, 'immediate');
+    const ledger = await database
+      .prepare('SELECT COUNT(*) AS count FROM stripe_events')
+      .first();
+    assert.equal(ledger.count, 1);
+    subscription.customer = 'stripe_other';
+    assert.deepEqual(await repair(), { checked: 1, repaired: 0, errors: 1 });
+    assert.deepEqual(
+      await database.prepare('SELECT * FROM entitlements').first(),
+      repaired,
+    );
   } finally {
     await miniflare.dispose();
   }

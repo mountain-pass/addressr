@@ -776,10 +776,14 @@ async function storeProjection(database, projection) {
     throw new Error('organization_customer_mismatch');
   }
 
+  const reconciliationUpdate =
+    projection.eventType === 'reconciliation.subscription'
+      ? ' ON CONFLICT(id) DO UPDATE SET event_created=excluded.event_created,processed_at=excluded.processed_at'
+      : '';
   await database.batch([
     database
       .prepare(
-        'INSERT INTO stripe_events (id,event_type,object_id,event_created,processed_at) VALUES (?,?,?,?,?)',
+        `INSERT INTO stripe_events (id,event_type,object_id,event_created,processed_at) VALUES (?,?,?,?,?)${reconciliationUpdate}`,
       )
       .bind(
         projection.eventId,
