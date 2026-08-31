@@ -1,6 +1,6 @@
 {
   "name": "@mountainpass/addressr-deployment",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "private": true,
   "description": "Terraform + Elastic Beanstalk + Cloudflare deployment of the Addressr production service",
   "license": "Apache-2.0",

@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.18
+
+### Patch Changes
+
+- e0bde2a: Restore the pre-rehearsal Worker after the rollback check. Entitlement repair and monitoring remain intact, and managed access stays disabled.
+
 ## 1.0.17
 
 ### Patch Changes
