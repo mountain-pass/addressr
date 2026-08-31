@@ -1,6 +1,6 @@
 import StripeClient from 'stripe';
-import { MAX_METER_ATTEMPTS, reconciliationWindow } from './meter-policy.mjs';
 
+const MAX_METER_ATTEMPTS = 12;
 const METER_BATCH_SIZE = 100;
 const WEBHOOK_BODY_LIMIT = 256 * 1024;
 const CHECKOUT_ATTEMPT_SECONDS = 31 * 60;
@@ -348,7 +348,11 @@ export async function reconcileMeterEvents(
     };
   }
 
-  const { start, end } = reconciliationWindow(now);
+  const end = new Date(now);
+  end.setUTCMinutes(0, 0, 0);
+  end.setUTCHours(end.getUTCHours() - 1);
+  const start = new Date(end);
+  start.setUTCHours(start.getUTCHours() - 1);
   const result = emptyReconciliation();
   let cursor = '';
   while (true) {
@@ -545,6 +549,15 @@ async function oldestUnreconciledWindow(environment, now) {
     .bind(end.toISOString())
     .first();
   return row?.window_start || undefined;
+}
+
+function reconciliationWindow(now) {
+  const end = new Date(now);
+  end.setUTCMinutes(0, 0, 0);
+  end.setUTCHours(end.getUTCHours() - 1);
+  const start = new Date(end);
+  start.setUTCHours(start.getUTCHours() - 1);
+  return { start, end };
 }
 
 function emptyReconciliation() {
