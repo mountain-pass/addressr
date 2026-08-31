@@ -1,4 +1,4 @@
-/* Preserve existing entitlements as hard capped; zero included requests is
+/* Preserve existing entitlements as hard capped. Zero included requests is
    never an implicit unlimited policy. Keep this schema during rollback. */
 CREATE TABLE entitlements_next (
   organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
