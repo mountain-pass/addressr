@@ -180,6 +180,44 @@ describe('terraform-plan.yml', () => {
 });
 
 describe('dormant Stripe catalogue', () => {
+  // These declarative pins prove configuration only, not provider creation,
+  // secret delivery, webhook execution or production activation.
+  it('owns the signed webhook without a manually copied root secret', () => {
+    const webhook = readFileSync(
+      'apps/addressr-deployment/stripe-webhook.tf',
+      'utf8',
+    );
+    assert.match(webhook, /resource "stripe_webhook_endpoint" "managed_channel"/);
+    assert.match(
+      webhook,
+      /url\s*=\s*"https:\/\/api\.addressr\.io\/managed\/stripe-webhook"/,
+    );
+    assert.deepEqual(
+      [...webhook.matchAll(/"((?:checkout|customer)\.[^"]+)"/g)]
+        .map((match) => match[1])
+        .sort(),
+      [
+        'checkout.session.completed',
+        'customer.subscription.created',
+        'customer.subscription.deleted',
+        'customer.subscription.paused',
+        'customer.subscription.resumed',
+        'customer.subscription.updated',
+      ],
+    );
+    assert.match(
+      terraformMain,
+      /stripe_webhook_secret\s*=\s*stripe_webhook_endpoint\.managed_channel\.secret/,
+    );
+    assert.doesNotMatch(terraformVariables, /variable "stripe_webhook_secret"/);
+    for (const workflow of ['release', 'release-pr-plan', 'terraform-plan']) {
+      assert.doesNotMatch(
+        readFileSync(`.github/workflows/${workflow}.yml`, 'utf8'),
+        /TF_VAR_stripe_webhook_secret/,
+      );
+    }
+  });
+
   it('uses the pinned official provider and creates only inactive sale objects', () => {
     assert.match(terraformVersions, /source\s*=\s*"stripe\/stripe"/);
     assert.match(terraformVersions, /version\s*=\s*"= 0\.2\.3"/);

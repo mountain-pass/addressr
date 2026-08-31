@@ -740,7 +740,7 @@ module "cloudflare_worker" {
   clerk_publishable_key            = var.clerk_publishable_key
   clerk_jwt_key                    = var.clerk_jwt_key
   stripe_secret_key                = var.stripe_secret_key
-  stripe_webhook_secret            = var.stripe_webhook_secret
+  stripe_webhook_secret            = stripe_webhook_endpoint.managed_channel.secret
   stripe_plan_catalogue            = local.worker_stripe_plan_catalogue
   stripe_payment_method_types      = var.stripe_payment_method_types
   stripe_meter_event_name          = stripe_billing_meter.addressr_requests.event_name

@@ -178,7 +178,6 @@ jobs:
           TF_VAR_managed_origin_urls: ${{ secrets.TF_VAR_managed_origin_urls }}
           TF_VAR_managed_billable_statuses: ${{ secrets.TF_VAR_managed_billable_statuses }}
           TF_VAR_stripe_secret_key: ${{ secrets.TF_VAR_stripe_secret_key }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets.TF_VAR_stripe_webhook_secret }}
           TF_VAR_stripe_plan_quotas: ${{ secrets.TF_VAR_stripe_plan_quotas }}
           TF_VAR_stripe_payment_method_types: ${{ secrets.TF_VAR_stripe_payment_method_types }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
@@ -205,7 +204,6 @@ jobs:
             TF_VAR_managed_origin_urls
             TF_VAR_managed_billable_statuses
             TF_VAR_stripe_secret_key
-            TF_VAR_stripe_webhook_secret
             TF_VAR_stripe_plan_quotas
             TF_VAR_stripe_payment_method_types
             STRIPE_API_KEY

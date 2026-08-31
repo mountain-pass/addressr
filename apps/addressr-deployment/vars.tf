@@ -140,14 +140,6 @@ variable "stripe_secret_key" {
   description = "ADR-068 Stripe secret key for Checkout, Customer Portal, projection and metering."
 }
 
-variable "stripe_webhook_secret" {
-  type        = string
-  sensitive   = true
-  nullable    = false
-  default     = ""
-  description = "ADR-069 signing secret for the managed-channel Stripe webhook endpoint."
-}
-
 variable "stripe_plan_quotas" {
   type        = map(number)
   sensitive   = true
