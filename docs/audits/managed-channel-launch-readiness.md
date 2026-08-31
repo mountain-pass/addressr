@@ -1,9 +1,9 @@
 # Addressr-managed channel launch readiness
 
-- **As at:** 2026-08-31, after PR #538 reconciliation deployment
-- **Worker source revision:** `ff2d26725d8d35b7261ef9a67e60d3b728a1ed10`
+- **As at:** 2026-08-31, after PR #539 monitoring deployment
+- **Worker source revision:** `7acd6282fa8f95f007067cbbde06813a8c98aff5`
 - **Migration and website revision:** `076a1c63094203761494460c53e325522b24e8d5`
-- **Release:** PR #538 merged; run 33381558787 succeeded.
+- **Release:** PR #539 merged; run 33386718105 succeeded.
 - **Activation decision:** Do not activate.
 
 This is a point-in-time evidence ledger, not an activation control or an
@@ -26,8 +26,8 @@ terms, subscriber data and traffic volumes.
 | Requirement                                                | Class     | Evidence                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Managed access stays disabled                              | SATISFIED | `GET https://api.addressr.io/managed/config` returned HTTP 200 with `{"available":false,"plans":[]}`; `GET https://api.addressr.io/managed/account` returned HTTP 503 with `{"error":"managed_channel_not_active"}` from Sydney after the 2026-08-31 release. A supplied customer key also remained closed despite a valid demo Referer; an ordinary demo request returned non-empty results. |
-| Disabled deployment is verified separately from activation | SATISFIED | Release run 33381558787 updated only the Worker and passed production smoke checks. No database migration was pending; the prior website revision remains live. Customer access remains disabled, and seven direct probes passed. This is not completed customer-channel verification.                                                                                                        |
-| RapidAPI remains independently available                   | PARTIAL   | Master run 33305602613 passed the live RapidAPI package integrations at the source revision. This proves the exercised integration, not every subscriber's unchanged commercial terms or all production traffic.                                                                                                                                                                              |
+| Disabled deployment is verified separately from activation | SATISFIED | Release run 33386718105 updated only the Worker and passed production smoke checks. No database migration was pending; the prior website revision remains live. Customer access remains disabled, and seven direct probes passed. This is not completed customer-channel verification.                                                                                                        |
+| RapidAPI remains independently available                   | PARTIAL   | Release run 33386718105 passed the live RapidAPI package integrations at source revision `7acd6282fa8f95f007067cbbde06813a8c98aff5`. This proves the exercised integration, not every subscriber's unchanged commercial terms or all production traffic.                                                                                                                                      |
 
 ## Decision authority
 
@@ -70,7 +70,7 @@ terms, subscriber data and traffic volumes.
 | ADR-080 D1 envelope                    | PARTIAL | Migrated Miniflare tests cover required outcome statement counts and indexed query plans. Provider D1 metadata, response bytes, twice-peak concurrency and fail-closed overload proof remain missing.                                                                                                                                                            |
 | Production webhook                     | PARTIAL | Destination, signing secret and restricted runtime credential are deployed; invalid-signature rejection and repeated signed foreign-event isolation are verified. Addressr-owned projection/replay and rotation/rollback still need production evidence.                                                                                                         |
 | Authenticated customer journeys        | MISSING | Production sign-in, organisation creation/invitation/removal, checkout success/cancel/abandon, portal, API-key create/use/revoke, quota exhaustion and recovery using isolated non-customer principals.                                                                                                                                                          |
-| Monitoring and alerting                | MISSING | Alerts for webhook failure, meter backlog/mismatch, D1 failure, entitlement projection drift, quota/accounting failure, origin failure and performance-budget breach, with an exercised operator response.                                                                                                                                                       |
+| Monitoring and alerting                | PARTIAL | Scheduled D1 meter-state checks and the agent reader have run successfully. Workload and provider parity remain unverified. Webhook, entitlement drift, origin and performance alerts, broader quota/accounting coverage and an exercised failure response remain required.                                                                                      |
 | Rollback                               | MISSING | Rehearsed disable-first rollback, prior Worker revision restoration, D1 forward/backward compatibility, secret rollback/rotation and proof RapidAPI remains unaffected.                                                                                                                                                                                          |
 | Exact-revision production verification | MISSING | Merge and release only after all preceding gates pass; record the deployed Worker and website revisions, Terraform apply result, provider readbacks and direct production observations for every activated component.                                                                                                                                            |
 
@@ -91,6 +91,34 @@ state belongs outside production; no direct entitlement inserts are permitted.
 Public opening requires its own explicit review, not an empty allowlist.
 
 ## Current pipeline evidence
+
+- Monitoring revision `7acd6282fa8f95f007067cbbde06813a8c98aff5`:
+  release run 33386718105 completed successfully. Terraform reported zero
+  additions, one Worker change and zero destructions at 2026-08-31 11:32:49 UTC;
+  no database migration was pending. Website deployment was skipped.
+  All 740 workflow and unit tests passed in both OpenSearch matrix jobs;
+  live RapidAPI package integrations and production smoke checks passed.
+  Seven direct probes passed again during this ledger refresh: closed managed
+  configuration and account access, no customer-key fallback to demo,
+  invalid-signature rejection, non-empty demo retrieval, direct-origin denial
+  and the unchanged website revision. These do not prove customer activation.
+
+  Scheduled D1 meter-health run 33389468109 completed successfully at scheduler
+  source `1bd54e82d4950007697185b10b05e9b1dd700340`, which is newer than the
+  deployed Worker source. The agent reader returned `observed` for
+  `d1_meter_state` at 2026-08-31 12:03:02 UTC, with no fixed-code findings and
+  `workload_and_provider_parity_unverified`. This proves the scoped read and
+  scheduled-run check, not populated workload, Stripe parity or an exercised
+  failure response. See [managed channel monitoring](../MANAGED_CHANNEL_MONITORING.md)
+  for credential, workload-cost and local-host limitations.
+
+- Working-Worker rollback candidate: source
+  `1bd54e82d4950007697185b10b05e9b1dd700340`, PR #540 at
+  `9ad78a1adc411391f5bc9adbb5d40dee1bb61c09`, remains **DRAFT / UNMERGED /
+  UNDEPLOYED**. PR checks 33388808877 and plan 33388808660 succeeded for that
+  exact head. The candidate preserves entitlement repair and the migrated D1
+  schema. Neither the successful plan nor local compatibility tests establish
+  a live rollback or restoration rehearsal. All activation gates remain open.
 
 - Reconciliation revision `ff2d26725d8d35b7261ef9a67e60d3b728a1ed10`:
   release run 33381558787 completed successfully. Terraform reported zero
