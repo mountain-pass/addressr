@@ -13,6 +13,10 @@ import {
   handleStripeWebhook,
   reconcileEntitlements,
 } from '../../../apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs';
+import {
+  healthQuery,
+  healthFromRow,
+} from '../../../scripts/managed-channel-health.mjs';
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -453,6 +457,80 @@ test('repeated reconciliation repairs policy while preserving usage and ownershi
       await database.prepare('SELECT * FROM entitlements').first(),
       repaired,
     );
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test('meter health observes real migrated D1 without exposing workload or changing state', async () => {
+  const { miniflare, database } = await migratedDatabase('health');
+  const now = new Date('2026-08-31T10:10:00Z');
+  const query = healthQuery(now);
+  const observe = async () =>
+    healthFromRow(
+      await database
+        .prepare(query.sql)
+        .bind(...query.params)
+        .first(),
+      now,
+    );
+  try {
+    const empty = await observe();
+    assert.equal(empty.status, 'observed');
+    assert.deepEqual(empty.limitations, [
+      'workload_and_provider_parity_unverified',
+    ]);
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,plan_key,subscription_status,payment_method_policy,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','synthetic','active','immediate',10,0,'period',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
+    );
+    await database
+      .prepare(
+        "INSERT INTO usage_records (id,organization_id,api_key_id,request_path,outcome,created_at) VALUES ('usage','org','key','/addresses','billable',?)",
+      )
+      .bind('2026-08-31T09:30:00.000Z')
+      .run();
+    assert.deepEqual(
+      await observe(),
+      empty,
+      'recent pending usage is not overdue or public workload evidence',
+    );
+    await database.exec(
+      "UPDATE usage_records SET created_at='2026-08-31T08:30:00.000Z',meter_attempts=12",
+    );
+    const failedDelivery = await observe();
+    assert.deepEqual(failedDelivery.findings, [
+      'delivery_exhausted',
+      'delivery_overdue',
+      'reconciliation_missing',
+    ]);
+    await database.exec(
+      "UPDATE usage_records SET meter_state='delivered'; INSERT INTO meter_reconciliations VALUES ('org','2026-08-31T08:00:00.000Z','2026-08-31T09:00:00.000Z',1,1,0,1,'matched','now',NULL);",
+    );
+    assert.deepEqual(
+      await observe(),
+      empty,
+      'empty and reconciled databases have equivalent public reports',
+    );
+    for (const state of ['pending', 'rejected', 'mismatched', 'error']) {
+      await database
+        .prepare('UPDATE meter_reconciliations SET state=?')
+        .bind(state)
+        .run();
+      const failedReconciliation = await observe();
+      assert.deepEqual(failedReconciliation.findings, [
+        state === 'pending'
+          ? 'reconciliation_pending'
+          : 'reconciliation_failed',
+      ]);
+    }
+    const entitlement = await database
+      .prepare('SELECT quota_used FROM entitlements')
+      .first();
+    const usage = await database
+      .prepare('SELECT meter_attempts FROM usage_records')
+      .first();
+    assert.equal(entitlement.quota_used, 1);
+    assert.equal(usage.meter_attempts, 12);
   } finally {
     await miniflare.dispose();
   }

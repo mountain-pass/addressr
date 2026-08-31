@@ -1,0 +1,26 @@
+# ADR-051: the recurring Codex reader consumes this workflow, not the maintainer's inbox.
+name: Managed Channel Health
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: managed-channel-health
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+      - name: Read managed D1 meter state
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.TF_VAR_cloudflare_account_id }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.TF_VAR_cloudflare_api_token }}
+        run: node scripts/managed-channel-health.mjs
