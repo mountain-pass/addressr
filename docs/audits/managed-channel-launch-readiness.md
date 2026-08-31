@@ -1,8 +1,9 @@
 # Addressr-managed channel launch readiness
 
-- **As at:** 2026-08-31, after PR #535 deployment
-- **Deployed source revision:** `0627aad0c1ae918f4b9e7f75f65e364f66fbdb82`
-- **Release:** PR #535 merged; run 33361540686 succeeded.
+- **As at:** 2026-08-31, after PR #537 recovery deployment
+- **Worker source revision:** `166892c1baff45cf411c4e83b8e76ac8f5a2d855`
+- **Migration and website revision:** `076a1c63094203761494460c53e325522b24e8d5`
+- **Release:** PR #537 merged; run 33368539742 succeeded.
 - **Activation decision:** Do not activate.
 
 This is a point-in-time evidence ledger, not an activation control or an
@@ -25,7 +26,7 @@ terms, subscriber data and traffic volumes.
 | Requirement                                                | Class     | Evidence                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Managed access stays disabled                              | SATISFIED | `GET https://api.addressr.io/managed/config` returned HTTP 200 with `{"available":false,"plans":[]}`; `GET https://api.addressr.io/managed/account` returned HTTP 503 with `{"error":"managed_channel_not_active"}` from Sydney after the 2026-08-31 release. A supplied customer key also remained closed despite a valid demo Referer; an ordinary demo request returned non-empty results. |
-| Disabled deployment is verified separately from activation | SATISFIED | Release run 33361540686 applied one Worker update and passed production API smoke checks at the deployed revision; the existing website was unchanged. Customer access remains disabled; this is not a completed customer-channel verification claim.                                                                                                                                         |
+| Disabled deployment is verified separately from activation | SATISFIED | Recovery run 33368539742 applied the pending quota migration, deployed the website and passed production API and website smoke checks. Terraform made no resource changes; the Worker remains at its prior source revision. Customer access remains disabled; this is not completed customer-channel verification.                                                                            |
 | RapidAPI remains independently available                   | PARTIAL   | Master run 33305602613 passed the live RapidAPI package integrations at the source revision. This proves the exercised integration, not every subscriber's unchanged commercial terms or all production traffic.                                                                                                                                                                              |
 
 ## Decision authority
@@ -53,7 +54,7 @@ terms, subscriber data and traffic volumes.
 | Stripe meter delivery and reconciliation                  | PARTIAL | Tests cover stable event identifiers, retry without identifier replacement, provider reconciliation states and repair of an older unreconciled window. Live Stripe meter ingestion, late delivery, duplicate delivery and provider reconciliation have not been exercised.                                                                                                                                                                                                                                                                                                                                                                                           |
 | Abuse throttling is separate from accounting              | PARTIAL | Behavioural tests prove throttling occurs before authentication and commercial accounting and fails closed when the limiter is unavailable. Production thresholds, isolation and overload behaviour are unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Customer, demo and monitoring principals are isolated     | PARTIAL | Tests prove a supplied customer key never falls back to demo, demo stays on RapidAPI and monitoring uses its own IP credential and limiter. Separate live customer and monitoring principals and their usage classification are not verified.                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Confidential RapidAPI catalogue parity                    | PARTIAL | A fresh partial authenticated RapidAPI readback is saved privately in 1Password; the earlier complete export has not been recovered. The hard-cap assumption in managed quota enforcement requires correction before activation. The live Stripe catalogue has not been read back after release, and the public repository intentionally cannot prove confidential prices, allowances or grandfathered RapidAPI terms.                                                                                                                                                                                                                                               |
+| Confidential RapidAPI catalogue parity                    | PARTIAL | A partial authenticated RapidAPI readback is saved privately in 1Password. All four archived Stripe price details were read; base and request charges match the current public-plan figures, including paid allowances and overage. Explicit hard/soft quota policy is deployed. Historical plan versions, currency agreement, reset timing and billable-outcome parity remain unverified. No product was activated or charge authorized.                                                                                                                                                                                                                            |
 | Stripe payment-recovery settings                          | PARTIAL | Authenticated provider readback on 2026-08-30 showed Addressr-scoped payment recovery using Smart Retries, eight attempts over two weeks and terminal `unpaid`. No automation run or Test Clock recovery has occurred. Re-read is required immediately before activation.                                                                                                                                                                                                                                                                                                                                                                                            |
 | Immediate-outcome payment methods and no collection pause | PARTIAL | Terraform and gateway activation preconditions require the chosen payment-method policy, and the gateway denies unsupported or paused states. Live Checkout configuration and a real subscription outcome are not yet verified.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Accessible account and billing journeys                   | PARTIAL | Exact-revision CI built the site and passed built-output assertions plus scripted Chromium keyboard interactions. Browser tests cover fallback copy, checkout announcements, skip link, 320-pixel reflow and API-key instruction focus. Authenticated production screen-reader, keyboard, zoom/reflow and error-recovery passes remain missing.                                                                                                                                                                                                                                                                                                                      |
@@ -91,6 +92,24 @@ Public opening requires its own explicit review, not an empty allowlist.
 
 ## Current pipeline evidence
 
+- Recovery revision `076a1c63094203761494460c53e325522b24e8d5`:
+  release run 33368539742 completed successfully. Terraform reported no resource
+  changes; D1 applied `0002-quota-policy.sql` at 2026-08-31 07:35:22 UTC.
+  Authenticated schema readback confirmed `hard_limit`, the expected reservation
+  and refund triggers, and no intermediate `entitlements_next` table. The live
+  website's `revision.txt` returned this exact revision after deployment.
+  Direct production probes confirmed closed managed paths, invalid-signature
+  rejection, working demo retrieval and rejection of unauthenticated
+  direct-origin requests. These observations do not prove authenticated quota
+  or billing behaviour.
+
+- Worker source revision `166892c1baff45cf411c4e83b8e76ac8f5a2d855`:
+  release run 33365620209 updated the Worker before its migration failed; website
+  deployment was skipped. Refreshed Cloudflare readback after recovery shows
+  Worker version `014f677e` serving all traffic. The recovery changed the SQL
+  comment that prevented remote parsing, applied the pending migration and
+  delivered the website; it did not deploy another Worker version.
+
 - Deployed restriction revision `0627aad0c1ae918f4b9e7f75f65e364f66fbdb82`:
   release run 33361540686 applied one Worker update with no additions or
   destructions at 2026-08-31 05:52 UTC. No database migration was pending.
@@ -119,7 +138,7 @@ Public opening requires its own explicit review, not an empty allowlist.
   Terraform. It does not prove apply, provider state, activation or production
   behaviour.
 
-## Quota policy correction under verification
+## Deployed quota policy; customer behaviour still under verification
 
 Authenticated RapidAPI readback found that included allowances and hard access
 limits are not interchangeable: the catalogue contains hard-cap, pay-per-use
@@ -127,9 +146,10 @@ and included-plus-overage policies. A partial readback is saved privately in
 1Password; historical versions, exact reset anchors, currency and deployed Stripe
 price parity still require verification. No commercial figures are stored here.
 
-The next implementation adds explicit quota policy to the existing entitlement
-and reservation path. Migration preserves existing rows as hard-limited; paid
-requests beyond a soft allowance remain counted and metered. Missing policy
-fails closed. This is not deployed evidence or authorization for paid usage.
+The deployed implementation adds explicit quota policy to the existing
+entitlement and reservation path. The migration is applied in production and
+preserves existing rows as hard-limited. Behavioural tests cover counting and
+metering beyond soft allowances and rejecting missing policy. The live schema
+readback does not prove authenticated accounting, period rollover or paid usage.
 Rollback must disable managed access first and retain the migrated schema and
 usage history; do not reverse the migration to restore a prior Worker.
