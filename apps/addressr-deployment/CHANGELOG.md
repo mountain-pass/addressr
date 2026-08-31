@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.13
+
+### Patch Changes
+
+- faa325f: Preserve each managed plan's request policy: hard limits still stop at the allowance, while pay-per-use and overage plans continue counting billable requests. Account usage now distinguishes included requests from an access limit. Existing entitlements retain their hard limits during migration; managed access remains disabled pending launch verification.
+
 ## 1.0.12
 
 ### Patch Changes
