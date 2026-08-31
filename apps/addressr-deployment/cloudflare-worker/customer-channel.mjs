@@ -11,6 +11,7 @@ const AUTH_SQL = `
   SELECT
     k.id AS api_key_id,
     k.organization_id,
+    o.clerk_organization_id,
     k.key_hash,
     k.key_salt,
     k.key_iterations,
@@ -21,6 +22,7 @@ const AUTH_SQL = `
     e.quota_limit,
     e.quota_used
   FROM api_keys k
+  JOIN organizations o ON o.id = k.organization_id
   JOIN entitlements e ON e.organization_id = k.organization_id
   WHERE k.prefix = ? AND k.revoked_at IS NULL
   LIMIT 1
@@ -99,6 +101,11 @@ export async function authorizeCustomer(request, environment) {
   }
 
   if (!record || !(await keyMatches(key, record))) return denied('invalid_key');
+  if (
+    !isManagedOrganizationAllowed(environment, record.clerk_organization_id)
+  ) {
+    return denied('organization_not_enabled');
+  }
   if (!ALLOWED_SUBSCRIPTION_STATUSES.has(record.subscription_status)) {
     return denied('subscription_inactive');
   }
@@ -167,6 +174,25 @@ export function managedOrigins(environment) {
 
 export function isManagedChannelEnabled(environment) {
   return environment?.MANAGED_CHANNEL_ENABLED === 'true';
+}
+
+export function isManagedOrganizationAllowed(environment, organizationId) {
+  const value = environment?.MANAGED_ORGANIZATION_ALLOWLIST;
+  if (typeof value !== 'string' || value.length > 4096) return false;
+  try {
+    const organizations = JSON.parse(value);
+    return (
+      Array.isArray(organizations) &&
+      organizations.length > 0 &&
+      organizations.length <= 16 &&
+      organizations.every(
+        (id) => typeof id === 'string' && /^org_[A-Za-z0-9_]{1,124}$/.test(id),
+      ) &&
+      organizations.includes(organizationId)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function isManagedConfigAvailable(environment) {

@@ -35,6 +35,9 @@ resource "cloudflare_workers_script" "proxy" {
   lifecycle {
     precondition {
       condition = !var.managed_channel_enabled || (
+        length(var.managed_organization_allowlist) > 0 &&
+        length(var.managed_organization_allowlist) <= 16 &&
+        alltrue([for id in var.managed_organization_allowlist : can(regex("^org_[A-Za-z0-9_]{1,124}$", id))]) &&
         length(var.managed_origin_urls) > 0 &&
         alltrue([for origin in var.managed_origin_urls : can(regex("^https://[^/]+/?$", origin))]) &&
         length(var.billable_statuses) > 0 &&
@@ -49,7 +52,7 @@ resource "cloudflare_workers_script" "proxy" {
         var.stripe_meter_event_name != "" &&
         var.stripe_meter_id != ""
       )
-      error_message = "managed_channel_enabled requires complete origin, Clerk, Stripe catalogue, payment-method and metering configuration."
+      error_message = "managed_channel_enabled requires a bounded organisation allowlist and complete origin, Clerk, Stripe catalogue, payment-method and metering configuration."
     }
   }
 
@@ -111,6 +114,11 @@ resource "cloudflare_workers_script" "proxy" {
       name = "MANAGED_CHANNEL_ENABLED"
       type = "plain_text"
       text = tostring(var.managed_channel_enabled)
+    },
+    {
+      name = "MANAGED_ORGANIZATION_ALLOWLIST"
+      type = "secret_text"
+      text = jsonencode(var.managed_organization_allowlist)
     },
     {
       name = "ORIGIN_AUTH_HEADER"

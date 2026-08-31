@@ -3,6 +3,7 @@ import { createClerkClient } from '@clerk/backend';
 import {
   createCustomerKey,
   isManagedChannelEnabled,
+  isManagedOrganizationAllowed,
 } from './customer-channel.mjs';
 import {
   createCheckout,
@@ -71,6 +72,13 @@ export async function handleManagedRequest(
     dependencies.clerk,
   );
   if (!session.ok) return withCors(session.response, request, environment);
+  if (!isManagedOrganizationAllowed(environment, session.clerkOrganizationId)) {
+    return withCors(
+      problem(403, 'organization_not_enabled'),
+      request,
+      environment,
+    );
+  }
 
   try {
     const organization = await organizationForSession(environment, session);

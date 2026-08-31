@@ -78,6 +78,14 @@ variable "managed_channel_enabled" {
   description = "Explicit production switch for the Addressr-managed customer and account routes."
 }
 
+variable "managed_organization_allowlist" {
+  type        = set(string)
+  sensitive   = true
+  nullable    = false
+  default     = []
+  description = "Clerk organisation identifiers allowed to use managed account and customer routes during restricted verification. Empty denies all."
+}
+
 variable "origin_auth_header" {
   type        = string
   sensitive   = true

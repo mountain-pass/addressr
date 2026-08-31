@@ -7,6 +7,36 @@ import { authorizeSession, handleManagedRequest } from './managed-account.mjs';
 const APP_ORIGIN = 'https://app.addressr.io';
 
 describe('managed account boundary', () => {
+  it('denies excluded verified organisations before any database or billing operation', async () => {
+    for (const [path, method] of [
+      ['/managed/account', 'GET'],
+      ['/managed/checkout', 'POST'],
+      ['/managed/portal', 'POST'],
+      ['/managed/api-keys', 'POST'],
+      ['/managed/api-keys/00000000-0000-4000-8000-000000000001', 'DELETE'],
+    ]) {
+      let databaseCalls = 0;
+      const response = await handleManagedRequest(
+        request(path, {
+          method,
+          headers: { 'x-organization-id': 'org_clerk_addressr' },
+        }),
+        environment({
+          prepare() {
+            databaseCalls++;
+            throw new Error('Unexpected database access');
+          },
+        }),
+        { clerk: clerkFor({ orgId: 'org_excluded' }) },
+      );
+      assert.equal(response.status, 403, path);
+      assert.deepEqual(await response.json(), {
+        error: 'organization_not_enabled',
+      });
+      assert.equal(databaseCalls, 0, path);
+    }
+  });
+
   it('gates account routes exactly while leaving signed webhooks available', async () => {
     for (const [activation, isActive] of [
       [undefined, false],
@@ -194,6 +224,7 @@ function request(path, options = {}) {
 function environment(database = managedDatabase()) {
   return {
     MANAGED_CHANNEL_ENABLED: 'true',
+    MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
     CUSTOMER_DB: database,
     CLERK_PUBLISHABLE_KEY: 'pk_test_addressr',
     CLERK_JWT_KEY: 'public-key',

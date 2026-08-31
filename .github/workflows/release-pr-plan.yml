@@ -180,6 +180,7 @@ jobs:
           TF_VAR_clerk_publishable_key: ${{ secrets.TF_VAR_clerk_publishable_key }}
           TF_VAR_clerk_jwt_key: ${{ secrets.TF_VAR_clerk_jwt_key }}
           TF_VAR_managed_origin_urls: ${{ secrets.TF_VAR_managed_origin_urls }}
+          TF_VAR_managed_organization_allowlist: ${{ secrets.TF_VAR_managed_organization_allowlist || '[]' }}
           TF_VAR_managed_billable_statuses: ${{ secrets.TF_VAR_managed_billable_statuses }}
           TF_VAR_stripe_secret_key: ${{ secrets.TF_VAR_stripe_secret_key }}
           TF_VAR_stripe_plan_quotas: ${{ secrets.TF_VAR_stripe_plan_quotas }}
@@ -206,6 +207,7 @@ jobs:
             TF_VAR_clerk_publishable_key
             TF_VAR_clerk_jwt_key
             TF_VAR_managed_origin_urls
+            TF_VAR_managed_organization_allowlist
             TF_VAR_managed_billable_statuses
             TF_VAR_stripe_secret_key
             TF_VAR_stripe_plan_quotas

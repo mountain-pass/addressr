@@ -29,7 +29,7 @@ test('D1 atomically enforces quota and idempotency under concurrent reservations
 
   try {
     await database.exec(
-      "INSERT INTO organizations VALUES ('org','clerk','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,1,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,1,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
     );
 
     const quotaRace = await Promise.allSettled([
@@ -69,7 +69,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
   try {
     const key = await createCustomerKey();
     await database.exec(
-      "INSERT INTO organizations VALUES ('org','clerk','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,10,0,'2026-08',1,'now');",
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,10,0,'2026-08',1,'now');",
     );
     await database
       .prepare(
@@ -86,6 +86,21 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
         key.hashVersion,
       )
       .run();
+
+    const excluded = traceDatabase(database);
+    const excludedAuthorization = await authorizeCustomer(
+      requestWithKey(key.key),
+      {
+        CUSTOMER_DB: excluded.binding,
+        MANAGED_ORGANIZATION_ALLOWLIST: '["org_other"]',
+      },
+    );
+    assert.equal(excludedAuthorization.kind, 'rejected');
+    assert.deepEqual(await excludedAuthorization.response.json(), {
+      error: 'organization_not_enabled',
+    });
+    assert.equal(excluded.calls.length, 1);
+    await assertState(database, 0, 0);
 
     const malformed = traceDatabase(database);
     const malformedAuthorization = await authorizeCustomer(
@@ -126,6 +141,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
     const exhausted = traceDatabase(database);
     const exhaustedCustomer = await authorizeCustomer(requestWithKey(key.key), {
       CUSTOMER_DB: exhausted.binding,
+      MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
     });
     assert.equal(exhaustedCustomer.kind, 'customer');
     const exhaustedUsage = await reserveUsage(
@@ -177,6 +193,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
     await assertIndexed(database, accepted.calls.at(0), [
       /SEARCH k USING INDEX .*prefix/i,
       /SEARCH e USING INDEX .*organization_id/i,
+      /SEARCH o USING INDEX .*id/i,
     ]);
     await assertIndexed(database, accepted.calls.at(2), [
       /SEARCH usage_records USING INDEX .*id/i,
@@ -261,6 +278,7 @@ async function exerciseAccepted(database, key, originStatus) {
   const trace = traceDatabase(database);
   const customer = await authorizeCustomer(requestWithKey(key), {
     CUSTOMER_DB: trace.binding,
+    MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
   });
   assert.equal(customer.kind, 'customer');
   const usage = await reserveUsage(
@@ -273,6 +291,7 @@ async function exerciseAccepted(database, key, originStatus) {
     await settleUsage(
       {
         CUSTOMER_DB: trace.binding,
+        MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
         BILLABLE_STATUSES: '[200]',
       },
       usage.id,

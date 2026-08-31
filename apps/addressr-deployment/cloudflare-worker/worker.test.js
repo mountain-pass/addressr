@@ -104,6 +104,50 @@ describe('cloudflare-worker/worker — module shape', () => {
     assert.deepEqual(database.operations, ['auth', 'reserve', 'finalize']);
   });
 
+  it('fails closed for an absent, invalid or excluded organisation allowlist without origin or usage', async (context) => {
+    const module_ = await import('./worker.js');
+    const origin = context.mock.method(globalThis, 'fetch', async () =>
+      Response.json([]),
+    );
+    for (const allowlist of [
+      undefined,
+      true,
+      7,
+      '',
+      '[]',
+      '{}',
+      'null',
+      'invalid',
+      ' '.repeat(4097),
+      '["org_' + 'a'.repeat(125) + '"]',
+      '["org_other"]',
+      '["*"]',
+      '["org_clerk_addressr",7]',
+      JSON.stringify(Array.from({ length: 17 }, () => 'org_clerk_addressr')),
+    ]) {
+      const database = await customerDatabase(VALID_KEY);
+      const response = await module_.default.fetch(
+        new Request('https://api.addressr.io/addresses?q=main', {
+          headers: {
+            'x-addressr-api-key': VALID_KEY,
+            'x-organization-id': 'org_clerk_addressr',
+            Origin: 'https://addressr.io',
+          },
+        }),
+        {
+          ...customerEnvironment(database),
+          MANAGED_ORGANIZATION_ALLOWLIST: allowlist,
+        },
+      );
+      assert.equal(response.status, 401, String(allowlist));
+      assert.deepEqual(await response.json(), {
+        error: 'organization_not_enabled',
+      });
+      assert.deepEqual(database.operations, ['auth']);
+    }
+    assert.equal(origin.mock.callCount(), 0);
+  });
+
   it('non-billable origin outcomes release quota and leave no usage record', async (context) => {
     const module_ = await import('./worker.js');
     const database = await customerDatabase(VALID_KEY);
@@ -342,6 +386,7 @@ function allowingLimiter(expectedKey) {
 function customerEnvironment(database) {
   return {
     MANAGED_CHANNEL_ENABLED: 'true',
+    MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
     CUSTOMER_DB: database,
     MANAGED_ORIGIN_URLS: JSON.stringify([
       'https://origin-a.example',
@@ -397,6 +442,7 @@ async function customerDatabase(
               return {
                 api_key_id: 'key-1',
                 organization_id: 'org-1',
+                clerk_organization_id: 'org_clerk_addressr',
                 key_hash: toBase64(hash),
                 key_salt: toBase64(salt),
                 key_iterations: 10_000,

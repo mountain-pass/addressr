@@ -108,6 +108,21 @@ variable "managed_channel_enabled" {
   description = "Explicit ADR-062 production activation switch. False keeps every customer-facing managed route closed even when provider configuration is present."
 }
 
+variable "managed_organization_allowlist" {
+  type        = set(string)
+  sensitive   = true
+  nullable    = false
+  default     = []
+  description = "Named Clerk organisations eligible for restricted managed-channel verification. Empty denies all; this does not activate the channel."
+
+  validation {
+    condition = length(var.managed_organization_allowlist) <= 16 && alltrue([
+      for id in var.managed_organization_allowlist : can(regex("^org_[A-Za-z0-9_]{1,124}$", id))
+    ])
+    error_message = "Allow at most 16 valid Clerk organisation identifiers."
+  }
+}
+
 variable "managed_billable_statuses" {
   type        = set(number)
   sensitive   = true
