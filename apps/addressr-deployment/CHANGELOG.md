@@ -1,5 +1,11 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.15
+
+### Patch Changes
+
+- ee8aa87: Allow scheduled entitlement reconciliation to repair an existing projection on repeated runs without losing usage from the current billing period. Signed Stripe webhook replay protection remains unchanged. Managed customer access remains disabled pending launch verification.
+
 ## 1.0.14
 
 ### Patch Changes
