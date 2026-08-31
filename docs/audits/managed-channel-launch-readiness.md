@@ -1,9 +1,9 @@
 # Addressr-managed channel launch readiness
 
-- **As at:** 2026-08-31, after PR #537 recovery deployment
-- **Worker source revision:** `166892c1baff45cf411c4e83b8e76ac8f5a2d855`
+- **As at:** 2026-08-31, after PR #538 reconciliation deployment
+- **Worker source revision:** `ff2d26725d8d35b7261ef9a67e60d3b728a1ed10`
 - **Migration and website revision:** `076a1c63094203761494460c53e325522b24e8d5`
-- **Release:** PR #537 merged; run 33368539742 succeeded.
+- **Release:** PR #538 merged; run 33381558787 succeeded.
 - **Activation decision:** Do not activate.
 
 This is a point-in-time evidence ledger, not an activation control or an
@@ -26,7 +26,7 @@ terms, subscriber data and traffic volumes.
 | Requirement                                                | Class     | Evidence                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Managed access stays disabled                              | SATISFIED | `GET https://api.addressr.io/managed/config` returned HTTP 200 with `{"available":false,"plans":[]}`; `GET https://api.addressr.io/managed/account` returned HTTP 503 with `{"error":"managed_channel_not_active"}` from Sydney after the 2026-08-31 release. A supplied customer key also remained closed despite a valid demo Referer; an ordinary demo request returned non-empty results. |
-| Disabled deployment is verified separately from activation | SATISFIED | Recovery run 33368539742 applied the pending quota migration, deployed the website and passed production API and website smoke checks. Terraform made no resource changes; the Worker remains at its prior source revision. Customer access remains disabled; this is not completed customer-channel verification.                                                                            |
+| Disabled deployment is verified separately from activation | SATISFIED | Release run 33381558787 updated only the Worker and passed production smoke checks. No database migration was pending; the prior website revision remains live. Customer access remains disabled, and seven direct probes passed. This is not completed customer-channel verification.                                                                                                        |
 | RapidAPI remains independently available                   | PARTIAL   | Master run 33305602613 passed the live RapidAPI package integrations at the source revision. This proves the exercised integration, not every subscriber's unchanged commercial terms or all production traffic.                                                                                                                                                                              |
 
 ## Decision authority
@@ -49,7 +49,7 @@ terms, subscriber data and traffic volumes.
 | Organisation-scoped API keys                              | PARTIAL | Behavioural tests prove one-time key return, hash-only storage, organisation scoping, revocation boundaries and focus on the one-time copy instructions. Creation, use, revocation and replay have not been exercised against production D1.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Stripe Checkout and Billing Portal                        | PARTIAL | Code and tests cover hosted checkout, one customer per organisation, concurrent checkout idempotency, return URLs and accessible success/cancel announcements. Test-mode success, cancellation, abandonment and portal return have not been run end to end with production configuration.                                                                                                                                                                                                                                                                                                                                                                            |
 | Signed Stripe webhook projection                          | PARTIAL | Signature, size, ownership, ordering and object-current convergence are behaviourally tested. The Terraform-owned live destination and signing secret are deployed. A restricted runtime credential permits subscription reads only. Unsigned production delivery returned 400 invalid_webhook_signature. The same correctly signed foreign-integration event delivered at 15:02:59 and 15:08:58 AEST returned 200 with received=true and ignored=true; D1 checks before and after showed no organisation, entitlement, key, usage or event records. This proves signature handling and foreign-event isolation, not Addressr projection, deduplication or rotation. |
-| Entitlement and failed-payment projection                 | PARTIAL | Behavioural tests cover allowed and denied subscription states, payment-failure non-revocation, paused collection, unsupported payment methods and object-current recovery. Stripe Test Clock evidence for recovery, terminal `unpaid`, restoration and out-of-order delivery is missing.                                                                                                                                                                                                                                                                                                                                                                            |
+| Entitlement and failed-payment projection                 | PARTIAL | Behavioural tests cover allowed and denied subscription states, payment-failure non-revocation, paused collection, unsupported payment methods and object-current recovery. Migrated D1 tests additionally prove repeated and concurrent reconciliation repairs policy without resetting same-period usage or crossing ownership boundaries. Stripe Test Clock evidence for recovery, terminal `unpaid`, restoration and out-of-order delivery is missing.                                                                                                                                                                                                           |
 | Quota reservation and accounting                          | PARTIAL | Tests cover quota exhaustion before origin, atomic concurrent reservation, duplicate request IDs, quota release for non-billable outcomes and fail-closed D1 errors. Twice-peak concurrency and production-period rollover remain unverified.                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Stripe meter delivery and reconciliation                  | PARTIAL | Tests cover stable event identifiers, retry without identifier replacement, provider reconciliation states and repair of an older unreconciled window. Live Stripe meter ingestion, late delivery, duplicate delivery and provider reconciliation have not been exercised.                                                                                                                                                                                                                                                                                                                                                                                           |
 | Abuse throttling is separate from accounting              | PARTIAL | Behavioural tests prove throttling occurs before authentication and commercial accounting and fails closed when the limiter is unavailable. Production thresholds, isolation and overload behaviour are unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -91,6 +91,30 @@ state belongs outside production; no direct entitlement inserts are permitted.
 Public opening requires its own explicit review, not an empty allowlist.
 
 ## Current pipeline evidence
+
+- Reconciliation revision `ff2d26725d8d35b7261ef9a67e60d3b728a1ed10`:
+  release run 33381558787 completed successfully. Terraform reported zero
+  additions, one Worker change and zero destructions at 2026-08-31 10:25:11 UTC;
+  no database migration was pending. Refreshed Cloudflare readback identified
+  Worker version `29d17c09`, with managed access disabled and no managed origins.
+  The website was not redeployed and its live `revision.txt` still returned
+  `076a1c63094203761494460c53e325522b24e8d5`.
+  Seven direct production probes passed: unavailable managed configuration,
+  closed account access, customer-key rejection despite a demo Referer,
+  invalid-signature rejection, non-empty demo retrieval, direct-origin denial
+  and the unchanged website revision. Authenticated D1 readback confirmed both
+  migration ledger entries remain applied. These checks do not prove live
+  customer reconciliation or billing.
+
+  The commit's normal test gate passed all 736 tests. Focused Stripe and migrated
+  D1 tests passed all 21 cases, including concurrent repeated reconciliation,
+  policy repair without resetting current-period usage, ownership rejection
+  and a single ledger row for the repeated reconciliation identifier. Signed
+  webhook replay handling remains unchanged.
+
+  The public UptimeRobot page reported the existing monitor operational after
+  deployment. Its public view does not expose the configured target or prove
+  principal routing, managed-channel alert coverage or operator response.
 
 - Recovery revision `076a1c63094203761494460c53e325522b24e8d5`:
   release run 33368539742 completed successfully. Terraform reported no resource
@@ -153,3 +177,13 @@ metering beyond soft allowances and rejecting missing policy. The live schema
 readback does not prove authenticated accounting, period rollover or paid usage.
 Rollback must disable managed access first and retain the migrated schema and
 usage history; do not reverse the migration to restore a prior Worker.
+
+An executable local compatibility probe exercised reconstructed prior and
+current Worker code against migrated synthetic D1 state. It covered hard-limit
+reservation, settlement and refund, preservation of soft-policy usage while
+customer routing is disabled, and current reconciliation repairing the prior
+projection without resetting that usage. This is local compatibility evidence,
+not a deployed-artifact rollback or production data-preservation rehearsal.
+Disabling customer routing does not stop signed webhooks or scheduled
+reconciliation. A live rollback must account for those writers and use the
+governed release pipeline; production rollback and secret rotation remain open.
