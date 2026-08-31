@@ -136,15 +136,48 @@ test('probe fails closed and emits only aggregate evidence', async () => {
   assert.equal(argv.code, 1);
   assert.match(argv.stderr, /accepts no argv/);
 
-  const pass = await run(environment());
-  assert.equal(pass.code, 0, pass.stderr);
-  const result = JSON.parse(pass.stdout);
-  assert.equal(result.status, 'PASS');
+  const capture = await run(environment());
+  assert.equal(capture.stderr, '');
+  const result = JSON.parse(capture.stdout);
+  assert.equal(result.sampleSizePerReplicate, 100);
+  assert.equal(result.replicateCount, 2);
+  assert.equal(result.replicates.length, 2);
+  for (const replicate of result.replicates) assert.equal(replicate.n, 100);
+  const gates = {
+    addedP95Ms: {
+      limit: 25,
+      observed: Math.max(...result.replicates.map((item) => item.addedMs.p95)),
+    },
+    addedP99Ms: {
+      limit: 50,
+      observed: Math.max(...result.replicates.map((item) => item.addedMs.p99)),
+    },
+    candidateP95Ms: {
+      limit: 200,
+      observed: Math.max(
+        ...result.replicates.map((item) => item.candidateMs.p95),
+      ),
+    },
+    workerCpuP95Ms: { limit: 10, observed: result.workerCpuMs.p95 },
+  };
+  for (const gate of Object.values(gates))
+    assert.ok(Number.isFinite(gate.observed));
+  assert.deepEqual(result.gates, gates);
+  // Local scheduling may breach a real latency budget during the full suite.
+  // Verify the probe reports that failure; do not require this host to be fast.
+  const isWithinBudgets = Object.values(gates).every(
+    ({ observed, limit }) => observed <= limit,
+  );
+  assert.equal(result.status, isWithinBudgets ? 'PASS' : 'FAIL');
+  assert.equal(capture.code, isWithinBudgets ? 0 : 1);
   assert.equal(result.workerVersion, 'fixture-version');
   assert.equal(result.workerCpuMs.p95, 1);
-  assert.doesNotMatch(pass.stdout + pass.stderr, /addr_|x-addressr-api-key/);
-  assert.doesNotMatch(pass.stdout + pass.stderr, /fixture-address/);
-  assert.doesNotMatch(pass.stdout + pass.stderr, /127\.0\.0\.1/);
+  assert.doesNotMatch(
+    capture.stdout + capture.stderr,
+    /addr_|x-addressr-api-key/,
+  );
+  assert.doesNotMatch(capture.stdout + capture.stderr, /fixture-address/);
+  assert.doesNotMatch(capture.stdout + capture.stderr, /127\.0\.0\.1/);
 
   await writeFile(fixture.eventsFile, '');
   process.env.FAKE_TAIL_CPU_MS = '11';
@@ -152,4 +185,5 @@ test('probe fails closed and emits only aggregate evidence', async () => {
   delete process.env.FAKE_TAIL_CPU_MS;
   assert.equal(breached.code, 1);
   assert.equal(JSON.parse(breached.stdout).status, 'FAIL');
+  assert.equal(JSON.parse(breached.stdout).workerCpuMs.p95, 11);
 });

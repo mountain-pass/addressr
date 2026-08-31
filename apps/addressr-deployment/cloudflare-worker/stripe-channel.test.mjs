@@ -4,12 +4,34 @@ import {
   createCheckout,
   deliverMeterEvents,
   handleStripeWebhook,
+  planCatalogue,
   reconcileEntitlements,
   reconcileMeterEvents,
   runMeterOperations,
 } from './stripe-channel.mjs';
 
 describe('Stripe projection and metering', () => {
+  it('requires an explicit quota policy and permits zero included pay-per-use requests', () => {
+    for (const [quota, hardLimit, valid] of [
+      [0, false, true],
+      [3, false, true],
+      [3, true, true],
+      [0, true, false],
+      [-1, false, false],
+      [1.5, false, false],
+      [3, undefined, false],
+      [3, 'false', false],
+      [Number.MAX_SAFE_INTEGER + 1, false, false],
+    ]) {
+      const plans = planCatalogue({
+        STRIPE_PLAN_CATALOGUE: JSON.stringify({
+          synthetic: { priceId: 'price_synthetic', quota, hardLimit },
+        }),
+      });
+      assert.equal(plans.has('synthetic'), valid, `${quota}/${hardLimit}`);
+    }
+  });
+
   it('rejects a webhook before touching D1 when its signature is invalid', async () => {
     const database = stripeDatabase();
     const response = await handleStripeWebhook(
@@ -90,7 +112,7 @@ describe('Stripe projection and metering', () => {
       'sub_addressr',
       1_787_900_000,
     ]);
-    assert.deepEqual(database.batchStatements[2].values.slice(0, 10), [
+    assert.deepEqual(database.batchStatements[2].values.slice(0, 11), [
       'org-addressr',
       'sub_addressr',
       'developer',
@@ -99,11 +121,12 @@ describe('Stripe projection and metering', () => {
       'immediate',
       0,
       1000,
+      1,
       '1787800000',
       1_787_900_000,
     ]);
     assert.equal(
-      Number.isNaN(Date.parse(database.batchStatements[2].values[10])),
+      Number.isNaN(Date.parse(database.batchStatements[2].values[11])),
       false,
     );
   });
@@ -563,7 +586,7 @@ function environment(database) {
     STRIPE_METER_EVENT_NAME: 'addressr_request',
     STRIPE_PAYMENT_METHOD_TYPES: '["card"]',
     STRIPE_PLAN_CATALOGUE: JSON.stringify({
-      developer: { priceId: 'price_developer', quota: 1000 },
+      developer: { priceId: 'price_developer', quota: 1000, hardLimit: true },
     }),
   };
 }

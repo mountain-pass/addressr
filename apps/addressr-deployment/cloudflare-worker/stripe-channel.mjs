@@ -617,7 +617,9 @@ export function planCatalogue(environment) {
           typeof plan?.priceId === 'string' &&
           plan.priceId.startsWith('price_') &&
           Number.isSafeInteger(plan.quota) &&
-          plan.quota > 0,
+          plan.quota >= 0 &&
+          typeof plan.hardLimit === 'boolean' &&
+          (!plan.hardLimit || plan.quota > 0),
       ),
     );
   } catch {
@@ -754,6 +756,7 @@ function subscriptionProjection(subscription, event, environment) {
     paymentPolicy: isImmediate && matchesPlan ? 'immediate' : 'unsupported',
     cancelAtPeriodEnd: subscription.cancel_at_period_end ? 1 : 0,
     quota: matchesPlan ? plan.quota : 1,
+    hardLimit: !matchesPlan || plan.hardLimit ? 1 : 0,
     quotaPeriod: String(item.current_period_start),
   };
 }
@@ -798,9 +801,9 @@ async function storeProjection(database, projection) {
       .prepare(
         `INSERT INTO entitlements (
            organization_id,stripe_subscription_id,plan_key,subscription_status,
-           pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,
+           pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,hard_limit,
            quota_used,quota_period,stripe_event_created,updated_at
-         ) VALUES (?,?,?,?,?,?,?,?,0,?,?,?)
+         ) VALUES (?,?,?,?,?,?,?,?,?,0,?,?,?)
          ON CONFLICT(organization_id) DO UPDATE SET
            stripe_subscription_id = excluded.stripe_subscription_id,
            plan_key = excluded.plan_key,
@@ -809,6 +812,7 @@ async function storeProjection(database, projection) {
            payment_method_policy = excluded.payment_method_policy,
            cancel_at_period_end = excluded.cancel_at_period_end,
            quota_limit = excluded.quota_limit,
+           hard_limit = excluded.hard_limit,
            quota_used = CASE WHEN entitlements.quota_period = excluded.quota_period
              THEN entitlements.quota_used ELSE 0 END,
            quota_period = excluded.quota_period,
@@ -824,6 +828,7 @@ async function storeProjection(database, projection) {
         projection.paymentPolicy,
         projection.cancelAtPeriodEnd,
         projection.quota,
+        projection.hardLimit,
         projection.quotaPeriod,
         projection.eventCreated,
         new Date().toISOString(),

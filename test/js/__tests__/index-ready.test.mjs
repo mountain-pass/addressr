@@ -57,6 +57,26 @@ const scriptedClient = (script) => {
 };
 
 describe('awaitIndexReady (P097 readiness gate)', () => {
+  it(
+    'bounds a stalled probe even when its remaining budget is already zero',
+    { timeout: 1000 },
+    async () => {
+      let clockReads = 0;
+      const client = {
+        count: () => new Promise(() => {}),
+      };
+      await assert.rejects(
+        awaitIndexReady({
+          client,
+          index: 'expired',
+          timeoutMs: 20,
+          now: () => (clockReads++ === 0 ? 0 : 20),
+        }),
+        /did not answer within 20ms/,
+      );
+    },
+  );
+
   it('returns as soon as the index is populated AND searchable', async () => {
     const client = scriptedClient([{ count: 42, hits: 42 }]);
     const result = await awaitIndexReady({
@@ -188,6 +208,7 @@ describe('awaitIndexReady (P097 readiness gate)', () => {
     // one lost race at the deadline. A stall verdict here would discard every
     // answer already in hand.
     let polls = 0;
+    let clockReads = 0;
     const client = {
       async count() {
         polls += 1;
@@ -206,6 +227,7 @@ describe('awaitIndexReady (P097 readiness gate)', () => {
         index: 'no-such-index',
         timeoutMs: 20,
         intervalMs: 1,
+        now: () => clockReads++ < 3 ? 0 : 20,
       }),
       (error) => {
         assert.match(error.message, /does not exist/);
@@ -221,10 +243,9 @@ describe('awaitIndexReady (P097 readiness gate)', () => {
   });
 
   it('does NOT call it a stall when the count already answered', async () => {
-    // count resolves with documents; search then races an already-expired
-    // budget. Without the zero-budget carve-out this reports "the backend
-    // stopped responding, so this says nothing about whether the index is
-    // populated" — contradicted by the count sitting in `lastCount`.
+    // Count resolves with documents; search starts with an expired budget.
+    // Its timeout must preserve the count rather than inventing a total stall.
+    let clockReads = 0;
     const client = {
       async count() {
         return { body: { count: 5 } };
@@ -239,6 +260,7 @@ describe('awaitIndexReady (P097 readiness gate)', () => {
         index: 'test-geo',
         timeoutMs: 20,
         intervalMs: 1,
+        now: () => (clockReads++ < 2 ? 0 : 20),
       }),
       (error) => {
         assert.match(error.message, /not yet searchable/);

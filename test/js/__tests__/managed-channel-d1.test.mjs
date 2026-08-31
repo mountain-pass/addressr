@@ -9,6 +9,7 @@ import {
   reserveUsage,
   settleUsage,
 } from '../../../apps/addressr-deployment/cloudflare-worker/customer-channel.mjs';
+import { handleStripeWebhook } from '../../../apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs';
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -208,6 +209,185 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
   }
 });
 
+test('quota migration preserves populated state and counts soft and pay-per-use requests', async () => {
+  const { miniflare, database } = await migratedDatabase('policies', true);
+  try {
+    const key = await createCustomerKey();
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,plan_key,subscription_status,payment_method_policy,quota_limit,quota_period,stripe_event_created,updated_at) VALUES ('org','synthetic','active','immediate',2,'period',1,'now');",
+    );
+    await database
+      .prepare(
+        "INSERT INTO api_keys VALUES ('key','org','default',?,?,?,?,?,NULL,'now')",
+      )
+      .bind(
+        key.prefix,
+        key.keyHash,
+        key.keySalt,
+        key.keyIterations,
+        key.hashVersion,
+      )
+      .run();
+    await database.prepare(reserve).bind('before-migration').run();
+    const before = await database.prepare('SELECT * FROM entitlements').first();
+    const migratedPolicy = await miniflare.dispatchFetch(
+      'http://localhost/policy',
+    );
+    assert.equal(migratedPolicy.status, 204);
+    assert.deepEqual(
+      await database.prepare('SELECT * FROM entitlements').first(),
+      { ...before, hard_limit: 1 },
+    );
+    await assertState(database, 1, 1);
+    const race = await Promise.allSettled([
+      database.prepare(reserve).bind('hard-one').run(),
+      database.prepare(reserve).bind('hard-two').run(),
+    ]);
+    assert.equal(fulfilled(race), 1);
+    assert.match(rejection(race), /quota_exhausted/);
+    await database.exec('DELETE FROM usage_records');
+    await assertState(database, 0, 0);
+
+    for (const allowance of [1, 0]) {
+      await database
+        .prepare('UPDATE entitlements SET hard_limit=0, quota_limit=?')
+        .bind(allowance)
+        .run();
+      const accepted = await Promise.all([
+        exerciseAccepted(database, key.key, 200),
+        exerciseAccepted(database, key.key, 200),
+        exerciseAccepted(database, key.key, 200),
+      ]);
+      for (const trace of accepted) {
+        assert.equal(trace.calls.length, 3);
+        assert.ok(trace.calls[0].responseBytes <= 4096);
+      }
+      await assertState(database, 3, 3);
+      await exerciseAccepted(database, key.key, 404);
+      await assertState(database, 3, 3);
+      await database.prepare(reserve).bind('duplicate').run();
+      await assert.rejects(
+        database.prepare(reserve).bind('duplicate').run(),
+        /UNIQUE/,
+      );
+      await assertState(database, 4, 4);
+      await database.exec(
+        'DELETE FROM usage_records; UPDATE entitlements SET quota_used=0',
+      );
+    }
+    await assert.rejects(
+      database.exec('UPDATE entitlements SET hard_limit=1'),
+      /CHECK/,
+    );
+    await assert.rejects(
+      database.exec('UPDATE entitlements SET hard_limit=2'),
+      /CHECK/,
+    );
+    await assertTriggerIndexed(database, 'reserve_usage_quota');
+    await assertTriggerIndexed(database, 'release_usage_quota');
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test('subscription projection persists explicit policy and preserves usage on replay and resets on period rollover', async () => {
+  const { miniflare, database } = await migratedDatabase('projection');
+  try {
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now')",
+    );
+    const subscription = {
+      id: 'sub_synthetic',
+      customer: 'stripe',
+      status: 'active',
+      metadata: {
+        addressr_organization_id: 'org',
+        addressr_plan_key: 'synthetic',
+        addressr_payment_method_policy: 'immediate',
+      },
+      payment_settings: { payment_method_types: ['card'] },
+      items: {
+        data: [{ price: { id: 'price_synthetic' }, current_period_start: 100 }],
+      },
+    };
+    let eventId = 'evt_first';
+    const stripe = {
+      webhooks: {
+        async constructEventAsync() {
+          return {
+            id: eventId,
+            type: 'customer.subscription.updated',
+            created: 200,
+            data: { object: { id: subscription.id } },
+          };
+        },
+      },
+      subscriptions: {
+        async retrieve() {
+          return subscription;
+        },
+      },
+    };
+    const environment = {
+      CUSTOMER_DB: database,
+      STRIPE_WEBHOOK_SECRET: 'synthetic',
+      STRIPE_PAYMENT_METHOD_TYPES: '["card"]',
+      STRIPE_PLAN_CATALOGUE: JSON.stringify({
+        synthetic: { priceId: 'price_synthetic', quota: 0, hardLimit: false },
+      }),
+    };
+    const project = async () => {
+      const response = await handleStripeWebhook(
+        new Request('https://api.addressr.io/managed/stripe-webhook', {
+          method: 'POST',
+          body: '{}',
+        }),
+        environment,
+        stripe,
+      );
+      assert.equal(response.status, 200);
+      return response.json();
+    };
+    await project();
+    let entitlement = await database
+      .prepare('SELECT * FROM entitlements')
+      .first();
+    assert.equal(entitlement.quota_limit, 0);
+    assert.equal(entitlement.hard_limit, 0);
+    await database.exec('UPDATE entitlements SET quota_used=7');
+    assert.deepEqual(await project(), {
+      received: true,
+      duplicate: true,
+    });
+    entitlement = await database.prepare('SELECT * FROM entitlements').first();
+    assert.equal(entitlement.quota_used, 7);
+    eventId = 'evt_same_period';
+    environment.STRIPE_PLAN_CATALOGUE = JSON.stringify({
+      synthetic: { priceId: 'price_synthetic', quota: 2, hardLimit: false },
+    });
+    await project();
+    entitlement = await database.prepare('SELECT * FROM entitlements').first();
+    assert.equal(entitlement.quota_used, 7);
+    assert.equal(entitlement.quota_limit, 2);
+    eventId = 'evt_next_period';
+    subscription.items.data[0].current_period_start = 300;
+    await project();
+    entitlement = await database.prepare('SELECT * FROM entitlements').first();
+    assert.equal(entitlement.quota_used, 0);
+    assert.equal(entitlement.quota_period, '300');
+    eventId = 'evt_missing_policy';
+    environment.STRIPE_PLAN_CATALOGUE = JSON.stringify({
+      synthetic: { priceId: 'price_synthetic', quota: 2 },
+    });
+    await project();
+    entitlement = await database.prepare('SELECT * FROM entitlements').first();
+    assert.equal(entitlement.payment_method_policy, 'unsupported');
+    assert.equal(entitlement.hard_limit, 1);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 function fulfilled(outcomes) {
   return outcomes.filter(({ status }) => status === 'fulfilled').length;
 }
@@ -243,7 +423,7 @@ async function usageState(database) {
   };
 }
 
-async function migratedDatabase(name) {
+async function migratedDatabase(name, isLegacy = false) {
   const miniflare = new Miniflare(
     convertV4MiniflareOptions({
       name: `managed-channel-${name}`,
@@ -252,11 +432,15 @@ async function migratedDatabase(name) {
         {
           type: 'ESModule',
           path: path.join(migrations, 'migration-worker.mjs'),
-          contents: String.raw`import migration from './0001-managed-channel.sql'; export default { async fetch(_request, environment) { await environment.CUSTOMER_DB.exec(migration.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
+          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; export default { async fetch(request, environment) { const sql = new URL(request.url).pathname === '/policy' ? policy : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
         },
         {
           type: 'Text',
           path: path.join(migrations, '0001-managed-channel.sql'),
+        },
+        {
+          type: 'Text',
+          path: path.join(migrations, '0002-quota-policy.sql'),
         },
       ],
       d1Databases: { CUSTOMER_DB: `managed-channel-${name}` },
@@ -265,6 +449,12 @@ async function migratedDatabase(name) {
   const database = await miniflare.getD1Database('CUSTOMER_DB');
   const migrated = await miniflare.dispatchFetch('http://localhost/migrate');
   assert.equal(migrated.status, 204);
+  if (!isLegacy) {
+    const migratedPolicy = await miniflare.dispatchFetch(
+      'http://localhost/policy',
+    );
+    assert.equal(migratedPolicy.status, 204);
+  }
   return { miniflare, database };
 }
 
@@ -338,8 +528,12 @@ function traceStatement(statement, call) {
       call.arguments = arguments_;
       return traceStatement(statement.bind(...arguments_), call);
     },
-    first(...arguments_) {
-      return statement.first(...arguments_);
+    async first(...arguments_) {
+      const result = await statement.first(...arguments_);
+      call.responseBytes = new TextEncoder().encode(
+        JSON.stringify(result),
+      ).byteLength;
+      return result;
     },
     run(...arguments_) {
       return statement.run(...arguments_);

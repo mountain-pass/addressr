@@ -105,17 +105,11 @@ export async function awaitIndexReady({
   // entire point of this module — for a generic cucumber hook timeout, which is
   // the diagnosis-free outcome P097 already has. Racing each probe against the
   // time left keeps the failure inside this function.
-  // A probe starting with NO budget left is not raced at all. Observed against a
-  // real OpenSearch on 2026-08-09: pointing the gate at a missing index reported
-  // "did not answer within 60s" instead of "does not exist". The client threw a
-  // clean 404 every time, but on the LAST poll `remaining` was 0, the deadline timer
-  // fired before the response landed, and a legitimate answer lost a race it
-  // should never have been in. The stub could not have caught this — it encodes
-  // the same assumption it is meant to test, which is why the gate was run
-  // against the real client before landing.
+  // Zero remaining time still needs a race: returning the raw promise lets a
+  // stalled count or search wait forever. Diagnostics below retain observations
+  // already obtained, so timing out a final probe cannot erase a prior answer.
   const withinDeadline = (promise) => {
     const remaining = Math.max(0, deadline - now());
-    if (remaining === 0) return promise;
     return raceDeadline(promise, remaining);
   };
 

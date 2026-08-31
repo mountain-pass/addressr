@@ -75,6 +75,42 @@ describe('cloudflare-worker/worker — module shape', () => {
     }
   });
 
+  it('rejects missing or malformed quota policy before reservation or origin', async (context) => {
+    const module_ = await import('./worker.js');
+    let originCalls = 0;
+    context.mock.method(globalThis, 'fetch', async () => {
+      originCalls++;
+      return Response.json([]);
+    });
+    for (const [quotaLimit, hardLimit] of [
+      [0, 1],
+      [-1, 0],
+      [1.5, 0],
+      // eslint-disable-next-line unicorn/no-null -- D1 may return NULL for missing policy.
+      [3, null],
+      [3, '0'],
+      [3, 2],
+    ]) {
+      const database = await customerDatabase(VALID_KEY, {
+        quotaLimit,
+        hardLimit,
+      });
+      const response = await module_.default.fetch(
+        new Request('https://api.addressr.io/addresses?q=main', {
+          headers: {
+            'x-addressr-api-key': VALID_KEY,
+            Referer: 'https://addressr.io/',
+          },
+        }),
+        customerEnvironment(database),
+      );
+      assert.equal(response.status, 503);
+      assert.deepEqual(await response.json(), { error: 'invalid_entitlement' });
+      assert.deepEqual(database.operations, ['auth']);
+    }
+    assert.equal(originCalls, 0);
+  });
+
   it('valid customer traffic uses D1 and the direct origin without forwarding credentials', async (context) => {
     const module_ = await import('./worker.js');
     const database = await customerDatabase(VALID_KEY);
@@ -405,6 +441,8 @@ async function customerDatabase(
     subscriptionStatus = 'active',
     pauseCollection = false,
     paymentMethodPolicy = 'immediate',
+    quotaLimit = 100,
+    hardLimit = 1,
   } = {},
 ) {
   const salt = new TextEncoder().encode('0123456789abcdef');
@@ -450,7 +488,8 @@ async function customerDatabase(
                 subscription_status: subscriptionStatus,
                 pause_collection: pauseCollection ? 1 : 0,
                 payment_method_policy: paymentMethodPolicy,
-                quota_limit: 100,
+                quota_limit: quotaLimit,
+                hard_limit: hardLimit,
                 quota_used: 0,
               };
             },

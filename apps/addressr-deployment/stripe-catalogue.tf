@@ -15,8 +15,9 @@ locals {
   )
   worker_stripe_plan_catalogue = length(var.stripe_plan_quotas) == 4 ? jsonencode({
     for plan in keys(local.stripe_plan_names) : plan => {
-      priceId = local.stripe_price_ids[plan]
-      quota   = var.stripe_plan_quotas[plan]
+      priceId   = local.stripe_price_ids[plan]
+      quota     = var.stripe_plan_quotas[plan].quota
+      hardLimit = var.stripe_plan_quotas[plan].hardLimit
     }
   }) : "{}"
 }
@@ -49,6 +50,16 @@ resource "stripe_product" "managed_plan" {
 resource "stripe_price" "per_unit" {
   for_each = local.stripe_per_unit_plans
 
+  lifecycle {
+    precondition {
+      condition = length(var.stripe_plan_quotas) == 0 || try(
+        each.key == "basic" ? var.stripe_plan_quotas[each.key].hardLimit :
+        (!var.stripe_plan_quotas[each.key].hardLimit && var.stripe_plan_quotas[each.key].quota == 0), false
+      )
+      error_message = "Basic requires a hard limit; pro requires pay-per-use with zero included requests."
+    }
+  }
+
   product             = stripe_product.managed_plan[each.key].id
   active              = false
   currency            = var.stripe_catalogue_terms[each.key].currency
@@ -65,6 +76,16 @@ resource "stripe_price" "per_unit" {
 
 resource "stripe_price" "tiered" {
   for_each = local.stripe_tiered_plans
+
+  lifecycle {
+    precondition {
+      condition = length(var.stripe_plan_quotas) == 0 || try(
+        !var.stripe_plan_quotas[each.key].hardLimit &&
+        var.stripe_plan_quotas[each.key].quota == tonumber(var.stripe_catalogue_terms[each.key].tiers[0].up_to), false
+      )
+      error_message = "Tiered plans require a soft allowance matching the first Stripe pricing tier."
+    }
+  }
 
   product        = stripe_product.managed_plan[each.key].id
   active         = false

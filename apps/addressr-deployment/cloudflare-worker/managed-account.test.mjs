@@ -7,6 +7,39 @@ import { authorizeSession, handleManagedRequest } from './managed-account.mjs';
 const APP_ORIGIN = 'https://app.addressr.io';
 
 describe('managed account boundary', () => {
+  it('returns usage for zero included requests and distinguishes hard from soft allowances', async () => {
+    for (const [limit, hardLimit] of [
+      [0, 0],
+      [3, 0],
+      [3, 1],
+    ]) {
+      const response = await handleManagedRequest(
+        request('/managed/account'),
+        environment(
+          managedDatabase({
+            organization: {
+              subscription_status: 'active',
+              plan_key: 'synthetic',
+              quota_limit: limit,
+              hard_limit: hardLimit,
+              quota_used: 2,
+              quota_period: 'period',
+            },
+          }),
+        ),
+        { clerk: clerkFor({}) },
+      );
+      assert.equal(response.status, 200);
+      const account = await response.json();
+      assert.deepEqual(account.quota, {
+        limit,
+        hardLimit: hardLimit === 1,
+        used: 2,
+        period: 'period',
+      });
+    }
+  });
+
   it('denies excluded verified organisations before any database or billing operation', async () => {
     for (const [path, method] of [
       ['/managed/account', 'GET'],
@@ -239,6 +272,7 @@ function environment(database = managedDatabase()) {
         name: '  Developer  ',
         priceId: 'price_developer',
         quota: 1000,
+        hardLimit: true,
       },
       invalid: { name: 'Never exposed', priceId: 'product_wrong', quota: 1000 },
     }),
@@ -265,7 +299,7 @@ function authenticatedState({
   };
 }
 
-function managedDatabase({ revokeChanges = 1 } = {}) {
+function managedDatabase({ revokeChanges = 1, organization = {} } = {}) {
   const database = {
     apiKeyInsert: undefined,
     revokeBind: undefined,
@@ -295,6 +329,7 @@ function managedDatabase({ revokeChanges = 1 } = {}) {
                   quota_used: null,
                   quota_period: null,
                   cancel_at_period_end: 0,
+                  ...organization,
                 };
               }
             },

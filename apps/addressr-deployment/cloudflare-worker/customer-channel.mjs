@@ -20,6 +20,7 @@ const AUTH_SQL = `
     e.pause_collection,
     e.payment_method_policy,
     e.quota_limit,
+    e.hard_limit,
     e.quota_used
   FROM api_keys k
   JOIN organizations o ON o.id = k.organization_id
@@ -113,7 +114,12 @@ export async function authorizeCustomer(request, environment) {
   if (record.payment_method_policy !== 'immediate') {
     return denied('unsupported_payment_method');
   }
-  if (!Number.isSafeInteger(record.quota_limit) || record.quota_limit < 1) {
+  if (
+    !Number.isSafeInteger(record.quota_limit) ||
+    record.quota_limit < 0 ||
+    ![0, 1].includes(record.hard_limit) ||
+    (record.hard_limit === 1 && record.quota_limit === 0)
+  ) {
     return unavailable('invalid_entitlement');
   }
 

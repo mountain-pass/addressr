@@ -59,6 +59,34 @@ const installSignedInClerk = async (page) => {
   });
 };
 
+for (const [policy, quota, expected, hasProgress] of [
+  ['hard', { used: 5, limit: 3, hardLimit: true }, '5 of 3', true],
+  ['soft', { used: 5, limit: 3, hardLimit: false }, '5 used. 3 included. Additional billable requests are charged at your plan rate.', false],
+  ['pay-per-use', { used: 2, limit: 0, hardLimit: false }, '2 used. Each billable request is charged at your plan rate.', false],
+  ['unknown', { used: 2, limit: 3 }, '2 used.', false],
+]) {
+  test(`account displays ${policy} request usage without a false quota`, async ({ page }) => {
+    await installSignedInClerk(page);
+    await page.route('https://api.addressr.io/managed/config', route => route.fulfill({
+      contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({ available: true, clerkPublishableKey: 'pk_test_ZmFrZS5jbGVyay5hY2NvdW50cy5kZXYk', plans: [] }),
+    }));
+    await page.route('https://api.addressr.io/managed/account', route => route.fulfill({
+      contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({ organization: { clerkId: 'org_test', canManage: true }, subscription: { plan: 'Synthetic', status: 'active' }, quota, keys: [] }),
+    }));
+    await page.goto('/account/');
+    const summary = page.getByRole('region', { name: 'Subscription and request usage' });
+    await expect(summary.locator('dd').last()).toHaveText(expected);
+    const progress = summary.getByRole('progressbar', { name: 'Requests used this period' });
+    await expect(progress).toHaveCount(hasProgress ? 1 : 0);
+    if (hasProgress) {
+      await expect(progress).toHaveAttribute('value', '3');
+      await expect(progress).toHaveAttribute('max', '3');
+    }
+  });
+}
+
 test('account page explains the managed-channel fallback', async ({ page }) => {
   await page.goto('/account/');
 

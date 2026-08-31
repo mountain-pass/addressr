@@ -383,7 +383,7 @@ const ManagedAccount = ({
 
       <section aria-labelledby="subscription-title">
         <header className="major">
-          <h2 id="subscription-title">Subscription and request quota</h2>
+          <h2 id="subscription-title">Subscription and request usage</h2>
         </header>
         {account.subscription ? (
           <dl className="account-summary">
@@ -399,13 +399,30 @@ const ManagedAccount = ({
               <div>
                 <dt>Requests this period</dt>
                 <dd>
-                  {account.quota.used.toLocaleString()} of{' '}
-                  {account.quota.limit.toLocaleString()}
-                  <progress
-                    aria-label="Requests used this period"
-                    value={account.quota.used}
-                    max={account.quota.limit}
-                  />
+                  {account.quota.hardLimit === true &&
+                    Number.isSafeInteger(account.quota.limit) && account.quota.limit > 0 &&
+                    Number.isSafeInteger(account.quota.used) && account.quota.used >= 0 ? (
+                    <>
+                      {account.quota.used.toLocaleString()} of{' '}
+                      {account.quota.limit.toLocaleString()}
+                      <progress
+                        aria-label="Requests used this period"
+                        value={Math.max(0, Math.min(account.quota.used, account.quota.limit))}
+                        max={account.quota.limit}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {account.quota.used.toLocaleString()} used.
+                      {account.quota.hardLimit === false && (
+                        account.quota.limit > 0 ? (
+                          <> {account.quota.limit.toLocaleString()} included. Additional billable requests are charged at your plan rate.</>
+                        ) : (
+                          <> Each billable request is charged at your plan rate.</>
+                        )
+                      )}
+                    </>
+                  )}
                 </dd>
               </div>
             )}

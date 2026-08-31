@@ -156,19 +156,26 @@ variable "stripe_secret_key" {
 }
 
 variable "stripe_plan_quotas" {
-  type        = map(number)
+  type = map(object({
+    quota     = number
+    hardLimit = bool
+  }))
   sensitive   = true
   nullable    = false
   default     = {}
-  description = "ADR-072 confidential plan-key to monthly request quota mapping. Terraform supplies its owned Stripe price IDs. Empty keeps checkout unavailable."
+  description = "ADR-072 confidential included-request allowances and explicit hard-limit policies. Zero included requests permits pay-per-use only with hardLimit=false. Empty keeps checkout unavailable."
 
   validation {
     condition = length(var.stripe_plan_quotas) == 0 || (
       length(var.stripe_plan_quotas) == 4 &&
       alltrue([for plan in ["basic", "pro", "ultra", "mega"] : contains(keys(var.stripe_plan_quotas), plan)]) &&
-      alltrue([for quota in values(var.stripe_plan_quotas) : quota > 0 && quota == floor(quota)])
+      alltrue([for policy in values(var.stripe_plan_quotas) : try(
+        policy.quota >= 0 && policy.quota <= 9007199254740991 &&
+        policy.quota == floor(policy.quota) && policy.hardLimit != null &&
+        (!policy.hardLimit || policy.quota > 0), false
+      )])
     )
-    error_message = "Stripe plan quotas must be empty or define positive whole-number quotas for exactly basic, pro, ultra and mega."
+    error_message = "Stripe plan policies must be empty or define safe whole-number allowances and explicit hardLimit booleans for exactly basic, pro, ultra and mega; hard limits require a positive allowance."
   }
 }
 

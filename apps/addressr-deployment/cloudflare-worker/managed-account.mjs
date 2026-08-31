@@ -197,7 +197,7 @@ async function organizationForSession(environment, session) {
     .run();
   const organization = await environment.CUSTOMER_DB.prepare(
     `SELECT o.id, o.clerk_organization_id, o.stripe_customer_id,
-            e.plan_key, e.subscription_status, e.quota_limit, e.quota_used,
+            e.plan_key, e.subscription_status, e.quota_limit, e.quota_used, e.hard_limit,
             e.quota_period, e.cancel_at_period_end
        FROM organizations o
        LEFT JOIN entitlements e ON e.organization_id = o.id
@@ -231,13 +231,16 @@ async function accountSummary(environment, organization, session) {
           cancelAtPeriodEnd: Boolean(organization.cancel_at_period_end),
         }
       : undefined,
-    quota: organization.quota_limit
-      ? {
-          used: organization.quota_used,
-          limit: organization.quota_limit,
-          period: organization.quota_period,
-        }
-      : undefined,
+    quota:
+      Number.isSafeInteger(organization.quota_limit) &&
+      [0, 1].includes(organization.hard_limit)
+        ? {
+            used: organization.quota_used,
+            limit: organization.quota_limit,
+            hardLimit: organization.hard_limit === 1,
+            period: organization.quota_period,
+          }
+        : undefined,
     keys: (keys?.results || []).map((key) => ({
       id: key.id,
       name: key.name,
