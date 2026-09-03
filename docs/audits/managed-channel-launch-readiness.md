@@ -74,6 +74,37 @@ terms, subscriber data and traffic volumes.
 | Rollback                               | MISSING | Rehearsed disable-first rollback, prior Worker revision restoration, D1 forward/backward compatibility, secret rollback/rotation and proof RapidAPI remains unaffected.                                                                                                                                                                                          |
 | Exact-revision production verification | MISSING | Merge and release only after all preceding gates pass; record the deployed Worker and website revisions, Terraform apply result, provider readbacks and direct production observations for every activated component.                                                                                                                                            |
 
+## Next-agent handover
+
+Resume from `master` at `59d76822289e78d9de44163525397f53afe51e06`.
+That revision records one isolated maintainer HTTP 200 request producing an
+exact `+1` RapidAPI analytics-counter delta; 4xx and 5xx accounting remain
+unverified. Local verification passed all 740 tests. Push workflow
+`33457406444` passed every substantive job and the release job, with the known
+dependency-update advisory failing; no release or deployment occurred.
+
+Customer access remains disabled. Do not activate a product, authorize a
+charge, create customer state or mutate provider configuration without a fresh
+risk assessment and the required authority. The smallest useful next step is
+one isolated, read-only 4xx counter observation using a non-customer maintainer
+principal. Record only the counter delta, never raw totals, credentials,
+provider identifiers, commercial terms, subscribers or traffic volumes. Leave
+5xx untested unless it can be observed without deliberately disrupting a live
+service.
+
+Before any provider change, commit, push, release or deployment, run the risk
+scorer and stop above the appetite of 5. Use `npm run push:watch`; follow the
+normal changeset and release path only for release-relevant changes. Re-read
+mutable provider state immediately before any future activation decision. Keep
+the dual-distribution, latency, Worker compute, D1 envelope, Terraform catalogue
+ownership and current-catalogue parity boundaries in ADR-061, ADR-077, ADR-078,
+ADR-080, ADR-085 and ADR-086.
+
+The method used for the 2026-09-01 HTTP 200 counter observation (which
+maintainer principal, which request and where the counter was read) is not
+recorded in this repository. The next observation must record its method here,
+excluding credentials, identifiers, raw totals and traffic volumes.
+
 ## Restricted verification preparation
 
 The default-closed organisation restriction is deployed. It admits only
