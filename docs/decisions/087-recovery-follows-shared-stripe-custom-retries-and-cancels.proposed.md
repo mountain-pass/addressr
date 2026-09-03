@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-09-03
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-09-03
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent]
 informed: []
@@ -16,7 +17,7 @@ reassessment-date: 2026-12-03
 
 # Recovery follows the shared Stripe account's custom retries and cancels on exhaustion
 
-> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context; human-oversight: unconfirmed until ratified at the /wr-architect:review-decisions drain.
+> Captured via /wr-architect:capture-adr (foreground-lightweight aside-invocation per ADR-032, derived-substance amendment 2026-07-06 / RFC-045). Section content was derived by the capturing agent from the in-session decision context and ratified by the maintainer at the /wr-architect:review-decisions drain on 2026-09-03.
 
 ## Context and Problem Statement
 

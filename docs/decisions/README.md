@@ -250,7 +250,7 @@ _74 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-052 — The stale-schedule terminus is an agent at session start
 
-**Status:** proposed | **Oversight:** unconfirmed
+**Status:** proposed | **Oversight:** confirmed (2026-09-03)
 **Decides:** Wire the stale-scheduled-workflow check to a `SessionStart` hook that reads a stamp and returns without network, printing findings when there are any and escalating when the last successful verification is older than the tightest cadence bound, while spawning the real 11.29s check detached — because ADR-051 leaves agent-read-at-session-start as the only reachable terminus for a corpus with no in-flow moment to block. The guarantee is that no session proceeds unaware of a stale schedule, NOT detection within N days: the detector's liveness is correlated with the failure it detects, a property of every in-repo detector rather than of this choice.
 **Confirmation:** two pre-existing holes verified present then closed (empty workflow dir now exits 2 below the floor of 5; absent `gh` puts UNKNOWN findings on stdout and exits 2); six mutations of `schedule-report.mjs` all caught; fresh-clone end-to-end emits the never-verified block, exits 0, and the detached refresh writes the stamp; `schedule-hook-wiring.test.mjs` reconciles every hook command and asserts the stamp is both ignored and untracked; OWED — ADR-038's briefing-block emission not re-verified since this hook was registered.
 **Related:** ADR-051, ADR-038, ADR-048
@@ -467,7 +467,7 @@ _74 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-087 — Recovery follows the shared Stripe account's custom retries and cancels on exhaustion
 
-**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-076, ADR-079, ADR-083
+**Status:** proposed | **Oversight:** confirmed (2026-09-03) | **Supersedes:** ADR-076, ADR-079, ADR-083
 **Decides:** Addressr payment recovery follows the shared Stripe account's configured schedule — three custom retries at 3, 5 and 7 days after each failed attempt, then Stripe cancels the subscription and leaves the invoice overdue — because the account is shared with another product and the retry policy is not Addressr's alone to set. Addressr still runs no competing timer, and ADR-075, ADR-081 and ADR-082 are unchanged; the cost is that `canceled` is terminal under ADR-075, so a customer who recovers after the window must subscribe again.
 **Confirmation:** Authenticated Stripe settings readback proves custom retries at 3, 5 and 7 days and cancel-on-exhaustion before activation and is re-read immediately before any activation decision; signed-webhook behavioural tests cover duplicate, reordered and recovery-exhausted events ending in `customer.subscription.deleted`; a Test Clock exercise in test mode reaches `canceled` through the configured schedule; no Addressr timer extends or shortens the window; configuration drift blocks activation.
 **Related:** ADR-069, ADR-075, ADR-076, ADR-079, ADR-081, ADR-082, ADR-083
