@@ -1,5 +1,7 @@
 ---
-status: 'proposed'
+status: 'superseded'
+superseded-date: 2026-09-03
+superseded-by: [087-recovery-follows-shared-stripe-custom-retries-and-cancels]
 date: 2026-08-28
 human-oversight: confirmed
 oversight-date: 2026-08-28
@@ -10,6 +12,8 @@ reassessment-date: 2026-11-28
 ---
 
 # Exhausted payment recovery marks subscriptions unpaid
+
+> **Superseded by ADR-087** on 2026-09-03: the shared Stripe account applies custom retries at 3, 5 and 7 days and cancels the subscription on exhaustion; see `087-recovery-follows-shared-stripe-custom-retries-and-cancels.proposed.md`.
 
 ## Context and Problem Statement
 
@@ -82,5 +86,5 @@ Reassess if `unpaid` no longer supports the required recovery journey or cancell
 ## Related
 
 - [ADR-075 — Past-due access follows Stripe recovery](075-past-due-access-follows-stripe-recovery.proposed.md)
-- [ADR-076 — Stripe Smart Retries own payment-recovery timing](076-stripe-smart-retries-own-payment-recovery-timing.proposed.md)
-- [ADR-083 — Past-due recovery lasts at most fourteen days](083-past-due-recovery-lasts-at-most-fourteen-days.proposed.md)
+- [ADR-076 — Stripe Smart Retries own payment-recovery timing](076-stripe-smart-retries-own-payment-recovery-timing.superseded.md)
+- [ADR-083 — Past-due recovery lasts at most fourteen days](083-past-due-recovery-lasts-at-most-fourteen-days.superseded.md)

@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 86 (76 in-force, 10 historical)
+**Total ADRs:** 87 (74 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_76 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_74 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -409,13 +409,6 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** Behavioural test covers every documented status plus missing/malformed/unknown; `invoice.payment_failed` alone does not revoke; `cancel_at_period_end` retains access only until `canceled`; recovery restores entitlement idempotently; denied and unknown states fail closed before any origin request or billable usage record.
 **Related:** ADR-069, ADR-076, ADR-079, ADR-081, ADR-082
 
-### ADR-076 — Stripe Smart Retries own payment-recovery timing
-
-**Status:** proposed | **Oversight:** confirmed
-**Decides:** Let Stripe Smart Retries choose retry timing for `past_due` subscriptions rather than a fixed schedule or an Addressr-run one, so recovery adapts to provider signals without Addressr owning a scheduler; Addressr projects the resulting events but runs no competing retry or grace-period timer.
-**Confirmation:** Authenticated Stripe settings readback proves Smart Retries before production activation; signed-webhook behavioural tests cover duplicate, reordered and retry events with no Addressr timer; sandbox or Test Clock exercise demonstrates the transition after authenticated proof of the enabled configuration; Addressr schedules no invoice retries and expires no grace period independently; configuration drift blocks activation and raises an operational alert.
-**Related:** ADR-069, ADR-075, ADR-079, ADR-083
-
 ### ADR-077 — Managed gateway added-latency budget
 
 **Status:** proposed | **Oversight:** confirmed
@@ -429,13 +422,6 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Gate the managed request path with a local compute envelope — 10 ms p95 Worker CPU and p99 shared-isolate memory at or below 64 MiB under a representative concurrency test — so runaway auth, entitlement or accounting compute is caught before activation rather than as a customer-visible provider termination.
 **Confirmation:** Worker evidence reports CPU and wall time for the exercised path; representative concurrency test holds p99 isolate memory ≤ 64 MiB and p95 CPU ≤ 10 ms; twice the verified peak concurrency causes no limit outcome and no entitlement bypass; missing compute evidence or an overload outcome blocks activation; authenticated production-plan and CPU-limit readback recorded before activation.
 **Related:** ADR-062, ADR-077, ADR-080
-
-### ADR-079 — Exhausted payment recovery marks subscriptions unpaid
-
-**Status:** proposed | **Oversight:** confirmed
-**Decides:** When Stripe exhausts its configured payment recovery, the subscription moves to the recoverable `unpaid` state rather than staying `past_due` or being cancelled, so managed access ends deterministically without destroying the customer relationship.
-**Confirmation:** Authenticated settings readback proves the `unpaid` recovery-exhausted action before activation; signed-webhook behavioural tests cover duplicate, reordered and recovery-exhausted events; a sandbox or Test Clock exercise reaches `unpaid`; ADR-075 denies access at `unpaid` before origin forwarding or usage accounting; supported recovery restores access idempotently; setting drift blocks activation and alerts.
-**Related:** ADR-075, ADR-076, ADR-083
 
 ### ADR-080 — Managed gateway D1 query envelope
 
@@ -458,13 +444,6 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** Checkout uses an explicit authenticated allowlist, not dynamic provider selection; each enabled method's success and failure paths drive ADR-075 states in Stripe test mode; out-of-allowlist methods and projected subscription configuration are rejected before origin forwarding or usage accounting; configuration drift blocks activation and alerts; no asynchronous-method claim without provider evidence for the exact enabled configuration.
 **Related:** ADR-068, ADR-069, ADR-075
 
-### ADR-083 — Past-due recovery lasts at most fourteen days
-
-**Status:** proposed | **Oversight:** confirmed
-**Decides:** Stripe Smart Retries may pick attempt timing, but managed-subscription payment recovery is capped at eight attempts within fourteen days — Stripe's recommended default, chosen to put an explicit numeric ceiling on the unpaid-access exposure ADR-075 creates.
-**Confirmation:** Authenticated Stripe settings readback proves eight attempts within fourteen days before activation; signed-webhook behavioural tests keep past_due access inside the window and deny at recovery-exhausted; sandbox evidence exercises recovery and exhaustion for the enabled configuration; no local timer extends or shortens the Stripe window; retry-count or duration drift blocks activation and alerts.
-**Related:** ADR-075, ADR-076, ADR-079
-
 ### ADR-084 — Commercial administration requires the organisation administrator role
 
 **Status:** proposed | **Oversight:** confirmed
@@ -486,11 +465,18 @@ _76 ADRs. These are the current rules. The architect agent reads this section fi
 **Confirmation:** An authenticated confidential record captures every current public plan's USD price, allowance, overage and hard/soft-limit behaviour; exact monthly reset timing and billable outcomes remain activation gates; no existing RapidAPI subscriber, key, plan version or billing relationship changes.
 **Related:** ADR-061, ADR-068, ADR-071, ADR-072
 
+### ADR-087 — Recovery follows the shared Stripe account's custom retries and cancels on exhaustion
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-076, ADR-079, ADR-083
+**Decides:** Addressr payment recovery follows the shared Stripe account's configured schedule — three custom retries at 3, 5 and 7 days after each failed attempt, then Stripe cancels the subscription and leaves the invoice overdue — because the account is shared with another product and the retry policy is not Addressr's alone to set. Addressr still runs no competing timer, and ADR-075, ADR-081 and ADR-082 are unchanged; the cost is that `canceled` is terminal under ADR-075, so a customer who recovers after the window must subscribe again.
+**Confirmation:** Authenticated Stripe settings readback proves custom retries at 3, 5 and 7 days and cancel-on-exhaustion before activation and is re-read immediately before any activation decision; signed-webhook behavioural tests cover duplicate, reordered and recovery-exhausted events ending in `customer.subscription.deleted`; a Test Clock exercise in test mode reaches `canceled` through the configured schedule; no Addressr timer extends or shortens the window; configuration drift blocks activation.
+**Related:** ADR-069, ADR-075, ADR-076, ADR-079, ADR-081, ADR-082, ADR-083
+
 ---
 
 ## Historical decisions
 
-_10 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
+_13 ADRs. These were tried and superseded, rejected, or deprecated. Read them as direction for what NOT to do, or to understand the lineage of an in-force decision. Do not enforce them as current rules._
 
 ### ADR-003 — ADR 003: Dual API Architecture (v1 Swagger + v2 WayCharter HATEOAS)
 
@@ -541,3 +527,24 @@ _10 ADRs. These were tried and superseded, rejected, or deprecated. Read them as
 **Decides:** Mirror every current and grandfathered RapidAPI plan version at launch.
 **Confirmation:** Superseded by ADR-086, which limits launch parity to current public plans in USD while retaining reset timing and billable outcomes as activation gates.
 **Related:** ADR-061, ADR-068, ADR-071
+
+### ADR-076 — Stripe Smart Retries own payment-recovery timing
+
+**Status:** superseded | **Oversight:** confirmed
+**Superseded by:** ADR-087
+**Decides:** Let Stripe Smart Retries choose retry timing for `past_due` subscriptions rather than a fixed schedule or an Addressr-run one, so recovery adapts to provider signals without Addressr owning a scheduler; Addressr projects the resulting events but runs no competing retry or grace-period timer.
+**Related:** ADR-069, ADR-075, ADR-079, ADR-083
+
+### ADR-079 — Exhausted payment recovery marks subscriptions unpaid
+
+**Status:** superseded | **Oversight:** confirmed
+**Superseded by:** ADR-087
+**Decides:** When Stripe exhausts its configured payment recovery, the subscription moves to the recoverable `unpaid` state rather than staying `past_due` or being cancelled, so managed access ends deterministically without destroying the customer relationship.
+**Related:** ADR-075, ADR-076, ADR-083
+
+### ADR-083 — Past-due recovery lasts at most fourteen days
+
+**Status:** superseded | **Oversight:** confirmed
+**Superseded by:** ADR-087
+**Decides:** Stripe Smart Retries may pick attempt timing, but managed-subscription payment recovery is capped at eight attempts within fourteen days — Stripe's recommended default, chosen to put an explicit numeric ceiling on the unpaid-access exposure ADR-075 creates.
+**Related:** ADR-075, ADR-076, ADR-079

@@ -83,7 +83,7 @@ Reassess if recovery-window loss exceeds appetite, Stripe changes subscription-s
 ## Related
 
 - [ADR-069 — Stripe state projected through signed webhooks](069-stripe-state-projected-through-signed-webhooks.proposed.md)
-- [ADR-076 — Stripe Smart Retries own payment-recovery timing](076-stripe-smart-retries-own-payment-recovery-timing.proposed.md)
-- [ADR-079 — Exhausted payment recovery marks subscriptions unpaid](079-exhausted-payment-recovery-marks-subscriptions-unpaid.proposed.md)
+- [ADR-076 — Stripe Smart Retries own payment-recovery timing](076-stripe-smart-retries-own-payment-recovery-timing.superseded.md)
+- [ADR-079 — Exhausted payment recovery marks subscriptions unpaid](079-exhausted-payment-recovery-marks-subscriptions-unpaid.superseded.md)
 - [ADR-081 — Stripe collection pausing prohibited for managed subscriptions](081-stripe-collection-pausing-prohibited-for-managed-subscriptions.proposed.md)
 - [ADR-082 — Managed-channel launch uses immediate-outcome payment methods](082-managed-channel-launch-uses-immediate-outcome-payment-methods.proposed.md)
