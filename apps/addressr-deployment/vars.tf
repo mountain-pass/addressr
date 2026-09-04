@@ -309,33 +309,6 @@ variable "v4_searchable_documents_floor" {
 }
 
 
-# ADR-088: the SMS half of the managed-channel notification adjunct. Deliberately
-# has NO default, unlike ops_alert_email above — a default here would put a
-# personal phone number in a public repository, which ADR-088 confirmation
-# criterion 4 forbids in terms. Sourced 1Password Voder -> GH secret
-# TF_VAR_ops_alert_sms -> here, the same spine as every other secret.
-#
-# `sensitive` redacts plan and apply output. It does NOT redact Terraform state,
-# where this sits in plaintext; that is outside "the repository" and so inside
-# criterion 4, but it bounds who may read the state backend.
-variable "ops_alert_sms" {
-  type        = string
-  nullable    = false
-  sensitive   = true
-  description = "ADR-088: E.164 destination for managed-channel fault SMS. No default by design. The AWS account is in the SNS SMS sandbox, so this number must also be a VERIFIED sandbox destination or the subscription exists and never delivers."
-
-  # An UNSET GitHub secret interpolates to the empty string, and `nullable`
-  # rejects null, not "". Without this the plan is clean and SNS Subscribe fails
-  # at apply — which is the expensive moment, because by then the release PR has
-  # merged and CONSUMED the changeset, so re-arming needs a fresh changeset and a
-  # second release PR. This moves that failure to plan time, where the release-PR
-  # plan comment shows it before the merge.
-  validation {
-    condition     = can(regex("^\\+[1-9]\\d{7,14}$", var.ops_alert_sms))
-    error_message = "ops_alert_sms must be a non-empty E.164 number (leading + and 8-15 digits). An unset TF_VAR_ops_alert_sms secret arrives as an empty string and would otherwise plan clean and fail at apply."
-  }
-}
-
 variable "ops_alert_email" {
   type        = string
   nullable    = false

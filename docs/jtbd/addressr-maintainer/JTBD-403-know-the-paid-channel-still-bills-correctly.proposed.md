@@ -10,9 +10,7 @@ screens:
   - ".github/workflows/managed-channel-health.yml — the ten-minute schedule. Its liveness is the job's weakest link and is not self-evident: a workflow that stops firing is exactly what the stale-schedule check exists to catch, so this job depends on that one holding."
   - 'docs/MANAGED_CHANNEL_MONITORING.md — the contract for what the reader may and may not say. The no-disclosure rules there (fixed codes, scope and observation time only; no provider messages, customer identifiers, usage totals or credentials) bind every notification this job adds, not just the existing report.'
   - 'apps/addressr-deployment/cloudflare-worker/customer-channel.mjs — the acting half. Paused collection, a disallowed subscription status and a non-immediate payment method are each refused before origin forwarding or accounting. These conditions need no notification to be controlled; listing the file here records which faults are already handled in-flow so the notification surface is not built twice.'
-  - 'apps/addressr-deployment/main.tf — the notification topic and its subscriptions, including the ADR-088 SMS subscription and the message-attribute filter that bounds it to managed-channel faults. The topic predates this job (it was built for search operations) and gaining a second purpose is a deliberate reuse, not drift; the filter is what makes the reuse safe, because the same topic is the action target for the search alarms on both trip and recovery.'
-  - 'apps/addressr-deployment/vars.tf — the protected SMS endpoint variable. It deliberately carries no default, unlike its email sibling, because a default would put a personal phone number in a public repository.'
-  - 'test/js/__tests__/managed-channel-sms-subscription.test.mjs — the declaration-level guard. It proves the variable has no default, that no phone-number-shaped literal is anywhere in the deployment tree (by pattern, so a different number also fires), that the filter and its scope are declared, and that the topic name is unchanged. Membership is by annotation, following the release-job convention. It discharges the no-number-in-the-repo criterion and NOTHING else — not the payload-disclosure criterion, and not the both-directions delivery exercise.'
+  - 'apps/addressr-deployment/main.tf — the notification topic and its email subscription. The topic predates this job (it was built for search operations); the ADR-088 SMS subscription and its filter were added and withdrawn unapplied on 2026-09-04, and the topic survives under prevent_destroy for the search trip-wire regardless.'
   - 'docs/decisions/088-managed-channel-faults-act-in-flow-and-notify-as-an-adjunct.proposed.md — the decision that implements this job, recorded and ratified 2026-09-03. It is the only record of two constraints this job depends on and does not itself state: what a notification payload may contain, and that Worker observability stays disabled so end-user address queries do not enter provider retention. A reader who acts on this job without reading that decision can satisfy the outcomes while breaking both.'
 ---
 
@@ -29,7 +27,7 @@ When customers are paying for metered API access, I want any fault that breaks t
 - **A metering fault surfaces before the invoice.** Usage recorded in the database but never delivered to the billing provider is the fault that costs real money and shows no symptom: the customer is served, the request is counted locally, and the invoice is simply wrong. It must be caught inside the period it belongs to.
 - **A reconciliation mismatch is treated as a fault, not a metric.** Local usage disagreeing with the provider's record means one of the two is wrong. Either direction is a billing error.
 - **A fault that nobody is present for still escalates.** The existing reader is read by an agent when a session starts. Between sessions, a persistent billing fault currently accrues in silence, and the harm is continuous rather than discrete.
-- **The maintainer is reachable out of band for the faults that cannot wait.** Confirmed 2026-09-03: email, and SMS as well. See the honest limit recorded below.
+- **The maintainer is reachable out of band for the faults that cannot wait.** No such path exists today: the one chosen on 2026-09-03 was withdrawn unapplied on 2026-09-04. See the limit recorded below.
 - **A notification says what happened without saying who it happened to.** Fixed codes, scope and observation time only. No customer identifier, no usage total, no provider message, no credential. A notification that discloses is worse than no notification, because this repository is public and the escalation path is not.
 - **A check that finds nothing says so, and a check with nothing to look at is louder than a clean one.** An empty corpus reporting green is the failure this project has already had once.
 
@@ -54,12 +52,9 @@ An alert that terminates in the maintainer's attention is, by this project's own
 
 So the notification is an **adjunct**. The controls for this job remain the refusal in the request path for conditions that have an in-flow moment, and the agent-read check for those that do not. If a future reader finds this job's outcomes marked satisfied on the strength of an email policy alone, that is the error this paragraph exists to prevent.
 
-Three further bounds were measured on 2026-09-04 and belong here, because a
-notification path that exists and is silent is the most misreadable state this
-job can be in. The account is in the provider's SMS sandbox, so SMS reaches
-**only destinations verified in advance**; the maintainer's number was verified
-that day and a real message arrived, which is the only reason the channel is
-known to work at all. The monthly SMS spend cap is one US dollar, which suits a
-low-volume fault channel and nothing more. And a second recipient is not a
-configuration change but a prerequisite: it requires leaving the sandbox, which
-is a provider request with lead time.
+The transport chosen on 2026-09-03 was SMS over the shared operations topic.
+It was built and withdrawn on 2026-09-04 without ever being applied, because a
+scheduled CI job is not monitoring infrastructure and the provider has no SMS
+product. The sandbox verification taken that day is withdrawn with it. **There
+is no fault notification for this channel today**, and a superseding decision
+is owed.

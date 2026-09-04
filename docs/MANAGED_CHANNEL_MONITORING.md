@@ -17,12 +17,12 @@ missing or overdue pending reconciliation, and recorded reconciliation errors
 or mismatches. It uses the producer's window and permits one five-minute
 producer interval after a window becomes eligible. It never writes D1 or Stripe.
 
-The same rules bind the ADR-088 notification adjunct, by statement rather than
-by implication: an email or SMS raised for a managed-channel fault carries fixed
-codes, scope and observation time only. SMS is a new egress path out of the
-account, and it is bounded to managed-channel faults by a message-attribute
-filter so provider alarm payloads, which carry account and metric detail, never
-reach it. The adjunct is NOT a control and closes no launch gate on its own.
+No fault notification exists for the managed channel. One was built on
+2026-09-04 and withdrawn the same day, unapplied. The content rule it was
+written under still binds whatever replaces it, by statement rather than by
+implication: a notification raised for a managed-channel fault carries fixed
+codes, scope and observation time only, and is NOT a control, so it closes no
+launch gate on its own.
 
 Reports contain only fixed codes, scope and observation time. `observed` means
 the scoped read completed without finding those conditions. It does not mean

@@ -116,6 +116,28 @@ describe('every required Terraform variable is wired into the deploy and plan pa
     );
   });
 
+  it('wires no TF_VAR the module does not declare', () => {
+    // The CONVERSE of the assertions below, and the hole they leave. They check
+    // that every declared-required variable is wired; nothing checked that every
+    // wired variable is still declared. On 2026-09-04 a variable was deleted and
+    // its wiring survived in all three workflows, pointing at a deleted secret.
+    // Terraform silently ignores an undeclared TF_VAR_*, so it fails no plan and
+    // rots until someone reads the file.
+    const declared = new Set(declarations(VARS).map((d) => d.name));
+    const orphans = [];
+    for (const path of WORKFLOWS) {
+      const wf = readFileSync(path, 'utf8');
+      for (const m of wf.matchAll(/^\s*TF_VAR_([a-z0-9_]+)\s*:/gm)) {
+        if (!declared.has(m[1])) orphans.push(`${path}: TF_VAR_${m[1]}`);
+      }
+    }
+    assert.deepEqual(
+      orphans,
+      [],
+      `workflows wire TF_VARs that vars.tf no longer declares:\n${orphans.join('\n')}`,
+    );
+  });
+
   for (const path of WORKFLOWS) {
     it(`${path} passes every required variable to Terraform`, () => {
       const wf = readFileSync(path, 'utf8');
