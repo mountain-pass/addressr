@@ -153,6 +153,29 @@ Waiting on the maintainer:
    carrier for layer 2, and records the direction stated at the head of this
    item. Owed next is that replacement itself, which is unbuilt, and a liveness
    check covering whatever carries it.
+
+   **The native-email terminus is not yet shown to exist, and this is the first
+   thing to settle before building.** An authenticated read of the account's
+   available alert types on 2026-09-04 returned no type that can carry a
+   condition a Worker computes over D1 state. `health_check_status_notification`
+   and `real_origin_monitoring` fire on the provider's own probes of an HTTP
+   endpoint, not on arbitrary conditions. The one type that could carry a Worker
+   signal, `workers_observability_alert`, is RULED OUT BY DECISION: ADR-088
+   confirmation criterion 6 requires Worker observability and logpush to stay
+   disabled, ADR-089 carries that criterion forward and sharpens it, and the
+   reason is that enabling provider-side log retention would put end-user
+   address queries into retention.
+
+   That leaves the provider's own mail-forwarding product as the only
+   credential-free send path, and whether it is enabled on this zone is
+   UNESTABLISHED: the maintainer token used for these readbacks is not scoped
+   for it, and both the zone setting and the verified-destination list returned
+   an authentication error. That is a limit of the observation, not a finding
+   about the account. If that product proves unavailable or unsuitable, the
+   chosen direction needs a credential after all, which is the thing it was
+   chosen to avoid, and that is a decision rather than an implementation
+   detail.
+
 2. Everything policy-gated: activation, any charge, authenticated customer
    journeys, webhook projection with real events, twice-peak load, rollback
    rehearsal and exact-revision verification.
