@@ -1,4 +1,5 @@
-// ADR-088 layer 3: the notification payload for a managed-channel fault.
+// The notification payload for a managed-channel fault. ADR-088 layer 3 put
+// this here; ADR-089 superseded that layer in whole and is the governing record.
 //
 // TRANSPORT-FREE BY DESIGN, and that is the point rather than an accident. The
 // first version of this file published to AWS from a GitHub Actions job; the

@@ -1,6 +1,7 @@
 // @jtbd JTBD-403 (Know the paid channel still bills correctly)
 //
-// The payload half of ADR-088 layer 3, deliberately transport-free. An earlier
+// The payload half of the withdrawn ADR-088 layer 3, retained by ADR-089 as the
+// contract its replacement will use. Deliberately transport-free. An earlier
 // version of this pair published to AWS from GitHub Actions; that was withdrawn
 // unapplied on 2026-09-04 with no replacement in place. These assertions
 // survived the reversal unchanged, which is the sign they were about the right
@@ -33,7 +34,7 @@ const clean = {
 const unhealthy = { ...clean, status: 'unhealthy', findings: ['delivery_exhausted'] };
 const unverified = { ...clean, status: 'unverified', findings: ['credentials_unavailable'] };
 
-describe('ADR-088 managed-channel fault notification', () => {
+describe('managed-channel fault notification payload', () => {
   it('stays silent on a clean report', () => {
     // A notification on every check is the shape that trains the reader to
     // ignore it. Silence when there is nothing to say is the feature.

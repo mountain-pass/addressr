@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 88 (75 in-force, 13 historical)
+**Total ADRs:** 89 (76 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_75 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_76 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -474,10 +474,19 @@ _75 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-088 — Managed-channel faults act in flow, with notification as an adjunct
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-03)
+**Status:** proposed | **Oversight:** confirmed (2026-09-03) | **Superseded in part by:** ADR-089 (the three-layers preamble and the chosen option's name; layer 3 in whole; layer 2's continuous-integration carrier; the SMS-rides-the-operations-topic paragraph; the fourth decision driver; the section on what covers the carrying workflow; the SMS half of what a notification may contain; the good, neutral and three bad consequences that describe the adjunct; two of the three pros of the chosen option; the too-noisy-to-read reassessment trigger; and four confirmation obligations — criterion 2's SMS half, criterion 4's subscription half, criterion 5 entire, and criterion 8's notification half — layers 1 and 2's substance stands, as does the carrier-free claim that extra scopes ride an existing statement rather than adding one each)
 **Decides:** Managed-channel fault handling has three layers and only the first two are controls: acting refusal in the request path for conditions with an in-flow moment (already built), agent-read at session start for those without one (added as further EXISTS columns in the existing single health query, so the request and statement budget is unchanged), and email plus SMS notification as an explicitly-not-a-control adjunct chosen by the maintainer on 2026-09-03. SMS rides the existing operations topic because the provider has no native SMS and paging is ineligible. Worker observability stays disabled, since the terminus reads database state rather than Worker logs and enabling retention would reverse a deliberate choice to log paths without query strings.
 **Confirmation:** New scopes are columns in the one query with request and statement counts unchanged; behavioural tests prove each condition's fixed code, non-disclosure in both email and SMS bodies, and that an unbelievable corpus reports ahead of a clean read with the floor pinned on both sides; the SMS subscription's endpoint is protected and no phone number is in the repository; the ledger records the adjunct as not-a-control; observability and logpush stay disabled by readback; the health workflow is asserted by test to sit inside the stale-schedule corpus; an exercised failure response raises a notification and an agent surfaces it without touching customer state.
 **Related:** ADR-051, ADR-052, ADR-064, ADR-081, ADR-082, ADR-087, JTBD-403
+
+---
+
+### ADR-089 — Managed-channel notification leaves CI and drops SMS
+
+**Status:** proposed | **Oversight:** unconfirmed | **Supersedes:** ADR-088 in part (the notification adjunct in whole, and the continuous-integration workflow as the carrier for the new health scopes)
+**Decides:** The fault-notification layer is withdrawn in whole, both its email and its SMS halves, having been built on 2026-09-04 and removed before the configuration was ever applied. Two grounds: a scheduled continuous-integration job is not monitoring infrastructure, since it carries no availability commitment and is silently deprioritised or disabled, and the edge provider has no native SMS, so every handset path needs a second provider, a second account and a credential published from CI. The carrier for the new health scopes becomes the Worker's scheduled handler, and notification becomes the provider's native email with no stored credential and no messaging vendor. Until that replacement is built, alert coverage is MISSING rather than partial, pending or covered-by-adjunct. The record does not claim the replacement exists.
+**Confirmation:** No workflow wiring a Terraform variable the module does not declare, by test; the absence of the SMS subscription and the publish role true in the tree but asserted by no test, so that clause is discharged by reading and a test for it is owed; no phone number anywhere in the repository by a scan covering markdown as well as source; the launch ledger's monitoring row recording alert coverage as MISSING inside a gate classed PARTIAL, with no replacement described as existing; the payload allowlist tests passing unchanged and the allowlist not widened while the replacement is unbuilt; any pipeline carrying a health script's exit code running under an explicit pipefail shell, by test; the replacement's carrier proven by test to sit inside a liveness corpus, since a carrier no liveness check watches reproduces this decision's own root cause; Worker observability and logpush still disabled by readback after the check moves into the Worker.
+**Related:** ADR-088, ADR-049, ADR-051, ADR-052, JTBD-403
 
 ---
 
