@@ -119,8 +119,23 @@ one-off and needs its own decision record scoping ADR-085.
 Readbacks on 2026-09-03 (all read-only) are recorded in the rows above: Worker
 deployment, bindings and disabled logging; D1 metadata, migrations and zero
 commercial rows; the live webhook destination; the active meter; the archived
-launch catalogue; and the Stripe failed-payment settings, which now contradict
-ADR-076, ADR-079 and ADR-083.
+launch catalogue; and the Stripe failed-payment settings, which contradicted
+the recovery timing recorded on 2026-08-30. That contradiction is resolved: the
+account setting was left alone because it is shared with another product, and
+ADR-087 records the observed policy instead, superseding the three decisions
+that described the old one. The settings now contradict nothing in force.
+
+Blocked on a clock, not on a decision, and mine to finish:
+
+- Delete the verified destination number from the provider's SMS sandbox. It was
+  verified on 2026-09-04 to prove the transport before the mechanism was
+  withdrawn, so it is now residue of a withdrawn mechanism: a personal number
+  held in a cloud account for a feature that does not exist. Deletion was
+  attempted on 2026-09-04 and REFUSED, because the provider will not remove a
+  verified destination until 24 hours have passed since verification. Possible
+  from 2026-09-05. Nothing depends on it and no repository artefact carries the
+  number; the reason to do it is that the number should not outlive the reason
+  it was given.
 
 Waiting on the maintainer:
 
