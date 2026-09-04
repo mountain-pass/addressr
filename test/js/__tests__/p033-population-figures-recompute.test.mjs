@@ -283,6 +283,38 @@ describe('P033 population figures recompute from the ticket’s own predicate', 
     }
   });
 
+  it('states the surviving conclusion\u2019s own two numbers, which the intersections do not cover', () => {
+    // The sentence that carries this ticket's surviving conclusion states the
+    // workflow group and its non-spawning remainder in one breath: "three of
+    // the N spawn a runtime for something else, so ... was true of M files".
+    //
+    // Both numbers move whenever the workflow group moves, and NEITHER was
+    // guarded. The assertion above pins the intersection itself, and the row
+    // assertions pin the group size, but this sentence restates them as a
+    // different pair of words and so sat outside every check.
+    //
+    // The ticket calls 2026-09-04 the THIRD pass over this sentence, and that
+    // is the count to use: it has been hand-corrected three times, and it went
+    // stale again after each of the first two. The 2026-08-20 pass corrected it
+    // after the perf-probe deletion and did not guard it; the 2026-09-04
+    // check-deps bound then moved the group 11 -> 12 and it went stale by the
+    // identical route, in the ticket that exists to name this exact defect. A
+    // third correction left unguarded would have earned a fourth.
+    const flat = ticket.replaceAll(/\s+/g, ' ');
+    const spawning = inBoth(workflow, exercises);
+    const remainder = workflow.length - spawning;
+    for (const [label, phrase] of [
+      ['workflow group in the conclusion', `${wordOf(spawning)} of the ${wordOf(workflow.length)} spawn a runtime`],
+      ['non-spawning remainder', `was true of ${wordOf(remainder)} files`],
+    ]) {
+      // Occurrence count for the same reason as above: this document retains
+      // superseded prose verbatim, and the corrections themselves quote the
+      // wording they replaced. Exactly one live statement, or fail.
+      const occurrences = flat.split(phrase).length - 1;
+      assert.equal(occurrences, 1, `${label}: expected exactly one "${phrase}", found ${occurrences}`);
+    }
+  });
+
   it('sums the Step 4 verdict table — ARITHMETIC ONLY; the verdicts are judged, not computed', () => {
     // Scope is in the title deliberately. The objection to this guard was that
     // it would read as though the sentinel/decision classification were

@@ -31,6 +31,14 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   check-deps:
     continue-on-error: true
+    # `continue-on-error` acts on an exit STATUS, and a hang produces none. On
+    # 2026-09-04 this job sat `in_progress` for over 35 minutes while every
+    # other job in the run had gone green, which held the whole run in flight —
+    # and the push gate refuses a push while the latest master run is in flight,
+    # with no override. So an advisory job that gates nothing blocked the next
+    # push anyway, by holding the run open. Without this bound it would have
+    # inherited the 360-minute default.
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
