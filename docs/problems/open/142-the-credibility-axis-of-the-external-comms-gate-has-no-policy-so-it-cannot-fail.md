@@ -1,11 +1,11 @@
 # Problem 142: The credibility axis of the external-comms gate has no policy, so it cannot fail
 
-**Status**: Open
+**Status**: Open — investigation tasks 1 and 2 closed 2026-09-04; 3, 4 and 5 remain
 **Reported**: 2026-09-04
-**Priority**: 8 (High) — Impact: Moderate (3) × Likelihood: Likely (4). Impact 3: the gate's whole job is to stop a careless or self-damaging statement reaching a permanent public surface, and half of it is inert; the harm is reputational rather than to service or data, so not 4. Likelihood 4: it is not a latent condition waiting on a trigger. It fired three times in one session, on three separate drafts, and downgraded real findings to prose every time.
+**Priority**: 12 (High) — Impact: Moderate (3) × Likelihood: Likely (4). Impact 3: the gate's whole job is to stop a careless or self-damaging statement reaching a permanent public surface, and half of it is inert; the harm is reputational rather than to service or data, so not 4. Likelihood 4: it is not a latent condition waiting on a trigger. It fired three times in one session, on three separate drafts, and downgraded real findings to prose every time.
 **Origin**: internal
 **Effort**: S — author one section in a policy file. The work is deciding the classes, not writing them.
-**WSJF**: 8.0 — (8 × 1.0) / 1
+**WSJF**: 12.0 — (12 × 1.0) / 1
 **JTBD**: JTBD-400
 **Persona**: addressr-maintainer
 
@@ -68,19 +68,47 @@ project's own rule about what counts as a control is what forces the ledger to r
 partially covered. Suppressing it would trade an uncovered exposure for a governance defect. The question is
 whether it should be a considered disclosure rather than an unconsidered one.
 
+## Resolution of tasks 1 and 2, 2026-09-04
+
+The maintainer directed that the axis should exist, and `## Outbound Credibility / Self-Own` was authored in `RISK-POLICY.md` with six classes, a citation-precedence rule, a class-specific likelihood scale and hooks into Impact rows 2 and 3. A `## Completeness of These Criteria` rule was authored alongside it, making an unscoreable risk on a closed-list axis a FAIL of the review rather than a pass with a note.
+
+**It took seven validation passes, and the first six failed.** Recording that, because the failures are the ticket's own subject matter:
+
+- The first draft asserted "roughly a dozen" errors in its own preamble — an unsupported count, in the section defining `count-not-taken`, with the counter-evidence in the table beside it.
+- It excluded tests and code in Scope while drawing four of its examples from them.
+- `falsifiable-from-the-tree` was a superset of three other classes rather than a peer, so "cite exactly one" was unachievable.
+- It carried no prohibition, no consequence and no author-side remedy, so a reviewer had no rule to cite a breach of — the exact defect the ticket describes, reproduced in its fix.
+- Its impact placement contradicted the Impact Levels table, which pointed at a different level.
+- Its likelihood guidance left a found defect scoring **inside** appetite, so the axis would have stayed dormant by arithmetic rather than by absence.
+- A hoisted completeness rule, read literally, made every non-credibility review a FAIL.
+- Excluding Confidential Information from that rule left that axis with an Impact and no reachable multiplier.
+
+Every one was found by an adversarial validator and none by the author. That is the same finding as the ticket's: a reviewer that cannot fail is indistinguishable from one that found nothing, and the remedy is a validator that can.
+
+**An eighth pass, of a different kind: the new axis scored the commit message that ships it, and failed it.** Twice, on two classes, before passing:
+
+- `internal-contradiction`, Impact 2 x Likelihood 5 = **10**. The message claimed all six classes were drawn from defects the dormant axis passed over. This ticket bounds that corpus at three — see the closure note on task 2 below — and the other three came from defects encountered during the amendment's own drafting.
+- `unverifiable-narration`, Impact 2 x Likelihood 3 = **6**. The corrected message then described this very pass, its class and its score, none of which existed in any committed artefact. The reviewer's remedy was to record it here rather than to cut it, on the grounds that the axis failing its own author is exactly the evidence this ticket exists to carry. That is what this note is.
+
+Both above the appetite of 5, both cited against a class with a stated precedence, neither reported as advisory prose. Before the amendment the same reviewer would have returned PASS with a note, because it had no class to cite. The axis worked on the first message it saw, and the message was its author's own.
+
 ## Investigation Tasks
 
-1. Decide whether the credibility axis should exist at all. If the agent's two-axis definition is the
+1. ~~Decide whether the credibility axis should exist at all.~~ **CLOSED 2026-09-04** — maintainer directed it should. If the agent's two-axis definition is the
    aspiration and not the intent, the honest fix is to narrow the agent rather than author the policy —
    but the axis must then stop being advertised, because a described-and-inert check is worse than an
    absent one.
-2. If it should exist, author `## Outbound Credibility / Self-Own` with real classes. The three measured
+2. ~~If it should exist, author `## Outbound Credibility / Self-Own` with real classes.~~ **CLOSED 2026-09-04.** The three measured
    errors above are the starting corpus and each names a class: a claim falsifiable from the repository's
    own committed artefacts; a count or enumeration that does not match the change; a statement of state
    more confident than the evidence supports.
-3. Decide whether an operational-weakness or security-posture disclosure class belongs in
-   `## Confidential Information`, and if so how it coexists with the rule that forces honest MISSING
-   readings in the launch ledger.
+3. **STILL OPEN, and deliberately deferred.** Decide whether an operational-weakness or security-posture
+   disclosure class belongs in `## Confidential Information`, and if so how it coexists with the rule that
+   forces honest MISSING readings in the launch ledger. The amendment's header note records the deferral.
+   Note the cost is NOT what an earlier draft claimed: the completeness rule governs only closed-list axes,
+   and `## Confidential Information` is open by design, so a reviewer meeting an operational-weakness
+   disclosure has no class to cite and no rule compelling a verdict — the same state the credibility axis
+   was in before this amendment.
 4. Check whether any other agent in the scorer family advertises an axis the policy does not author. This
    was found by reading three review outputs in one session; nothing detects it.
 5. Consider whether a review that reports an axis as dormant should be a FAIL of the gate rather than a
