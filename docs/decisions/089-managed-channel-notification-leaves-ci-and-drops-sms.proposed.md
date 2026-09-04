@@ -117,7 +117,7 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 
 ## Confirmation
 
-1. No workflow wires a Terraform variable the module does not declare, asserted by test. The absence of the SMS subscription and the publish role from the deployment module is true in the tree today but **asserted by nothing**; a test for it is owed, and until it exists this clause is discharged by reading rather than by mechanism.
+1. No workflow wires a Terraform variable the module does not declare, asserted by test. The deployment module's notification subscriptions are **enumerated** rather than counted, so a subscription arriving on the operations topic without a decision behind it reds; no file grants permission to publish to it; and every Terraform file in the module is checked for delimiter balance, which is the specific defect a botched deletion left unnoticed on 2026-09-04. All four asserted by test and each mutation-proved. This criterion was recorded as owed when this decision was written and was discharged the same day.
 2. No phone number appears anywhere in the repository, asserted by a scan that covers markdown as well as source.
 3. The launch-readiness ledger's monitoring row records alert coverage as MISSING inside a gate classed PARTIAL, names no replacement as existing, and states that the chosen direction is unbuilt.
 4. The payload allowlist tests pass unchanged, and the allowlist is not widened while the replacement is unbuilt.
