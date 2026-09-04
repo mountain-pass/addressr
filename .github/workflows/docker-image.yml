@@ -85,6 +85,7 @@ permissions:
 
 jobs:
   build-and-smoke:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     # Job scope, not workflow scope: in a called workflow `github.workflow`
     # resolves to the CALLER's name, so the old workflow-level
