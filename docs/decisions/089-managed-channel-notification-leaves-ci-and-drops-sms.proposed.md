@@ -45,15 +45,18 @@ The channel is not live, so nothing was at risk while this was decided.
 Chosen option: **"Worker cron carrier with native provider email, no SMS"**, per the maintainer's direction of 2026-09-04.
 
 1. **Layer 3 is withdrawn in whole**, both halves. Not the SMS half only: the notification step was removed entirely, so the email half went with it. Nothing in the repository sends a managed-channel notification.
-2. **The carrier for layer 2's new scopes is the Worker's scheduled handler, not a CI workflow.** The cost argument that put them in the health query does not transfer, because the query will move.
+2. **The carrier for layer 2's new scopes is the Worker's scheduled handler, not a CI workflow.** The cost argument that put them in the health query does not transfer, because the query would move.
 3. **Notification is the provider's native email and nothing else.** No SMS, no messaging vendor, no credential stored for the purpose. If a future handset path is wanted, it is a new decision with the credential cost stated.
+
+   **Of those two constraints, the credential-free one is load-bearing and native email is the mechanism.** Stated because the consequences below record that the two may turn out to be incompatible, and a reassessment that has to guess which one governs will re-litigate the whole choice. If no credential-free email path exists, this decision does not silently acquire a credential: it reopens, and the fallback to weigh first is the agent-read-only shape, not a credentialed vendor.
+
 4. **Until that is built, alert coverage is MISSING.** Not partial, not pending, not covered-by-adjunct. The launch-readiness ledger records it as missing, which is where it stood before the attempt.
 
 **This decision does not claim the replacement exists.** It records the direction and the withdrawal. The replacement is unbuilt on the date of this record, and a reader who finds it still unbuilt has found an accurate record rather than drift.
 
 ### What the withdrawal deliberately kept
 
-The notification payload rule is retained without a caller, and that retention is deliberate rather than residue. It is an allowlist of four fields, not a denylist, so a field added upstream later cannot ride out by default, and its tests passed unchanged against a rewritten header, which is the evidence that they were about the payload rather than the transport. It is **not a control** while nothing calls it. It is the payload contract the replacement will use, and keeping it is cheaper than re-deriving the non-disclosure rule under time pressure when the replacement is built.
+The notification payload rule is retained without a caller, and that retention is deliberate rather than residue. It is an allowlist of four fields, not a denylist, so a field added upstream later cannot ride out by default, and its tests passed unchanged against a rewritten header, which is the evidence that they were about the payload rather than the transport. It is **not a control** while nothing calls it. It is the payload contract a replacement would use, and keeping it is cheaper than re-deriving the non-disclosure rule under time pressure if one is built.
 
 Two regression tests written for the withdrawn shape also survive, guarding defect classes independent of it: that any pipeline carrying a health script's exit code runs under an explicit `pipefail` shell, and that every no-default Terraform root variable is wired into both the step environment and the devcontainer passthrough of all three plan and deploy workflows, with the converse that no workflow wires a variable the module no longer declares. Their rationale lives in their own headers and in the withdrawal's changeset, not here.
 
@@ -91,15 +94,15 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 - **Criterion 4** — the SMS subscription exists with a protected endpoint and no phone number appears in the repository. **Void in its first half, standing in its second.** There is no subscription and no variable. No phone number appears in the repository, and that remains true and worth keeping true.
 - **Criterion 5** — the ledger's monitoring row records the adjunct as not-a-control and the gate does not reach satisfied on its strength. **Superseded by something stricter.** There is no adjunct, and the row records alert coverage as missing.
 - **Criterion 6** — Worker observability stays disabled and logpush false by readback. **Carried forward unchanged, and now load-bearing.** Moving the check into the Worker makes it likelier that someone reaches for Worker logs, which is exactly what this criterion forbids.
-- **Criterion 7** — the health workflow is inside the stale-schedule check's corpus, asserted by test. **Holds today unchanged, AND transfers when the carrier moves.** Both halves, because dropping the first would release a live obligation. The existing health workflow still declares a schedule and still runs the five existing fault conditions, so it is in the corpus today and must stay there until layer 2 actually moves. When it moves, the obligation follows the carrier: a Worker cron is not covered by a check that reads workflow schedules, so establishing that coverage is a precondition of the replacement rather than an afterthought.
-- **Criterion 8** — an exercised failure response raises a notification and an agent surfaces it, without touching customer state. **Unmet, and unmeetable until the replacement exists.** The agent-surfacing half is independent of the notification half and remains required.
+- **Criterion 7** — the health workflow is inside the stale-schedule check's corpus, asserted by test. **Holds today unchanged, AND transfers if the carrier moves.** Both halves, because dropping the first would release a live obligation. The existing health workflow still declares a schedule and still runs the five existing fault conditions, so it is in the corpus today and must stay there until layer 2 actually moves. If it moves, the obligation follows the carrier: a Worker cron is not covered by a check that reads workflow schedules, so establishing that coverage is a precondition of the replacement rather than an afterthought.
+- **Criterion 8** — an exercised failure response raises a notification and an agent surfaces it, without touching customer state. **Unmet, and unmeetable unless a replacement exists.** The agent-surfacing half is independent of the notification half and remains required.
 
 ## Consequences
 
 ### Good
 
-- The detector will run on infrastructure with an availability commitment, rather than on a best-effort CI schedule that reports nothing when it is skipped.
-- The replacement stores no credential and puts no second provider or account on the notification path. Today nothing is stored because nothing sends at all; the point is that the chosen shape does not need one either.
+- The detector is **intended to** run on infrastructure with an availability commitment, rather than on a best-effort CI schedule that reports nothing when it is skipped. Intent, not an achieved property, for the same reason as the bullet below: nothing runs today.
+- The replacement is **intended to** store no credential and put no second provider or account on the notification path. Two hedges, both load-bearing: today nothing is stored because nothing sends at all, and whether a credential-free send path is available here is unestablished, per the last of the bad consequences below. The good is the intent, not an achieved property.
 - The launch ledger's monitoring row records alert coverage as MISSING inside a gate that stays PARTIAL, because the five existing fault conditions do still run. The withdrawal cannot be mistaken for progress.
 - Two regression tests survive that were written for the withdrawn shape and guard classes of defect independent of it, plus the retained payload contract.
 
@@ -110,7 +113,7 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 
 ### Bad
 
-- **Alert coverage is missing and this decision does not fix it.** It records a direction and removes a wrong mechanism. Between now and the replacement, a fault with no in-flow moment is invisible until a session starts.
+- **Alert coverage is missing and this decision does not fix it.** It records a direction and removes a wrong mechanism. Until a replacement exists, and this record does not assure that one will, a fault with no in-flow moment is invisible until a session starts.
 - Out-of-band reachability is lost outright. Email is weaker than a handset alert for a maintainer who is frequently absent, and that was the reason SMS was chosen in the first place.
 - ADR-088 remains ratified and its layer 3 text still reads as current on **two** surfaces, since amendment is prohibited: the per-ADR body, and the compendium entry that is the architect agent's routine load surface, which still asserts the email-plus-SMS adjunct and still lists the SMS-subscription criterion. The compendium is the more damaging of the two, which is what makes the reverse badge load-bearing rather than bookkeeping.
 - Work was built and withdrawn the same day. The carrier was inherited from the prior decision rather than chosen, and the review that rejected it could have happened before the work.
@@ -118,22 +121,23 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 
 ## Confirmation
 
-1. No workflow wires a Terraform variable the module does not declare, asserted by test. The deployment module's notification subscriptions are **enumerated** rather than counted, so a subscription arriving on the operations topic without a decision behind it reds; no file grants permission to publish to it; and every Terraform file in the module is checked for delimiter balance, which is the specific defect a botched deletion left unnoticed on 2026-09-04. All four asserted by test and each mutation-proved. This criterion was recorded as owed when this decision was written and was discharged the same day.
+1. No workflow wires a Terraform variable the module does not declare, asserted by test. The deployment module's notification subscriptions are **enumerated** rather than counted, so a subscription arriving on the operations topic without a decision behind it reds; no file grants permission to publish to it; and every Terraform file under the module, submodules included, is checked for delimiter balance, which is the specific defect a botched deletion left unnoticed on 2026-09-04. All four asserted by test. Each was mutation-proved on 2026-09-04 by breaking it and observing the red, which is a record of what was done on that date rather than a property the tree can re-establish; the delimiter counter additionally carries unit cases over synthetic sources, so its branches stay exercised without one. This criterion was recorded as owed when this decision was written and was discharged the same day.
 2. No phone number appears anywhere in the repository, asserted by a scan that covers markdown as well as source.
 3. The launch-readiness ledger's monitoring row records alert coverage as MISSING inside a gate classed PARTIAL, names no replacement as existing, and states that the chosen direction is unbuilt.
 4. The payload allowlist tests pass unchanged, and the allowlist is not widened while the replacement is unbuilt.
 5. Any pipeline carrying a health script's exit code runs under an explicit `pipefail` shell, asserted by test.
-6. When the replacement lands, its carrier is inside a liveness corpus asserted by test, per the retargeted criterion 7 above. A replacement that is not covered by a liveness check has reproduced this decision's own root cause.
-7. Worker observability and logpush stay disabled by readback, checked again after the check moves into the Worker.
+6. If a replacement lands, its carrier is inside a liveness corpus asserted by test, per the retargeted criterion 7 above. A replacement that is not covered by a liveness check has reproduced this decision's own root cause.
+7. Worker observability and logpush stay disabled by readback, and are checked again if the check moves into the Worker.
 
 ## Pros and Cons of the Options
 
 ### Worker cron carrier with native provider email, no SMS
 
 - Good, because the detector runs where the data is, under an availability commitment.
-- Good, because it stores no credential and adds no provider.
+- Good, because it stores no credential and adds no provider — **if the credential-free send path exists**, which is the next bullet.
+- Bad, because the credential-free send path it depends on is **unestablished**, so the ground it won on is unproven. This is the same site class this record retires from ADR-088 as item 18, a false or unproven premise credited as a virtue of the option that won, and it is written as a con here rather than left implicit so this record does not reproduce the defect it names.
 - Bad, because it loses out-of-band reachability entirely.
-- Bad, because it is unbuilt, so the gap is real for as long as it stays unbuilt.
+- Bad, because it is unbuilt, and may prove unbuildable as chosen, so the gap is real for as long as either holds.
 
 ### Keep the built shape
 
@@ -159,6 +163,6 @@ Reassess if the replacement is still unbuilt when the managed channel approaches
 
 - [ADR-088 Managed-channel faults act in flow, with notification as an adjunct](088-managed-channel-faults-act-in-flow-and-notify-as-an-adjunct.proposed.md) — the decision this supersedes in part; layers 1 and 2's substance stand.
 - [ADR-051 A check with no reader but the maintainer is not a control](051-a-check-with-no-reader-but-the-maintainer-is-not-a-control.proposed.md) — the rule that makes "alert coverage is missing" the honest reading.
-- [ADR-052 The stale-schedule terminus is an agent at session start](052-the-stale-schedule-terminus-is-an-agent-at-session-start.proposed.md) — untouched, and the liveness shape the replacement's carrier must be brought inside.
+- [ADR-052 The stale-schedule terminus is an agent at session start](052-the-stale-schedule-terminus-is-an-agent-at-session-start.proposed.md) — untouched, and the liveness shape any replacement's carrier would have to be brought inside, per confirmation criterion 6, which states that obligation conditionally because this record does not assure a replacement will exist.
 - [ADR-049 Amendment scoped by whether a human would ratify it](049-amendment-scoped-by-whether-a-human-would-ratify-it.proposed.md) — why this is a new record rather than an edit to ADR-088.
-- [JTBD-403 Know the paid channel still bills correctly](../jtbd/addressr-maintainer/JTBD-403-know-the-paid-channel-still-bills-correctly.proposed.md) — the job the withdrawn layer served and the replacement must serve.
+- [JTBD-403 Know the paid channel still bills correctly](../jtbd/addressr-maintainer/JTBD-403-know-the-paid-channel-still-bills-correctly.proposed.md) — the job the withdrawn layer served, and the one any replacement must serve.

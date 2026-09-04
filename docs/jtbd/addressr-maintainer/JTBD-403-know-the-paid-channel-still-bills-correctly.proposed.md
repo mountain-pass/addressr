@@ -46,11 +46,11 @@ When customers are paying for metered API access, I want any fault that breaks t
 
 ## The limit of the chosen notification, stated because it will be misread otherwise
 
-The maintainer chose on 2026-09-03 to be notified by email and SMS, and on 2026-09-04 replaced that with the provider's native email alone, carried by the Worker's scheduled handler rather than by a CI job. Neither shape exists today. The limit below is recorded plainly because it applies to whatever is eventually built, not because anything is in place.
+The maintainer chose on 2026-09-03 to be notified by email and SMS, and on 2026-09-04 replaced that with the provider's native email alone, carried by the Worker's scheduled handler rather than by a CI job. Neither shape exists today. The limit below is recorded plainly because it applies to whatever is eventually built, if anything is. It is not recorded because something is in place, and a replacement is not assured: the direction chosen on 2026-09-04 is unbuilt and its send path is unestablished.
 
 An alert that terminates in the maintainer's attention is, by this project's own rule, not a control: it discharges nothing on its own and must not be counted as coverage in a risk assessment, a confirmation criterion, or a ticket closure. What it does buy is real and worth having — it shortens the time between a fault occurring and a human knowing, which the agent-read path alone does not do when no session runs for a day.
 
-So any notification for this job is an **adjunct**, in whatever transport it eventually arrives. The controls for this job remain the refusal in the request path for conditions that have an in-flow moment, and the agent-read check for those that do not. If a future reader finds this job's outcomes marked satisfied on the strength of an email policy alone, that is the error this paragraph exists to prevent.
+So any notification for this job is an **adjunct**, in whatever transport it may eventually arrive. The controls for this job remain the refusal in the request path for conditions that have an in-flow moment, and the agent-read check for those that do not. If a future reader finds this job's outcomes marked satisfied on the strength of an email policy alone, that is the error this paragraph exists to prevent.
 
 The transport chosen on 2026-09-03 was SMS over the shared operations topic.
 It was built and withdrawn on 2026-09-04 without the configuration ever being
