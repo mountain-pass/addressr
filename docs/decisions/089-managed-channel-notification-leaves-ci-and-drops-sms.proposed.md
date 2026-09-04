@@ -114,6 +114,7 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 - Out-of-band reachability is lost outright. Email is weaker than a handset alert for a maintainer who is frequently absent, and that was the reason SMS was chosen in the first place.
 - ADR-088 remains ratified and its layer 3 text still reads as current on **two** surfaces, since amendment is prohibited: the per-ADR body, and the compendium entry that is the architect agent's routine load surface, which still asserts the email-plus-SMS adjunct and still lists the SMS-subscription criterion. The compendium is the more damaging of the two, which is what makes the reverse badge load-bearing rather than bookkeeping.
 - Work was built and withdrawn the same day. The carrier was inherited from the prior decision rather than chosen, and the review that rejected it could have happened before the work.
+- **The chosen terminus is not yet shown to exist**, and this record does not establish that it does. An authenticated read of the account's available alert types later on 2026-09-04 returned nothing that can carry a condition a Worker computes over database state: the closest types fire on the provider's own probes of an HTTP endpoint, and the one type that could carry a Worker signal is ruled out by criterion 6 above. That leaves the provider's mail-forwarding product as the only credential-free send path, and whether it is enabled here is UNESTABLISHED, because the maintainer token available for the readback is not scoped for it. If that path proves unavailable, this decision's chosen option needs a credential after all, which is the thing it was chosen to avoid. Recorded here rather than only in the launch ledger, because it bears on whether the option that won can be built at all.
 
 ## Confirmation
 
@@ -152,7 +153,7 @@ Enumerated exactly rather than counted, because the `supersedes-clause` anchor i
 
 ## Reassessment Criteria
 
-Reassess if the replacement is still unbuilt when the managed channel approaches activation, since shipping a paid channel with alert coverage missing is a different decision from holding the gap while it is dark. Reassess if the provider gains a native handset or paging mechanism that needs no stored credential. Reassess if a fault reaches a customer before it reaches the maintainer. Reassess if the loss of out-of-band reachability proves material in practice.
+Reassess if the replacement is still unbuilt when the managed channel approaches activation, since shipping a paid channel with alert coverage missing is a different decision from holding the gap while it is dark. Reassess if the mail-forwarding path proves unavailable or unsuitable, because the chosen option would then require a stored credential and that was the ground it won on. Reassess if the provider gains a native handset or paging mechanism that needs no stored credential. Reassess if a fault reaches a customer before it reaches the maintainer. Reassess if the loss of out-of-band reachability proves material in practice.
 
 ## Related
 
