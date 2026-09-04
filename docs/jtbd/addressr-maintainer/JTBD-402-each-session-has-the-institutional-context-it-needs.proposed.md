@@ -1,5 +1,6 @@
 ---
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-09-03
 status: proposed
 job-id: each-session-has-the-institutional-context-it-needs
 persona: addressr-maintainer

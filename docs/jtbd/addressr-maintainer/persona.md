@@ -22,6 +22,13 @@ Lands code to the Addressr repo under a trunk-based workflow: commits go straigh
 - A failed release is only discovered after push and costs a recovery commit and a wasted pipeline run
 - Multiple cucumber test profiles (default, rest2, cli2) plus geo/no-geo split — coverage drift can hide
 
+> The four constraints below were added on 2026-09-03, after this file's `oversight-date` of 2026-07-18. They were not separately ratified as a persona edit; they inherit ratification from JTBD-403 (know the paid channel still bills correctly), which the maintainer confirmed that day and which asserts each of them. Recorded here so a reader does not take the older marker as covering newer content.
+
+- **Sole operator of a paid managed channel.** Added 2026-09-03 with JTBD-403. The maintainer is not only the person who ships this project but the one who owes a commercial contract to whoever pays for metered access: usage billed accurately, entitlement matching what the provider says, and service not silently withdrawn. Nothing in the constraints above reaches that obligation, and the jobs that assume it were written before the persona recorded it.
+- **Sole reviewer, frequently unattended.** Long assumed and relied on by the credential and context jobs, recorded here on 2026-09-03 because a job now depends on it directly: much work runs in sessions with nobody watching, so a finding whose only reader is a present human is not a control. This is the persona-level fact behind the project's rule that a check must act, or be read by an agent.
+- **Out-of-band reachability is limited and chosen deliberately.** Email and SMS, per direction on 2026-09-03. There is no on-call rotation and no paging tier on the account, so notification shortens time-to-awareness without ever becoming coverage.
+- **The repository is public.** Also long assumed. It bounds every artefact the persona's jobs produce: no commercial terms, subscriber data, credentials or traffic volumes may land in the tree, and that applies to notification payloads leaving the account as much as to committed files.
+
 ## Pain Points
 
 - Commit-tooling footguns that silently drop release-critical files (e.g. lint-staged discarding staged `.changeset/*.md`)

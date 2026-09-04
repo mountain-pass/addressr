@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 87 (74 in-force, 13 historical)
+**Total ADRs:** 88 (75 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_74 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_75 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -471,6 +471,13 @@ _74 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** Addressr payment recovery follows the shared Stripe account's configured schedule — three custom retries at 3, 5 and 7 days after each failed attempt, then Stripe cancels the subscription and leaves the invoice overdue — because the account is shared with another product and the retry policy is not Addressr's alone to set. Addressr still runs no competing timer, and ADR-075, ADR-081 and ADR-082 are unchanged; the cost is that `canceled` is terminal under ADR-075, so a customer who recovers after the window must subscribe again.
 **Confirmation:** Authenticated Stripe settings readback proves custom retries at 3, 5 and 7 days and cancel-on-exhaustion before activation and is re-read immediately before any activation decision; signed-webhook behavioural tests cover duplicate, reordered and recovery-exhausted events ending in `customer.subscription.deleted`; a Test Clock exercise in test mode reaches `canceled` through the configured schedule; no Addressr timer extends or shortens the window; configuration drift blocks activation.
 **Related:** ADR-069, ADR-075, ADR-076, ADR-079, ADR-081, ADR-082, ADR-083
+
+### ADR-088 — Managed-channel faults act in flow, with notification as an adjunct
+
+**Status:** proposed | **Oversight:** unconfirmed
+**Decides:** Managed-channel fault handling has three layers and only the first two are controls: acting refusal in the request path for conditions with an in-flow moment (already built), agent-read at session start for those without one (added as further EXISTS columns in the existing single health query, so the request and statement budget is unchanged), and email plus SMS notification as an explicitly-not-a-control adjunct chosen by the maintainer on 2026-09-03. SMS rides the existing operations topic because the provider has no native SMS and paging is ineligible. Worker observability stays disabled, since the terminus reads database state rather than Worker logs and enabling retention would reverse a deliberate choice to log paths without query strings.
+**Confirmation:** New scopes are columns in the one query with request and statement counts unchanged; behavioural tests prove each condition's fixed code, non-disclosure in both email and SMS bodies, and that an unbelievable corpus reports ahead of a clean read with the floor pinned on both sides; the SMS subscription's endpoint is protected and no phone number is in the repository; the ledger records the adjunct as not-a-control; observability and logpush stay disabled by readback; the health workflow is asserted by test to sit inside the stale-schedule corpus; an exercised failure response raises a notification and an agent surfaces it without touching customer state.
+**Related:** ADR-051, ADR-052, ADR-064, ADR-081, ADR-082, ADR-087, JTBD-403
 
 ---
 

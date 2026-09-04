@@ -83,6 +83,7 @@ Lands code to the Addressr repo under a trunk-based workflow with automated chan
 | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | JTBD-401 | Keep credentials out of what this repository ships          | [JTBD-401](addressr-maintainer/JTBD-401-keep-credentials-out-of-what-this-repo-ships.proposed.md)        |
 | JTBD-402 | Each working session has the institutional context it needs | [JTBD-402](addressr-maintainer/JTBD-402-each-session-has-the-institutional-context-it-needs.proposed.md) |
+| JTBD-403 | Know the paid channel still bills correctly                 | [JTBD-403](addressr-maintainer/JTBD-403-know-the-paid-channel-still-bills-correctly.proposed.md)         |
 
 ## Current Solutions / Alternatives
 
