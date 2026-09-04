@@ -87,6 +87,33 @@ describe('the dependency-freshness check is time-bounded at every site that runs
     );
   });
 
+  it('bounds the CI step itself, so the job times out into a failure and not a cancellation', () => {
+    // `timeout-minutes` alone is the wrong instrument here, and the reason is
+    // the conclusion it produces. A job killed by `timeout-minutes` reports
+    // `cancelled`, and `push-and-watch.sh` reds on any run conclusion that is
+    // not `success` — so a bound that only ever cancels could turn every run
+    // amber and block the next push, which is worse than the hang it replaces.
+    //
+    // A job that FAILS under `continue-on-error: true` is proven safe here:
+    // P133 records 45 consecutive runs where this job concluded `failure` and
+    // the release proceeded. So the inner bound must fire FIRST and exit
+    // non-zero, leaving `timeout-minutes` as a backstop for the case where the
+    // inner one does not fire at all.
+    const [name, job] = checkDepsJobs[0];
+    const step = job.steps.find((s) => typeof s?.run === 'string' && s.run.includes(TOOL));
+    assert.match(
+      step.run,
+      /alarm\s+(\d+)|\b(timeout|gtimeout)\s+\d+/,
+      `the ${TOOL} step in job \`${name}\` carries no inner bound:\n  ${step.run.trim()}`,
+    );
+    const inner = Number(/alarm\s+(\d+)/.exec(step.run)?.[1] ?? 0);
+    assert.ok(
+      inner > 0 && inner < job['timeout-minutes'] * 60,
+      `the inner bound (${inner}s) must fire before the job timeout ` +
+        `(${job['timeout-minutes'] * 60}s), or the job cancels instead of failing`,
+    );
+  });
+
   it('runs exactly what the package script declares, so the direct call cannot drift', () => {
     // The hook execs the binary rather than `npm run check-deps`, because
     // through npm the alarm reaches only npm and its `sh -c` grandchild is

@@ -36,8 +36,18 @@ jobs:
     # other job in the run had gone green, which held the whole run in flight —
     # and the push gate refuses a push while the latest master run is in flight,
     # with no override. So an advisory job that gates nothing blocked the next
-    # push anyway, by holding the run open. Without this bound it would have
+    # push anyway, by holding the run open. Without a bound it would have
     # inherited the 360-minute default.
+    #
+    # TWO bounds, in this order, and the order is the whole point. A job killed
+    # by `timeout-minutes` concludes `cancelled`, and `push-and-watch.sh` reds
+    # on any run conclusion that is not `success` — so relying on the job
+    # timeout alone could turn every run amber and block the next push, which is
+    # worse than the hang. A job that FAILS under `continue-on-error` is proven
+    # safe here: P133 records 45 consecutive runs concluding `failure` on this
+    # job while the release proceeded. So the STEP carries a 9-minute alarm that
+    # exits non-zero, and `timeout-minutes` is the backstop for the case where
+    # the alarm does not fire at all.
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -49,7 +59,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Check for mature dependency updates
-        run: npx dry-aged-deps --check
+        # The binary is exec'd directly rather than through `npx`, so the alarm's
+        # target is the node process doing the work. Through a wrapper the signal
+        # reaches only the wrapper and the real child is orphaned, which locally
+        # left a runaway still burning CPU 11 minutes after its bound fired. On a
+        # runner an orphan can also hold the step's log pipe open, which would
+        # defeat the bound entirely.
+        run: perl -e 'alarm 540; exec @ARGV' node_modules/.bin/dry-aged-deps --check
 
   # `engines.node` is `>=22` and scripts/check-version.js enforces that floor at
   # postinstall with a process.exit(1), so the bottom of that range is SUPPORTED
