@@ -1,5 +1,18 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.19
+
+### Patch Changes
+
+- 9a22040: Remove the SMS fault subscription, the variable holding its endpoint, the
+  publish role and the workflow wiring that carried the variable.
+
+  All four were added earlier the same day and the configuration was never
+  applied, so this removes infrastructure-as-code that never took effect. No
+  replacement is in place, and the managed channel has no fault notification.
+
+  No published interface, endpoint or behaviour changes.
+
 ## 1.0.18
 
 ### Patch Changes
