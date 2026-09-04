@@ -167,14 +167,27 @@ Waiting on the maintainer:
    address queries into retention.
 
    That leaves the provider's own mail-forwarding product as the only
-   credential-free send path, and whether it is enabled on this zone is
-   UNESTABLISHED: the maintainer token used for these readbacks is not scoped
-   for it, and both the zone setting and the verified-destination list returned
-   an authentication error. That is a limit of the observation, not a finding
-   about the account. If that product proves unavailable or unsuitable, the
-   chosen direction needs a credential after all, which is the thing it was
-   chosen to avoid, and that is a decision rather than an implementation
-   detail.
+   credential-free send path. **ESTABLISHED 2026-09-05, and it is available.**
+   The maintainer read the zone's Email Routing page directly: the product
+   exists on this zone but is unconfigured — zero destination addresses, zero
+   rules, DNS not configured. That is the important half, because a Worker's
+   send binding can reach a **verified destination address** with only Email
+   Routing configured, per the provider's own documentation, so no separate
+   sending onboarding and no stored credential is required. The installed
+   Terraform provider carries four resources — settings, address, rule and
+   catch-all — and an `email_routing_dns` data source, so the configuration is
+   declarable; the destination address's
+   verification needs one human action, the same shape as the existing
+   operations-topic email subscription.
+
+   Two things to carry into the build. Enabling it replaces the domain's
+   inbound mail records, which point at the registrar's default forwarding; the
+   maintainer confirmed on 2026-09-05 that the domain has never been used for
+   email, so those records are registration cruft and replacing them displaces
+   nothing. And the sender-address requirement when only Email Routing is
+   configured is NOT stated in the documentation — that is the one thing to
+   confirm empirically rather than assume, and it can only be confirmed once
+   routing is in place.
 
 2. Everything policy-gated: activation, any charge, authenticated customer
    journeys, webhook projection with real events, twice-peak load, rollback
