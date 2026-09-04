@@ -126,10 +126,10 @@ Waiting on the maintainer:
 
 1. Build and verify the alert coverage decided on 2026-09-03. The maintainer
    chose email and SMS, ADR-088 records the three-layer design, and JTBD-403
-   is the job it defends; both the job and the persona constraints behind it
-   were ratified the same day. What remains is ratifying ADR-088, implementing
-   the new health scopes and the SMS subscription, and exercising a failure
-   response. Nothing is built yet.
+   is the job it defends; the decision, the job and the persona constraints
+   behind it were all ratified that day. What remains is implementing the new
+   health scopes and the SMS subscription, whose endpoint must be a protected
+   variable, and exercising a failure response. Nothing is built yet.
 2. Everything policy-gated: activation, any charge, authenticated customer
    journeys, webhook projection with real events, twice-peak load, rollback
    rehearsal and exact-revision verification.
