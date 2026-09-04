@@ -958,12 +958,25 @@ resource "aws_iam_role_policy" "eb_opensearch_v4" {
 # nobody. ADR-035's "v3 drop-alarm armed" and the playbook's "trip-wire for a
 # silent index wipe" both assume notification; neither was getting it. That matters
 # most during exactly this migration: a ~15M-doc bulk load is long and unattended.
+# The NAME is historical and must not change: renaming forces replacement, and
+# replacement drops the CONFIRMED email subscription below, leaving the P035
+# silent-index-wipe trip-wire with no delivery path until someone clicks a link
+# in an email. Tags update in place, so they carry the dual purpose instead.
 resource "aws_sns_topic" "search_ops" {
   name = "addressr-search-ops"
+
+  # Replacement drops the CONFIRMED email subscription, and an SNS email
+  # subscription needs a human to click a link before it delivers again. So a
+  # replacement silently disarms the P035 trip-wire for as long as nobody
+  # notices. Refuse the apply rather than detect the rename afterwards.
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     ManagedBy = "terraform"
-    Component = "search"
-    Adr       = "041"
+    Component = "shared-ops"
+    Adr       = "041,088"
   }
 }
 
@@ -971,6 +984,32 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
   topic_arn = aws_sns_topic.search_ops.arn
   protocol  = "email"
   endpoint  = var.ops_alert_email
+}
+
+# ADR-088 layer 3: the SMS half of the notification adjunct. NOT A CONTROL —
+# it discharges no confirmation criterion and must never move the monitoring
+# gate to satisfied on its own strength. The controls are the request-path
+# refusal and the agent-read check.
+#
+# The filter is load-bearing, not tidiness. This topic is also the action target
+# for the SearchableDocuments alarms below, which wire BOTH alarm_actions and
+# ok_actions — so an unfiltered SMS subscription would text the maintainer on
+# every search-infrastructure transition in both directions. Worse, CloudWatch
+# would be a co-publisher whose payloads carry account id, region, metric values
+# and NewStateReason prose, which makes ADR-088 confirmation criterion 2 (no
+# customer identifier, usage total, provider message or credential in an SMS
+# body) unestablishable as a property of the channel.
+#
+# MessageAttributes scope is what makes this work: CloudWatch alarm publications
+# carry no message attributes at all, so they cannot match and never reach SMS.
+# A filter drops silently, so criterion 8's exercise must prove BOTH directions —
+# a stamped message arrives, an unstamped one does not.
+resource "aws_sns_topic_subscription" "managed_channel_sms" {
+  topic_arn           = aws_sns_topic.search_ops.arn
+  protocol            = "sms"
+  endpoint            = var.ops_alert_sms
+  filter_policy_scope = "MessageAttributes"
+  filter_policy       = jsonencode({ channel = ["managed"] })
 }
 
 # ADR 041 / P035 trip-wire: absolute floor for generation 4.

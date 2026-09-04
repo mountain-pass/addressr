@@ -17,6 +17,13 @@ missing or overdue pending reconciliation, and recorded reconciliation errors
 or mismatches. It uses the producer's window and permits one five-minute
 producer interval after a window becomes eligible. It never writes D1 or Stripe.
 
+The same rules bind the ADR-088 notification adjunct, by statement rather than
+by implication: an email or SMS raised for a managed-channel fault carries fixed
+codes, scope and observation time only. SMS is a new egress path out of the
+account, and it is bounded to managed-channel faults by a message-attribute
+filter so provider alarm payloads, which carry account and metric detail, never
+reach it. The adjunct is NOT a control and closes no launch gate on its own.
+
 Reports contain only fixed codes, scope and observation time. `observed` means
 the scoped read completed without finding those conditions. It does not mean
 healthy, populated, reconciled with Stripe or ready for activation. Empty and

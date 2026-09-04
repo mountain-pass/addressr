@@ -10,7 +10,9 @@ screens:
   - ".github/workflows/managed-channel-health.yml — the ten-minute schedule. Its liveness is the job's weakest link and is not self-evident: a workflow that stops firing is exactly what the stale-schedule check exists to catch, so this job depends on that one holding."
   - 'docs/MANAGED_CHANNEL_MONITORING.md — the contract for what the reader may and may not say. The no-disclosure rules there (fixed codes, scope and observation time only; no provider messages, customer identifiers, usage totals or credentials) bind every notification this job adds, not just the existing report.'
   - 'apps/addressr-deployment/cloudflare-worker/customer-channel.mjs — the acting half. Paused collection, a disallowed subscription status and a non-immediate payment method are each refused before origin forwarding or accounting. These conditions need no notification to be controlled; listing the file here records which faults are already handled in-flow so the notification surface is not built twice.'
-  - 'apps/addressr-deployment/main.tf — the notification topic and its subscriptions. The topic predates this job (it was built for search operations) and gaining a second purpose is a deliberate reuse, not drift.'
+  - 'apps/addressr-deployment/main.tf — the notification topic and its subscriptions, including the ADR-088 SMS subscription and the message-attribute filter that bounds it to managed-channel faults. The topic predates this job (it was built for search operations) and gaining a second purpose is a deliberate reuse, not drift; the filter is what makes the reuse safe, because the same topic is the action target for the search alarms on both trip and recovery.'
+  - 'apps/addressr-deployment/vars.tf — the protected SMS endpoint variable. It deliberately carries no default, unlike its email sibling, because a default would put a personal phone number in a public repository.'
+  - 'test/js/__tests__/managed-channel-sms-subscription.test.mjs — the declaration-level guard. It proves the variable has no default, that no phone-number-shaped literal is anywhere in the deployment tree (by pattern, so a different number also fires), that the filter and its scope are declared, and that the topic name is unchanged. Membership is by annotation, following the release-job convention. It discharges the no-number-in-the-repo criterion and NOTHING else — not the payload-disclosure criterion, and not the both-directions delivery exercise.'
   - 'docs/decisions/088-managed-channel-faults-act-in-flow-and-notify-as-an-adjunct.proposed.md — the decision that implements this job, recorded and ratified 2026-09-03. It is the only record of two constraints this job depends on and does not itself state: what a notification payload may contain, and that Worker observability stays disabled so end-user address queries do not enter provider retention. A reader who acts on this job without reading that decision can satisfy the outcomes while breaking both.'
 ---
 
@@ -51,3 +53,13 @@ The maintainer chose on 2026-09-03 to be notified by email and SMS. That choice 
 An alert that terminates in the maintainer's attention is, by this project's own rule, not a control: it discharges nothing on its own and must not be counted as coverage in a risk assessment, a confirmation criterion, or a ticket closure. What it does buy is real and worth having — it shortens the time between a fault occurring and a human knowing, which the agent-read path alone does not do when no session runs for a day.
 
 So the notification is an **adjunct**. The controls for this job remain the refusal in the request path for conditions that have an in-flow moment, and the agent-read check for those that do not. If a future reader finds this job's outcomes marked satisfied on the strength of an email policy alone, that is the error this paragraph exists to prevent.
+
+Three further bounds were measured on 2026-09-04 and belong here, because a
+notification path that exists and is silent is the most misreadable state this
+job can be in. The account is in the provider's SMS sandbox, so SMS reaches
+**only destinations verified in advance**; the maintainer's number was verified
+that day and a real message arrived, which is the only reason the channel is
+known to work at all. The monthly SMS spend cap is one US dollar, which suits a
+low-volume fault channel and nothing more. And a second recipient is not a
+configuration change but a prerequisite: it requires leaving the sandbox, which
+is a provider request with lead time.
