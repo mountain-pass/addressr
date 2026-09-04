@@ -11,9 +11,14 @@ set -e
 # non-blocking under `set -e`.
 #
 # The BOUND is what lets `|| echo` do its job. On 2026-09-04 this check ran past
-# 35 minutes with no output and no exit, so there was no status for `|| echo` to
-# act on, the push never reached the changeset guard below, and the process had
-# to be killed by hand. `perl -e 'alarm N; exec @ARGV'` rather than `timeout(1)`,
+# 35 minutes locally with no output and no exit, so there was no status for
+# `|| echo` to act on, the push never reached the changeset guard below, and the
+# process had to be killed by hand. Against CI the picture is mixed rather than
+# clean: five runs were measured to conclusion, and one earlier run was watched
+# for 35 minutes and never observed to answer. Of the five, the SHAPE matters
+# more than the extremes — two finished inside a minute and three ran past
+# twenty-two. So the long tail is the common case, the fault is variance rather
+# than certainly a hang, and either way it is longer than a push should wait. `perl -e 'alarm N; exec @ARGV'` rather than `timeout(1)`,
 # which is GNU coreutils and is not on a stock macOS; perl ships on both, and an
 # alarm set before `exec` survives it, so the wrapper costs no extra process.
 # SIGALRM exits non-zero, which is exactly the survivable failure this line was

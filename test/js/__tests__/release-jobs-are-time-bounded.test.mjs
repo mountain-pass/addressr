@@ -1,19 +1,32 @@
 // @jtbd JTBD-400 (Ship Releases Reliably From Trunk)
 //
 // EVERY job reachable from the release workflow declares `timeout-minutes`. Not
-// just the ones that have hung — the failure mode is a property of being
+// just the ones that have stalled — the failure mode is a property of being
 // unbounded rather than of any particular job's code.
 //
-// The mechanism, demonstrated twice on 2026-09-04. A job that hangs holds the
-// whole RUN `in_progress`. The push gate then refuses the next push while the
-// latest run on the default branch is in flight, with no override. So a single
-// hung job blocks every subsequent push, on a run that cannot settle because of
-// that job, whether or not the job gates anything. The advisory dependency
-// check did it first; the release job did it on runs 33856486690 and
-// 33862883579, sitting past an hour on its publish step AFTER it had already
-// created the release pull request. Neither could fail; both could hang; both
-// blocked the same thing. Unbounded, a hang runs to GitHub's 360-minute
-// default: six hours of blocked pushes per incident.
+// The mechanism, demonstrated twice on 2026-09-04. A job that does not FINISH
+// holds the whole RUN `in_progress`. The push gate then refuses the next push
+// while the latest run on the default branch is in flight, with no override. So
+// a single unfinished job blocks every subsequent push, on a run that cannot
+// settle because of that job, whether or not the job gates anything.
+//
+// The advisory dependency check did it first, and "hang" is too confident a word
+// for that one. Five earlier runs were measured to conclusion, in 35s, 40s, 22m,
+// 52m and 65m, and 45 of 45 runs concluded `failure`, so it does answer and it
+// does fail. But run 33856486690's `check-deps` was watched for 35 minutes and
+// never observed to answer, and it is NOT among the five — so CI has both, and
+// the fault is best named as a time to answer ranging over two orders of
+// magnitude rather than as a hang. Said here rather than left to the sibling
+// test, because the next sentence cites that same run for a different reason,
+// and a reader would otherwise meet the counter-example without the claim it
+// bears on. The release job stalled on runs 33856486690 and 33862883579, sitting
+// past an hour on its publish step AFTER it had already created the release pull
+// request; its cause is unknown and is not claimed here.
+//
+// Different faults, one consequence, and the consequence is what an unbounded
+// job costs: neither `continue-on-error` nor a trailing `|| echo` can act on a
+// step that has not finished, and unbounded the wait runs to GitHub's
+// 360-minute default — six hours of blocked pushes per incident.
 //
 // THREE properties, and the second and third exist because the first version of
 // this file had both defects.
@@ -106,7 +119,7 @@ describe('every job reachable from the release workflow is time-bounded', () => 
       assert.ok(
         Number.isInteger(bound),
         `job \`${name}\` in ${file} declares no \`timeout-minutes\`, so it inherits the ` +
-          `360-minute default. A hang there holds the run in flight, and the push gate ` +
+          `360-minute default. A stall there holds the run in flight, and the push gate ` +
           `refuses to push over a run in flight.`,
       );
       const window = WINDOW[name];
