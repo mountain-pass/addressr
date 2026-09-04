@@ -254,3 +254,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-26 **P138 known error** — source, built-output and browser enforcement gaps have documented root causes and deployed fixes
 
 > Last reviewed: 2026-08-26 **P138 verification pending** — commit `01c9b802` is deployed; source, built-output, Chromium and focused live checks pass
+
+## 2026-09-04
+
+> Last reviewed: 2026-08-26 **P138 closed after production verification** — source, built-output and Chromium enforcement is deployed at `01c9b802`, with focused live checks passing

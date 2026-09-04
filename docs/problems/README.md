@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-08-26 **P138 closed after production verification** — source, built-output and Chromium enforcement is deployed at `01c9b802`, with focused live checks passing
+> Last reviewed: 2026-09-04 **README reconciled** — 2 drift entries corrected: P142, P143. Both tickets were created and committed today; their WSJF Rankings rows were absent.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -14,6 +14,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 12.0 | P101 | Scheduled workflow's loud failure has no reader                                      | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P102 | No-amendment directive conflicts with DECISION-MANAGEMENT.md                         | High (12)    | Open          | S      | 2026-08-18 | internal |
 | 12.0 | P116 | Nine workflow pins imply coverage they cannot provide, and say nothing about it      | High (12)    | Open          | S      | 2026-08-20 | internal |
+| 12.0 | P142 | The credibility axis of the external-comms gate has no policy, so it cannot fail     | High (12)    | Open          | S      | 2026-09-04 | internal |
 | 10.0 | P091 | sla_range_expanded indexed at the wrong path, never searchable                       | High (10)    | Open          | S      | 2026-08-08 | internal |
 | 10.0 | P118 | Every risk report is a single newline, so the audit trail is empty                   | High (10)    | Open          | S      | 2026-08-21 | internal |
 | 9.0  | P032 | No CI perf regression detection — k6 stress profile on-demand only                   | Medium (9)   | Known Error   | M      | 2026-04-27 | internal |
@@ -57,6 +58,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P089 | No file-length lint rule; two source files past 1000 lines                           | Low (4)      | Open          | S      | 2026-08-07 | internal |
 | 4.0  | P115 | Nothing counts compendium entries per ADR; a duplicate passes every check            | Low (4)      | Open          | S      | 2026-08-20 | internal |
 | 4.0  | P128 | Cloudflare rewrites the Enterprise address at the edge; the build test cannot see it | Low (4)      | Open          | S      | 2026-08-23 | internal |
+| 4.0  | P143 | Two band tables disagree about where Low ends, and the boundary is the appetite      | Low (4)      | Open          | S      | 2026-09-04 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap                      | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented                       | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set                      | Medium (8)   | Open          | M      | 2026-08-02 | internal |
