@@ -25,6 +25,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { load } from 'js-yaml';
 
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+
 const HOOK_PATH = '.husky/pre-push';
 const WORKFLOW_PATH = '.github/workflows/release.yml';
 const TOOL = 'dry-aged-deps';
@@ -82,6 +84,26 @@ describe('the dependency-freshness check is time-bounded at every site that runs
       job['timeout-minutes'] <= 15,
       `job \`${name}\` allows ${job['timeout-minutes']} minutes. A freshness check that has not ` +
         `answered within 15 has hung; a bound that generous does not unblock the run it is protecting.`,
+    );
+  });
+
+  it('runs exactly what the package script declares, so the direct call cannot drift', () => {
+    // The hook execs the binary rather than `npm run check-deps`, because
+    // through npm the alarm reaches only npm and its `sh -c` grandchild is
+    // reparented to init and keeps running. Measured 2026-09-04: an orphan was
+    // still burning CPU 11 minutes after its bound fired, and every push would
+    // leave another. Exec'd directly the alarm's target IS the node process.
+    //
+    // The cost of bypassing npm is drift: `package.json` could change the
+    // script and the hook would go on running the old command, silently. This
+    // is what stops that.
+    const declared = pkg.scripts?.['check-deps'];
+    assert.ok(declared, 'package.json declares no check-deps script — has it been renamed?');
+    assert.ok(
+      hookInvocation.includes(declared) ||
+        hookInvocation.includes(declared.replace(TOOL, `node_modules/.bin/${TOOL}`)),
+      `the hook runs a different command from the one package.json declares.\n` +
+        `  package.json: ${declared}\n  hook: ${hookInvocation.trim()}`,
     );
   });
 

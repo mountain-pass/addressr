@@ -84,9 +84,22 @@ describe('deploy guard — the hook', () => {
     assert.match(hookExec, /^\s*set -e\s*$/m, 'set -e must be present');
   });
 
-  it('keeps check-deps advisory', () => {
+  it('keeps the dependency check advisory', () => {
     // Mature dependency updates are information, not a reason to refuse a push.
-    assert.match(hookExec, /check-deps \|\| echo/, 'check-deps must stay non-blocking');
+    //
+    // Keyed on the SHAPE, not on the command. This assertion previously matched
+    // the literal `check-deps || echo` and went red on 2026-09-04 when the
+    // invocation changed to exec the binary directly under a bound — a change
+    // that did not weaken the property it guards at all. A test that reds on a
+    // faithful refactor of the thing it protects trains people to edit the test,
+    // which is how the property gets lost. What matters is that whatever line
+    // runs the dependency check contains an `|| ` so its failure is survivable
+    // under `set -e`, and that the changeset guard below it still runs.
+    const line = hookExec
+      .split('\n')
+      .find((l) => !l.trimStart().startsWith('#') && /check-deps|dry-aged-deps/.test(l));
+    assert.ok(line, 'the hook runs no dependency check — has it moved?');
+    assert.match(line, /\|\|/, `the dependency check must stay non-blocking: ${line.trim()}`);
   });
 
   it('scopes to master, which is what keeps the sanctioned branch push green', () => {
@@ -173,9 +186,14 @@ describe('deploy guard — the hook actually blocks a real push', () => {
     // pinned on its own below rather than left as a side effect of setup.
     git(dir, 'push', '-q', 'origin', 'master');
 
-    // The real hook, copied verbatim — not a rewrite. `npm run check-deps` is
-    // stubbed to `true` in the manifest above so this exercises the guard rather
-    // than the repo's dependency tooling.
+    // The real hook, copied verbatim — not a rewrite. The dependency check is
+    // absent from this fixture, so it exits non-zero and the hook's `|| echo`
+    // swallows it, which is exactly the survivable-failure path and leaves the
+    // guard below to be exercised. The `check-deps` script stubbed in the
+    // manifest above is now vestigial: since 2026-09-04 the hook execs the
+    // binary directly rather than going through the package manager, so the
+    // script is not consulted. Kept because it costs nothing and documents the
+    // intent if the invocation ever routes back through the manifest.
     const hookPath = path.join(dir, '.git', 'hooks', 'pre-push');
     writeFileSync(hookPath, `#!/usr/bin/env sh\n${hookRaw}`);
     chmodSync(hookPath, 0o755);

@@ -18,7 +18,17 @@ set -e
 # alarm set before `exec` survives it, so the wrapper costs no extra process.
 # SIGALRM exits non-zero, which is exactly the survivable failure this line was
 # always written to expect.
-perl -e 'alarm 300; exec @ARGV' npm run check-deps || echo "check-deps: no answer within 5 minutes, or mature updates available (advisory, not blocking push)"
+#
+# The BINARY is exec'd directly rather than `npm run check-deps`, and that is
+# load-bearing rather than a shortcut. Through npm the alarm reaches only npm,
+# whose `sh -c` grandchild is reparented to init and keeps running: measured
+# 2026-09-04, an orphan was still burning CPU 11 minutes after its bound fired,
+# and every push would leave another. Exec'd directly the alarm's target IS the
+# node process, so nothing survives it — measured the same way, with no orphan
+# left behind. `check-deps-is-time-bounded.test.mjs` asserts this line runs
+# exactly what `package.json` declares for that script, so the direct call
+# cannot drift from it.
+perl -e 'alarm 300; exec @ARGV' node_modules/.bin/dry-aged-deps --check || echo "check-deps: no answer within 5 minutes, or mature updates available (advisory, not blocking push)"
 
 # ADR-045 criterion 5 — the changeset guard.
 #
