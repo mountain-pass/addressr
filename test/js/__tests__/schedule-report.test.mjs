@@ -87,6 +87,53 @@ describe('session-start schedule reporter (P101 / ADR-051)', () => {
     assert.match(text, /update-sa\.yml/);
   });
 
+  it('separates a carrier with no run history from a workflow that could not be read', () => {
+    // Both are "not judged", and folding them together goes wrong in whichever
+    // direction the fold runs. Printing a Worker cron under "could not be read
+    // — this is not a pass" fires that line at every session start forever,
+    // which is how a real one gets ignored; suppressing an unreadable WORKFLOW
+    // is the false-green this reporter was written to refuse.
+    //
+    // The discriminator is `kind`, and `schedule-refresh.mjs` now stamps it on
+    // every finding. Without this case the only guard feeds a shape the
+    // producer no longer emits, so narrowing the filter — to `kind ===
+    // undefined`, say — would silence every real unreadable workflow with the
+    // suite green.
+    const lines = report({
+      stamp: {
+        checkedAt: daysAgo(1),
+        code: 2,
+        findings: [
+          {
+            workflow: 'update-sa.yml',
+            kind: 'workflow',
+            unverifiable: true,
+            reason: 'could not read run history',
+          },
+          {
+            workflow: 'meter_delivery',
+            kind: 'worker-cron',
+            unverifiable: true,
+            reason: 'no scheduled-run history is readable',
+          },
+        ],
+      },
+      now: NOW,
+    });
+    const text = lines.join('\n');
+
+    const notAPass = lines.filter((l) => /not a pass/i.test(l));
+    assert.equal(notAPass.length, 1, `expected exactly one not-a-pass heading:\n${text}`);
+    assert.match(notAPass[0], /1 scheduled workflow/, 'the Worker cron was counted as a fault');
+
+    // Both carriers are still NAMED — separating them must not lose either.
+    assert.match(text, /update-sa\.yml/);
+    assert.match(text, /meter_delivery/);
+
+    // And the cron sits under its own heading, saying what is true of it.
+    assert.match(text, /no readable run history and are not judged here/);
+  });
+
   it('prints a determined stale finding even when something else was unreadable', () => {
     // Severity is for a caller; the printed findings are the union. Keying the
     // output off the verdict code would hide a known-stale workflow behind an

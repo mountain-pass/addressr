@@ -2,8 +2,8 @@
 // Is every scheduled workflow still actually firing?
 //
 // WHY THIS IS NOT THE SAME AS A FAILURE NOTIFICATION. A failure notification
-// cannot fire for a workflow that never runs. Nine of this repo's ten
-// scheduled workflows run QUARTERLY (21st and 28th of Feb/May/Aug/Nov), so
+// cannot fire for a workflow that never runs. Most of this repo's scheduled
+// workflows run QUARTERLY (21st and 28th of Feb/May/Aug/Nov), so
 // "stopped running entirely" has a blind window of up to three months — and
 // GitHub disables scheduled workflows outright after 60 days of repository
 // inactivity, which is exactly the state a quiet quarter produces. For most of
@@ -18,10 +18,13 @@
 // siblings. A staleness check that takes the newest run of any kind is green
 // over exactly the case it exists to catch.
 //
-// This script is deliberately WIRED TO NOTHING. Which signal a stale schedule
-// should red is a decision about what someone actually reads, and that is not
-// mine to make (P101 task 2). The mechanism exists and is tested; the routing
-// is still open.
+// WAS deliberately wired to nothing, and no longer is. The routing question
+// P101 task 2 left open — which signal a stale schedule should red — was
+// answered by wiring it to a session-start report rather than to a gate:
+// `check-schedules` runs it, `schedule-refresh.mjs` stamps the result, and
+// `schedule-report.mjs` puts findings in front of an agent at session start.
+// The header said otherwise long after it stopped being true, which is why it
+// is corrected here rather than quietly deleted.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -89,10 +92,12 @@ export const MAX_AGE_DAYS = { daily: 3, weekly: 21, monthly: 70, quarterly: 110 
 // same off-by-one in prose. schedule-verdict.test.mjs pins both sides.
 //
 // What it CANNOT do, stated so the guarantee is not overread: it detects the
-// corpus COLLAPSING, not the corpus ERODING. With ten workflows a floor of five
-// tolerates losing half of them silently. That is the deliberate trade against
-// a hardcoded expected list, which would not cover an eleventh workflow on the
-// day it lands (P101 task 3).
+// corpus COLLAPSING, not the corpus ERODING. The floor is well under the
+// corpus size, so losing several carriers silently would still clear it. That
+// is the deliberate trade against a hardcoded expected list, which would not
+// cover a new carrier on the day it lands (P101 task 3). Stated without a
+// count on purpose: the corpus has grown twice since this was written and the
+// number went stale both times.
 export const WORKFLOW_FLOOR = 5;
 
 // How long a successful verification stays good, DERIVED rather than chosen.
@@ -190,15 +195,86 @@ export function scheduledWorkflows(dir) {
   return out;
 }
 
+/**
+ * Every scheduled CARRIER in the repository, from both places one can be
+ * declared: a GitHub workflow with a `schedule:` trigger, and a Cloudflare
+ * Worker cron trigger declared in Terraform.
+ *
+ * The second exists because ADR-089 (proposed) retargets confirmation
+ * criterion 7: IF the managed-channel health check moves off its CI workflow
+ * and onto the Worker's scheduled handler, its carrier must sit inside a
+ * liveness corpus. That replacement is NOT built — `managed-channel-health.yml`
+ * is still the carrier and is still in the corpus. But a corpus reading only
+ * `.github/workflows` could not see a Worker cron at all, so widening it is the
+ * precondition rather than a consequence, and it brings today's only Worker
+ * cron, `meter_delivery`, in with it.
+ *
+ * ENUMERATION IS NOT YET WATCHING, and the distinction matters. `run()` below
+ * asks GitHub when each workflow last fired on a `schedule` event; there is no
+ * equivalent question for a Worker cron, because Cloudflare is not `gh`. So a
+ * worker-cron carrier appears here and is not yet judged for staleness. The
+ * freshness half needs the handler to record its own last successful run
+ * somewhere readable. Until then criterion 7 is open, and saying otherwise
+ * because the carrier is merely visible would be the exact substitution of
+ * presence for coverage that ADR-051 rejects.
+ */
+export function scheduledCarriers({
+  workflowDir = '.github/workflows',
+  terraformDirs = ['apps/addressr-deployment/modules/cloudflare-worker'],
+} = {}) {
+  const carriers = scheduledWorkflows(workflowDir).map((w) => ({
+    kind: 'workflow',
+    name: w.workflow,
+    cron: w.cron,
+    watched: true,
+  }));
+
+  for (const dir of terraformDirs) {
+    let files;
+    try {
+      files = readdirSync(dir).filter((f) => f.endsWith('.tf'));
+    } catch {
+      continue;
+    }
+    for (const file of files) {
+      const text = readFileSync(path.join(dir, file), 'utf8');
+      // One entry per cron_trigger resource, so a second trigger cannot hide
+      // behind the first.
+      for (const m of text.matchAll(
+        /resource\s+"cloudflare_workers_cron_trigger"\s+"([a-z0-9_]+)"\s*\{([\s\S]*?)\n\}/g,
+      )) {
+        carriers.push({
+          kind: 'worker-cron',
+          name: m[1],
+          cron: m[2].match(/cron\s*=\s*"([^"]+)"/)?.[1],
+          watched: false,
+        });
+      }
+    }
+  }
+  return carriers;
+}
+
 // --- CLI ------------------------------------------------------------------
 // One line per workflow, exit 1 if any is stale. The `gh` call is here rather
 // than in the exported functions above so the decision logic stays testable
 // without a network.
 export async function run({ dir = '.github/workflows', now = new Date() } = {}) {
   const { execFileSync } = await import('node:child_process');
-  const workflows = scheduledWorkflows(dir);
+  const carriers = scheduledCarriers({ workflowDir: dir });
   const findings = [];
-  for (const w of workflows) {
+  for (const w of carriers) {
+    // A Worker cron has no `gh` question. It is reported UNVERIFIABLE rather
+    // than omitted or called ok: omitting it would put the carrier back outside
+    // the corpus, and a green line for something nothing watched is worse than
+    // an honest unknown. This is the state ADR-089 criterion 7 is open on.
+    if (w.kind === 'worker-cron') {
+      findings.push({
+        workflow: w.name, kind: w.kind, unverifiable: true, stale: false,
+        reason: `Worker cron ${w.cron ?? '(no cadence)'} — no scheduled-run history is readable, so freshness is unknown`,
+      });
+      continue;
+    }
     let runs = [];
     try {
       runs = JSON.parse(
@@ -209,23 +285,43 @@ export async function run({ dir = '.github/workflows', now = new Date() } = {}) 
           // manual runs evict the scheduled evidence and a healthy workflow
           // reports as having never fired. That fails loud rather than silent,
           // but a flapping alarm is how the real one gets ignored (P101).
-          ['run', 'list', '--workflow', w.workflow, '--event', 'schedule',
+          ['run', 'list', '--workflow', w.name, '--event', 'schedule',
             '--limit', '30', '--json', 'event,createdAt'],
           { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
         ),
       );
     } catch (error) {
       findings.push({
-        workflow: w.workflow, unverifiable: true, stale: false,
+        workflow: w.name, kind: w.kind, unverifiable: true, stale: false,
         reason: `could not read run history (${error.message.split('\n', 1)[0]})`,
       });
       continue;
     }
-    findings.push(assess({ ...w, lastScheduledRun: lastScheduledRunFrom(runs), now }));
+    findings.push({
+      kind: w.kind,
+      ...assess({ workflow: w.name, cron: w.cron, lastScheduledRun: lastScheduledRunFrom(runs), now }),
+    });
   }
-  const stale = findings.filter((f) => f.stale).length;
-  const unverifiable = findings.filter((f) => f.unverifiable).length;
-  return { findings, verdict: verdict({ total: workflows.length, stale, unverifiable }) };
+  // Worker crons are REPORTED but excluded from the verdict arithmetic. They
+  // cannot be judged — Cloudflare is not `gh` — so counting them as
+  // unverifiable would pin the exit code at 2 forever, and a check that always
+  // says "something could not be read" is the flapping alarm this file's header
+  // warns about: it would devalue the verdict for every workflow that CAN be
+  // judged. They stay in `findings`, so a reader still sees the carrier and its
+  // unknown state, and the summary names the exclusion rather than hiding it.
+  // When the handler records its own last run, they become judgeable and this
+  // exclusion goes.
+  const judged = findings.filter((f) => f.kind !== 'worker-cron');
+  const excluded = findings.length - judged.length;
+  const stale = judged.filter((f) => f.stale).length;
+  const unverifiable = judged.filter((f) => f.unverifiable).length;
+  const v = verdict({ total: judged.length, stale, unverifiable });
+  return {
+    findings,
+    verdict: excluded
+      ? { ...v, why: `${v.why}; ${excluded} Worker cron(s) reported but not counted — no run history is readable for them` }
+      : v,
+  };
 }
 
 async function main() {

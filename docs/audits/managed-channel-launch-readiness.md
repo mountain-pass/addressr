@@ -222,6 +222,36 @@ Waiting on the maintainer:
    goes in the same change. Clerk's mail records sit on a subdomain and do not
    collide.
 
+   **Criterion 7's enumeration half is done; its watching half is not.** ADR-089
+   requires the replacement's carrier to sit inside a liveness corpus, and the
+   staleness check reads only `.github/workflows`, so a Worker cron declared in
+   Terraform was invisible to it. `scheduledCarriers()` now enumerates both
+   kinds and `liveness-corpus-covers-worker-cron.test.mjs` asserts it sees every
+   cron trigger the Terraform declares, with its cadence, mutation-proved three
+   ways.
+
+   The wired check reads it, not just the test. `run()` — what `check-schedules`
+   and the refresh script call — now builds from the widened corpus, so
+   `meter_delivery` appears in its output as UNKNOWN with its cadence and the
+   reason its freshness cannot be read. An enumeration whose only reader was its
+   own test would have been a check with no reader, which is the defect this work
+   exists to close.
+
+   It is excluded from the verdict arithmetic, and that exclusion is named in the
+   summary rather than silent. Counting it as unverifiable pinned the exit code
+   at 2 permanently, which was caught by running the check rather than by any
+   test: a check that always reports something unreadable is the flapping alarm
+   that gets ignored, and it would have devalued the verdict for the eleven
+   workflows that can be judged. Reported, not counted, until it is judgeable.
+
+   That makes the carrier VISIBLE, not WATCHED, and the distinction is the whole
+   point of the criterion. The staleness check's other half asks GitHub when a
+   workflow last fired on a schedule event; there is no equivalent question for a
+   Worker cron, because Cloudflare is not `gh`. Watching it needs the replacement
+   handler to record its own last successful run somewhere readable, which is
+   apply-two work. Criterion 7 stays open. Treating enumeration as coverage would
+   be the substitution of presence for a control that ADR-051 exists to reject.
+
    **Two obligations after apply 1.** Read back which DNS records now exist and
    record it here. And re-read Worker observability and logpush: ADR-088
    criterion 6 is a readback criterion, apply 2 updates the Worker script, and a

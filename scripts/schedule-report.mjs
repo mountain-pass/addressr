@@ -5,8 +5,9 @@
 // deliberately does not say.
 //
 // THIS DOES NO NETWORK. It reads a stamp written by a previous run and returns.
-// The real check takes ~11s (measured 2026-08-20: ten sequential `gh run list`
-// calls), which is not a cost worth paying at every session start for a signal
+// The real check takes ~11s (measured 2026-08-20, one `gh run list` call per
+// scheduled workflow), which is not a cost worth paying at every session start
+// for a signal
 // whose blind window is 60-110 days. So the reporter reads the LAST result and
 // spawns the refresh detached; a finding surfaces at the next session start,
 // which loses nothing against a three-month window.
@@ -75,7 +76,17 @@ export function report({ stamp, now }) {
   // Findings are printed as the UNION and independently of the verdict code, so
   // a determined stale workflow is never suppressed behind an unreadable one.
   const stale = (stamp.findings ?? []).filter((f) => f.stale);
-  const unknown = (stamp.findings ?? []).filter((f) => f.unverifiable);
+  // Worker crons are separated from the unreadable ones. Both are "not judged",
+  // but an unreadable WORKFLOW is a fault to chase, while a Worker cron has no
+  // run history to read by construction — there is no `gh` question for a
+  // Cloudflare schedule. Folding the second into the first would print "could
+  // not be read — this is not a pass" at every session start, forever, which is
+  // the flapping alarm that gets a real one ignored. The carrier is still shown,
+  // under its own heading, saying what is true of it.
+  const unwatchable = (stamp.findings ?? []).filter((f) => f.kind === 'worker-cron');
+  const unknown = (stamp.findings ?? []).filter(
+    (f) => f.unverifiable && f.kind !== 'worker-cron',
+  );
   if (stale.length > 0) {
     lines.push(`${stale.length} scheduled workflow(s) have STOPPED FIRING:`);
     for (const f of stale) lines.push(`  ${f.workflow} — ${f.reason}`);
@@ -86,6 +97,12 @@ export function report({ stamp, now }) {
   if (unknown.length > 0) {
     lines.push(`${unknown.length} scheduled workflow(s) could not be read — this is not a pass:`);
     for (const f of unknown) lines.push(`  ${f.workflow} — ${f.reason}`);
+  }
+  if (unwatchable.length > 0) {
+    lines.push(
+      `${unwatchable.length} carrier(s) have no readable run history and are not judged here:`,
+    );
+    for (const f of unwatchable) lines.push(`  ${f.workflow} — ${f.reason}`);
   }
   // The verification's OWN staleness, which is a different thing from a stale
   // schedule and is deliberately worded differently so the two are not confused
