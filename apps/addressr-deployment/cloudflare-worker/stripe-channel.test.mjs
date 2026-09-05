@@ -220,6 +220,136 @@ describe('Stripe projection and metering', () => {
     assert.doesNotMatch(database.batchStatements[2].sql, /WHERE excluded/);
   });
 
+  // ADR-087 confirmation criterion 2 — signed-webhook behavioural cover for
+  // duplicate, reordered and recovery-exhausted events. Recovery under the
+  // shared Stripe account's custom schedule ends in cancellation, not `unpaid`,
+  // so the terminal event is `customer.subscription.deleted`.
+  //
+  // Reordering was already covered by "converges an older webhook to the
+  // object-current subscription state" above, which pins the deliberate absence
+  // of a recency guard on the projected columns: the handler re-reads the
+  // subscription, so a late event still writes CURRENT state. The case below
+  // adds only what a single delivery cannot show — that the recorded watermark
+  // does not regress across two of them.
+
+  it('projects a replayed signed event once and reports it as a duplicate', async () => {
+    // Deduplication rests on the stripe_events primary key, not on a read
+    // before the write, so a replay must be refused by the constraint and
+    // reported rather than projected a second time.
+    const database = stripeDatabase({ enforceEventUniqueness: true });
+    const stripe = subscriptionWebhookStripe(subscription());
+
+    const first = await handleStripeWebhook(
+      webhookRequest(),
+      environment(database),
+      stripe,
+    );
+    const second = await handleStripeWebhook(
+      webhookRequest(),
+      environment(database),
+      stripe,
+    );
+
+    assert.equal(first.status, 200);
+    assert.deepEqual(await first.json(), { received: true, duplicate: false });
+    assert.equal(second.status, 200);
+    assert.deepEqual(await second.json(), { received: true, duplicate: true });
+    assert.equal(
+      database.batches.length,
+      1,
+      'the replay wrote a second projection instead of being deduplicated',
+    );
+  });
+
+  it('projects the recovery-exhausted subscription as canceled', async () => {
+    // The shared account cancels when its three custom retries are exhausted,
+    // and Stripe reports that as `customer.subscription.deleted`. `canceled` is
+    // terminal under ADR-075, so this is the state the request path denies on.
+    const current = subscription();
+    current.status = 'canceled';
+    const database = stripeDatabase();
+    const stripe = {
+      webhooks: {
+        async constructEventAsync() {
+          return {
+            id: 'evt_recovery_exhausted',
+            type: 'customer.subscription.deleted',
+            created: 1_787_900_000,
+            data: { object: { id: current.id } },
+          };
+        },
+      },
+      subscriptions: {
+        async retrieve() {
+          return current;
+        },
+      },
+    };
+
+    const response = await handleStripeWebhook(
+      webhookRequest(),
+      environment(database),
+      stripe,
+    );
+
+    assert.equal(response.status, 200);
+    const [events, , entitlements] = database.batchStatements;
+    assert.equal(
+      events.values[1],
+      'customer.subscription.deleted',
+      'the terminal event type was not recorded',
+    );
+    assert.equal(
+      entitlements.values[3],
+      'canceled',
+      'a deleted subscription did not project the terminal state',
+    );
+    // Not `unpaid`: the superseded reading of the account policy would have
+    // left the relationship recoverable, and it does not.
+    assert.notEqual(entitlements.values[3], 'unpaid');
+  });
+
+  it('does not let a late event roll the recorded watermark backwards', async () => {
+    // Two deliveries, newest first. The projected columns are re-read from
+    // Stripe either way; the watermark is the one value a late event could
+    // regress, and MAX() is what stops it.
+    const current = subscription();
+    const database = stripeDatabase();
+    const deliver = (id, created) =>
+      handleStripeWebhook(webhookRequest(), environment(database), {
+        webhooks: {
+          async constructEventAsync() {
+            return {
+              id,
+              type: 'customer.subscription.updated',
+              created,
+              data: { object: { id: current.id } },
+            };
+          },
+        },
+        subscriptions: {
+          async retrieve() {
+            return current;
+          },
+        },
+      });
+
+    await deliver('evt_newer', 1_787_900_000);
+    await deliver('evt_older', 1_787_800_000);
+
+    const entitlements = database.batchStatements[2];
+    assert.equal(
+      entitlements.values[10],
+      1_787_800_000,
+      'the late event bound something other than its own timestamp',
+    );
+    assert.match(
+      entitlements.sql,
+      /stripe_event_created = MAX\(entitlements\.stripe_event_created, excluded\.stripe_event_created\)/,
+      'the late event can lower the recorded watermark',
+    );
+  });
+
   it('streams each usage record once with its stable identifier', async () => {
     const database = stripeDatabase({
       pending: [
@@ -634,8 +764,13 @@ function subscriptionWebhookStripe(current) {
   };
 }
 
-function stripeDatabase({ pending = [] } = {}) {
+function stripeDatabase({ pending = [], enforceEventUniqueness = false } = {}) {
+  // `enforceEventUniqueness` is opt-in because the deduplication path is the
+  // only caller that depends on it, and switching it on globally would change
+  // what every other case in this file exercises.
+  const eventIds = new Set();
   const database = {
+    batches: [],
     batchStatements: undefined,
     stripeCustomerId: undefined,
     checkoutAttempt: undefined,
@@ -711,7 +846,24 @@ function stripeDatabase({ pending = [] } = {}) {
       };
     },
     async batch(statements) {
+      if (enforceEventUniqueness) {
+        const insert = statements.find((statement) =>
+          statement.sql?.includes('INSERT INTO stripe_events'),
+        );
+        // Reconciliation rows upsert by design; only a plain insert collides.
+        const eventId = insert?.values?.[0];
+        if (eventId && !insert.sql.includes('ON CONFLICT')) {
+          if (eventIds.has(eventId)) {
+            // What D1 raises, in the shape the handler matches on.
+            throw new Error(
+              'D1_ERROR: UNIQUE constraint failed: stripe_events.id',
+            );
+          }
+          eventIds.add(eventId);
+        }
+      }
       database.batchStatements = statements;
+      database.batches.push(statements);
       return statements.map(() => ({ meta: { changes: 1 } }));
     },
   };
