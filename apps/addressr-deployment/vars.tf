@@ -313,12 +313,12 @@ variable "inbound_mail_forward_address" {
   type        = string
   nullable    = false
   default     = "tom@windyroad.com.au"
-  description = "ADR-089 / maintainer decision 2026-09-05: where Email Routing forwards inbound mail for the zone. Deliberately NOT ops_alert_email — enabling routing moves the zone's mail acceptance from the registrar's forwarder to Cloudflare, and arbitrary internet mail must not land in the inbox that is the sole delivery path for the P035 search trip-wire."
+  description = "UNUSED since 2026-09-06 — kept because its default is the only record in the repository of the address the maintainer chose, and the rebuild will need it. ADR-089 / maintainer decision 2026-09-05: where Email Routing forwards inbound mail for the zone. Deliberately NOT ops_alert_email — enabling routing moves the zone's mail acceptance from the registrar's forwarder to Cloudflare, and arbitrary internet mail must not land in the inbox that is the sole delivery path for the P035 search trip-wire."
 }
 
 variable "ops_alert_email" {
   type        = string
   nullable    = false
   default     = "tompahoward@gmail.com"
-  description = "Three consumers, not one. ADR 041: subscriber for the search-ops SNS topic that carries the SearchableDocuments trip-wire alarms. ADR-089: the Email Routing destination address, and the only address the Worker's fault-notification send binding may mail. Repointing this repoints all three. Before this, the alarms changed state in the console and reached nobody, which meant 'armed' did not mean what ADR 035 and the playbook assumed it meant."
+  description = "ONE consumer today: ADR 041's subscriber for the search-ops SNS topic that carries the SearchableDocuments trip-wire alarms. It had two until 2026-09-06, when the ADR-089 Email Routing destination was withdrawn after apply 1 failed. A third — the Worker's fault-notification send binding — was described but never built. Rebuilding the destination makes this two; rebuilding the send binding as well makes it three. Re-read this before repointing it. Before ADR 041's subscription existed, the alarms changed state in the console and reached nobody, which meant 'armed' did not mean what ADR 035 and the playbook assumed it meant."
 }

@@ -258,3 +258,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-09-04
 
 > Last reviewed: 2026-08-26 **P138 closed after production verification** — source, built-output and Chromium enforcement is deployed at `01c9b802`, with focused live checks passing
+
+- Last reviewed: 2026-09-04 **README reconciled** — 2 drift entries corrected: P142, P143. Both tickets were created and committed today; their WSJF Rankings rows were absent.

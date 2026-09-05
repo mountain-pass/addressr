@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-09-04 **README reconciled** — 2 drift entries corrected: P142, P143. Both tickets were created and committed today; their WSJF Rankings rows were absent.
+> Last reviewed: 2026-09-06 **README reconciled** — 2 drift entries corrected: P144, P145. Both created today after release PR #543's production apply failed part way through the managed-channel Email Routing resources; the detector reported their WSJF Rankings rows absent and both were added in tier order.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -9,6 +9,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 
 | WSJF | ID   | Title                                                                                | Severity     | Status        | Effort | Reported   | Origin   |
 | ---- | ---- | ------------------------------------------------------------------------------------ | ------------ | ------------- | ------ | ---------- | -------- |
+| 12.0 | P144 | Email Routing's Terraform route blocked by a provider bug and token scope            | Medium (6)   | Known Error   | S      | 2026-09-06 | internal |
 | 12.0 | P085 | `push:watch` reports success on a red master (3 selector defects)                    | High (12)    | Open          | S      | 2026-08-03 | internal |
 | 12.0 | P099 | Assistant pushes interface work onto the user, not decidable choices                 | High (12)    | Open          | S      | 2026-08-10 | internal |
 | 12.0 | P101 | Scheduled workflow's loud failure has no reader                                      | High (12)    | Open          | S      | 2026-08-18 | internal |
@@ -22,6 +23,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P100 | Production recovery floor has never been measured                                    | Medium (9)   | Open          | S      | 2026-08-18 | internal |
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
+| 9.0  | P145 | Zone Email Routing state unknown after a partially-failed apply                      | Medium (9)   | Open          | S      | 2026-09-06 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |

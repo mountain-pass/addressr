@@ -986,75 +986,38 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
   endpoint  = var.ops_alert_email
 }
 
-# ADR-089: the managed-channel fault-notification terminus, FIRST OF TWO APPLIES.
+# ADR-089: the managed-channel fault-notification terminus. APPLY 1 WAS
+# ATTEMPTED ON 2026-09-06 AND FAILED. The three resources that stood here —
+# `cloudflare_email_routing_settings.zone` and two
+# `cloudflare_email_routing_address` — are withdrawn, NOT abandoned, and not
+# reversed as a decision: alert coverage returns to MISSING, which is the state
+# ADR-089 already records as accurate while the terminus is unbuilt.
 #
-# Cloudflare's own mail path was chosen over a messaging vendor on ONE ground —
-# it stores no credential. Everything here exists to keep that true. If a future
-# reader finds an API token for sending mail, the decision has been reversed
-# without being superseded.
+# TWO CAUSES, both measured from the failed apply's log, neither fixable here:
+#   1. `cloudflare_email_routing_settings` is broken in the provider. It errors
+#      converting the API RESPONSE — "Struct defines fields not found in object:
+#      support_subaddress". Upstream issue 7301, introduced in 5.23.0, still
+#      present in 5.24.0 which is the latest 5.x and what the lockfile carries.
+#      Fix PR 7302 is open and unmerged.
+#   2. Both address creates returned 403 "Authentication error". The deploy
+#      token has no Email Routing write scope.
 #
-# WHY THIS IS SPLIT. Both addresses below are created UNVERIFIED: Cloudflare
-# emails each one a link and a human clicks it once. A routing rule pointing at
-# an unverified address is documented as staying disabled — but that is a claim
-# about the RULE'S STATE, not about whether the create call succeeds, and the
-# documentation does not answer the second. If the rule's create fails, the
-# surviving state is routing enabled with no rule, which is REASONED rather than
-# observed to refuse inbound mail:
-# the failure mode of the risky resource leaves live exactly the hazard the
-# resource exists to prevent. Since merging the release PR is the apply, that
-# failure also lands after the packages have published.
+# LEFT UNRESOLVED, and this is the part that decays: the settings resource
+# failed converting the RESPONSE, so the enable call may have SUCCEEDED
+# server-side while Terraform recorded nothing. If it did, the zone may now be
+# routing-enabled with no rule, and may carry a SECOND apex SPF record — the
+# apex already has `v=spf1 include:spf.efwd.registrar-servers.com ~all`, and a
+# second one is a permanent SPF permerror, silently, which would poison the very
+# terminus this decision chose. Neither is visible from the tree.
 #
-# So the catch-all rule and the Worker's send binding are deliberately NOT here.
-# They follow in a second apply, once both addresses are verified and there is
-# nothing left to find out. One extra release is cheaper than learning this by
-# breaking one.
+# The tickets carry this, not this comment. Problem 144 tracks the blocked
+# Terraform route as a known error; problem 145 tracks the unknown zone state,
+# and it is the urgent one because it decays. ADR-051 — a note only a
+# maintainer reading this file would find is not a control.
 #
-# NO DNS RECORDS ARE DECLARED, also deliberately. Enabling routing needs MX and
-# TXT records on the zone, and the provider's `email_routing_dns` is a DATA
-# SOURCE — it reports the required records rather than creating them. Whether
-# the enable call creates them, and whether it succeeds against the zone's
-# EXISTING registrar-forwarding MX records, are both unestablished. Read the
-# release PR's plan comment before merging: that is where this becomes visible.
-#
-# ONE KNOWN HAZARD to check in that plan. The apex already carries
-# `v=spf1 include:spf.efwd.registrar-servers.com ~all`, for forwarding the
-# maintainer confirmed on 2026-09-05 is unused. A SECOND apex SPF record is a
-# permanent SPF permerror, silently. If enabling adds one, the dead record must
-# go in the same change, not after. Clerk's mail records sit on `clkmail.` and
-# do not collide.
-resource "cloudflare_email_routing_settings" "zone" {
-  zone_id = var.cloudflare_zone_id
-}
-
-# The address the fault notification sends TO. Same one the operations topic
-# already reaches, so alerts stay in one inbox.
-resource "cloudflare_email_routing_address" "ops" {
-  account_id = var.cloudflare_account_id
-  email      = var.ops_alert_email
-
-  # Identical reasoning to `aws_sns_topic.search_ops` above: this holds
-  # human-verified state. Replacement drops the verification and re-arming needs
-  # a person to click a link, so a silent replace would disarm the notification
-  # and nothing would notice.
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# Where inbound mail for the zone goes. A SEPARATE address from the alert one,
-# chosen by the maintainer on 2026-09-05: enabling routing makes the domain
-# accept mail at Cloudflare rather than at the registrar's forwarder, and routing
-# arbitrary internet mail into the
-# inbox that carries the P035 search trip-wire would degrade the only delivery
-# path a live control has.
-resource "cloudflare_email_routing_address" "inbound" {
-  account_id = var.cloudflare_account_id
-  email      = var.inbound_mail_forward_address
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+# DO NOT REBUILD until ADR-089 is ratified. Declaring these against an
+# unconfirmed decision is the exposure ADR-074 exists to close, and the
+# ratification drain is where the finding above gets weighed.
 
 # ADR 041 / P035 trip-wire: absolute floor for generation 4.
 #

@@ -1,27 +1,31 @@
 // @jtbd JTBD-403 (Know the paid channel still bills correctly)
 //
-// The notification ADR-089 chose, asserted where it is declared. This is APPLY
-// ONE of two, and the split is itself one of the properties pinned here.
+// The notification ADR-089 chose, asserted where it is declared. APPLY 1 WAS
+// ATTEMPTED ON 2026-09-06 AND FAILED, so what this file pins has changed shape:
+// the three resources are WITHDRAWN and their existence is no longer asserted.
 //
-// WHY SPLIT. Both destination addresses are created unverified; Cloudflare
-// emails each a link a human clicks once. A routing rule pointing at an
-// unverified address is documented as staying disabled — but that describes the
-// RULE'S STATE, not whether the create call succeeds, and nothing establishes
-// the second. If it fails, the surviving state is routing enabled with no rule,
-// which is REASONED rather than observed to refuse inbound mail: the risky
-// resource's failure mode leaves live the exact hazard it exists to prevent.
-// Hedged to match `main.tf` and the ledger — three artefacts disagreeing about
-// how certain a claim is becomes a defect the moment one is copied outward. Merging the release PR is the apply, so
-// that failure lands after the packages publish.
+// WHY THEY WENT. `cloudflare_email_routing_settings` is broken in the provider —
+// it errors converting the API response on a missing `support_subaddress`
+// field, upstream issue 7301, present in 5.24.0 which is the latest 5.x and what
+// the lockfile carries. And both address creates returned 403: the deploy token
+// has no Email Routing write scope. Left declared, they fail EVERY subsequent
+// release apply, so the release path stays blocked until they go.
 //
-// So apply 1 carries only what has no verification dependency. The catch-all
-// and the Worker send binding follow once both addresses are verified. Their
-// ABSENCE is asserted, not merely unmentioned — adding them early is the
-// mistake this ordering exists to prevent, and it would look like progress.
+// WHAT SURVIVES HERE, and why these two rather than none. Deleting the file
+// would drop the credential fence, and that fence matters MORE while the
+// terminus is unbuilt, not less: ADR-089 chose Cloudflare's own mail path over a
+// vendor on the single ground that it stores no credential, and the cheapest
+// wrong way to unblock this is to reach for a vendor API key. The send-binding
+// and catch-all absence is the ordering constraint for the rebuild, and it is
+// still the right constraint — an unverified destination is exactly what apply 1
+// was going to produce.
 //
-// Mutation-proved: the credential fence, the send-binding absence, the
-// two-address separation and the prevent_destroy pair. NOT mutation-proved: the
-// zero-match guard, which is structural.
+// The three retired cases asserted the resources EXIST. Re-add them with the
+// resources, not before: ADR-074, and ADR-089 is still unratified.
+//
+// Mutation-proved: the credential fence, the send-binding absence, and the
+// Email-Routing absence below — re-adding a settings resource reds it and
+// nothing else. NOT mutation-proved: the zero-match guard, which is structural.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,50 +57,23 @@ function block(source, type, name) {
   return null;
 }
 
-describe('managed-channel notification, apply 1 of 2', () => {
+describe('managed-channel notification, apply 1 withdrawn', () => {
   it('finds the Terraform to check, so a zero-match pass is impossible', () => {
     assert.ok(root.length > 5000, `read too little from ${ROOT} — has the module moved?`);
     assert.ok(workerModule.includes('cloudflare_workers_script'), `no Worker script in ${WORKER_MODULE}`);
   });
 
-  it('enables Email Routing on the zone', () => {
-    assert.ok(
-      block(root, 'cloudflare_email_routing_settings', 'zone'),
-      'Email Routing is not declared; without it there is no verified destination to send to',
-    );
-  });
-
-  it('declares two destination addresses, kept apart on purpose', () => {
-    // The maintainer chose on 2026-09-05 that inbound mail must NOT land in the
-    // alert inbox. Enabling routing moves the zone's mail acceptance from
-    // the registrar's forwarder to Cloudflare, and the alert address is the sole
-    // delivery path for the P035 search
-    // trip-wire — a live control on the paid tier. One inbox for both would let
-    // spam degrade a control, silently.
-    const ops = block(root, 'cloudflare_email_routing_address', 'ops');
-    const inbound = block(root, 'cloudflare_email_routing_address', 'inbound');
-    assert.ok(ops, 'no alert destination address declared');
-    assert.ok(inbound, 'no inbound destination address declared');
-    assert.match(ops, /var\.ops_alert_email/, 'the alert destination does not reuse the existing alert address');
-    assert.match(inbound, /var\.inbound_mail_forward_address/, 'the inbound destination is not its own variable');
-    assert.doesNotMatch(
-      inbound,
-      /var\.ops_alert_email/,
-      'inbound mail points at the alert address. That is the separation the maintainer chose, ' +
-        'because the alert inbox is the only delivery path the search trip-wire has.',
-    );
-  });
-
-  it('protects both addresses from silent replacement', () => {
-    // Each holds human-verified state. Replacement drops the verification and
-    // re-arming needs a person to click a link, so a silent replace disarms the
-    // notification with nothing to notice. Same reasoning the search-ops topic
-    // already carries.
-    for (const name of ['ops', 'inbound']) {
-      assert.match(
-        block(root, 'cloudflare_email_routing_address', name) ?? '',
-        /lifecycle\s*\{[^}]*prevent_destroy\s*=\s*true/,
-        `the \`${name}\` address has no prevent_destroy; replacing it drops a human verification`,
+  it('declares no Email Routing resource, because apply 1 failed and was withdrawn', () => {
+    // Not an absence left unmentioned. Re-declaring these without the provider
+    // fix and the token scope reds every release apply, and it would look like
+    // progress. The comment in main.tf and the problem backlog carry the why.
+    for (const name of ['settings', 'address']) {
+      assert.doesNotMatch(
+        root,
+        new RegExp(`resource\\s+"cloudflare_email_routing_${name}"`),
+        `cloudflare_email_routing_${name} is declared again. Apply 1 failed on 2026-09-06 — ` +
+          'the provider cannot create the settings resource and the deploy token cannot create ' +
+          'an address. Re-adding it blocks every release until it is removed again.',
       );
     }
   });

@@ -170,7 +170,22 @@ Waiting on the maintainer:
    address queries into retention.
 
    That leaves the provider's own mail-forwarding product as the only
-   credential-free send path. **ESTABLISHED 2026-09-05, and it is available.**
+   credential-free send path. **The PRODUCT is available; the Terraform-declared,
+   pipeline-applied ROUTE to configuring it is NOT, as of 2026-09-06.** Apply 1
+   was attempted that day and failed on both halves: the provider's
+   `cloudflare_email_routing_settings` errors converting the API response on a
+   missing `support_subaddress` field (upstream issue 7301, present in 5.24.0,
+   the latest 5.x and the pinned one, with the fix PR unmerged), and both
+   address creates returned 403 because the deploy token carries no Email
+   Routing write scope. The declarations were withdrawn the same day, because
+   left in place they fail every subsequent release. Alert coverage is therefore
+   still MISSING and nothing here should be read as a replacement existing.
+   Unresolved, and it decays: the settings failure was a RESPONSE-conversion
+   failure, so the enable call may have succeeded server-side with Terraform
+   recording nothing — the zone may now be routing-enabled with no rule, and may
+   carry a second apex SPF record, which is a silent permanent permerror. Not
+   yet read back. The paragraph below describes what was established on
+   2026-09-05 and remains true of the PRODUCT.
    The maintainer read the zone's Email Routing page directly: the product
    exists on this zone but is unconfigured — zero destination addresses, zero
    rules, DNS not configured. That is the important half, because a Worker's
