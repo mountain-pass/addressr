@@ -309,9 +309,16 @@ variable "v4_searchable_documents_floor" {
 }
 
 
+variable "inbound_mail_forward_address" {
+  type        = string
+  nullable    = false
+  default     = "tom@windyroad.com.au"
+  description = "ADR-089 / maintainer decision 2026-09-05: where Email Routing forwards inbound mail for the zone. Deliberately NOT ops_alert_email — enabling routing moves the zone's mail acceptance from the registrar's forwarder to Cloudflare, and arbitrary internet mail must not land in the inbox that is the sole delivery path for the P035 search trip-wire."
+}
+
 variable "ops_alert_email" {
   type        = string
   nullable    = false
   default     = "tompahoward@gmail.com"
-  description = "ADR 041: subscriber for the search-ops SNS topic that carries the SearchableDocuments trip-wire alarms. Before this, the alarms changed state in the console and reached nobody, which meant 'armed' did not mean what ADR 035 and the playbook assumed it meant."
+  description = "Three consumers, not one. ADR 041: subscriber for the search-ops SNS topic that carries the SearchableDocuments trip-wire alarms. ADR-089: the Email Routing destination address, and the only address the Worker's fault-notification send binding may mail. Repointing this repoints all three. Before this, the alarms changed state in the console and reached nobody, which meant 'armed' did not mean what ADR 035 and the playbook assumed it meant."
 }

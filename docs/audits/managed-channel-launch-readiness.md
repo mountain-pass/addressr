@@ -185,11 +185,54 @@ Waiting on the maintainer:
    verification needs one human action, the same shape as the existing
    operations-topic email subscription.
 
+   **BUILD STARTED 2026-09-05, split into two applies.** Apply 1 declares Email
+   Routing on the zone and two destination addresses: the existing alert address
+   for the notification to send to, and a separate address for inbound mail,
+   which the maintainer chose so that arbitrary internet mail does not land in
+   the inbox that is the sole delivery path for the P035 search trip-wire. Both
+   carry `prevent_destroy`, because each holds a human verification that a
+   silent replacement would drop.
+
+   Apply 2 follows once both are verified, and carries the catch-all rule and
+   the Worker's send binding. The split is not caution for its own sake: a rule
+   pointing at an unverified address is documented as staying disabled, but that
+   describes the rule's state and not whether its create call succeeds, and
+   nothing establishes the second. Were it to fail, the surviving state is
+   routing enabled with no rule, which is REASONED rather than observed to refuse inbound mail — the risky
+   resource's failure leaving live the hazard it exists to prevent, after the
+   release has already published. `managed-channel-notification-terraform.test.mjs`
+   asserts the split holds, so adding either piece early reds.
+
+   **The split accepts an interval, and that is worth naming rather than
+   glossing.** Between the two applies the zone sits with routing enabled and no
+   rule — the same state described above as the failure mode. The difference is
+   that here it is entered knowingly and briefly, rather than discovered after a
+   release failed partway with its packages already published, and it costs
+   nothing because the zone's only mail path is registrar forwarding the maintainer
+   confirmed on 2026-09-05 reaches nobody. Were the domain carrying
+   mail, this ordering would be the wrong one.
+
+   **Three checks belong on the release PR's plan comment before merging apply 1.**
+   Whether the enable call creates the routing DNS records or expects them
+   declared; whether it succeeds against the zone's existing registrar-forwarding
+   MX records; and whether it adds a second apex SPF. That last is the known
+   hazard: the apex already carries `v=spf1 include:spf.efwd.registrar-servers.com ~all`
+   for forwarding confirmed unused on 2026-09-05, and two apex SPF records is a
+   permanent permerror that fails silently. If enabling adds one, the dead record
+   goes in the same change. Clerk's mail records sit on a subdomain and do not
+   collide.
+
+   **Two obligations after apply 1.** Read back which DNS records now exist and
+   record it here. And re-read Worker observability and logpush: ADR-088
+   criterion 6 is a readback criterion, apply 2 updates the Worker script, and a
+   provider or platform default could enable retention without appearing in a
+   plan diff.
+
    Two things to carry into the build. Enabling it replaces the domain's
-   inbound mail records, which point at the registrar's default forwarding; the
-   maintainer confirmed on 2026-09-05 that the domain has never been used for
-   email, so those records are registration cruft and replacing them displaces
-   nothing. And the sender-address requirement when only Email Routing is
+   inbound mail records, which point at the registrar's default forwarding; the maintainer confirmed on 2026-09-05 that no address at the domain reaches
+   them, so those records are cruft and replacing them displaces nothing. That is
+   a claim about delivery, not about the zone never having accepted mail: the MX
+   records exist, so the zone is configured to accept. And the sender-address requirement when only Email Routing is
    configured is NOT stated in the documentation — that is the one thing to
    confirm empirically rather than assume, and it can only be confirmed once
    routing is in place.
