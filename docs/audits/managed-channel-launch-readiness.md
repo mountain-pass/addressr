@@ -1,14 +1,19 @@
 # Addressr-managed channel launch readiness
 
-- **As at:** 2026-09-03, after the readbacks, the ADR-087 recovery supersession and the widened-scope Cloudflare and test-mode Stripe readbacks
-- **Worker source revision:** `7acd6282fa8f95f007067cbbde06813a8c98aff5`
-- **Migration and website revision:** `076a1c63094203761494460c53e325522b24e8d5`
-- **Release:** PR #539 merged; run 33386718105 succeeded.
+- **Evidence spans 2026-08-28 to 2026-09-05.** Measured across the dates the rows themselves carry, which run from 2026-08-28 to 2026-09-04, plus the 2026-09-05 findings in the handover below. An earlier version of this line said 2026-09-01, which excluded four dates its own rows govern. Not a single instant: the rows below were written across those dates. The bulk were gathered on 2026-09-03, after the readbacks, the ADR-087 recovery supersession and the widened-scope Cloudflare and test-mode Stripe readbacks; the notification withdrawal and the Email Routing finding are 2026-09-04 and 2026-09-05. **Where a row carries a date, that date governs and this line does not.** Many rows carry none — they were not individually dated when written, and this header cannot retrospectively supply one, so treat an undated row as belonging to the 2026-09-03 bulk only as a working assumption and re-read its evidence before relying on it.
+- **Worker source revision:** `7acd6282fa8f95f007067cbbde06813a8c98aff5` — re-checked 2026-09-05: byte-identical at HEAD, so the evidence gathered against it still describes the current source.
+- **Migration and website revision:** `076a1c63094203761494460c53e325522b24e8d5` — re-checked 2026-09-05: the website source and the Worker migrations are both byte-identical at HEAD.
+- **Release:** the evidence below was gathered against PR #539 / run 33386718105. Two releases have merged since: PR #541 on 2026-08-31, and PR #542 on 2026-09-04 (run 33878287819), whose Terraform apply reported "No changes. Your infrastructure matches the configuration" — it withdrew the SMS notification, which had never been applied. Neither moved the source revisions pinned above.
 - **Activation decision:** Do not activate.
 
-This is a point-in-time evidence ledger, not an activation control or an
-approval. Provider settings are mutable and must be read back again immediately
-before activation. It deliberately excludes credentials, provider account
+This is an evidence ledger, not an activation control or an approval. It was
+written as a point-in-time record and has since been edited in place across
+several days, which is why the dating moved from a single "as at" to a span, with a row's
+own date governing wherever it carries one: a document amended over time cannot
+honestly claim one instant, and it cannot retrospectively date the rows that
+never carried one.
+Provider settings are mutable and must be read back again immediately before
+activation, and most rows below rest on readbacks now some days old. It deliberately excludes credentials, provider account
 identifiers, confidential provider resource identifiers, confidential catalogue
 terms, subscriber data and traffic volumes.
 
