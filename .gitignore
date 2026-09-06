@@ -138,3 +138,7 @@ test/perf/*.out
 # the path is untracked, because check-ignore proves the rule and says nothing
 # about a path that was tracked before the rule landed.
 .addressr-state/
+
+# Agent tooling working directories (maintainer decision 2026-09-06: ignored, not tracked)
+.codex/
+.impeccable/

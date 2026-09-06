@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 93 (80 in-force, 13 historical)
+**Total ADRs:** 94 (81 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_80 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_81 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -508,7 +508,7 @@ _80 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-092 — Requests past a hard cap are not billed
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Status:** proposed | **Oversight:** confirmed (2026-09-06) | **Superseded in part by:** ADR-094 (the reserved question — that the customer-visible over-limit count be put to the maintainer before the account surface is built. It was put and answered on 2026-09-06, so the obligation is discharged. The billing outcome, and the sentence bounding what this record's own ratification attested to, both stand)
 **Decides:** A request served past a hard cap is recorded billable and counted, but is NOT delivered to the usage meter, so it cannot reach an invoice whatever the price is configured to do. The exclusion must be read at FOUR statements, not one — the delivery query plus the reconciliation group query and two health flags, all of which currently read billable-and-pending as a fault, so a naive implementation would leave the ten-minute reader permanently red on a designed condition. Chosen over billing it, over relying on a readback showing hard-cap prices carry no chargeable tier (rejected because that is a mutable provider setting no check watches), and over making the cap exactly hard (ADR-091's rejected option 4, unchanged grounds). NOT YET IMPLEMENTED: the code and this decision disagree until it lands, and it needs two releases because the column must precede the Worker query that reads it.
 **Confirmation:** Behavioural tests against real D1 prove an over-cap request is billable, counted and not selected by meter delivery (mutation-proved by removing the predicate), that an in-allowance request still is, and that soft-limit and pay-per-use organisations are unaffected; both releases proved independently safe. Explicitly not confirmable here: whether hard-cap prices carry a chargeable tier — the decision is built so the answer does not matter.
 **Related:** ADR-091, ADR-093, ADR-086, JTBD-403
@@ -519,6 +519,13 @@ _80 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** `deploy.sh` deploys the Worker via Terraform BEFORE applying D1 migrations, so the new Worker runs against the old schema in between. Keep that order and make its consequence explicit: every migration must be forward-compatible with the Worker already live, and a change coupling schema to code takes two releases, schema first. Migration-first was rejected on measured evidence — for migration 0003 it would have put the unenforcing combination live, so neither order is uniformly safer.
 **Confirmation:** `deploy.sh` ordering pinned by test so a reordering reds rather than passing quietly; every migration additive with respect to the prior Worker, or carrying a recorded reason. NOT YET SATISFIED and named as such: nothing mechanically checks a new migration against the invariant, so it is a rule rather than a control.
 **Related:** ADR-092, ADR-091, ADR-064, JTBD-400
+
+### ADR-094 — The account page shows the true request count, and no progress bar
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Decides:** The hard-cap usage panel renders the true `used of limit` figure and NO progress element, and says nothing about billing. A `<progress>` cannot represent a value above its maximum because the spec clamps it, so above the limit it drew a full bar beside text reading "5 of 3" and the two contradicted each other. Capping the number instead was proposed and rejected as a regression: it replaces an accurate billing figure with an inaccurate one and states the true total nowhere. Hiding the bar from assistive technology only was built and withdrawn, because it leaves the contradiction on screen for everyone else. `<meter>` clamps identically.
+**Confirmation:** Browser tests cover the hard-cap branch under, at and over the limit, where the suite previously had one row; every row asserts no `progress` element and no `progressbar` role; mutation-proved by reintroducing a clamped bar, which reds all three. Rendered text is unchanged, so the existing text assertions still hold.
+**Related:** ADR-092, ADR-091, JTBD-005
 
 ---
 

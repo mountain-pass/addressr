@@ -59,11 +59,18 @@ const installSignedInClerk = async (page) => {
   });
 };
 
-for (const [policy, quota, expected, hasProgress] of [
-  ['hard', { used: 5, limit: 3, hardLimit: true }, '5 of 3', true],
-  ['soft', { used: 5, limit: 3, hardLimit: false }, '5 used. 3 included. Additional billable requests are charged at your plan rate.', false],
-  ['pay-per-use', { used: 2, limit: 0, hardLimit: false }, '2 used. Each billable request is charged at your plan rate.', false],
-  ['unknown', { used: 2, limit: 3 }, '2 used.', false],
+// The hard-cap rows are three, not one, because a quota can now legitimately sit
+// UNDER, AT or OVER its limit: ADR-091 charges at settle, so simultaneous requests
+// each read the count before it moves and a hard limit can be exceeded by roughly
+// the number in flight. One row could not tell a fix that handles overflow from one
+// that only ever saw the in-allowance case.
+for (const [policy, quota, expected] of [
+  ['hard under limit', { used: 1, limit: 3, hardLimit: true }, '1 of 3'],
+  ['hard at limit', { used: 3, limit: 3, hardLimit: true }, '3 of 3'],
+  ['hard over limit', { used: 5, limit: 3, hardLimit: true }, '5 of 3'],
+  ['soft', { used: 5, limit: 3, hardLimit: false }, '5 used. 3 included. Additional billable requests are charged at your plan rate.'],
+  ['pay-per-use', { used: 2, limit: 0, hardLimit: false }, '2 used. Each billable request is charged at your plan rate.'],
+  ['unknown', { used: 2, limit: 3 }, '2 used.'],
 ]) {
   test(`account displays ${policy} request usage without a false quota`, async ({ page }) => {
     await installSignedInClerk(page);
@@ -78,12 +85,17 @@ for (const [policy, quota, expected, hasProgress] of [
     await page.goto('/account/');
     const summary = page.getByRole('region', { name: 'Subscription and request usage' });
     await expect(summary.locator('dd').last()).toHaveText(expected);
-    const progress = summary.getByRole('progressbar', { name: 'Requests used this period' });
-    await expect(progress).toHaveCount(hasProgress ? 1 : 0);
-    if (hasProgress) {
-      await expect(progress).toHaveAttribute('value', '3');
-      await expect(progress).toHaveAttribute('max', '3');
-    }
+    // NO PROGRESS BAR, IN ANY MODALITY. A `<progress>` cannot represent a value
+    // above its maximum, because the spec clamps it, so on the over-limit row it
+    // drew a full bar next to text reading "5 of 3" and the two contradicted each
+    // other. Marking it `aria-hidden` was tried and rejected: it hides the
+    // contradiction from assistive technology and leaves it on screen for everyone
+    // else. `<meter>` clamps identically, so the element swap is not a fix either.
+    //
+    // Asserted for EVERY row, not just the over-limit one, because a bar that is
+    // truthful at 1 of 3 and false at 5 of 3 is the state this defect came from.
+    await expect(summary.locator('progress')).toHaveCount(0);
+    await expect(summary.getByRole('progressbar')).toHaveCount(0);
   });
 }
 

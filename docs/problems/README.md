@@ -41,6 +41,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P134 | Nothing in the repo can see what Netlify is actually doing                           | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P136 | `release-pr-plan` calls itself advisory but can block the release merge              | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P145 | Zone Email Routing state unknown after a partially-failed apply                      | Medium (6)   | Open          | S      | 2026-09-06 | internal |
+| 6.0  | P148 | The account page white-screens when its own quota guard fails                        | Medium (6)   | Open          | S      | 2026-09-06 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                          | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |
@@ -61,6 +62,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 4.0  | P115 | Nothing counts compendium entries per ADR; a duplicate passes every check            | Low (4)      | Open          | S      | 2026-08-20 | internal |
 | 4.0  | P128 | Cloudflare rewrites the Enterprise address at the edge; the build test cannot see it | Low (4)      | Open          | S      | 2026-08-23 | internal |
 | 4.0  | P143 | Two band tables disagree about where Low ends, and the boundary is the appetite      | Low (4)      | Open          | S      | 2026-09-04 | internal |
+| 4.0  | P149 | Billing figures render in the browser's locale, not the site's                       | Low (4)      | Open          | S      | 2026-09-06 | internal |
 | 4.0  | P063 | work-problems pre-flight dispatch exceeds harness 600s Bash cap                      | Medium (8)   | Open          | M      | 2026-07-21 | internal |
 | 4.0  | P076 | ADR Confirmation items can be prescribed and never implemented                       | Medium (8)   | Open          | M      | 2026-07-31 | internal |
 | 4.0  | P078 | phrase_prefix scores depend on shard-local prefix-expansion set                      | Medium (8)   | Open          | M      | 2026-08-02 | internal |

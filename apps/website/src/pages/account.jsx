@@ -405,11 +405,30 @@ const ManagedAccount = ({
                     <>
                       {account.quota.used.toLocaleString()} of{' '}
                       {account.quota.limit.toLocaleString()}
-                      <progress
-                        aria-label="Requests used this period"
-                        value={Math.max(0, Math.min(account.quota.used, account.quota.limit))}
-                        max={account.quota.limit}
-                      />
+                      {/* NO PROGRESS BAR HERE, AND ITS ABSENCE IS THE FIX.
+                          `used` can exceed `limit`: ADR-091 charges at settle, so
+                          simultaneous requests each read the count before it moves and a
+                          hard limit can be exceeded by roughly the number in flight. A
+                          `<progress>` cannot represent that, because the spec clamps value
+                          to max, so above the limit it drew a full bar beside text reading
+                          "5 of 3" and the two contradicted each other. `<meter>` clamps
+                          identically, so swapping the element does not help.
+                          Marking it `aria-hidden` was tried first and rejected: that hides
+                          the contradiction from assistive technology and leaves it on
+                          screen for everyone else, which relocates the defect instead of
+                          closing it. The maintainer chose on 2026-09-06 to keep the TRUE
+                          count, so the text is the whole statement of usage.
+                          DO NOT reintroduce a bar that cannot draw the value it is given.
+
+                          TWO DEFECTS IN THIS BLOCK ARE KNOWN AND TICKETED, not overlooked.
+                          Problem 148: the guard above tests `Number.isSafeInteger(used)`, and
+                          the `else` branch taken when it FAILS then dereferences `used`
+                          unconditionally. No error boundary exists, so that throw blanks the
+                          whole page. Not reachable today; the Worker and this site deploy
+                          independently, so that is a property of today rather than a guarantee.
+                          Problem 149: the four `toLocaleString()` calls here take no locale, so
+                          a browser set to other conventions renders a billing figure the page's
+                          declared `lang="en-AU"` then has a speech engine read wrongly. */}
                     </>
                   ) : (
                     <>
