@@ -2,10 +2,10 @@
 
 **Status**: Open
 **Reported**: 2026-09-06
-**Priority**: 9 (Medium) — Impact: Moderate (3) × Likelihood: Possible (3). Impact 3: if the enable call landed, the zone may now accept mail with no routing rule, and may carry a second apex SPF record — a permanent, silent SPF permerror that would poison the very notification terminus ADR-089 chose. Likelihood 3: the failure was a RESPONSE-conversion error, which is the shape that follows a call the server already accepted, so a landed change is at least as likely as not.
+**Priority**: 6 (Medium) — Impact: Minor (2) × Likelihood: Possible (3). RE-DERIVED 2026-09-06 after the authoritative DNS read, down from 9 (Impact 3). Half the original Impact-3 ground is measured away: there is no second apex SPF record, so the permanent silent permerror that would have poisoned the notification terminus ADR-089 chose does not exist. The surviving ground is also narrower than it was written: the zone may have routing ENABLED with no rule, but its MX records still point at the registrar's forwarding hosts and not at any Cloudflare route target, so nothing is currently intercepting mail and no inbound mail is at risk today. What remains is unmanaged account-side state that Terraform does not know about and that would matter when the route is finally configured — real, and worth settling before then, but not a live mail hazard. Likelihood 3: the failure was a RESPONSE-conversion error, which is the shape that follows a call the server already accepted, so a landed change is at least as likely as not.
 **Origin**: internal
-**Effort**: S — three authenticated reads of the zone answer it, all against the same credential in one sitting.
-**WSJF**: 9.0 — (9 × 1 for Open) / 1 for Effort S
+**Effort**: S — TWO authenticated reads of the zone answer it, down from three: the DNS read was discharged 2026-09-06 by public DNS at no credential cost. Both remaining reads are Email Routing API calls against the same credential in one sitting.
+**WSJF**: 6.0 — (6 × 1 for Open) / 1 for Effort S. Recomputed 2026-09-06 with the Priority above; Effort stays S.
 **JTBD**: JTBD-403
 **Persona**: addressr-maintainer
 
@@ -90,8 +90,25 @@ is not the zone saying nothing. A plan reconciles configuration against state an
 provider only for what one of the two names, so a resource in neither is invisible to it: it would
 report "no changes" whether the zone is untouched or routing-enabled with no rule. The enable call
 may still have landed server-side. And whether the apex now carries a SECOND `v=spf1` record — a
-silent permanent permerror if it did — is entirely untouched by this; no read of the apex since the
-apply is recorded anywhere in the tree. The three reads above are still owed.
+silent permanent permerror if it did — is entirely untouched by this.
+
+**AMENDED 2026-09-06: the SPF read has since happened, and this ticket is down to two owed
+reads rather than three.** The apex was read from the zone's own authoritative nameservers,
+`lisa.ns.cloudflare.com` and `woz.ns.cloudflare.com`, and both return exactly ONE apex
+`v=spf1` record at TTL 300 — so no duplicate, and not the permerror this ticket feared. Read
+authoritatively rather than through a recursive resolver on purpose: a resolver can serve an
+answer cached from before the apply, which would have been evidence about the past. The MX
+records are still the registrar's forwarding hosts with no Cloudflare route target, so Email
+Routing's DNS is unconfigured too. Recorded in full in the launch-readiness ledger, which
+exit criterion 1 below nominates.
+
+The third owed read — `GET /zones/{zone}/dns_records`, asking for the apex `v=spf1` count and
+whether any MX points at Cloudflare — is therefore DISCHARGED BY SUBSTITUTION OF METHOD:
+public DNS answered both of its questions at no credential cost. Exit criterion 2 is
+discharged vacuously, there being no second record to remove. What survives is the two
+authenticated Email Routing API reads, and with them the whole of the impact ground that
+still stands: whether the failed create left routing ENABLED server-side with no rule. That
+is account-side state with no public projection, so no DNS read can reach it.
 
 ## Exit criteria
 

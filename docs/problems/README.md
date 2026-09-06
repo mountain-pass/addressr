@@ -23,7 +23,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P100 | Production recovery floor has never been measured                                    | Medium (9)   | Open          | S      | 2026-08-18 | internal |
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
-| 9.0  | P145 | Zone Email Routing state unknown after a partially-failed apply                      | Medium (9)   | Open          | S      | 2026-09-06 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -41,6 +40,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P133 | `check-deps` red on 45/45 runs, so its vulnerability report has no reader            | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P134 | Nothing in the repo can see what Netlify is actually doing                           | Medium (6)   | Open          | S      | 2026-08-24 | internal |
 | 6.0  | P136 | `release-pr-plan` calls itself advisory but can block the release merge              | Medium (6)   | Open          | S      | 2026-08-24 | internal |
+| 6.0  | P145 | Zone Email Routing state unknown after a partially-failed apply                      | Medium (6)   | Open          | S      | 2026-09-06 | internal |
 | 6.0  | P077 | Risk scorer rates deferral as mitigation (upstream-blocked)                          | High (12)    | Open          | M      | 2026-08-01 | internal |
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |

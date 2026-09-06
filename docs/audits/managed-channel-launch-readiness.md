@@ -188,8 +188,44 @@ Waiting on the maintainer:
    Unresolved, and it decays: the settings failure was a RESPONSE-conversion
    failure, so the enable call may have succeeded server-side with Terraform
    recording nothing — the zone may now be routing-enabled with no rule, and may
-   carry a second apex SPF record, which is a silent permanent permerror. Not
-   yet read back. Two things follow, in order: a 2026-09-06 documentation reading,
+   carry a second apex SPF record, which is a silent permanent permerror.
+   **ONE OF THE TWO HAZARDS IS MEASURED AWAY. THE OTHER IS UNTOUCHED.** Scoped
+   this way because a headline saying the feared damage did not happen is the
+   sentence a skimmer carries off, and only half of it would be true.
+
+   SETTLED — the duplicate SPF record. Read 2026-09-06 from the zone's OWN
+   authoritative nameservers, `lisa.ns.cloudflare.com` and `woz.ns.cloudflare.com`,
+   not from a recursive resolver: both return exactly one apex `v=spf1` record, at
+   TTL 300. Reading authoritatively is the point — a recursive resolver can serve an
+   answer cached before the apply, so that read would have been evidence about the
+   past, and the first attempt at this measurement made exactly that mistake. The
+   apex also carries the registrar's five MX forwarding hosts with no Cloudflare
+   route target among them. Claimed narrowly: this establishes no DUPLICATE-RECORD
+   permerror. It says nothing about the other ways SPF can permerror — the ten-lookup
+   limit inside the `include:` chain, or syntax — which a record count cannot reach.
+
+   UNTOUCHED — whether the failed create left routing ENABLED server-side with no
+   rule. That setting is not public, so no DNS read can reach it, and it is the
+   whole of what the ZONE-STATE ticket still asks — problem 145, not the
+   blocked-route ticket 144, which is about the provider defect and whose exit
+   criteria do not ask this. It does NOT rest on the
+   2026-09-05 zone reading recorded below: that reading PREDATES the apply and
+   therefore cannot speak to what the apply did. It rests on nothing. The MX finding
+   is equally consistent with never-enabled and with enabled-but-DNS-unconfigured,
+   and does not distinguish them.
+
+   Worth recording how cheap this was: public DNS needs no credential, no browser
+   and no maintainer, and it discharged by substitution a read the ticket had
+   listed as owed and authenticated. The hazard went unverified from the apply until
+   this read.
+
+   ON THE TWO DATES THIS ROW CARRIES, because they look contradictory and are not.
+   The failed apply ran `2026-09-05T22:14:50Z`-`22:23:07Z`. That is 2026-09-05 in UTC
+   and 2026-09-06 in this maintainer's local time, so the row's "as of 2026-09-06"
+   and the build's "STARTED 2026-09-05" describe one event under two clocks. This
+   ledger states no UTC/local convention, which is why the pair reads as an
+   impossible sequence; where the distinction could matter, quote the UTC instant as
+   above rather than a date. Two things follow, in order: a 2026-09-06 documentation reading,
    and then the 2026-09-05 zone readback, which is the one that describes what was
    established about the PRODUCT and remains true of it.
    The 2026-09-06 reading sharpens what the blocker costs and is recorded in full
@@ -211,7 +247,16 @@ Waiting on the maintainer:
    ON THE 2026-09-06 READING ABOVE and inherits its assumption: it holds if
    "Email Service" is the umbrella covering both products, which the
    documentation nowhere defines. Reasoned, not measured — nothing has sent a
-   message. The installed
+   message.
+
+   **PROVIDER RE-CHECKED 2026-09-06 AND THE BLOCKER STANDS.** The Terraform registry
+   reports `cloudflare/cloudflare` latest as 5.24.0, published 2026-08-24 — exactly the
+   version already locked in this repository. No release has shipped since, so nothing
+   has fixed the broken resource. Re-checked rather than restated, because a provider
+   version is mutable and a claim that a blocker has no horizon is only as good as the
+   day it was made. Re-check it again before treating this route as blocked.
+
+   The installed
    Terraform provider carries four resources — settings, address, rule and
    catch-all — and an `email_routing_dns` data source, so the configuration is
    declarable; the destination address's
