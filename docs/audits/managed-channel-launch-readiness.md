@@ -175,7 +175,7 @@ Waiting on the maintainer:
    was attempted that day and failed on both halves: the provider's
    `cloudflare_email_routing_settings` errors converting the API response on a
    missing `support_subaddress` field (upstream issue 7301, present in 5.24.0,
-   the latest 5.x and the pinned one, with the fix PR unmerged), and both
+   the latest 5.x and the pinned one, with the proposed fix PR unmerged), and both
    address creates returned 403 because the deploy token carries no Email
    Routing write scope. The declarations were withdrawn the same day, because
    left in place they fail every subsequent release. Alert coverage is therefore
@@ -184,14 +184,29 @@ Waiting on the maintainer:
    failure, so the enable call may have succeeded server-side with Terraform
    recording nothing — the zone may now be routing-enabled with no rule, and may
    carry a second apex SPF record, which is a silent permanent permerror. Not
-   yet read back. The paragraph below describes what was established on
-   2026-09-05 and remains true of the PRODUCT.
-   The maintainer read the zone's Email Routing page directly: the product
+   yet read back. Two things follow, in order: a 2026-09-06 documentation reading,
+   and then the 2026-09-05 zone readback, which is the one that describes what was
+   established about the PRODUCT and remains true of it.
+   The 2026-09-06 reading sharpens what the blocker costs and is recorded in full
+   on the blocked-route ticket: the sender address must belong to a domain onboarded
+   to Email Service, and onboarding happens via Email Sending OR Email Routing, so
+   the zone enable is what onboards the sender — which means the provider-broken
+   resource sits on the critical path and a token-scope fix alone does not clear
+   it. REASONED from documentation, not measured, and resting on treating "Email
+   Service" as the umbrella covering both products, which the documentation
+   nowhere defines. If it instead names the sending product specifically, the chain
+   fails and Email Routing onboards nothing for sending, leaving the token scope
+   as the only blocker; the ticket carries the full reading. The maintainer read the zone's
+   Email Routing page directly on 2026-09-05: the product
    exists on this zone but is unconfigured — zero destination addresses, zero
    rules, DNS not configured. That is the important half, because a Worker's
    send binding can reach a **verified destination address** with only Email
    Routing configured, per the provider's own documentation, so no separate
-   sending onboarding and no stored credential is required. The installed
+   sending onboarding and no stored credential is required. THAT SENTENCE RESTS
+   ON THE 2026-09-06 READING ABOVE and inherits its assumption: it holds if
+   "Email Service" is the umbrella covering both products, which the
+   documentation nowhere defines. Reasoned, not measured — nothing has sent a
+   message. The installed
    Terraform provider carries four resources — settings, address, rule and
    catch-all — and an `email_routing_dns` data source, so the configuration is
    declarable; the destination address's
@@ -275,8 +290,10 @@ Waiting on the maintainer:
    inbound mail records, which point at the registrar's default forwarding; the maintainer confirmed on 2026-09-05 that no address at the domain reaches
    them, so those records are cruft and replacing them displaces nothing. That is
    a claim about delivery, not about the zone never having accepted mail: the MX
-   records exist, so the zone is configured to accept. And the sender-address requirement when only Email Routing is
-   configured is NOT stated in the documentation — that is the one thing to
+   records exist, so the zone is configured to accept. And WHICH ADDRESS at the onboarded domain may be used as sender, when only
+   Email Routing is configured, is NOT stated in the documentation — the
+   domain-level question is answered by the 2026-09-06 reading above, the
+   address-level one is not — that is the one thing to
    confirm empirically rather than assume, and it can only be confirmed once
    routing is in place.
 
