@@ -112,7 +112,8 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     // wording was *\"<quote>\"*" — the marker immediately PRECEDES the quote. So
     // require it within a short window before the match, and require the sentinel
     // spellings to be literal.
-    const RETAINED = /Factual correction|retained per|the wording was|superseded wording/;
+    const RETAINED =
+      /Factual correction|retained per|the wording was|superseded wording/;
     const WINDOW = 240;
     const wrong = [];
     for (const f of adrFiles) {
@@ -122,7 +123,8 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       );
       for (const m of claims) {
         const id = m[2];
-        if (RETAINED.test(body.slice(Math.max(0, m.index - WINDOW), m.index))) continue;
+        if (RETAINED.test(body.slice(Math.max(0, m.index - WINDOW), m.index)))
+          continue;
         const target = `ADR-${id.slice(-3)}`;
         if (oversight.get(target) === 'confirmed') {
           wrong.push(
@@ -237,7 +239,18 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     // are consistently wrong and this passes. P090 owns the wider
     // hand-maintained-compendium problem.
     const compendium = read('README.md');
-    const WORD = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+    const WORD = {
+      one: 1,
+      two: 2,
+      three: 3,
+      four: 4,
+      five: 5,
+      six: 6,
+      seven: 7,
+      eight: 8,
+      nine: 9,
+      ten: 10,
+    };
     const problems = [];
     const unreadable = [];
 
@@ -252,7 +265,8 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       // guard written to end a counting drift had quietly stopped covering the place
       // the next drift would land. Out-of-scope records are now collected and reported
       // rather than `continue`d past, because a skip nobody sees is the failure mode.
-      const section = /\n##[^\n]*[Ss]uperseded[^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(body);
+      const section =
+        /\n##[^\n]*[Ss]uperseded[^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(body);
       const enumerated = section
         ? [...section[1].matchAll(/^\d+\.\s+\*\*/gm)].length
         : 0;
@@ -291,11 +305,26 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       // nothing to read. That is the empty-corpus failure this repo keeps
       // hitting, committed inside the guard written to end a sweeping loop.
       // Mutation-tested: a wrong count in either entry now reds.
-      const entry = new RegExp(`\\n### ${id}\\b[\\s\\S]*?(?=\\n### |$)`).exec(compendium);
+      const entry = new RegExp(`\\n### ${id}\\b[\\s\\S]*?(?=\\n### |$)`).exec(
+        compendium,
+      );
       // The claim also lives on the SUPERSEDED ADR's reverse badge, which is a
       // different entry entirely; check both or half the sites stay invisible.
-      const targetId = `ADR-${/^supersedes-clause:\s*(\d{3})/m.exec(body)[1]}`;
-      const targetEntry = new RegExp(`\\n### ${targetId}\\b[\\s\\S]*?(?=\\n### |$)`).exec(compendium);
+      // EVERY superseded ADR, not just the first. The sentence above applies
+      // verbatim to a second anchor, and this read only the first until 2026-09-06,
+      // when ADR-092 became the first record to supersede clauses of two DIFFERENT
+      // ADRs. Reuses the `anchors` list derived above so the two cannot drift. The
+      // old form also indexed `.exec(...)[1]` with no null guard, so a scalar not
+      // starting `NNN#` threw a TypeError instead of a named assertion.
+      const targetEntries = anchors
+        .map((anchor) => /^(\d{3})#/.exec(anchor)?.[1])
+        .filter(Boolean)
+        .map((target) => [
+          `ADR-${target}`,
+          new RegExp(`\\n### ADR-${target}\\b[\\s\\S]*?(?=\\n### |$)`).exec(
+            compendium,
+          ),
+        ]);
       const claimSites = (text, where) => {
         for (const [, raw] of text.matchAll(
           /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:\w+\s+)?sites?\b/gi,
@@ -309,7 +338,10 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
         }
       };
       if (entry) claimSites(entry[0], 'its compendium entry');
-      if (targetEntry) claimSites(targetEntry[0], `the reverse badge on ${targetId}`);
+      for (const [targetId, targetEntry] of targetEntries) {
+        if (targetEntry)
+          claimSites(targetEntry[0], `the reverse badge on ${targetId}`);
+      }
       claimSites(section[1], 'its own superseded-clauses section');
     }
 
@@ -348,31 +380,50 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       if (!clause) continue;
 
       const superseding = /^(\d{3})/.exec(f.replace(/^.*\//, ''))?.[1];
-      const target = /^(\d{3})/.exec(clause)?.[1];
-      if (!target) {
+      // EVERY distinct ADR the clause names, not just the first. This read
+      // `/^(\d{3})/` — one target — which was invisible while every multi-anchor
+      // record happened to name the same ADR twice. ADR-092 supersedes clauses of
+      // two DIFFERENT records, and the second went unchecked: exactly the
+      // silently-narrowed-guard shape this file keeps meeting.
+      const targets = [
+        ...new Set(
+          [...clause.matchAll(/(?:^|,)\s*(\d{3})#/g)].map((m) => m[1]),
+        ),
+      ];
+      if (targets.length === 0) {
         problems.push(
-          `${f}: supersedes-clause "${clause}" does not start with a 3-digit ADR id`,
+          `${f}: supersedes-clause "${clause}" names no NNN#anchor target`,
         );
         continue;
       }
-      if (!adrFiles.some((g) => g.replace(/^.*\//, '').startsWith(target))) {
-        problems.push(`${f}: supersedes-clause targets ADR-${target}, which has no file`);
-        continue;
-      }
+      for (const target of targets) {
+        if (!adrFiles.some((g) => g.replace(/^.*\//, '').startsWith(target))) {
+          problems.push(
+            `${f}: supersedes-clause targets ADR-${target}, which has no file`,
+          );
+          continue;
+        }
 
-      const badgeLine = new RegExp(
-        String.raw`^### ADR-${target}\b[^\n]*\n+(\*\*Status:\*\*[^\n]*)$`,
-        'm',
-      ).exec(compendium);
-      if (!badgeLine) {
-        problems.push(`ADR-${target}: no compendium badge line to carry the reverse reference`);
-        continue;
-      }
-      if (!new RegExp(String.raw`Superseded in part by:\*\*[^|]*ADR-${superseding}\b`).test(badgeLine[1])) {
-        problems.push(
-          `ADR-${target}: ADR-${superseding} declares supersedes-clause "${clause}" but ADR-${target}'s badge carries no `
-            + `"**Superseded in part by:** ADR-${superseding}" — the supersession is invisible from the superseded end`,
-        );
+        const badgeLine = new RegExp(
+          String.raw`^### ADR-${target}\b[^\n]*\n+(\*\*Status:\*\*[^\n]*)$`,
+          'm',
+        ).exec(compendium);
+        if (!badgeLine) {
+          problems.push(
+            `ADR-${target}: no compendium badge line to carry the reverse reference`,
+          );
+          continue;
+        }
+        if (
+          !new RegExp(
+            String.raw`Superseded in part by:\*\*[^|]*ADR-${superseding}\b`,
+          ).test(badgeLine[1])
+        ) {
+          problems.push(
+            `ADR-${target}: ADR-${superseding} declares supersedes-clause "${clause}" but ADR-${target}'s badge carries no ` +
+              `"**Superseded in part by:** ADR-${superseding}" — the supersession is invisible from the superseded end`,
+          );
+        }
       }
     }
 
@@ -398,8 +449,13 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       const clause = frontmatter(read(f), 'supersedes-clause');
       if (!clause) continue;
       const superseding = /^(\d{3})/.exec(f.replace(/^.*\//, ''))?.[1];
-      const target = /^(\d{3})/.exec(clause)?.[1];
-      if (superseding && target) declared.add(`${target}<-${superseding}`);
+      // EVERY target the clause names. This took only the first, which made the
+      // symmetric half asymmetric again the moment a record superseded clauses of
+      // two different ADRs: the badge on the second target was reported as an
+      // orphan while the scalar declaring it sat in plain sight.
+      for (const [, target] of clause.matchAll(/(?:^|,)\s*(\d{3})#/g)) {
+        if (superseding && target) declared.add(`${target}<-${superseding}`);
+      }
     }
 
     const problems = [];
@@ -419,8 +475,8 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
       for (const c of field.matchAll(/ADR-(\d{3})/g)) {
         if (!declared.has(`${target}<-${c[1]}`)) {
           problems.push(
-            `ADR-${target}: compendium badge claims "Superseded in part by: ADR-${c[1]}", but ADR-${c[1]} `
-              + 'declares no matching supersedes-clause — an orphaned badge asserting a supersession that no record makes',
+            `ADR-${target}: compendium badge claims "Superseded in part by: ADR-${c[1]}", but ADR-${c[1]} ` +
+              'declares no matching supersedes-clause — an orphaned badge asserting a supersession that no record makes',
           );
         }
       }
@@ -493,9 +549,8 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     const supersededIds = new Set(
       adrFiles.flatMap((f) => {
         const text = read(f);
-        const targets = /^supersedes:\s*([\s\S]*?)(?=^[\w-]+:|^---)/m.exec(
-          text,
-        )?.[1] ?? '';
+        const targets =
+          /^supersedes:\s*([\s\S]*?)(?=^[\w-]+:|^---)/m.exec(text)?.[1] ?? '';
         return [...targets.matchAll(/\b(\d{3})-/g)].map(
           (match) => `ADR-${match[1]}`,
         );

@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 91 (78 in-force, 13 historical)
+**Total ADRs:** 93 (80 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_78 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_80 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -383,7 +383,7 @@ _78 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-071 — Stripe meter events emitted from idempotent usage records
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** proposed | **Oversight:** confirmed | **Superseded in part by:** ADR-092 (the identity of billable with owed-to-the-meter — confirmation criterion 5 names the only two classes excused from emitting, so everything billable is owed, and criterion 4 treats an absent event as a fault to report and retry. ADR-092 introduces a third class — billable and deliberately never metered — which neither criterion has vocabulary for. NOT YET IMPLEMENTED: no such row can exist until ADR-092 ships, so today every billable row is still owed to the meter. The no-synchronous-meter-call, one-identity-per-request and replay-safety outcomes all stand)
 **Decides:** The gateway commits an authoritative usage record with a stable idempotency identity, and a separate delivery process emits the matching Stripe meter event, keeping Stripe latency and availability out of the request path while letting undelivered records be replayed without double-billing.
 **Confirmation:** No synchronous Stripe meter call in the request path; at most one authoritative usage identity per billable request; replay cannot increase Stripe quantity twice; reconciliation reports and safely retries missing, rejected and mismatched events; non-billable and abuse-rejected requests emit nothing.
 **Related:** ADR-065, ADR-072
@@ -501,10 +501,24 @@ _78 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-091 — Quota is charged at settle, not at reserve
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Status:** proposed | **Oversight:** confirmed (2026-09-06) | **Superseded in part by:** ADR-092 (the Decision Outcome's unqualified claim that the accepted concurrency overshoot "errs in the customer's favour" — untrue as written, because meter delivery selects every billable row with no reference to the plan limit, so an overshoot request is metered like any other; the Consequences here already hedge the claim but the Decision Outcome does not retract it. The charge-at-settle outcome itself stands entirely)
 **Decides:** The gateway charged a customer's quota before calling the origin and refunded it only when the reservation row was deleted, so a reservation whose settle never completed left the charge standing forever — the customer silently and permanently lost one request of their paid allowance per occurrence, with nothing detecting it and entitlement reconciliation specified to preserve same-period usage. The charge now happens when the outcome is known billable: the reserve statement gates on an EXISTS over entitlements and moves nothing, and triggers increment on a row becoming billable by either route. A reservation that never settles costs nothing, so the defect cannot occur. Accepted cost, chosen by the maintainer against an exactly-hard limit: simultaneous requests each read the pre-increment count, so a hard limit can be exceeded by roughly the number in flight, bounded by concurrency and erring in the customer's favour; sequential requests are still refused at the limit. Three rejected alternatives are recorded, including sweeping abandoned reservations — worse than the defect, because a reservation swept mid-flight makes settle answer 503 for a request the origin served and leaves it unbilled — and deriving the quota by counting billable rows, which is correct about the cause but costs work proportional to requests already made in the period, the counter being the O(1) materialisation of exactly that count.
 **Confirmation:** Behavioural tests against real D1 prove a reservation charges nothing, a settle charges once, a direct billable insert charges once, and deleting a settled row refunds nothing, mutation-proved by returning the charge to reserve; the gate is proved to refuse a sequential request past a hard limit, mutation-proved by removing the guard; the concurrency assertion states the accepted overshoot rather than tolerating it, and records that its inversion is the decision; the migration is proved to preserve a count already taken; idempotent replay is unchanged.
 **Related:** ADR-064, ADR-080, JTBD-403
+
+### ADR-092 — Requests past a hard cap are not billed
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Decides:** A request served past a hard cap is recorded billable and counted, but is NOT delivered to the usage meter, so it cannot reach an invoice whatever the price is configured to do. The exclusion must be read at FOUR statements, not one — the delivery query plus the reconciliation group query and two health flags, all of which currently read billable-and-pending as a fault, so a naive implementation would leave the ten-minute reader permanently red on a designed condition. Chosen over billing it, over relying on a readback showing hard-cap prices carry no chargeable tier (rejected because that is a mutable provider setting no check watches), and over making the cap exactly hard (ADR-091's rejected option 4, unchanged grounds). NOT YET IMPLEMENTED: the code and this decision disagree until it lands, and it needs two releases because the column must precede the Worker query that reads it.
+**Confirmation:** Behavioural tests against real D1 prove an over-cap request is billable, counted and not selected by meter delivery (mutation-proved by removing the predicate), that an in-allowance request still is, and that soft-limit and pay-per-use organisations are unaffected; both releases proved independently safe. Explicitly not confirmable here: whether hard-cap prices carry a chargeable tier — the decision is built so the answer does not matter.
+**Related:** ADR-091, ADR-093, ADR-086, JTBD-403
+
+### ADR-093 — The Worker deploys before its migrations apply, so every migration owes forward compatibility
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Decides:** `deploy.sh` deploys the Worker via Terraform BEFORE applying D1 migrations, so the new Worker runs against the old schema in between. Keep that order and make its consequence explicit: every migration must be forward-compatible with the Worker already live, and a change coupling schema to code takes two releases, schema first. Migration-first was rejected on measured evidence — for migration 0003 it would have put the unenforcing combination live, so neither order is uniformly safer.
+**Confirmation:** `deploy.sh` ordering pinned by test so a reordering reds rather than passing quietly; every migration additive with respect to the prior Worker, or carrying a recorded reason. NOT YET SATISFIED and named as such: nothing mechanically checks a new migration against the invariant, so it is a rule rather than a control.
+**Related:** ADR-092, ADR-091, ADR-064, JTBD-400
 
 ---
 

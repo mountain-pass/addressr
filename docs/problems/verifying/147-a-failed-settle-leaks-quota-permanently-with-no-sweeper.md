@@ -4,8 +4,8 @@
 **Reported**: 2026-09-06
 **Priority**: 12 (High) — Impact: Significant (4) × Likelihood: Possible (3). Impact 4: it silently and permanently reduces what a paying customer can use below what they paid for, and the only visible symptom is a `quota_exhausted` 429 they did not earn. It is a billing-correctness defect on the revenue path. Likelihood 3: it needs a settle to fail, which needs a transient D1 error or an isolate the platform stops between two awaits — uncommon per request, close to certain across a quota period at volume.
 **Origin**: internal
-**Effort**: M — a sweeper is small, but it needs a staleness bound nobody has chosen, and choosing one wrong double-bills or double-releases.
-**WSJF**: 6.0 — (12 × 1 for Verification Pending) / 2 for Effort M
+**Effort**: S — was M while this ticket owed a sweeper. ADR-091 dissolved the defect instead, so there is no sweeper and no staleness bound to choose; what remains is a schema readback and two observations that need an activated channel.
+**WSJF**: 12.0 — (12 × 1 for Verification Pending) / 1 for Effort S. Recomputed 2026-09-06 with the Effort line above; it read 6.0 against Effort M for one revision after that line changed, which is the correction introducing the next error one line below itself.
 **JTBD**: JTBD-403
 **Persona**: addressr-maintainer
 
@@ -192,9 +192,11 @@ Accepted cost, his call against an exactly-hard limit: simultaneous requests can
 a hard limit by roughly the number in flight. Sequential requests are still refused at
 the limit, and the concurrency test asserts both halves.
 
-Moves to verification rather than closed because the change is merged, not deployed —
-migration 0003 is not yet applied to production, so the charge point there is still the
-old one — and the channel is off besides.
+Moves to verification rather than closed. Merged AND applied: migration 0003 reached
+production D1 on 2026-09-06 in release run 34021999681, so the production charge point is
+the new one. What keeps this open is not deployment but evidence and scope — the schema
+readback in exit criterion 1 has not been done, and criteria 2 and 3 need an activated
+channel. The channel is off besides.
 
 ## The decision that was needed, answered 2026-09-06
 
@@ -218,7 +220,12 @@ them applies: the defect was dissolved rather than fixed, so there is nothing to
 no bound to choose. What remains is observation.
 
 1. Migration 0003 applied to production D1, confirmed by readback, so the charge point in
-   production matches the code.
+   production matches the code. **HALF MET 2026-09-06.** The apply happened: release run
+   34021999681 at 08:40:22 UTC reported five commands executed on the remote CUSTOMER_DB.
+   The READBACK has not. Nothing has selected from `sqlite_master` to confirm the two new
+   triggers exist and the two old ones are gone, so what is proved is that the applier did
+   not error — not that the schema is what this record says it is. Those differ, and this
+   criterion deliberately asked for the stronger one.
 2. A managed request observed end to end after activation charging exactly once, and a
    request whose settle fails observed charging nothing.
 3. The accepted concurrency overshoot measured rather than reasoned, and checked against the
@@ -233,4 +240,4 @@ nothing deletes rows out from under a settle, and it would matter again if anyth
 ## Related
 
 - The retention ticket from the same review — same file, different defect.
-- ADR-080 governs the D1 envelope; a sweeper adds a scheduled statement and should be costed there.
+- ADR-080 governs the D1 envelope. The sweeper this bullet used to cost against it will never exist — ADR-091 dissolved the defect rather than collecting after it — so nothing here adds a scheduled statement. The envelope still binds the request path, and ADR-092 will touch the settle statement when it lands, which is where the next costing against ADR-080 is owed.

@@ -270,6 +270,21 @@ before(() => {
     ].join('\n'),
   );
   chmodSync(stub, 0o755);
+  // `npx` is SHADOWED for the same reason terraform is, and it is not only an
+  // assertion surface. deploy.sh's apply path ends in
+  // `npx wrangler d1 migrations apply CUSTOMER_DB --remote`, so before this stub
+  // existed the apply-path test reached that line and invoked the real wrangler
+  // against a remote database, from a unit test, on every run. It failed for
+  // want of a database id rather than doing damage, but it was a live network
+  // call on the release-critical path and it need never have been one.
+  // Recording into the same TF_CALLS file is what makes the ORDER of the
+  // terraform apply and the migration observable, which is ADR-093's subject.
+  const npxStub = path.join(harness.stubDir, 'npx');
+  writeFileSync(
+    npxStub,
+    ['#!/bin/sh', 'echo "npx $*" >> "$TF_CALLS"', 'exit 0', ''].join('\n'),
+  );
+  chmodSync(npxStub, 0o755);
 });
 
 after(() => {
@@ -387,6 +402,46 @@ describe('apps/addressr-deployment/deploy.sh — run, not read', () => {
     } finally {
       rmSync(stale, { force: true });
     }
+  });
+
+  it('applies the D1 migration AFTER deploying the Worker, never before (ADR-093)', () => {
+    // ADR-093 records this ordering as a decision, and its consequence is the
+    // invariant every migration owes: forward compatibility with the Worker
+    // already live. Before this assertion existed the ordering was a property of
+    // the script that nothing checked, so a reordering — which inverts the
+    // exposure rather than removing it — would have been a quiet edit.
+    //
+    // Read off the recorded call list rather than the source, per RFC-009: the
+    // question is which ran first, and only running it answers that.
+    const result = runDeploy({
+      PLAN_ONLY: '',
+      TF_WORKSPACE: '',
+      npm_lifecycle_event: 'deploy:prod',
+      TF_PLAN_EXIT: '2',
+    });
+
+    const applyAt = result.calls.findIndex((c) =>
+      c.startsWith('apply -auto-approve'),
+    );
+    const migrateAt = result.calls.findIndex((c) =>
+      /wrangler d1 migrations apply/.test(c),
+    );
+
+    assert.notEqual(
+      applyAt,
+      -1,
+      `no terraform apply was recorded; calls were: ${result.calls.join(' | ')}`,
+    );
+    assert.notEqual(
+      migrateAt,
+      -1,
+      `no wrangler migration was recorded, so this test would pass without ` +
+        `checking anything; calls were: ${result.calls.join(' | ')}`,
+    );
+    assert.ok(
+      applyAt < migrateAt,
+      `ADR-093 fixes Worker-before-migration. Recorded order was: ${result.calls.join(' | ')}`,
+    );
   });
 
   it('deploy:prod derives its workspace and DOES apply — the control for the case above', () => {
