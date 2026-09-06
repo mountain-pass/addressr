@@ -130,6 +130,53 @@ export async function authorizeCustomer(request, environment) {
   };
 }
 
+// Problem 146. What a usage record may retain about the request it bills.
+//
+// This used to store `new URL(request.url).pathname` verbatim. On
+// `GET /addresses/{addressId}` that path IS a G-NAF identifier, so the
+// commercial database WOULD HAVE BEGUN accumulating, on activation, which
+// addresses each organisation resolved, against their API key, with no redaction
+// and no expiry. Nothing was disclosed: the channel is off and the commercial
+// tables were empty when this was found. Prospective, and fixed while free. Nothing between
+// authorisation and reservation validates the path either, so a caller holding
+// a valid key could put anything in ANY segment, including the first.
+//
+// So the stored value is drawn from a CLOSED SET rather than derived from the
+// path. That is the property that matters: no caller input can reach the column
+// by construction, rather than by an argument about what well-behaved clients
+// send. Per-request billing is unaffected. In the Worker and the health script,
+// `request_path` is WRITTEN in exactly one statement — the reserve insert below
+// — and READ in none: nothing there selects, filters, groups or orders by it. Stated
+// as a grep result rather than a statement count, because a count is a second
+// thing to get wrong and the property does not need one. It survives for
+// per-endpoint accounting, which collection granularity satisfies.
+//
+// A path outside the set accounts as `other`, which is fail-safe for privacy
+// and blind for accounting: add an entry when an endpoint is added, or new
+// traffic lands in `other`. Recorded as a decision rather than left implicit.
+//
+// Two `indexOf` calls rather than a split. The scans are linear, not O(1) — but
+// the work is a bounded scan with a small constant instead of a per-segment
+// array, so a caller near Cloudflare's URL ceiling cannot buy an allocation
+// proportional to what they sent. Total
+// by construction — it cannot throw, which matters because `reserveUsage`
+// catches into a `usage_store_unavailable` 503 that would misreport a parse
+// failure as a storage fault.
+export function requestRoute(pathname) {
+  if (typeof pathname !== 'string' || pathname === '/' || pathname === '') {
+    return 'root';
+  }
+  const start = pathname.charCodeAt(0) === 47 ? 1 : 0;
+  const next = pathname.indexOf('/', start);
+  const head = next === -1 ? pathname.slice(start) : pathname.slice(start, next);
+  const rest = next === -1 ? '' : pathname.slice(next + 1);
+  if (head !== 'addresses') return 'other';
+  if (rest === '') return 'addresses';
+  // A single further segment is the documented lookup. Anything deeper is not a
+  // route this API declares, so it is not given a name that implies it is.
+  return rest.indexOf('/') === -1 ? 'addresses/:id' : 'other';
+}
+
 export async function reserveUsage(environment, customer, request) {
   const id = crypto.randomUUID();
   try {
@@ -138,7 +185,7 @@ export async function reserveUsage(environment, customer, request) {
         id,
         customer.organizationId,
         customer.apiKeyId,
-        new URL(request.url).pathname,
+        requestRoute(new URL(request.url).pathname),
         new Date().toISOString(),
       )
       .run();

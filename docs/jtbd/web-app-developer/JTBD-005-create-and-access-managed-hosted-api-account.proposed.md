@@ -6,6 +6,7 @@ date-created: 2026-08-29
 human-oversight: confirmed
 oversight-date: 2026-08-29
 screens:
+  - 'docs/decisions/090-usage-records-store-a-closed-set-route-not-the-request-path.proposed.md — what a usage record may retain about a customer's requests. Added 2026-09-06 and NOT yet ratified. Pointed at from here because this job owns the migration defining that column, and because the decision names a gap this job does not fill: no documented job carries a customer expectation about what the service records about them. Whoever writes that job should start here.'
   - 'apps/website/src/pages/account.jsx — sign-in, organisation selection, billing and API-key management'
   - 'apps/addressr-deployment/cloudflare-worker/managed-account.mjs — session, role and organisation authorization'
   - 'apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs — Checkout, Portal and webhook projection'

@@ -1,3 +1,8 @@
+// @jtbd JTBD-403 (Know the paid channel still bills correctly)
+//
+// The behavioural suite for the acting half, against real D1 under Miniflare.
+// Annotated 2026-09-06: the job's screens list gained this file the same day,
+// and the link was one-directional until now.
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -570,6 +575,122 @@ async function usageState(database) {
     usageCount: usage.usage_count,
   };
 }
+
+// Problem 146. The adversarial launch review of 2026-09-06 found that every
+// authorised managed request persisted `new URL(request.url).pathname` into
+// `usage_records.request_path`, and that `GET /addresses/{addressId}` carries a
+// G-NAF identifier in its path. So on activation the commercial database would
+// have begun accumulating which addresses each organisation resolved, keyed to
+// their API key —  nothing was disclosed, the channel being off and the tables
+// empty when this was found,
+// with no redaction and no expiry.
+//
+// This asserts the property that actually matters — the identifier does not
+// reach the row — rather than asserting a particular replacement string, so a
+// future change of representation does not have to change the test to stay
+// honest. The search endpoint is included because its query string was never
+// stored and must not start being.
+test('a single-address lookup does not persist the address identifier', async () => {
+  const { miniflare, database } = await migratedDatabase('retention');
+
+  try {
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,100,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
+    );
+
+    const customer = { organizationId: 'org', apiKeyId: 'key' };
+    const identifier = 'GAACT714845933';
+
+    const lookup = await reserveUsage(
+      { CUSTOMER_DB: database },
+      customer,
+      new Request(`https://api.addressr.io/addresses/${identifier}`),
+    );
+    assert.equal(lookup.ok, true, 'the reservation itself must still succeed');
+
+    const search = await reserveUsage(
+      { CUSTOMER_DB: database },
+      customer,
+      new Request('https://api.addressr.io/addresses?q=17+george+st'),
+    );
+    assert.equal(search.ok, true);
+
+    // THE CASE THAT BREAKS A FIRST-SEGMENT RULE. Nothing between authorisation
+    // and reservation validates the path, so a caller holding a valid key can
+    // put anything in the FIRST segment too. A normaliser that keeps segment
+    // one verbatim retains the identifier here while passing every routed case
+    // above — which is a test certifying a property the code does not hold.
+    const unrouted = await reserveUsage(
+      { CUSTOMER_DB: database },
+      customer,
+      new Request(`https://api.addressr.io/${identifier}`),
+    );
+    assert.equal(unrouted.ok, true);
+
+    // And a deep path, so the rule cannot be "first two segments".
+    const deep = await reserveUsage(
+      { CUSTOMER_DB: database },
+      customer,
+      new Request(`https://api.addressr.io/a/b/${identifier}/d`),
+    );
+    assert.equal(deep.ok, true);
+
+    // Read each reservation back BY ITS OWN ID. Do not order by `id` instead: it
+    // is `crypto.randomUUID()`, so the lookup-versus-search assertion below would
+    // compare two arbitrary rows and fail on correct code about one run in six —
+    // two of the four stored values are `other`, so (2/4)(1/3).
+    const pathOf = async (id) =>
+      (
+        await database
+          .prepare('SELECT request_path FROM usage_records WHERE id = ?')
+          .bind(id)
+          .first()
+      ).request_path;
+    const storedLookup = await pathOf(lookup.id);
+    const storedSearch = await pathOf(search.id);
+    const stored = [
+      storedLookup,
+      storedSearch,
+      await pathOf(unrouted.id),
+      await pathOf(deep.id),
+    ];
+
+    for (const value of stored) {
+      assert.doesNotMatch(
+        value,
+        new RegExp(identifier),
+        `usage_records retained the address identifier: ${value}. That is which ` +
+          'address this organisation resolved, kept against their API key.',
+      );
+      assert.doesNotMatch(
+        value,
+        /george|17\+/i,
+        `usage_records retained the search term: ${value}`,
+      );
+    }
+
+    // Retaining nothing at all would break per-endpoint accounting, so the row
+    // must still say WHICH endpoint was called. Asserted as a distinction the
+    // two calls make, not as a literal, so the representation stays free.
+    assert.equal(stored.length, 4);
+    // Accounting must still distinguish a lookup from a search; asserted as a
+    // distinction rather than as literals, so the representation stays free.
+    assert.notEqual(
+      storedLookup,
+      storedSearch,
+      'a lookup and a search now record identically — per-endpoint accounting is gone',
+    );
+    // Every stored value must come from a bounded set, which is the property
+    // that makes caller input unable to reach the column at all. Asserted by
+    // cardinality over a caller who supplied four different paths.
+    assert.ok(
+      new Set(stored).size <= 3,
+      `stored values are not drawn from a bounded set: ${JSON.stringify(stored)}`,
+    );
+  } finally {
+    await miniflare.dispose();
+  }
+});
 
 async function migratedDatabase(name, isLegacy = false) {
   const miniflare = new Miniflare(
