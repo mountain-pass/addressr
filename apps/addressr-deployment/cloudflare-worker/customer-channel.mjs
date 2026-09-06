@@ -29,10 +29,33 @@ const AUTH_SQL = `
   LIMIT 1
 `;
 
-const RESERVE_SQL = `
+// Problem 147. The gate reads the counter; it does not move it. The increment
+// happens at settle, by trigger, only when the outcome is billable — so a
+// reservation that never settles costs the customer nothing.
+//
+// Conditional insert rather than a RAISE, so quota exhaustion arrives as
+// `changes === 0` instead of an exception whose message has to be matched. That
+// also stops the caller reporting "the store is unavailable" for a refusal the
+// store handled correctly.
+//
+// Requests arriving in the same instant each read the pre-increment count, so a
+// hard limit can be exceeded by roughly the number in flight. Accepted by the
+// maintainer on 2026-09-06 against the alternative of counting rows, which keeps
+// the limit exactly hard at a cost that grows with requests already made in the
+// period. See migration 0003.
+// Exported so the D1 tests bind the statement under test rather than a copy of
+// it. A mirrored fixture drifts silently: a change here would leave the quota
+// assertions passing against SQL that is no longer shipped.
+export const RESERVE_SQL = `
   INSERT INTO usage_records (
     id, organization_id, api_key_id, request_path, outcome, created_at
-  ) VALUES (?, ?, ?, ?, 'reserved', ?)
+  )
+  SELECT ?, ?, ?, ?, 'reserved', ?
+  WHERE EXISTS (
+    SELECT 1 FROM entitlements
+    WHERE organization_id = ?
+      AND (hard_limit = 0 OR quota_used < quota_limit)
+  )
 `;
 
 const FINALIZE_SQL = `
@@ -180,20 +203,24 @@ export function requestRoute(pathname) {
 export async function reserveUsage(environment, customer, request) {
   const id = crypto.randomUUID();
   try {
-    await environment.CUSTOMER_DB.prepare(RESERVE_SQL)
+    const result = await environment.CUSTOMER_DB.prepare(RESERVE_SQL)
       .bind(
         id,
         customer.organizationId,
         customer.apiKeyId,
         requestRoute(new URL(request.url).pathname),
         new Date().toISOString(),
+        customer.organizationId,
       )
       .run();
-    return { ok: true, id };
-  } catch (error) {
-    if (String(error?.message).includes('quota_exhausted')) {
+    // Zero rows means the EXISTS guard refused: the customer is at their hard
+    // limit. A refusal the store handled is not a store fault, so it must not be
+    // reported as one.
+    if (!Number.isSafeInteger(result?.meta?.changes) || result.meta.changes < 1) {
       return { ok: false, response: problem(429, 'quota_exhausted') };
     }
+    return { ok: true, id };
+  } catch {
     return { ok: false, response: problem(503, 'usage_store_unavailable') };
   }
 }

@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 90 (77 in-force, 13 historical)
+**Total ADRs:** 91 (78 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_77 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_78 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -334,7 +334,7 @@ _77 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-064 — Commercial request state stored in Cloudflare D1
 
-**Status:** proposed | **Oversight:** confirmed
+**Status:** proposed | **Oversight:** confirmed | **Superseded in part by:** ADR-091 (two clauses — the quota half of confirmation criterion 4, which assumed the serialised transition charge-at-reserve enforced, where ADR-091 deliberately admits both simultaneous reserves and charges neither, so a test written to either clause fails the other; and the Decision Outcome's stop-clause requiring implementation to halt for a superseding storage decision if concurrency testing cannot prove hard-stop semantics — discharged because D1 proved that hard stop and the requirement was withdrawn deliberately, rather than the store failing to deliver it. The replay half of criterion 4, and the storage choice itself, stand)
 **Decides:** Cloudflare D1 is the gateway's local system of record for API-key hashes, organisation linkage, entitlement snapshots, quota state and idempotent usage events, chosen because it is relational and native to the Worker request path, keeping commercial state out of the search server while giving quota hard-stops and idempotency the constraints and conditional writes they need. Identity and billing providers stay authoritative for their own domains; if production-like concurrency testing cannot prove those semantics, implementation stops for a superseding storage decision rather than implicitly adding a second store.
 **Confirmation:** Terraform provisions the D1 database and binds it to the existing Worker; no API-key plaintext or provider secret stored; unique constraints reject duplicate organisation links, event identities and key hashes; concurrency tests prove quota transition and idempotent replay; a missing binding or load-bearing read/write failure fails closed and is operationally distinguishable.
 **Related:** ADR-062, ADR-065
@@ -496,6 +496,15 @@ _77 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** A usage record stores a value drawn from a closed set — root, addresses, addresses/:id, other — rather than the request pathname it previously persisted verbatim. The defect: the API declares a single-address lookup whose path carries a G-NAF identifier, so on activation the commercial database would have begun accumulating which addresses each organisation resolved, against their API key, with no redaction and no expiry — nothing was disclosed, the channel being off and the commercial tables empty when it was found, and nothing between authorisation and reservation validates the path, so a caller holding a valid key could put anything in any segment including the first. A closed set makes caller input unable to reach the column by construction rather than by an argument about what well-behaved clients send. Four options were live — closed-set route (chosen), route shape by segment (rejected: the first segment is caller-controlled), dropping the column (viable, rejected as more than the defect requires and needing a table rebuild that is free now and not later), and keeping the full path behind a retention period and expiry sweep (rejected as the only option needing a mechanism nobody has built, for a use nobody has articulated). The maintainer has confirmed none of them; the outcome is derived and the code was changed because the defect is live and the fix is reversible while the tables are empty. It also supersedes ADR-088's ground for keeping observability disabled: the fact was true and the inference was not, because the path carries the identifier on the lookup endpoint and the database would have retained those paths whatever the log setting was.
 **Confirmation:** A behavioural test against real D1 reserves over a lookup path, a search path, an unrouted caller-chosen path and a deep path and asserts no stored value carries the identifier or the search term, mutation-proved twice against both the raw pathname and the rejected segment rule; stored values asserted to come from a bounded set by cardinality over four differing caller paths, so the property is checked rather than the representation; a lookup and a search asserted to stay distinguishable so the accounting use is not silently lost; and the no-reader claim re-checked before anything relies on it.
 **Related:** ADR-088, ADR-080, JTBD-403, JTBD-005
+
+---
+
+### ADR-091 — Quota is charged at settle, not at reserve
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Decides:** The gateway charged a customer's quota before calling the origin and refunded it only when the reservation row was deleted, so a reservation whose settle never completed left the charge standing forever — the customer silently and permanently lost one request of their paid allowance per occurrence, with nothing detecting it and entitlement reconciliation specified to preserve same-period usage. The charge now happens when the outcome is known billable: the reserve statement gates on an EXISTS over entitlements and moves nothing, and triggers increment on a row becoming billable by either route. A reservation that never settles costs nothing, so the defect cannot occur. Accepted cost, chosen by the maintainer against an exactly-hard limit: simultaneous requests each read the pre-increment count, so a hard limit can be exceeded by roughly the number in flight, bounded by concurrency and erring in the customer's favour; sequential requests are still refused at the limit. Three rejected alternatives are recorded, including sweeping abandoned reservations — worse than the defect, because a reservation swept mid-flight makes settle answer 503 for a request the origin served and leaves it unbilled — and deriving the quota by counting billable rows, which is correct about the cause but costs work proportional to requests already made in the period, the counter being the O(1) materialisation of exactly that count.
+**Confirmation:** Behavioural tests against real D1 prove a reservation charges nothing, a settle charges once, a direct billable insert charges once, and deleting a settled row refunds nothing, mutation-proved by returning the charge to reserve; the gate is proved to refuse a sequential request past a hard limit, mutation-proved by removing the guard; the concurrency assertion states the accepted overshoot rather than tolerating it, and records that its inversion is the decision; the migration is proved to preserve a count already taken; idempotent replay is unchanged.
+**Related:** ADR-064, ADR-080, JTBD-403
 
 ---
 

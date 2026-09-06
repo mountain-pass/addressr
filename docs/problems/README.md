@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-09-06 **P146 released to verification** — the closed-set route landed with a derived-not-ratified decision behind it, so the ticket moves to the verification queue rather than closed: its first exit criterion asks for a recorded decision and the one recorded is `human-oversight: unconfirmed`. Earlier the same day the README was reconciled for four tickets added from the managed-channel work, two of which needed arithmetic corrections no guard could see.
+> Last reviewed: 2026-09-06 **P147 released to verification** — dissolved rather than fixed: the quota is now charged when a request is known billable rather than before it is attempted, so an abandoned reservation costs nothing and there is no residue to sweep. ADR-091 is ratified, the maintainer having chosen the concurrency overshoot over an exactly-hard limit. Earlier the same day P146 went to verification and the README was reconciled for four tickets from the managed-channel work.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -45,7 +45,6 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |
 | 6.0  | P121 | JTBD marker hook consumes the verdict at agent launch, not completion                | High (12)    | Open          | M      | 2026-08-23 | internal |
-| 6.0  | P147 | A failed settle leaks a customer's quota permanently, with no sweeper                | High (12)    | Open          | M      | 2026-09-06 | internal |
 | 5.0  | P098 | Test assertions that never execute — no runner, or no caller                         | High (10)    | Open          | M      | 2026-08-09 | internal |
 | 5.0  | P105 | @changesets/cli ships as a production dep of the published package                   | High (10)    | Open          | M      | 2026-08-19 | internal |
 | 5.0  | P120 | JTBD corpus maps no website surface; it blocks the `apps/website` import             | High (10)    | Open          | M      | 2026-08-23 | internal |
@@ -93,6 +92,7 @@ Fix released, awaiting user verification (driven off the dual-tolerant glob `doc
 | P070 | stream-down promotes failed and partial downloads into cache                         | 2026-07-29 v3.0.4 | no — not observed |
 | P097 | Cucumber leg intermittently starts against an empty index                            | 2026-08-09 v3.3.0 | no — not observed |
 | P146 | Usage records retain the address a customer looked up (fixed; awaiting ratification) | 2026-09-06        | no — not observed |
+| P147 | A failed settle leaks quota permanently (dissolved by ADR-091, not fixed)            | 2026-09-06        | no — not observed |
 
 ## Inbound Upstream Reports
 

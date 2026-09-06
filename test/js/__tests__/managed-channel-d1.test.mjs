@@ -11,6 +11,7 @@ import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
 import {
   authorizeCustomer,
   createCustomerKey,
+  RESERVE_SQL,
   reserveUsage,
   settleUsage,
 } from '../../../apps/addressr-deployment/cloudflare-worker/customer-channel.mjs';
@@ -31,11 +32,13 @@ const migrations = path.join(
   root,
   'apps/addressr-deployment/cloudflare-worker/migrations',
 );
-const reserve = `
-  INSERT INTO usage_records (
-    id, organization_id, api_key_id, request_path, outcome, created_at
-  ) VALUES (?, 'org', 'key', '/addresses', 'reserved', 'now')
-`;
+// The statement under test, imported rather than mirrored. A copy would let a
+// change to RESERVE_SQL leave every quota assertion below passing against SQL
+// that is no longer shipped.
+const reserve = RESERVE_SQL.replace(
+  /SELECT \?, \?, \?, \?, 'reserved', \?/,
+  "SELECT ?, 'org', 'key', '/addresses', 'reserved', 'now'",
+).replace(/organization_id = \?/, "organization_id = 'org'");
 
 test('D1 atomically enforces quota and idempotency under concurrent reservations', async () => {
   const { miniflare, database } = await migratedDatabase('concurrency');
@@ -45,13 +48,38 @@ test('D1 atomically enforces quota and idempotency under concurrent reservations
       "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,1,0,'2026-08',1,'now'); INSERT INTO api_keys VALUES ('key','org','default','ABCDEF123456','hash','salt',10000,'pbkdf2-sha256-v1',NULL,'now');",
     );
 
+    // THIS ASSERTION INVERTED ON 2026-09-06 and the inversion is the decision, not
+    // a test being fitted to new code. The quota used to be charged at RESERVE, so
+    // two simultaneous reserves against a limit of one meant the second was refused
+    // by a trigger. That is also why a reservation whose settle never completed
+    // leaked the customer's quota permanently — problem 147.
+    //
+    // The count now happens at SETTLE, so a reservation costs nothing until it is
+    // known billable. The leak cannot occur. The price, accepted by the maintainer
+    // over a genuinely hard limit: simultaneous requests each read the pre-increment
+    // count, so a hard limit can be exceeded by roughly the number in flight. Both
+    // reserves below are admitted, and NEITHER has charged anything yet.
     const quotaRace = await Promise.allSettled([
       database.prepare(reserve).bind('concurrent-one').run(),
       database.prepare(reserve).bind('concurrent-two').run(),
     ]);
-    assert.equal(fulfilled(quotaRace), 1);
-    assert.match(rejection(quotaRace), /quota_exhausted/);
-    await assertState(database, 1, 1);
+    assert.equal(fulfilled(quotaRace), 2, 'both in-flight reserves are admitted');
+    await assertState(database, 0, 2);
+
+    // The overshoot is bounded by concurrency and becomes visible only on settle.
+    await database.exec("UPDATE usage_records SET outcome='billable';");
+    await assertState(database, 2, 2);
+
+    // And the limit still stops SEQUENTIAL requests, which is the case that governs
+    // a customer working through their allowance rather than racing themselves.
+    await database.exec("DELETE FROM usage_records; UPDATE entitlements SET quota_used=1 WHERE organization_id='org';");
+    const sequential = await database.prepare(reserve).bind('past-limit').run();
+    assert.equal(
+      sequential.meta.changes,
+      0,
+      'a request past a hard limit was admitted; the gate is not gating',
+    );
+    await database.exec("UPDATE entitlements SET quota_used=0 WHERE organization_id='org';");
 
     await database.exec(
       "DELETE FROM usage_records; UPDATE entitlements SET quota_limit=2, quota_used=0 WHERE organization_id='org';",
@@ -62,10 +90,18 @@ test('D1 atomically enforces quota and idempotency under concurrent reservations
     ]);
     assert.equal(fulfilled(replayRace), 1);
     assert.match(rejection(replayRace), /UNIQUE constraint failed/);
-    await assertState(database, 1, 1);
+    // Idempotency is unchanged — the primary key still rejects the replay. What
+    // changed is that neither attempt charged anything: reservations are free until
+    // they settle.
+    await assertState(database, 0, 1);
 
+    // A non-billable outcome used to need a refund: the reserve had charged, and
+    // deleting the row gave it back. Now there is nothing to give back, which is
+    // exactly why an abandoned reservation can no longer leak. Asserted on both
+    // sides of the delete so a future reintroduction of charge-at-reserve reds here.
     await database.prepare('DELETE FROM usage_records').run();
     await database.prepare(reserve).bind('refundable').run();
+    await assertState(database, 0, 1);
     await database
       .prepare("DELETE FROM usage_records WHERE id='refundable'")
       .run();
@@ -214,8 +250,8 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
     await assertIndexed(database, released.calls.at(2), [
       /SEARCH usage_records USING INDEX .*id/i,
     ]);
-    await assertTriggerIndexed(database, 'reserve_usage_quota');
-    await assertTriggerIndexed(database, 'release_usage_quota');
+    await assertTriggerIndexed(database, 'settle_usage_quota');
+    await assertTriggerIndexed(database, 'count_billable_insert');
   } finally {
     await miniflare.dispose();
   }
@@ -240,7 +276,14 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
         key.hashVersion,
       )
       .run();
-    await database.prepare(reserve).bind('before-migration').run();
+    // Pre-0002 there is no `hard_limit` column, so the gated fixture cannot run
+    // here. This phase is about the migration preserving state, not about the gate.
+    await database
+      .prepare(
+        `INSERT INTO usage_records (id,organization_id,api_key_id,request_path,outcome,created_at)
+           VALUES ('before-migration','org','key','/addresses','reserved','now')`,
+      )
+      .run();
     const before = await database.prepare('SELECT * FROM entitlements').first();
     const migratedPolicy = await miniflare.dispatchFetch(
       'http://localhost/policy',
@@ -250,15 +293,33 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
       await database.prepare('SELECT * FROM entitlements').first(),
       { ...before, hard_limit: 1 },
     );
+    // The row inserted above was charged by 0001's reserve trigger, and 0002 carries
+    // that state across. Assert it BEFORE 0003 lands, because 0003 is what stops
+    // reservations charging and the migration must preserve what was already counted.
     await assertState(database, 1, 1);
+
+    const migratedSettle = await miniflare.dispatchFetch(
+      'http://localhost/settle',
+    );
+    assert.equal(migratedSettle.status, 204);
+    // 0003 must not disturb a count already taken — a customer mid-period does not
+    // get their allowance back because we changed when we count.
+    await assertState(database, 1, 1);
+
+    // Under 0003 both simultaneous reserves are admitted against the remaining
+    // allowance of one: the overshoot the maintainer accepted on 2026-09-06 in
+    // exchange for reservations no longer leaking quota when they fail to settle.
     const race = await Promise.allSettled([
       database.prepare(reserve).bind('hard-one').run(),
       database.prepare(reserve).bind('hard-two').run(),
     ]);
-    assert.equal(fulfilled(race), 1);
-    assert.match(rejection(race), /quota_exhausted/);
+    assert.equal(fulfilled(race), 2);
+    await assertState(database, 1, 3);
     await database.exec('DELETE FROM usage_records');
-    await assertState(database, 0, 0);
+    await assertState(database, 1, 0);
+    await database.exec(
+      "UPDATE entitlements SET quota_used=0 WHERE organization_id='org'",
+    );
 
     for (const allowance of [1, 0]) {
       await database
@@ -277,12 +338,15 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
       await assertState(database, 3, 3);
       await exerciseAccepted(database, key.key, 404);
       await assertState(database, 3, 3);
+      // A bare reserve with no settle: the row lands, the count does not move.
+      // Under charge-at-reserve this read (4, 4); it is now (3, 4), and that gap is
+      // precisely the quota that used to be lost when a settle never arrived.
       await database.prepare(reserve).bind('duplicate').run();
       await assert.rejects(
         database.prepare(reserve).bind('duplicate').run(),
         /UNIQUE/,
       );
-      await assertState(database, 4, 4);
+      await assertState(database, 3, 4);
       await database.exec(
         'DELETE FROM usage_records; UPDATE entitlements SET quota_used=0',
       );
@@ -295,8 +359,8 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
       database.exec('UPDATE entitlements SET hard_limit=2'),
       /CHECK/,
     );
-    await assertTriggerIndexed(database, 'reserve_usage_quota');
-    await assertTriggerIndexed(database, 'release_usage_quota');
+    await assertTriggerIndexed(database, 'settle_usage_quota');
+    await assertTriggerIndexed(database, 'count_billable_insert');
   } finally {
     await miniflare.dispose();
   }
@@ -701,7 +765,7 @@ async function migratedDatabase(name, isLegacy = false) {
         {
           type: 'ESModule',
           path: path.join(migrations, 'migration-worker.mjs'),
-          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; export default { async fetch(request, environment) { const sql = new URL(request.url).pathname === '/policy' ? policy : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
+          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; import settle from './0003-count-usage-at-settle.sql'; export default { async fetch(request, environment) { const p = new URL(request.url).pathname; const sql = p === '/policy' ? policy : p === '/settle' ? settle : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
         },
         {
           type: 'Text',
@@ -710,6 +774,10 @@ async function migratedDatabase(name, isLegacy = false) {
         {
           type: 'Text',
           path: path.join(migrations, '0002-quota-policy.sql'),
+        },
+        {
+          type: 'Text',
+          path: path.join(migrations, '0003-count-usage-at-settle.sql'),
         },
       ],
       d1Databases: { CUSTOMER_DB: `managed-channel-${name}` },
@@ -723,6 +791,10 @@ async function migratedDatabase(name, isLegacy = false) {
       'http://localhost/policy',
     );
     assert.equal(migratedPolicy.status, 204);
+    const migratedSettle = await miniflare.dispatchFetch(
+      'http://localhost/settle',
+    );
+    assert.equal(migratedSettle.status, 204);
   }
   return { miniflare, database };
 }
@@ -827,7 +899,11 @@ async function assertTriggerIndexed(database, name) {
     )
     .bind(name)
     .first('sql');
-  const update = /UPDATE[\s\S]*?;/i.exec(trigger)?.at(0);
+  // Read the BODY, not the whole statement. A trigger declared `AFTER UPDATE OF
+  // <column>` carries the word UPDATE in its header, so matching the first one
+  // yields the header and a syntax error rather than the statement to be planned.
+  const body = /\bBEGIN\b([\s\S]*)\bEND\b/i.exec(trigger)?.at(1) ?? '';
+  const update = /UPDATE[\s\S]*?;/i.exec(body)?.at(0);
   assert.ok(update, `${name} has an UPDATE predicate to verify`);
   await assertIndexed(
     database,

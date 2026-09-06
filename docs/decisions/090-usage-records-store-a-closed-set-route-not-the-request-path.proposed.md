@@ -133,19 +133,19 @@ frontmatter is free text that no check resolves to a location. The frontmatter s
 the compendium badges are pointers; this section is the source. ADR-089 and ADR-050
 enumerate theirs for the same reason.
 
-**FIRST — the observability ground.** ADR-088 keeps Worker observability disabled and
-grounds it on: "the Worker's one request log deliberately records the path without the
-query string, and enabling provider-side log retention would silently reverse that choice
-and put end-user address queries into retention."
+1. **The observability ground.** ADR-088 keeps Worker observability disabled and
+   grounds it on: "the Worker's one request log deliberately records the path without the
+   query string, and enabling provider-side log retention would silently reverse that choice
+   and put end-user address queries into retention."
 
 The fact is true; the inference is not. On `/addresses/{addressId}` the path carries the
 identifier, so "without the query string" does not establish what it is offered as
 establishing — and D1 would have retained those paths regardless of any log setting, so
 the control could not have achieved the property on its own.
 
-**SECOND — the consequence claimed from it.** ADR-088's Consequences list asserts,
-unqualified: "Worker log retention, and the customer-data exposure it would create, is
-avoided."
+2. **The consequence claimed from it.** ADR-088's Consequences list asserts,
+   unqualified: "Worker log retention, and the customer-data exposure it would create, is
+   avoided."
 
 Keeping logs off did not avoid that exposure. The reserve statement wrote the same paths
 to D1 on every authorised request whatever the log setting was, so the bullet credits the

@@ -465,10 +465,14 @@ async function customerDatabase(
   return {
     operations,
     prepare(sql) {
-      const operation = sql.includes('SELECT')
-        ? 'auth'
-        : sql.includes('INSERT')
-          ? 'reserve'
+      // INSERT is tested FIRST because the reserve statement now carries a SELECT
+      // of its own — the EXISTS guard that replaced the quota trigger. Testing
+      // SELECT first would classify every reserve as an auth read and let the
+      // statement sequence assertions below pass while the reserve went missing.
+      const operation = sql.includes('INSERT')
+        ? 'reserve'
+        : sql.includes('SELECT')
+          ? 'auth'
           : sql.includes('UPDATE')
             ? 'finalize'
             : 'release';
@@ -495,8 +499,12 @@ async function customerDatabase(
             },
             async run() {
               operations.push(operation);
+              // The reserve statement gates on an EXISTS over entitlements, so
+              // exhaustion arrives as zero rows written, not as a thrown error.
+              // Modelling it as a throw would exercise the store-unavailable path
+              // instead and let a 503 pass for a 429.
               if (operation === 'reserve' && quotaExhausted) {
-                throw new Error('quota_exhausted');
+                return { meta: { changes: 0 } };
               }
               return { meta: { changes: 1 } };
             },

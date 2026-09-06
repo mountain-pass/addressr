@@ -10,7 +10,7 @@ screens:
   - 'apps/website/src/pages/account.jsx — sign-in, organisation selection, billing and API-key management'
   - 'apps/addressr-deployment/cloudflare-worker/managed-account.mjs — session, role and organisation authorization'
   - 'apps/addressr-deployment/cloudflare-worker/stripe-channel.mjs — Checkout, Portal and webhook projection'
-  - 'apps/addressr-deployment/cloudflare-worker/migrations/0001-managed-channel.sql — organisation-owned commercial state'
+  - 'apps/addressr-deployment/cloudflare-worker/migrations/** — organisation-owned commercial state. Broadened from 0001 alone on 2026-09-06, inheriting this job''s ratification: 0002 added the quota policy and 0003 moved the point at which a request is charged, and until now neither was mapped to any job, so the file deciding when a customer''s allowance is consumed was owned by nobody. This job governs WHO OWNS a usage row; it does not govern what a row contains, nor what happens when the allowance runs out — both gaps are named below.'
   - 'apps/addressr-deployment/main.tf — Clerk production DNS and managed-channel deployment configuration'
 ---
 

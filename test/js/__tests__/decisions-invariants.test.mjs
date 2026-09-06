@@ -239,16 +239,48 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     const compendium = read('README.md');
     const WORD = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
     const problems = [];
+    const unreadable = [];
 
     for (const file of adrFiles) {
       const body = read(file);
       if (!/^supersedes-clause:/m.test(body)) continue;
 
       // The record's own enumeration: numbered items under the superseded-clauses heading.
-      const section = /\n##[^\n]*[Ss]uperseded clauses[^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(body);
-      if (!section) continue;
-      const enumerated = [...section[1].matchAll(/^\d+\.\s+\*\*/gm)].length;
-      if (enumerated === 0) continue;
+      // Matches BOTH heading orders in use — "Superseded clauses of ADR-064" and
+      // "Clauses superseded from ADR-088". The narrower "superseded clauses" wording
+      // silently excluded the two newest records while reading the two oldest, so the
+      // guard written to end a counting drift had quietly stopped covering the place
+      // the next drift would land. Out-of-scope records are now collected and reported
+      // rather than `continue`d past, because a skip nobody sees is the failure mode.
+      const section = /\n##[^\n]*[Ss]uperseded[^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(body);
+      const enumerated = section
+        ? [...section[1].matchAll(/^\d+\.\s+\*\*/gm)].length
+        : 0;
+      // A record superseding ONE clause has no count to drift, and by convention
+      // carries no enumeration section — ADR-047, ADR-049 and ADR-054 are all of
+      // that shape. The obligation attaches to records declaring more than one
+      // anchor, which is exactly where a stated count can disagree with the list.
+      const anchors = (/^supersedes-clause:\s*(.+)$/m.exec(body)?.[1] ?? '')
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      if (enumerated === 0 && anchors.length < 2) continue;
+      // NOT asserted here: enumerated === anchors.length. Tried and withdrawn — an
+      // anchor names a REGION of the superseded record, not a single clause, so one
+      // anchor legitimately covers many items (ADR-089 enumerates 19 under one,
+      // ADR-050 four). There is no mechanical relation between the two counts, and
+      // the miscount this guard was extended for — a clause that exists in the other
+      // document and is missing from the list — is not reachable by counting at all.
+      // It took an architect read to find. Do not re-add the equality.
+      if (enumerated === 0) {
+        unreadable.push(
+          `${idOf(file)}: declares ${anchors.length} supersedes-clause anchors but ` +
+            `this guard cannot read its enumeration — a multi-clause record needs a ` +
+            `heading containing "superseded" and numbered **bold** items, or its ` +
+            `count claims go unchecked`,
+        );
+        continue;
+      }
 
       const id = idOf(file);
       // Every claim of the form "<n> sites" in this ADR's own compendium entry
@@ -282,6 +314,9 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     }
 
     assert.deepStrictEqual(problems, [], `\n${problems.join('\n')}\n`);
+    // A record this guard cannot read is not a pass. Without this the guard
+    // reported success over a corpus it had silently narrowed to two of four.
+    assert.deepStrictEqual(unreadable, [], `\n${unreadable.join('\n')}\n`);
   });
 
   it('every supersedes-clause target carries a reverse badge in the compendium', () => {
