@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-09-06 **README reconciled** — 2 drift entries corrected: P144, P145. Both created today after release PR #543's production apply failed part way through the managed-channel Email Routing resources; the detector reported their WSJF Rankings rows absent and both were added in tier order. Both tickets then needed an arithmetic correction of their own, neither visible to any guard: P145's Priority line said 8 where 3 × 3 is 9 and its README row already said 9, and P144 labelled likelihood 2 as Possible, which is level 3. No row changed for either — P145's row was already right, and a likelihood label does not appear in a row at all.
+> Last reviewed: 2026-09-06 **README reconciled** — 4 tickets added today, all from the managed-channel work: P144 and P145 after release PR #543's production apply failed part way through the Email Routing resources, then P146 and P147 from the adversarial launch review the readiness ledger named as un-run. Both of the first pair also needed an arithmetic correction of their own, neither visible to any guard: P145's Priority line said 8 where 3 × 3 is 9 and its README row already said 9, and P144 labelled likelihood 2 as Possible, which is level 3. Rows added in tier order.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -24,6 +24,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 9.0  | P108 | A failed deploy orphans the Docker image of a successful publish                     | Medium (9)   | Open          | S      | 2026-08-19 | internal |
 | 9.0  | P110 | Latency is measured at the gateway and alerts nowhere that qualifies                 | Medium (9)   | Open          | S      | 2026-08-20 | internal |
 | 9.0  | P145 | Zone Email Routing state unknown after a partially-failed apply                      | Medium (9)   | Open          | S      | 2026-09-06 | internal |
+| 9.0  | P146 | Usage records retain the address a customer looked up                                | Medium (9)   | Open          | S      | 2026-09-06 | internal |
 | 8.0  | P031 | `create-adr` skill does not auto-satisfy the edit-gate hooks                         | Low (4)      | Known Error   | S      | 2026-04-21 | internal |
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal |
@@ -45,6 +46,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 6.0  | P079 | "Rollback exercised" is not a gate on warm-standby decommission                      | High (12)    | Open          | M      | 2026-08-02 | internal |
 | 6.0  | P106 | License compliance gate scans an empty tree and exits 0                              | High (12)    | Open          | M      | 2026-08-19 | internal |
 | 6.0  | P121 | JTBD marker hook consumes the verdict at agent launch, not completion                | High (12)    | Open          | M      | 2026-08-23 | internal |
+| 6.0  | P147 | A failed settle leaks a customer's quota permanently, with no sweeper                | High (12)    | Open          | M      | 2026-09-06 | internal |
 | 5.0  | P098 | Test assertions that never execute — no runner, or no caller                         | High (10)    | Open          | M      | 2026-08-09 | internal |
 | 5.0  | P105 | @changesets/cli ships as a production dep of the published package                   | High (10)    | Open          | M      | 2026-08-19 | internal |
 | 5.0  | P120 | JTBD corpus maps no website surface; it blocks the `apps/website` import             | High (10)    | Open          | M      | 2026-08-23 | internal |
