@@ -2,7 +2,7 @@
 
 **Status**: Known Error
 **Reported**: 2026-09-06
-**Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Possible (2). Impact 3: it blocks the only credential-free notification terminus ADR-089 chose, and alert coverage for the managed channel stays MISSING while it holds. No live service is affected — the channel is dark and the API is untouched. Likelihood 2: the cause is established, not speculative, but the fix depends on an upstream merge nobody here controls.
+**Priority**: 6 (Medium) — Impact: Moderate (3) × Likelihood: Unlikely (2). Impact 3: it blocks the only credential-free notification terminus ADR-089 chose, and alert coverage for the managed channel stays MISSING while it holds. No live service is affected — the channel is dark and the API is untouched. Likelihood 2 (Unlikely, not Possible — the label said Possible while the number said 2, and the number was right): the cause is established rather than speculative, and the fix depends on an upstream merge nobody here controls.
 **Origin**: internal
 **Effort**: S for the token scope, which is a permission edit. Unknown for the provider bug, which is upstream.
 **WSJF**: 12.0 — (6 × 2 for Known Error) / 1 for Effort S

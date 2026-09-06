@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-09-06 **README reconciled** — 2 drift entries corrected: P144, P145. Both created today after release PR #543's production apply failed part way through the managed-channel Email Routing resources; the detector reported their WSJF Rankings rows absent and both were added in tier order.
+> Last reviewed: 2026-09-06 **README reconciled** — 2 drift entries corrected: P144, P145. Both created today after release PR #543's production apply failed part way through the managed-channel Email Routing resources; the detector reported their WSJF Rankings rows absent and both were added in tier order. Both tickets then needed an arithmetic correction of their own, neither visible to any guard: P145's Priority line said 8 where 3 × 3 is 9 and its README row already said 9, and P144 labelled likelihood 2 as Possible, which is level 3. No row changed for either — P145's row was already right, and a likelihood label does not appear in a row at all.
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
