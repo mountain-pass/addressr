@@ -72,6 +72,34 @@ rule that preserves a segment verbatim preserves caller input.
    option preserving forensic detail. Rejected as the only option needing a
    mechanism nobody has built, for a use nobody has articulated.
 
+## THE GROUND FOR REJECTING OPTION 4 WAS FALSIFIED ON 2026-09-07
+
+Recorded at the top because it changes what this record decides, and a reader who
+reaches the Decision Outcome first will otherwise take a rejected option as settled.
+
+Asked to ratify this record, the maintainer answered that **customers will want to see
+and search their own request logs.** That is exactly the articulated use whose absence
+was option 4's sole rejection ground, and the Reassessment Criteria below anticipated
+it in terms. Option 4 is no longer rejectable on that ground.
+
+**What that does NOT do is make the shipped change wrong.** What shipped stops a
+commercial table silently accumulating end-user address queries with no policy, no
+expiry and no reader. A logs feature is the opposite of that: deliberate retention, with
+a stated period, scoped access and a deletion route. The first is a defect; the second is
+a product. Keeping the defect would not have delivered the product.
+
+**The consequence that decides sequencing, and it is not reversible.** Usage rows written
+before a logs feature exists carry a route label, not an address. That history cannot be
+reconstructed afterwards. So if customers are to see request logs covering their earliest
+use, the storage decision has to be made BEFORE the channel takes subscribers, not after.
+That is a genuine reason to settle this before activation rather than defer it.
+
+**THIS RECORD SHOULD NOT BE RATIFIED AS IT STANDS.** Its Decision Outcome rests on a
+premise its own maintainer has now contradicted. Superseding it needs the logs
+requirement designed first: what is retained, for how long, who can read it, and how a
+customer deletes or exports it. Tracked in the launch-readiness ledger rather than left
+here, because a decision record is not a backlog.
+
 ## Decision Outcome
 
 Chosen: **option 1**. `requestRoute()` returns a value from `{root, addresses,

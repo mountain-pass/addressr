@@ -108,16 +108,29 @@ message to prove it, and it cannot be proven before routing exists.
    default.
 2. The deploy token carries Email Routing write scope, verified by an apply that reaches the
    address creates rather than by reading the token's configuration.
-3. ADR-089 ratified before anything is rebuilt. Declaring these against an unconfirmed decision
-   is the exposure ADR-074 exists to close, and the ratification drain is where the finding in
+3. DISCHARGED 2026-09-07: ADR-089 is ratified, so the rebuild no longer rides an unconfirmed decision. Retained rather than deleted so the sequence stays legible. Originally: ADR-089 ratified before anything is rebuilt. Declaring these against an unconfirmed decision
+   is the exposure wr-architect ADR-074 exists to close, and the ratification drain is where the finding in
    this ticket gets weighed against the decision that produced it.
 4. The zone-state question in the sibling ticket settled first — a rebuild against an unknown
    starting state cannot tell a fresh create from a repair.
 
+## The order to rebuild in, once the provider ships a fix
+
+Recorded here rather than in `main.tf`, because that file's own comment says a note only
+a maintainer reading it would find is not a control.
+
+1. **Settle problem 145 first, whatever the provider does.** A rebuild against a zone that
+   is already routing-enabled server-side is not the same operation as one against a clean
+   zone, and Terraform holds no resource so it cannot tell which it is facing.
+2. **Widen the deploy token to include Email Routing write.** This is cause 2 and it is not
+   blocked by the provider; it can be done before the fix lands.
+3. **Declare the settings resource**, then the addresses, then the rule. The addresses carry
+   human verification, so they hold `prevent_destroy`.
+
 ## Related
 
-- ADR-089 — the notification decision this implements. Unratified.
-- ADR-074 — confirm a decision's substance before building dependent work.
+- ADR-089 — the notification decision this implements. RATIFIED 2026-09-07, which discharges exit criterion 3 above and is the only one of the four it discharges.
+- wr-architect ADR-074 — confirm a decision's substance before building dependent work. Plugin-qualified: bare ADR-074 in THIS repo is "Customer, demo and monitoring use distinct principals", an unrelated record, and the bare token resolves so nothing would have caught the mis-citation.
 - ADR-051 — the comment left in `main.tf` points here; it is not itself the record.
 - `test/js/__tests__/managed-channel-notification-terraform.test.mjs` — now asserts the
   resources are ABSENT, so a rebuild that skips this ticket reds.

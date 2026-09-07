@@ -1015,9 +1015,20 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
 # and it is the urgent one because it decays. ADR-051 — a note only a
 # maintainer reading this file would find is not a control.
 #
-# DO NOT REBUILD until ADR-089 is ratified. Declaring these against an
-# unconfirmed decision is the exposure ADR-074 exists to close, and the
-# ratification drain is where the finding above gets weighed.
+# THE RATIFICATION BLOCKER IS CLEARED; THE PROVIDER ONE IS NOT. ADR-089 was
+# ratified on 2026-09-07, so declaring these no longer rides an unconfirmed
+# decision and the wr-architect ADR-074 exposure that gated a rebuild is closed.
+# Plugin-qualified deliberately: bare ADR-074 in this repo is a different record,
+# "Customer, demo and monitoring use distinct principals". What still
+# blocks is cause 1 above and only cause 1: the provider resource remains broken,
+# re-checked 2026-09-07 against the Terraform registry, where 5.24.0 published
+# 2026-08-24 is still the latest and is what the lockfile carries. Cause 2, the
+# missing Email Routing write scope on the deploy token, is a token change the
+# maintainer makes and is not blocked by the provider.
+#
+# The rebuild ORDER lives on problem 144, not here. This comment says eight lines
+# above that a note only a maintainer reading this file would find is not a
+# control, and an ordering recorded only here would be exactly that.
 
 # ADR 041 / P035 trip-wire: absolute floor for generation 4.
 #

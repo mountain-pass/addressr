@@ -42,15 +42,18 @@ starting state.
 
 ## How to settle it
 
-Three authenticated reads of the zone answer all of it, against the same credential in one sitting:
+TWO authenticated reads of the zone answer what is left, against the same credential in one sitting. It was three until 2026-09-06, when the third was discharged by substitution: public DNS answered both of its questions at no credential cost. The list below is retained in full, with the discharged read marked, because renumbering it would break the references elsewhere in this ticket:
 
 - `GET /zones/{zone}/email/routing` — is `enabled` true, and what are `created` / `modified`?
   A `created` timestamp inside `2026-09-05T22:14:50Z`–`22:23:07Z` — the run window in the table
   below — attributes it to this apply.
 - `GET /zones/{zone}/email/routing/rules` — how many rules? Expect zero.
-- `GET /zones/{zone}/dns_records` — count `TXT` records on the apex whose content starts
-  `v=spf1`. More than one is the permerror. Also count `MX` records and note whether any point
-  at Cloudflare rather than the registrar.
+- ~~`GET /zones/{zone}/dns_records`~~ — **DISCHARGED 2026-09-06 BY SUBSTITUTION OF METHOD.**
+  It asked two things and public DNS answered both at no credential cost, read from the zone's
+  own authoritative nameservers rather than a recursive resolver: exactly ONE apex `v=spf1`
+  record, so not the permerror this ticket feared, and the `MX` records still the registrar's
+  five forwarding hosts with no Cloudflare route target among them. Retained in place rather
+  than deleted so the numbering above it does not shift.
 
 The attempt on 2026-09-06 could not complete: the credential vault re-locked and the maintainer
 was unavailable to unlock it.
@@ -60,8 +63,11 @@ was unavailable to unlock it.
 This ticket does not propose this check. Release PR #544, which carried the withdrawal, produced a Terraform plan
 comment as every release PR does, and it answered the state half for free. Planned against the
 merge result, it read **"No resource changes."** — zero create, update or delete actions, and in
-particular no delete on any of the three. The three authenticated reads this ticket asks for are
-untouched by it and all still owed.
+particular no delete on any of the three resources. The authenticated reads this ticket asks for
+are untouched by it and still owed: TWO of them, since the third was discharged 2026-09-06 by a
+public DNS read at no credential cost. This sentence said "three ... and all still owed" through
+two earlier correction passes of this same count, which is why the number is now stated once here
+and derived from the list above rather than restated.
 
 **The ordering is load-bearing, so here it is in UTC.** BARE dates elsewhere in this ticket and
 its sibling are LOCAL (AEST, UTC+10), which is why they read a day later and why a reader
@@ -112,7 +118,7 @@ is account-side state with no public projection, so no DNS read can reach it.
 
 ## Exit criteria
 
-1. The three reads above performed and their results recorded in
+1. The two remaining reads above performed and their results recorded in
    `docs/audits/managed-channel-launch-readiness.md`, dated, distinguishing measured from reasoned.
 2. If a second apex SPF record exists, it is removed — as a declared Terraform change, not by
    hand, per the standing constraint.
@@ -122,4 +128,4 @@ is account-side state with no public projection, so no DNS read can reach it.
 ## Related
 
 - The sibling ticket on the blocked Terraform route — that rebuild depends on this being settled first.
-- ADR-089 — the notification decision. Unratified.
+- ADR-089 — the notification decision. Ratified 2026-09-07; it does not settle this ticket, whose subject is the zone's state rather than the decision's standing.

@@ -21,7 +21,8 @@
 // was going to produce.
 //
 // The three retired cases asserted the resources EXIST. Re-add them with the
-// resources, not before: ADR-074, and ADR-089 is still unratified.
+// resources, not before: wr-architect ADR-074. ADR-089 was ratified 2026-09-07,
+// so that half no longer blocks; the provider defect and the token scope do.
 //
 // Mutation-proved: the credential fence, the send-binding absence, and the
 // Email-Routing absence below — re-adding a settings resource reds it and

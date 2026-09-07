@@ -72,10 +72,82 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
     // capture-adr banner says "unconfirmed until ratified" and the drain
     // promotes the frontmatter without rewriting it. Machine-written, so it
     // cannot be dodged by backticking.
-    const offenders = adrFiles.filter(
-      (f) =>
-        frontmatter(read(f), 'human-oversight') === 'confirmed' &&
-        /human-oversight:\s*unconfirmed until ratified/.test(bodyOf(read(f))),
+    // INVERTED 2026-09-07, after three rounds of getting this wrong. The guard
+    // was a list of phrasings that each red one known sentence. That fails open:
+    // a fourth wording escapes all of them, and worse, two of the three arms had
+    // no live subject once their records were fixed, so they were green by
+    // absence — the empty-corpus shape this file keeps meeting.
+    //
+    // It is now the other way round. ANY `human-oversight: unconfirmed` in the
+    // body of a record whose frontmatter says `confirmed` is an offence, unless
+    // that occurrence falls inside one of the exact sentences listed below. A new
+    // wording reds by default, and so does a new occurrence inside a record
+    // already listed, because the exemption is scoped to the sentence's span and
+    // not to the file.
+    //
+    // WHY EACH EXEMPTION IS HERE, and the reasoning is recorded because I got it
+    // wrong twice. My first rationale said these were "past-tense provenance" and
+    // that present tense separated the defect from the safe case. Both records
+    // below use PRESENT tense, so that rule was false, and it let ADR-039's
+    // "it carries unconfirmed" through — a genuine defect I had excluded myself.
+    // The real discriminator is not tense: it is whether the sentence states a
+    // permanent truth about how the record was CREATED, or a claim about what the
+    // marker says NOW. ADR-040 is safe only because a separate paragraph says so
+    // in terms, which no regex here reads.
+    //
+    // The list should shrink, not grow. ADR-089's corrected banner shows the
+    // durable shape: say nothing about the marker, because the frontmatter is
+    // already the source of truth and a second copy is a second thing to rot.
+    const MARKER_SENTENCE_EXEMPTIONS = [
+      // ADR-040 line 14, rescued by its own line 16: "The paragraph above is
+      // retained as provenance for how the substance was taken, not as a
+      // description of the current marker state."
+      'so it is born `human-oversight: unconfirmed` for the',
+      // ADR-049 line 158 — a quoted superseded sentence, about ADR-048.
+      'the wording was _"since ADR-048 is `human-oversight: unconfirmed`"_',
+    ];
+    // PER-OCCURRENCE, not per-file, and the distinction is the whole point. An
+    // earlier version of this asked whether the body contained an exemption
+    // sentence ANYWHERE and then exempted the WHOLE record — so ADR-040 and
+    // ADR-049, the two records named below, were blanket-exempt, and any future
+    // stale marker claim anywhere inside either would have passed. The comment
+    // above it claimed the opposite. That was the fourth time in this guard's
+    // history that its stated rule and its implemented rule differed, which is
+    // the failure it exists to catch, committed inside the catcher.
+    //
+    // An occurrence is excused only when an exemption sentence's own span in the
+    // body CONTAINS it. A second occurrence, outside every exempt span, reds.
+    const offenders = adrFiles.filter((f) => {
+      if (frontmatter(read(f), 'human-oversight') !== 'confirmed') return false;
+      const body = bodyOf(read(f));
+      const exemptSpans = MARKER_SENTENCE_EXEMPTIONS.flatMap((sentence) => {
+        const spans = [];
+        for (
+          let at = body.indexOf(sentence);
+          at !== -1;
+          at = body.indexOf(sentence, at + 1)
+        ) {
+          spans.push([at, at + sentence.length]);
+        }
+        return spans;
+      });
+      return [...body.matchAll(/human-oversight:\s*`?unconfirmed/g)].some(
+        (m) =>
+          !exemptSpans.some(
+            ([from, to]) => m.index >= from && m.index + m[0].length <= to,
+          ),
+      );
+    });
+    // The exemption list must not rot into an allowlist for records that no
+    // longer contain the sentence it excuses. An entry matching nothing is an
+    // entry nobody will remove, and it silently widens the next one.
+    const deadExemptions = MARKER_SENTENCE_EXEMPTIONS.filter(
+      (sentence) => !adrFiles.some((f) => bodyOf(read(f)).includes(sentence)),
+    );
+    assert.deepStrictEqual(
+      deadExemptions,
+      [],
+      `marker-sentence exemptions matching no record; delete them:\n${deadExemptions.join('\n')}`,
     );
     assert.deepStrictEqual(
       offenders,

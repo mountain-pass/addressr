@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-09-04
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-09-07
 decision-makers: [Tom Howard]
 consulted: [wr-architect:agent]
 informed: []
@@ -11,7 +12,7 @@ reassessment-date: 2026-12-04
 
 # Managed-channel notification leaves CI and drops SMS
 
-> The outcome below was directed by the maintainer on 2026-09-04 through a structured choice, after the shape ADR-088 prescribed had been built and before it was applied. The surrounding sections are derived by the capturing agent and are not yet ratified, which is what `human-oversight: unconfirmed` states; the `/wr-architect:review-decisions` drain is where a human ratifies or amends them.
+> The outcome below was directed by the maintainer on 2026-09-04 through a structured choice, after the shape ADR-088 prescribed had been built and before it was applied. The surrounding sections were derived by the capturing agent rather than directed, and that provenance is worth keeping even now they are ratified: the maintainer chose the outcome, and the reasoning, options and consequences around it are this record's reading of that choice. RATIFIED 2026-09-07 through the `/wr-architect:review-decisions` drain, as the frontmatter records. This sentence does not restate the marker, because a banner that hand-states a value the frontmatter already carries is a second place for it to be wrong, and it was wrong here from ratification until this correction.
 
 ## Context and Problem Statement
 
