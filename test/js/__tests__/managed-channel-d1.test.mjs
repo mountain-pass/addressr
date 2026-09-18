@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
+import Stripe from 'stripe';
 import {
   authorizeCustomer,
   createCustomerKey,
@@ -695,6 +696,148 @@ test('the unmeterable marker migrates additively and is safe against the deploye
         row.unmeterable_reason,
       ]),
       [['billable', 'pending', 0]],
+    );
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test('a GENUINELY SIGNED webhook projects into real D1, and the stored values are read back', async () => {
+  // THE SEGMENT NOTHING HAD EXERCISED. Verification and projection have each been
+  // proved, and never on one path. The production probes used a real signature but
+  // terminated at `ignored: true`, BEFORE any projection write. Every projection test
+  // stubs `constructEventAsync`, so everything downstream of verification has only
+  // ever run behind a stub. This drives real HMAC verification, over a real migrated
+  // schema, through to a write it then READS BACK.
+  //
+  // Only `subscriptions.retrieve` is stubbed, because that is a network call to
+  // Stripe. `stripe.webhooks` is the real thing: real signature parsing, real
+  // timestamp tolerance, real SubtleCrypto provider.
+  const { miniflare, database } = await migratedDatabase('signed-projection');
+  const secret = 'whsec_synthetic_not_a_real_secret';
+  const stripeClient = new Stripe('sk_test_synthetic_not_a_real_key');
+
+  try {
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now')",
+    );
+    const subscription = {
+      id: 'sub_synthetic',
+      customer: 'stripe',
+      status: 'active',
+      metadata: {
+        addressr_organization_id: 'org',
+        addressr_plan_key: 'synthetic',
+        addressr_payment_method_policy: 'immediate',
+      },
+      payment_settings: { payment_method_types: ['card'] },
+      items: {
+        data: [{ price: { id: 'price_synthetic' }, current_period_start: 100 }],
+      },
+    };
+    const stripe = {
+      webhooks: stripeClient.webhooks,
+      subscriptions: {
+        async retrieve() {
+          return subscription;
+        },
+      },
+    };
+    const environment = {
+      CUSTOMER_DB: database,
+      STRIPE_WEBHOOK_SECRET: secret,
+      STRIPE_PAYMENT_METHOD_TYPES: '["card"]',
+      STRIPE_PLAN_CATALOGUE: JSON.stringify({
+        synthetic: { priceId: 'price_synthetic', quota: 0, hardLimit: false },
+      }),
+    };
+
+    // Signed the way Stripe signs, by Stripe's own helper, so the bytes the handler
+    // verifies are bytes Stripe would have produced.
+    const deliver = async (event) => {
+      const payload = JSON.stringify(event);
+      const signature = stripeClient.webhooks.generateTestHeaderString({
+        payload,
+        secret,
+      });
+      const response = await handleStripeWebhook(
+        new Request('https://api.addressr.io/managed/stripe-webhook', {
+          method: 'POST',
+          headers: { 'stripe-signature': signature },
+          body: payload,
+        }),
+        environment,
+        stripe,
+      );
+      return { status: response.status, body: await response.json() };
+    };
+    const event = (id, created, type = 'customer.subscription.updated') => ({
+      id,
+      type,
+      created,
+      data: { object: { id: subscription.id } },
+    });
+
+    // A WRONG SIGNATURE IS REFUSED BY REAL CRYPTO, not by a stub deciding to throw.
+    // Without this the rest could pass against a handler that never verified at all.
+    const unsigned = await handleStripeWebhook(
+      new Request('https://api.addressr.io/managed/stripe-webhook', {
+        method: 'POST',
+        headers: { 'stripe-signature': 't=1,v1=deadbeef' },
+        body: JSON.stringify(event('evt_forged', 1000)),
+      }),
+      environment,
+      stripe,
+    );
+    assert.equal(unsigned.status, 400);
+    assert.deepEqual(await unsigned.json(), {
+      error: 'invalid_webhook_signature',
+    });
+    assert.equal(
+      (await database.prepare('SELECT COUNT(*) AS n FROM stripe_events').first())
+        .n,
+      0,
+      'a forged signature reached the store',
+    );
+
+    // VERIFIED, PROJECTED, AND READ BACK OUT OF D1.
+    assert.deepEqual(await deliver(event('evt_newer', 2000)), {
+      status: 200,
+      body: { received: true, duplicate: false },
+    });
+    const projected = await database
+      .prepare('SELECT * FROM entitlements')
+      .first();
+    assert.equal(projected.organization_id, 'org');
+    assert.equal(projected.subscription_status, 'active');
+    assert.equal(projected.stripe_event_created, 2000);
+
+    // REORDERING, ASSERTED ON THE STORED WATERMARK rather than on the SQL text. The
+    // existing cases regex the ON CONFLICT clause against a fake that executes no SQL,
+    // so they pass whatever the database would actually have done.
+    subscription.status = 'past_due';
+    assert.equal((await deliver(event('evt_older', 1000))).status, 200);
+    const afterLate = await database
+      .prepare('SELECT * FROM entitlements')
+      .first();
+    assert.equal(
+      afterLate.stripe_event_created,
+      2000,
+      'a late event rolled the stored watermark backwards',
+    );
+
+    // DEDUPLICATION AGAINST THE REAL PRIMARY KEY. The existing case throws a string
+    // modelled on the matcher the handler greps for, so it proves the catch responds
+    // to the fake rather than that the fake is what D1 raises.
+    assert.deepEqual(await deliver(event('evt_newer', 2000)), {
+      status: 200,
+      body: { received: true, duplicate: true },
+    });
+    assert.equal(
+      (await database.prepare('SELECT COUNT(*) AS n FROM stripe_events').first())
+        .n,
+      2,
+      'the replay stored a third event row',
     );
   } finally {
     await miniflare.dispose();
