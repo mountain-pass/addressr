@@ -398,7 +398,16 @@ describe('docs/decisions — hand-maintained facts (P090)', () => {
           ),
         ]);
       const claimSites = (text, where) => {
-        for (const [, raw] of text.matchAll(
+        // Mask double-quoted spans first. ADR-049 requires a shipped record to
+        // QUOTE the clause it supersedes, so a superseded-clauses section can
+        // legitimately carry the superseded record's own count -- ADR-095 quotes
+        // ADR-092's "FOUR sites" while superseding two clauses. That quotation is
+        // a claim about read sites in another record, not this record's claim
+        // about how many clauses it supersedes, and reading it as the latter
+        // fails a record for being correct. What is guarded is the record's OWN
+        // count, so what is scanned is the text outside its quotations.
+        const unquoted = text.replaceAll(/"[^"]*"/gs, '""');
+        for (const [, raw] of unquoted.matchAll(
           /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:\w+\s+)?sites?\b/gi,
         )) {
           const n = WORD[raw.toLowerCase()] ?? Number(raw);

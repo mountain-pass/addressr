@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 94 (81 in-force, 13 historical)
+**Total ADRs:** 95 (82 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_81 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_82 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -508,7 +508,7 @@ _81 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-092 — Requests past a hard cap are not billed
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-06) | **Superseded in part by:** ADR-094 (the reserved question — that the customer-visible over-limit count be put to the maintainer before the account surface is built. It was put and answered on 2026-09-06, so the obligation is discharged. The billing outcome, and the sentence bounding what this record's own ratification attested to, both stand)
+**Status:** proposed | **Oversight:** confirmed (2026-09-06) | **Superseded in part by:** ADR-095 (the FOUR-statement count in the Decides line below, and confirmation criterion 4. The obligation stands and every statement named is still obliged; what no longer holds is that those four are all of them. Two more were found on 2026-09-18, one of them a SCHEDULING input whose failure mode is silence rather than an alarm. Criterion 4's principle stands, but it named two health flags where the reader carries five, so an implementation could satisfy it exactly and still leave the reader permanently red) | **Superseded in part by:** ADR-094 (the reserved question — that the customer-visible over-limit count be put to the maintainer before the account surface is built. It was put and answered on 2026-09-06, so the obligation is discharged. The billing outcome, and the sentence bounding what this record's own ratification attested to, both stand)
 **Decides:** A request served past a hard cap is recorded billable and counted, but is NOT delivered to the usage meter, so it cannot reach an invoice whatever the price is configured to do. The exclusion must be read at FOUR statements, not one — the delivery query plus the reconciliation group query and two health flags, all of which currently read billable-and-pending as a fault, so a naive implementation would leave the ten-minute reader permanently red on a designed condition. Chosen over billing it, over relying on a readback showing hard-cap prices carry no chargeable tier (rejected because that is a mutable provider setting no check watches), and over making the cap exactly hard (ADR-091's rejected option 4, unchanged grounds). NOT YET IMPLEMENTED: the code and this decision disagree until it lands, and it needs two releases because the column must precede the Worker query that reads it.
 **Confirmation:** Behavioural tests against real D1 prove an over-cap request is billable, counted and not selected by meter delivery (mutation-proved by removing the predicate), that an in-allowance request still is, and that soft-limit and pay-per-use organisations are unaffected; both releases proved independently safe. Explicitly not confirmable here: whether hard-cap prices carry a chargeable tier — the decision is built so the answer does not matter.
 **Related:** ADR-091, ADR-093, ADR-086, JTBD-403
@@ -526,6 +526,13 @@ _81 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** The hard-cap usage panel renders the true `used of limit` figure and NO progress element, and says nothing about billing. A `<progress>` cannot represent a value above its maximum because the spec clamps it, so above the limit it drew a full bar beside text reading "5 of 3" and the two contradicted each other. Capping the number instead was proposed and rejected as a regression: it replaces an accurate billing figure with an inaccurate one and states the true total nowhere. Hiding the bar from assistive technology only was built and withdrawn, because it leaves the contradiction on screen for everyone else. `<meter>` clamps identically.
 **Confirmation:** Browser tests cover the hard-cap branch under, at and over the limit, where the suite previously had one row; every row asserts no `progress` element and no `progressbar` role; mutation-proved by reintroducing a clamped bar, which reds all three. Rendered text is unchanged, so the existing text assertions still hold.
 **Related:** ADR-092, ADR-091, JTBD-005
+
+### ADR-095 — An unmeterable row is excluded wherever billable implies owed
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-18)
+**Decides:** The rule for excluding a request served past a hard cap from billing is a MECHANICAL GUARD, not a list of statements: a test enumerates every SQL literal reading `outcome = 'billable'` and requires each to account for the exclusion or to carry a recorded reason for not doing so. Replaces the four-statement count, which was wrong — two more statements were found on 2026-09-18, one of them a scheduling input whose failure mode is SILENCE rather than an alarm, a kind the earlier enumeration had no category for. A count drifts and so does a category list; the guard admits neither. A window whose billable rows were all excluded still records what it expected AND what it deliberately did not meter, chosen by the maintainer over recording that it expected nothing and over recording nothing at all, so that the provider reporting usage the service never sent is still detectable — that is over-billing, which the billing job names first among the things that must not happen. Accounting for the exclusion does NOT mean a predicate everywhere: three of the six statements are discharged by the reconciliation row existing and reaching matched, and a predicate added there would be dead code nothing could mutation-prove. ONLY PARTLY IMPLEMENTED: migration 0004 is written and NOT APPLIED, and no row is excluded from metering today.
+**Confirmation:** The guard reds when a new unaccounted statement is added, proved by adding one, and carries a zero-match floor. An excluded row leaves ALL FIVE health flags silent, asserted by whole-array equality, mutation-proved against the mechanism holding the property at each site rather than against a predicate the site does not have — including both branches of the reconciliation comparison, since the pending branch fires first and the wrong one still looks correct. The marker is never set on an already-delivered row. Migration-alone safety is proved against the current Worker source; that this equals the deployed Worker is REASONED from the diff carrying no Worker change, not measured against a version identifier.
+**Related:** ADR-092, ADR-091, ADR-093, ADR-080, ADR-051, JTBD-403
 
 ---
 

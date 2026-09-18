@@ -573,7 +573,7 @@ test('meter health observes real migrated D1 without exposing workload or changi
       'reconciliation_missing',
     ]);
     await database.exec(
-      "UPDATE usage_records SET meter_state='delivered'; INSERT INTO meter_reconciliations VALUES ('org','2026-08-31T08:00:00.000Z','2026-08-31T09:00:00.000Z',1,1,0,1,'matched','now',NULL);",
+      "UPDATE usage_records SET meter_state='delivered'; INSERT INTO meter_reconciliations (organization_id,window_start,window_end,expected_count,delivered_count,rejected_count,provider_count,state,checked_at,error_code) VALUES ('org','2026-08-31T08:00:00.000Z','2026-08-31T09:00:00.000Z',1,1,0,1,'matched','now',NULL);",
     );
     assert.deepEqual(
       await observe(),
@@ -612,6 +612,90 @@ function fulfilled(outcomes) {
 function rejection(outcomes) {
   return String(outcomes.find(({ status }) => status === 'rejected')?.reason);
 }
+
+test('the unmeterable marker migrates additively and is safe against the deployed Worker', async () => {
+  // ADR-092 excludes a request served past a hard cap from metering. That needs a
+  // marker column WRITTEN at settle, and ADR-093 says the Worker deploys BEFORE its
+  // migrations apply — so this migration must be safe against the Worker already
+  // running, which is the one in this repository, since the release carrying this
+  // migration changes no Worker code. That is what the second half of this test
+  // exercises, and it is the half that would have caught the real failure: a Worker
+  // naming a column the schema lacks fails into settleUsage's catch and answers
+  // usage_store_unavailable on requests the origin already served.
+  const { miniflare, database } = await migratedDatabase('unmeterable');
+
+  try {
+    const usageColumns = await database
+      .prepare('PRAGMA table_info(usage_records)')
+      .all();
+    const reason = usageColumns.results.find(
+      (column) => column.name === 'unmeterable_reason',
+    );
+    assert.ok(reason, 'usage_records carries the exclusion reason');
+    // A reason code rather than a boolean, so a second exclusion class never needs
+    // a second widening — and NOT NULL DEFAULT 0 is what makes the ALTER additive
+    // under ADR-093 and safe against a Worker that does not name the column.
+    assert.equal(reason.type, 'INTEGER');
+    assert.equal(reason.notnull, 1, 'the marker is NOT NULL');
+    assert.equal(reason.dflt_value, '0', 'and defaults to meterable');
+
+    const reconciliationColumns = await database
+      .prepare('PRAGMA table_info(meter_reconciliations)')
+      .all();
+    const excluded = reconciliationColumns.results.find(
+      (column) => column.name === 'unmeterable_count',
+    );
+    assert.ok(excluded, 'meter_reconciliations carries the unmeterable count');
+    assert.equal(excluded.type, 'INTEGER');
+    assert.equal(excluded.notnull, 1);
+    assert.equal(excluded.dflt_value, '0');
+
+    // The deployed Worker's own request path, unchanged, against the migrated
+    // schema. Reserve and settle both name their columns explicitly, so neither
+    // sees the new one.
+    await database.exec(
+      "INSERT INTO organizations VALUES ('org','org_clerk_addressr','stripe','now'); INSERT INTO entitlements (organization_id,stripe_subscription_id,plan_key,subscription_status,pause_collection,payment_method_policy,cancel_at_period_end,quota_limit,quota_used,quota_period,stripe_event_created,updated_at) VALUES ('org','sub','basic','active',0,'immediate',0,100,0,'2026-08',1,'now');",
+    );
+    const created = await createCustomerKey();
+    await database
+      .prepare(
+        `INSERT INTO api_keys (
+          id, organization_id, name, prefix, key_hash, key_salt,
+          key_iterations, hash_version, revoked_at, created_at
+        ) VALUES ('key', 'org', 'default', ?, ?, ?, ?, ?, NULL, 'now')`,
+      )
+      .bind(
+        created.prefix,
+        created.keyHash,
+        created.keySalt,
+        created.keyIterations,
+        created.hashVersion,
+      )
+      .run();
+
+    await exerciseAccepted(database, created.key, 200);
+    await assertState(database, 1, 1);
+
+    // And the migration alone excludes nothing: every existing row stays meterable,
+    // so the schema change on its own cannot stop a request being billed. Without
+    // this the migration could silently switch billing off a release early.
+    const settled = await database
+      .prepare(
+        "SELECT outcome, meter_state, unmeterable_reason FROM usage_records",
+      )
+      .all();
+    assert.deepEqual(
+      settled.results.map((row) => [
+        row.outcome,
+        row.meter_state,
+        row.unmeterable_reason,
+      ]),
+      [['billable', 'pending', 0]],
+    );
+  } finally {
+    await miniflare.dispose();
+  }
+});
 
 async function assertState(database, quotaUsed, usageCount) {
   const entitlement = await database
@@ -765,7 +849,7 @@ async function migratedDatabase(name, isLegacy = false) {
         {
           type: 'ESModule',
           path: path.join(migrations, 'migration-worker.mjs'),
-          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; import settle from './0003-count-usage-at-settle.sql'; export default { async fetch(request, environment) { const p = new URL(request.url).pathname; const sql = p === '/policy' ? policy : p === '/settle' ? settle : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
+          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; import settle from './0003-count-usage-at-settle.sql'; import cap from './0004-mark-rows-served-past-a-hard-cap.sql'; export default { async fetch(request, environment) { const p = new URL(request.url).pathname; const sql = p === '/policy' ? policy : p === '/settle' ? settle : p === '/cap' ? cap : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
         },
         {
           type: 'Text',
@@ -778,6 +862,13 @@ async function migratedDatabase(name, isLegacy = false) {
         {
           type: 'Text',
           path: path.join(migrations, '0003-count-usage-at-settle.sql'),
+        },
+        {
+          type: 'Text',
+          path: path.join(
+            migrations,
+            '0004-mark-rows-served-past-a-hard-cap.sql',
+          ),
         },
       ],
       d1Databases: { CUSTOMER_DB: `managed-channel-${name}` },
@@ -795,6 +886,8 @@ async function migratedDatabase(name, isLegacy = false) {
       'http://localhost/settle',
     );
     assert.equal(migratedSettle.status, 204);
+    const migratedCap = await miniflare.dispatchFetch('http://localhost/cap');
+    assert.equal(migratedCap.status, 204);
   }
   return { miniflare, database };
 }

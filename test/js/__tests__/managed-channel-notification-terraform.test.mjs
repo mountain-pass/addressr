@@ -6,8 +6,11 @@
 //
 // WHY THEY WENT. `cloudflare_email_routing_settings` is broken in the provider —
 // it errors converting the API response on a missing `support_subaddress`
-// field, upstream issue 7301, present in 5.24.0 which is the latest 5.x and what
-// the lockfile carries. And both address creates returned 403: the deploy token
+// field, upstream issue 7301, present in 5.24.0 which is what the lockfile
+// carries, and STILL present in 5.25.0, re-checked 2026-09-18 by reading provider
+// source at that tag. Do not take a latest-version claim from this comment: it is
+// mutable and the launch-readiness ledger is where the re-check is recorded.
+// And both address creates returned 403: the deploy token
 // has no Email Routing write scope. Left declared, they fail EVERY subsequent
 // release apply, so the release path stays blocked until they go.
 //

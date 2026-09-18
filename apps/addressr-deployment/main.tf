@@ -997,8 +997,9 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
 #   1. `cloudflare_email_routing_settings` is broken in the provider. It errors
 #      converting the API RESPONSE — "Struct defines fields not found in object:
 #      support_subaddress". Upstream issue 7301, introduced in 5.23.0, still
-#      present in 5.24.0 which is the latest 5.x and what the lockfile carries.
-#      Fix PR 7302 is open and unmerged.
+#      present in 5.24.0 which is what the lockfile carries, and STILL present in
+#      5.25.0, re-checked 2026-09-18 by reading provider source at that tag.
+#      Fix PR 7302 is open and unmerged, re-checked the same day.
 #   2. Both address creates returned 403 "Authentication error". The deploy
 #      token has no Email Routing write scope.
 #
@@ -1021,8 +1022,11 @@ resource "aws_sns_topic_subscription" "search_ops_email" {
 # Plugin-qualified deliberately: bare ADR-074 in this repo is a different record,
 # "Customer, demo and monitoring use distinct principals". What still
 # blocks is cause 1 above and only cause 1: the provider resource remains broken,
-# re-checked 2026-09-07 against the Terraform registry, where 5.24.0 published
-# 2026-08-24 is still the latest and is what the lockfile carries. Cause 2, the
+# re-checked 2026-09-18 by reading provider source at tag v5.25.0, which is now
+# the latest and which still carries the defect. Do not take a latest-version
+# claim from this file: it is mutable, it has gone stale here once already, and
+# the launch-readiness ledger is the single place the re-check is recorded.
+# Cause 2, the
 # missing Email Routing write scope on the deploy token, is a token change the
 # maintainer makes and is not blocked by the provider.
 #
