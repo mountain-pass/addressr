@@ -149,6 +149,36 @@ retained is data retained whether or not anyone can read it yet, so it is only h
 retention period and deletion route are decided at the same time. Recorded as a sequencing
 option, not recommended over simply deciding.
 
+## ANSWERED 2026-09-18: option B, the address looked up and not what was typed
+
+The maintainer chose option B when the four were put with their costs. A usage record will
+retain the VALIDATED address identifier on a single-address lookup, and nothing beyond
+today's route label on a search. The end user's typed query is never retained.
+
+**What this settles, and only this.** The irreversible question, what a row keeps. It does
+NOT settle the retention period, the access scope, the deletion route or the export route,
+which are the remaining investigation tasks and which are changeable after the fact. It does
+not settle who may read the logs within an organisation.
+
+**What it makes newly load-bearing.** The identifier must come from a VALIDATED ROUTE MATCH,
+never a caller-supplied path segment. That was already an investigation task; choosing B
+promotes it from a design note to the property the whole option rests on. Nothing between
+authorising a key and recording usage validates the path today, which is exactly what killed
+the keep-the-first-segment option in ADR-090, so a caller holding a valid key can currently
+put arbitrary text in the first segment. Option B is only safe with that check in place, and
+the check is therefore part of the option rather than a follow-up to it.
+
+**The decay stops when the column ships, not when the feature does.** Under B, every request
+served between activation and the column existing is permanently unreadable for the customer
+it belonged to. The customer-facing surface can follow later. The write cannot, which is the
+whole reason this gate is ordered before activation.
+
+**Still owed before this closes**, unchanged by the answer: the customer job, which does not
+exist and which two decisions and this ticket have now all landed in; the record superseding
+ADR-090, which must re-carry ADR-090's two clause supersessions of ADR-088 or both are
+stranded; and the ledger gate. Retention and deletion remain undecided and one of them is
+legal-adjacent, so the column shipping does not license the surface shipping.
+
 ## Exit criteria
 
 1. A documented customer job covering visibility of one's own usage.

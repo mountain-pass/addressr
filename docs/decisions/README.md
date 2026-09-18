@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 95 (82 in-force, 13 historical)
+**Total ADRs:** 96 (83 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_82 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_83 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -529,10 +529,17 @@ _82 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-095 — An unmeterable row is excluded wherever billable implies owed
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-18)
+**Status:** proposed | **Oversight:** confirmed (2026-09-18) | **Superseded in part by:** ADR-096 (the empty-window matching rule inside the chosen option, and ONLY where every billable row in the window is excluded — a partial window still compares against the provider, and what the window stores is unchanged. Also the ground on which recording nothing was rejected: that ground said nothing would notice a regression, and something does, locally and sooner. The rejection stands; the reasoning moved)
 **Decides:** The rule for excluding a request served past a hard cap from billing is a MECHANICAL GUARD, not a list of statements: a test enumerates every SQL literal reading `outcome = 'billable'` and requires each to account for the exclusion or to carry a recorded reason for not doing so. Replaces the four-statement count, which was wrong — two more statements were found on 2026-09-18, one of them a scheduling input whose failure mode is SILENCE rather than an alarm, a kind the earlier enumeration had no category for. A count drifts and so does a category list; the guard admits neither. A window whose billable rows were all excluded still records what it expected AND what it deliberately did not meter, chosen by the maintainer over recording that it expected nothing and over recording nothing at all, so that the provider reporting usage the service never sent is still detectable — that is over-billing, which the billing job names first among the things that must not happen. Accounting for the exclusion does NOT mean a predicate everywhere: three of the six statements are discharged by the reconciliation row existing and reaching matched, and a predicate added there would be dead code nothing could mutation-prove. ONLY PARTLY IMPLEMENTED: migration 0004 is written and NOT APPLIED, and no row is excluded from metering today.
 **Confirmation:** The guard reds when a new unaccounted statement is added, proved by adding one, and carries a zero-match floor. An excluded row leaves ALL FIVE health flags silent, asserted by whole-array equality, mutation-proved against the mechanism holding the property at each site rather than against a predicate the site does not have — including both branches of the reconciliation comparison, since the pending branch fires first and the wrong one still looks correct. The marker is never set on an already-delivered row. Migration-alone safety is proved against the current Worker source; that this equals the deployed Worker is REASONED from the diff carrying no Worker change, not measured against a version identifier.
 **Related:** ADR-092, ADR-091, ADR-093, ADR-080, ADR-051, JTBD-403
+
+### ADR-096 — An all-excluded window reconciles locally, without asking the provider
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-18)
+**Decides:** When every billable row in a reconciliation window was deliberately not metered, the window is decided from LOCAL STATE and no provider call is made: nothing delivered means matched, anything delivered means mismatched. The maintainer was asked on 2026-09-18 whether to pay one provider summary call per such window on a path with no performance budget, and declined. What replaces it is not merely cheaper — it catches the failure EARLIER. If the exclusion regresses, those rows are sent, which sets their meter state to delivered, so a window that owed nothing and delivered something is a LOCAL CONTRADICTION, visible with no provider call and no provider reporting lag. That corrects the ground ADR-095 rejected recording-nothing on, which said nothing would notice. What the window STORES is unchanged and ADR-095's outcome stands. The design's soundness depends on ADR-092's rule that the marker is written inside the same statement that makes a row billable, for a reason that rule does not itself give.
+**Confirmation:** An all-excluded window reconciles matched with no provider call, asserted by failing if the client is called at all rather than by inspecting the result; one with rows delivered reconciles mismatched, mutation-proved by removing the delivery exclusion; the requeue does NOT fire on a locally-decided mismatch, mutation-proved by initialising the provider count to zero, since today that holds only by `undefined` comparison semantics and one tidy-up would make those rows permanently unclearable; a PARTIAL window still calls the provider, mutation-proved by widening the test to match it. Explicitly not confirmable here: that nothing but this delivery path can write to the meter.
+**Related:** ADR-095, ADR-092, ADR-091, ADR-049, ADR-080, JTBD-403
 
 ---
 
