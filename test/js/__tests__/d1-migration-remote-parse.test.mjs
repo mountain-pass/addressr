@@ -64,9 +64,25 @@ describe('D1 migrations survive the remote applier’s statement splitter', () =
     // Without this the suite would go green on an empty or moved directory —
     // the failure mode that keeps recurring in this repo.
     assert.ok(
-      files.length >= 3,
-      `expected at least 3 migrations in ${migrationsDir}, found ${files.length}`,
+      files.length > 0,
+      `no migrations were found in ${migrationsDir}, so the per-file assertions ` +
+        'below would generate no cases and this suite would pass having read ' +
+        'nothing',
     );
+    // The floor used to be a hand-written `>= 3`, already stale at four migrations,
+    // which would have gone on passing while silently covering fewer than the
+    // directory holds. A count maintained by hand is the thing it guards against.
+    // What carries the property instead is that `files` IS the directory listing and
+    // the loop below generates one case per entry, so a new migration needs no edit
+    // here and a moved directory reds on the floor above.
+    //
+    // A `deepEqual(files, readdirSync(...))` was written here and DELETED before it
+    // shipped: it compared the same expression against itself, so it could only fail
+    // on a filesystem race, while its message claimed to detect drift. That is
+    // failure mode 4 of the ticket this change also edits -- an assertion reporting
+    // coverage it does not have -- committed inside the commit reducing an instance
+    // of it. Recorded rather than silently dropped, because the next person to feel
+    // this block needs a second assertion should know one was tried.
   });
 
   for (const file of files) {

@@ -4,6 +4,7 @@
 // Annotated 2026-09-06: the job's screens list gained this file the same day,
 // and the link was one-directional until now.
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +33,15 @@ const migrations = path.join(
   root,
   'apps/addressr-deployment/cloudflare-worker/migrations',
 );
+// ENUMERATED, NEVER LISTED. This used to name each migration twice -- once as an
+// import and once in a ternary chain picking which to apply -- so a new migration
+// was applied by NO test in this file until someone remembered to edit the helper.
+// A guard that silently stops covering the thing it guards is the failure this
+// whole file exists to avoid, and it was one level below where anyone was looking.
+// Adding 0005 now requires no edit here.
+const migrationFiles = readdirSync(migrations)
+  .filter((file) => file.endsWith('.sql'))
+  .sort();
 // The statement under test, imported rather than mirrored. A copy would let a
 // change to RESERVE_SQL leave every quota assertion below passing against SQL
 // that is no longer shipped.
@@ -258,7 +268,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
 });
 
 test('quota migration preserves populated state and counts soft and pay-per-use requests', async () => {
-  const { miniflare, database } = await migratedDatabase('policies', true);
+  const { miniflare, database } = await migratedDatabase('policies', 1);
   try {
     const key = await createCustomerKey();
     await database.exec(
@@ -285,10 +295,7 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
       )
       .run();
     const before = await database.prepare('SELECT * FROM entitlements').first();
-    const migratedPolicy = await miniflare.dispatchFetch(
-      'http://localhost/policy',
-    );
-    assert.equal(migratedPolicy.status, 204);
+    await applyMigration(miniflare, 1);
     assert.deepEqual(
       await database.prepare('SELECT * FROM entitlements').first(),
       { ...before, hard_limit: 1 },
@@ -298,10 +305,7 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
     // reservations charging and the migration must preserve what was already counted.
     await assertState(database, 1, 1);
 
-    const migratedSettle = await miniflare.dispatchFetch(
-      'http://localhost/settle',
-    );
-    assert.equal(migratedSettle.status, 204);
+    await applyMigration(miniflare, 2);
     // 0003 must not disturb a count already taken — a customer mid-period does not
     // get their allowance back because we changed when we count.
     await assertState(database, 1, 1);
@@ -840,7 +844,14 @@ test('a single-address lookup does not persist the address identifier', async ()
   }
 });
 
-async function migratedDatabase(name, isLegacy = false) {
+// `through` is how many migrations to apply, oldest first. Defaulting to all of
+// them is what makes a new migration covered by every caller automatically.
+async function migratedDatabase(name, through = migrationFiles.length) {
+  assert.ok(
+    migrationFiles.length > 0,
+    'no migrations were enumerated, so every assertion in this file would run ' +
+      'against an empty database and pass having checked nothing',
+  );
   const miniflare = new Miniflare(
     convertV4MiniflareOptions({
       name: `managed-channel-${name}`,
@@ -849,47 +860,34 @@ async function migratedDatabase(name, isLegacy = false) {
         {
           type: 'ESModule',
           path: path.join(migrations, 'migration-worker.mjs'),
-          contents: String.raw`import migration from './0001-managed-channel.sql'; import policy from './0002-quota-policy.sql'; import settle from './0003-count-usage-at-settle.sql'; import cap from './0004-mark-rows-served-past-a-hard-cap.sql'; export default { async fetch(request, environment) { const p = new URL(request.url).pathname; const sql = p === '/policy' ? policy : p === '/settle' ? settle : p === '/cap' ? cap : migration; await environment.CUSTOMER_DB.exec(sql.replaceAll('\n', ' ')); return new Response(null, { status: 204 }); } }`,
+          contents: `${migrationFiles
+            .map((file, index) => `import m${index} from './${file}';`)
+            .join(' ')} const all = [${migrationFiles
+            .map((_, index) => `m${index}`)
+            .join(',')}]; export default { async fetch(request, environment) { const index = Number(new URL(request.url).pathname.slice(1)); await environment.CUSTOMER_DB.exec(all[index].replaceAll('\\n', ' ')); return new Response(null, { status: 204 }); } }`,
         },
-        {
+        ...migrationFiles.map((file) => ({
           type: 'Text',
-          path: path.join(migrations, '0001-managed-channel.sql'),
-        },
-        {
-          type: 'Text',
-          path: path.join(migrations, '0002-quota-policy.sql'),
-        },
-        {
-          type: 'Text',
-          path: path.join(migrations, '0003-count-usage-at-settle.sql'),
-        },
-        {
-          type: 'Text',
-          path: path.join(
-            migrations,
-            '0004-mark-rows-served-past-a-hard-cap.sql',
-          ),
-        },
+          path: path.join(migrations, file),
+        })),
       ],
       d1Databases: { CUSTOMER_DB: `managed-channel-${name}` },
     }),
   );
   const database = await miniflare.getD1Database('CUSTOMER_DB');
-  const migrated = await miniflare.dispatchFetch('http://localhost/migrate');
-  assert.equal(migrated.status, 204);
-  if (!isLegacy) {
-    const migratedPolicy = await miniflare.dispatchFetch(
-      'http://localhost/policy',
-    );
-    assert.equal(migratedPolicy.status, 204);
-    const migratedSettle = await miniflare.dispatchFetch(
-      'http://localhost/settle',
-    );
-    assert.equal(migratedSettle.status, 204);
-    const migratedCap = await miniflare.dispatchFetch('http://localhost/cap');
-    assert.equal(migratedCap.status, 204);
+  for (let index = 0; index < through; index += 1) {
+    await applyMigration(miniflare, index);
   }
   return { miniflare, database };
+}
+
+async function applyMigration(miniflare, index) {
+  const applied = await miniflare.dispatchFetch(`http://localhost/${index}`);
+  assert.equal(
+    applied.status,
+    204,
+    `${migrationFiles[index]} did not apply: ${await applied.text()}`,
+  );
 }
 
 function requestWithKey(key) {
