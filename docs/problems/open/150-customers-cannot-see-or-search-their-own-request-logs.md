@@ -6,7 +6,7 @@
 **Origin**: maintainer, when asked to ratify the retention decision on 2026-09-07
 **Effort**: M — not the storage change, which is small, but the design around it: retention period, scoped access, deletion and export. Each is a decision, and two of them are legal-adjacent.
 **WSJF**: 6.0 — (12 × 1 for Open) / 2 for Effort M
-**JTBD**: none — see below
+**JTBD**: JTBD-006 (See what my API key was used for), written 2026-09-19 and NOT yet ratified
 **Persona**: web-app-developer
 
 ## Description
@@ -40,10 +40,12 @@ This is the reason the ticket is priority High while the channel is off.
 
 ## Investigation Tasks
 
-- [ ] Write the customer job. There is currently NO documented job covering what a
-      customer can see about their own usage — ADR-090 records that gap, and this request
-      is the second thing in two days to land in it. Without it there is nothing to judge
-      the design against.
+- [x] Write the customer job. **DONE 2026-09-19 as JTBD-006, and UNRATIFIED.** Met on
+      existence, open on ratification, and the two are different claims: the job's
+      SUBSTANCE rests on the maintainer's 2026-09-18 choice of option B, while the DOCUMENT
+      carries no oversight marker. It records on its face that it is derived and not
+      gathered — no customer has asked for this — and names what would confirm or falsify
+      it, neither of which can happen before activation.
 - [ ] Decide what is retained: the full path, a normalised address identifier, or the
       resolved address. These differ in what a customer can search by.
 - [ ] Decide the retention period, and whether the customer can shorten it.
@@ -181,7 +183,8 @@ legal-adjacent, so the column shipping does not license the surface shipping.
 
 ## Exit criteria
 
-1. A documented customer job covering visibility of one's own usage.
+1. A documented customer job covering visibility of one's own usage. MET ON EXISTENCE
+   2026-09-19 (JTBD-006), OPEN ON RATIFICATION. Not counted closed here.
 2. A ratified decision superseding ADR-090, stating what is retained, for how long, who
    reads it, and how it is deleted.
 3. The launch-readiness ledger carries a gate for it, classed on evidence.
