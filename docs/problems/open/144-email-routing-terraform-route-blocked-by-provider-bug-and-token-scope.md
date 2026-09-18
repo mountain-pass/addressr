@@ -21,8 +21,13 @@ independent — fixing either alone does not unblock it.
 > found in object: support_subaddress.
 
 This is `cloudflare/terraform-provider-cloudflare` issue 7301, open, introduced in provider
-5.23.0. It is present in 5.24.0, which is the latest 5.x and what `.terraform.lock.hcl`
-carries. PR 7302, which proposes a fix, is open and unmerged. The issue's stated workaround is to pin below
+5.23.0. It is present in 5.24.0, which is what `.terraform.lock.hcl`
+carries, and STILL PRESENT IN 5.25.0 — re-checked 2026-09-18 by reading provider source at
+tag `v5.25.0`, where `email_routing_settings/schema.go` declares nine attributes and none is
+`support_subaddress` while `model.go` line 20 still carries the `tfsdk:"support_subaddress"`
+tag. 5.25.0's changelog adds `support_subaddress` to `cloudflare_email_routing_dns`, a
+DIFFERENT resource, so it reads like a fix and is not. PR 7302, which proposes a fix to the
+right resource, was re-checked the same day and is open and unmerged. The issue's stated workaround is to pin below
 5.23.0.
 
 **Cause 2, ours.** Both `cloudflare_email_routing_address` creates returned:
@@ -91,7 +96,7 @@ Email Sending resource, only that none was found.
 which proposes a fix and is unmerged, is still open and its last update is 2026-08-08, twenty-nine
 days earlier. Waiting is therefore not a plan with a horizon, which is worth knowing before
 choosing between waiting and pinning. Issue 7304 reports the failure on `plan` and not only on create, which if
-accurate means the resource cannot be declared at all under 5.23.0-5.24.0 even with the zone
+accurate means the resource cannot be declared at all under 5.23.0-5.25.0 even with the zone
 enabled by some other means. What is measured is that the issue says so; nobody here has reproduced
 it.
 
