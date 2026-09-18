@@ -11,13 +11,13 @@ Compact rendered index of every ADR's chosen option, confirmation criteria, and 
 
 For deep-dive — creating, evolving, ratifying, or contesting a decision — open the per-ADR file directly. `/wr-architect:create-adr`, `/wr-architect:capture-adr`, and `/wr-architect:review-decisions` all keep the full body in scope. Decision Drivers, Considered Options bodies, Pros and Cons, Consequences narrative, and Reassessment Criteria are intentionally NOT in this routine view — they live in the per-ADR body.
 
-**Total ADRs:** 96 (83 in-force, 13 historical)
+**Total ADRs:** 97 (84 in-force, 13 historical)
 
 ---
 
 ## In-force decisions
 
-_83 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
+_84 ADRs. These are the current rules. The architect agent reads this section first for routine compliance review._
 
 ### ADR-001 — ADR 001: Risk-Gated Release Process via release:watch
 
@@ -515,7 +515,7 @@ _83 ADRs. These are the current rules. The architect agent reads this section fi
 
 ### ADR-093 — The Worker deploys before its migrations apply, so every migration owes forward compatibility
 
-**Status:** proposed | **Oversight:** confirmed (2026-09-06)
+**Status:** proposed | **Oversight:** confirmed (2026-09-06) | **Superseded in part by:** ADR-097 (the two-release corollary, for ADDITIVE migrations only. It stands for non-additive ones. The order is no longer fixed: the pipeline reads the pending migrations and applies them FIRST when all are additive, so a coupled change ships in one release. This record's measured evidence for migration 0003 is what proves a fixed order cannot be right in general, so ADR-097 is built on it rather than against it)
 **Decides:** `deploy.sh` deploys the Worker via Terraform BEFORE applying D1 migrations, so the new Worker runs against the old schema in between. Keep that order and make its consequence explicit: every migration must be forward-compatible with the Worker already live, and a change coupling schema to code takes two releases, schema first. Migration-first was rejected on measured evidence — for migration 0003 it would have put the unenforcing combination live, so neither order is uniformly safer.
 **Confirmation:** `deploy.sh` ordering pinned by test so a reordering reds rather than passing quietly; every migration additive with respect to the prior Worker, or carrying a recorded reason. NOT YET SATISFIED and named as such: nothing mechanically checks a new migration against the invariant, so it is a rule rather than a control.
 **Related:** ADR-092, ADR-091, ADR-064, JTBD-400
@@ -540,6 +540,13 @@ _83 ADRs. These are the current rules. The architect agent reads this section fi
 **Decides:** When every billable row in a reconciliation window was deliberately not metered, the window is decided from LOCAL STATE and no provider call is made: nothing delivered means matched, anything delivered means mismatched. The maintainer was asked on 2026-09-18 whether to pay one provider summary call per such window on a path with no performance budget, and declined. What replaces it is not merely cheaper — it catches the failure EARLIER. If the exclusion regresses, those rows are sent, which sets their meter state to delivered, so a window that owed nothing and delivered something is a LOCAL CONTRADICTION, visible with no provider call and no provider reporting lag. That corrects the ground ADR-095 rejected recording-nothing on, which said nothing would notice. What the window STORES is unchanged and ADR-095's outcome stands. The design's soundness depends on ADR-092's rule that the marker is written inside the same statement that makes a row billable, for a reason that rule does not itself give.
 **Confirmation:** An all-excluded window reconciles matched with no provider call, asserted by failing if the client is called at all rather than by inspecting the result; one with rows delivered reconciles mismatched, mutation-proved by removing the delivery exclusion; the requeue does NOT fire on a locally-decided mismatch, mutation-proved by initialising the provider count to zero, since today that holds only by `undefined` comparison semantics and one tidy-up would make those rows permanently unclearable; a PARTIAL window still calls the provider, mutation-proved by widening the test to match it. Explicitly not confirmable here: that nothing but this delivery path can write to the meter.
 **Related:** ADR-095, ADR-092, ADR-091, ADR-049, ADR-080, JTBD-403
+
+### ADR-097 — The pipeline picks the migration order and validates between steps
+
+**Status:** proposed | **Oversight:** confirmed (2026-09-19)
+**Decides:** The release pipeline chooses the deploy order per release by READING the pending migrations, and validates after each step instead of only at the end. When every pending migration is additive it applies migrations FIRST, then deploys the gateway, so a change needing both schema and code ships in ONE release rather than two. When any is not additive it keeps the current gateway-first order. Replaces a REFUSAL of coupled releases, which the maintainer rejected: that would also have blocked releases the prior decision PERMITS, since an additive migration beside an UNRELATED gateway change is one legitimate release and no path-based check can tell that from a dependent one. A fixed order cannot be right because neither intermediate state is universally safe, and which one is safe is decidable by reading the migration. The step order follows a RECOVERY ASYMMETRY: a gateway rolls back, a forward-only migration does not, so the undoable step is the one taken into uncertainty. Which migrations are pending is asked of the migration framework and recorded nowhere in this repository — a hand-maintained marker was drafted for that fact and rejected, because a migration framework already keeps it. NOT YET IMPLEMENTED, and deliberately so while a release applying a migration is in flight.
+**Confirmation:** The order is proved by RUNNING the deploy script against shadowed binaries and reading the call order, in BOTH directions, each mutation-proved, because a text scan cannot tell a branch that exists from one that is reached. The additive classifier must REFUSE what it cannot classify rather than defaulting to additive, since that direction is the forward-only one. A failed validation after the first step must stop the release. No committed file may record which migrations are applied. Explicitly reasoned and not measured: that an old gateway tolerates an additive migration rests on it naming its columns explicitly, with no `SELECT *` and no positional INSERT, verified by reading for migration 0004.
+**Related:** ADR-093, ADR-092, ADR-095, ADR-096, ADR-051, JTBD-400
 
 ---
 
