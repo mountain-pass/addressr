@@ -56,6 +56,99 @@ This is the reason the ticket is priority High while the channel is off.
 - [ ] Supersede ADR-090 with the outcome. Do not amend it: it stays unratified precisely
       because its premise has been contradicted.
 
+## The storage options, written up 2026-09-18 at the maintainer's request
+
+The irreversible decision is the FIRST investigation task only: what a usage row retains.
+Retention period, access scope, deletion and export are all changeable after the fact. What
+is not retained is gone, so this section covers that question and defers the rest.
+
+**Who the data is about, which changes the shape of the whole question.** An Addressr
+customer is a developer building an application. The addresses flowing through their API
+key are typed by THEIR end users, who have no relationship with Addressr and cannot be
+asked. So "let the customer see their own request logs" is not only a question about the
+customer's data. Options B and C put a third party's address searches into a commercial
+store, and the customer's own privacy policy, not ours, is what would have to cover it.
+This is the distinction that makes the options differ in kind rather than in degree, and it
+is not stated anywhere else in this ticket or in ADR-090.
+
+**The two endpoints retain differently, and conflating them is the trap.** A single-address
+lookup carries the identifier in the PATH. A search carries the terms in the QUERY STRING.
+ADR-090 stores neither. They are separable, and the useful middle option exists only because
+they are.
+
+### Option A. Retain nothing more than today
+
+Route label, timestamp, API key, origin status, outcome. The customer sees how many requests
+they made, when, through which key, and whether each succeeded.
+
+- Costs nothing and decides nothing. No new retention, no new obligation, and ADR-088's
+  constraint is untouched.
+- The feature the maintainer actually asked for does not exist: a customer cannot see WHICH
+  address a request was for, so they cannot reconcile a bill line against a user action,
+  and cannot debug "why did this lookup fail".
+- Honest framing: this is choosing not to build the feature, not a cheap version of it. If
+  it is the answer, the gate closes by recording that and the decay stops being a cost.
+
+### Option B. Retain the validated address identifier, never the search terms
+
+For a single-address lookup, store the identifier the route matched. For a search, store
+nothing beyond today.
+
+- The customer can see which specific properties were looked up and when. That covers
+  bill reconciliation and most debugging.
+- The end user's SEARCH — what they typed, which is the free-text, the revealing part — is
+  never retained. An identifier is the result of a lookup the customer already received;
+  the query is the person's own words.
+- Preserves ADR-090's by-construction property, and the ticket already requires it: the
+  identifier must come from a VALIDATED ROUTE MATCH, never a caller-supplied path segment.
+  Nothing between authorising a key and recording usage validates the path, which is what
+  killed the keep-the-first-segment option. Anything less and a caller with a valid key
+  writes arbitrary text into the commercial ledger.
+- Cost: one nullable column and a route-match check. The retention obligation is real but
+  bounded to identifiers of public property records.
+
+### Option C. Retain the identifier and the search terms
+
+Everything in B, plus the query string on searches.
+
+- The only option that delivers "SEARCH their own request logs" in the literal sense the
+  maintainer used. A customer could find the session where a user failed to find their
+  address, which is the highest-value support case.
+- It is also the option that puts a third party's typed address searches into a commercial
+  store keyed to an API key, which is materially what ADR-088 criterion 6 refuses to let
+  the provider's own logs do. Choosing C is not inconsistent with that criterion, because
+  the objection there was retention with no expiry, no policy and no reader. But C only
+  stays consistent if the retention period, the deletion route and the export route are
+  decided WITH it rather than after, and if the customer agreement states it.
+- Cost: the largest, and the two legal-adjacent obligations in the task list attach to this
+  option specifically rather than to the feature generally.
+
+### Option D. Retain a one-way digest of the identifier
+
+Store a hash rather than the value. A customer could confirm whether a given address was
+looked up by re-hashing it, but could not enumerate what was looked up.
+
+- Recorded because it looks like a privacy-preserving compromise and is the kind of thing
+  a later reader proposes. It is not one for this use: the customer cannot BROWSE their
+  logs, which is the whole request, and an address identifier space small enough to be
+  useful is small enough to be enumerated offline, so the privacy gain is weaker than it
+  looks.
+- Rejected here, argued rather than omitted.
+
+### What each option costs by waiting
+
+Only B and C decay. Under A nothing is lost because nothing was going to be kept. Under B or
+C, every request served between activation and the feature shipping is permanently
+unreadable for the customer it belonged to, because a route label cannot be turned back into
+an address. That is the whole reason this gate is ordered before activation.
+
+**A cheap way to stop the decay without settling the question:** start writing the Option B
+column at activation and build the customer-facing surface later. It separates the
+irreversible half from the designed half. It is NOT free of the obligation, because data
+retained is data retained whether or not anyone can read it yet, so it is only honest if the
+retention period and deletion route are decided at the same time. Recorded as a sequencing
+option, not recommended over simply deciding.
+
 ## Exit criteria
 
 1. A documented customer job covering visibility of one's own usage.
