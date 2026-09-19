@@ -1,7 +1,16 @@
 import { expect, test } from '@playwright/test';
 
+// THE SAME BASE THE PAGE RESOLVES, derived the same way. These interceptions used to
+// hardcode the production URL. Once ADR-098 made the page's base configurable, setting
+// GATSBY_MANAGED_API_BASE would have made every route below silently stop matching --
+// and these specs are what cover the page's announcement behaviour, so the coverage
+// that lapsed would have been the accessibility coverage. Silently, because a
+// non-matching route is not an error in Playwright, it is just an unintercepted request.
+const API_BASE =
+  process.env.GATSBY_MANAGED_API_BASE || 'https://api.addressr.io/managed';
+
 test.beforeEach(async ({ page }) => {
-  await page.route('https://api.addressr.io/managed/config', async (route) => {
+  await page.route(`${API_BASE}/config`, async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
@@ -74,11 +83,11 @@ for (const [policy, quota, expected] of [
 ]) {
   test(`account displays ${policy} request usage without a false quota`, async ({ page }) => {
     await installSignedInClerk(page);
-    await page.route('https://api.addressr.io/managed/config', route => route.fulfill({
+    await page.route(`${API_BASE}/config`, route => route.fulfill({
       contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
       body: JSON.stringify({ available: true, clerkPublishableKey: 'pk_test_ZmFrZS5jbGVyay5hY2NvdW50cy5kZXYk', plans: [] }),
     }));
-    await page.route('https://api.addressr.io/managed/account', route => route.fulfill({
+    await page.route(`${API_BASE}/account`, route => route.fulfill({
       contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
       body: JSON.stringify({ organization: { clerkId: 'org_test', canManage: true }, subscription: { plan: 'Synthetic', status: 'active' }, quota, keys: [] }),
     }));
@@ -150,7 +159,7 @@ test('account page reflows at 320 CSS pixels', async ({ page }) => {
 
 test('focuses the API key instruction after creating a key', async ({ page }) => {
   await installSignedInClerk(page);
-  await page.route('https://api.addressr.io/managed/config', async (route) => {
+  await page.route(`${API_BASE}/config`, async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
@@ -162,7 +171,7 @@ test('focuses the API key instruction after creating a key', async ({ page }) =>
       }),
     });
   });
-  await page.route('https://api.addressr.io/managed/account', async (route) => {
+  await page.route(`${API_BASE}/account`, async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
@@ -173,7 +182,7 @@ test('focuses the API key instruction after creating a key', async ({ page }) =>
       }),
     });
   });
-  await page.route('https://api.addressr.io/managed/api-keys', async (route) => {
+  await page.route(`${API_BASE}/api-keys`, async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },

@@ -16,7 +16,18 @@ import React, {
 import Banner from '../components/Banner';
 import Layout from '../components/layout';
 
-const API_BASE = 'https://api.addressr.io/managed';
+// Configurable so a local rehearsal can point the page at a local gateway, which is
+// the only way the customer journeys get exercised before activation. Gatsby inlines
+// `GATSBY_`-prefixed variables at BUILD time, so this is a compile-time constant in
+// the shipped bundle and not a runtime lookup.
+//
+// The default is production and the override is expected only in `.env.development`.
+// `rendered-output.test.mjs` asserts the SHIPPED bundle carries the production base
+// and no loopback one, because Gatsby also reads `.env.production` and a stray file
+// would repoint the bundle with no diff here. That guard is the reason this is safe
+// to make configurable at all (ADR-098).
+const API_BASE =
+  process.env.GATSBY_MANAGED_API_BASE || 'https://api.addressr.io/managed';
 
 const Account = () => {
   const [config, setConfig] = useState();

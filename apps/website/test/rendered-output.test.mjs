@@ -60,6 +60,73 @@ const emitted = (dir = PUBLIC) => {
 };
 
 describe('apps/website rendered output', () => {
+  // ADR-098 confirmation criterion 6. The managed API base becomes configurable so a
+  // local rehearsal can point the site at a local gateway. The moment an override
+  // exists, so does the possibility of it reaching a production build -- Gatsby reads
+  // `.env.production` at build time, so a stray file repoints the shipped bundle with
+  // NO diff in `account.jsx`. Nothing else in this repository would notice.
+  //
+  // This is the guard that stops a development value shipping, and it is cheaper than
+  // any amount of care. It asserts the POSITIVE and the NEGATIVE: the production base
+  // is present, and no loopback base is.
+  //
+  // WHICH HALF DOES THE WORK, measured rather than assumed. A review raised that the
+  // positive assertion might be vacuous: the source is `OVERRIDE || 'production'`, so
+  // both strings could survive into the bundle and the test would pass on the literal
+  // while the page resolved the override. Built twice with an override set to check.
+  // The `||` DOES fold -- the production literal is absent from the bundle entirely --
+  // so the POSITIVE assertion is the one that catches an override, and it catches ANY
+  // override rather than only a loopback one. Proved on `http://127.0.0.1:8787/managed`
+  // and on `https://staging.example.com/managed`; the second reds the positive
+  // assertion alone, which is the case the negative list would have missed.
+  //
+  // The negative assertion is therefore a belt, not the guard, and its list is narrow
+  // by construction: a LAN address, a tunnel host or a typo'd hostname passes it. Kept
+  // because it names the specific mistake most likely to be made, and because it fails
+  // with a message that says what happened.
+  describe('the shipped bundle carries the production managed API base (ADR-098)', () => {
+    const accountBundles = () =>
+      emitted().filter(
+        (file) =>
+          file.endsWith('.js') &&
+          !file.endsWith('.map') &&
+          path.basename(file).startsWith('component---src-pages-account-jsx'),
+      );
+
+    it('finds the account bundle, so a zero-match pass is impossible', () => {
+      assert.ok(
+        accountBundles().length > 0,
+        'no account page bundle was emitted, so the assertions below would examine nothing. Build the site first.',
+      );
+    });
+
+    it('points at the production gateway', () => {
+      const carrying = accountBundles().filter((file) =>
+        readFileSync(file, 'utf8').includes('https://api.addressr.io/managed'),
+      );
+      assert.ok(
+        carrying.length > 0,
+        'no account bundle carries the production managed API base, so the shipped site would call somewhere else',
+      );
+    });
+
+    it('carries no loopback gateway base', () => {
+      const leaked = accountBundles().filter((file) => {
+        const source = readFileSync(file, 'utf8');
+        return (
+          source.includes('127.0.0.1') ||
+          source.includes('//localhost') ||
+          source.includes('[::1]')
+        );
+      });
+      assert.deepEqual(
+        leaked.map((file) => path.basename(file)),
+        [],
+        'a loopback gateway base reached the shipped bundle. A local override was built into production.',
+      );
+    });
+  });
+
   before(() => {
     // THE LOAD-BEARING PRECONDITION. Without it every assertion below passes
     // vacuously when the build has not run, and reports green having read
