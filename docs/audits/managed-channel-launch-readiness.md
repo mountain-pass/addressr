@@ -442,6 +442,19 @@ Waiting on the maintainer:
    rehearsal evidence and none should until one does — a row for absent evidence
    would be the error, not the fix.
 
+   RATIFIED 2026-09-19, and this changes what the rehearsal is waiting on rather
+   than moving anything. ADR-098 carries `human-oversight: confirmed` after the
+   maintainer was shown the three things the record had withheld — the clause
+   supersession of ADR-095's confirmation item 6, the guard accepting a superset
+   of what the gateway accepts, and drift between the two Terraform sites being
+   visible in one direction only. MEASURED: the marker and its date are in the
+   record's frontmatter, written by commit `d12f19ba`. REASONED, not measured:
+   that the rehearsal tier is no longer held behind it. That follows from
+   wr-architect ADR-074's rule against building on unconfirmed substance, which
+   is what held it; no artefact records the release of that hold, because the
+   hold was never a mechanical one. It is still not built, and a ratified record
+   is not a rehearsal.
+
 Next observation: re-read the team application's console counter at least 24
 hours after 2026-09-03 06:46 UTC and record the delta. Leave 5xx untested
 unless it can be observed without deliberately disrupting a live service.
