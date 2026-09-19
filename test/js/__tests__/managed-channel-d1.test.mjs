@@ -159,7 +159,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
     assert.deepEqual(await excludedAuthorization.response.json(), {
       error: 'organization_not_enabled',
     });
-    assert.equal(excluded.calls.length, 1);
+    assertWithinByteEnvelope(excluded, 'organisation-excluded', 1);
     await assertState(database, 0, 0);
 
     const malformed = traceDatabase(database);
@@ -177,7 +177,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
       { CUSTOMER_DB: invalid.binding },
     );
     assert.equal(invalidAuthorization.kind, 'rejected');
-    assert.equal(invalid.calls.length, 1);
+    assertWithinByteEnvelope(invalid, 'invalid-key', 1);
 
     await database
       .prepare("UPDATE api_keys SET revoked_at='now' WHERE id='key'")
@@ -188,7 +188,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
       { CUSTOMER_DB: revoked.binding },
     );
     assert.equal(revokedAuthorization.kind, 'rejected');
-    assert.equal(revoked.calls.length, 1);
+    assertWithinByteEnvelope(revoked, 'revoked-key', 1);
     await database
       .prepare("UPDATE api_keys SET revoked_at=NULL WHERE id='key'")
       .run();
@@ -211,7 +211,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
     );
     assert.equal(exhaustedUsage.ok, false);
     assert.equal(exhaustedUsage.response.status, 429);
-    assert.equal(exhausted.calls.length, 2);
+    assertWithinByteEnvelope(exhausted, 'quota-exhausted', 2);
 
     await database
       .prepare(
@@ -226,7 +226,7 @@ test('managed request outcomes stay within the indexed D1 statement envelope', a
       usageCount: 1,
     });
     const released = await exerciseAccepted(database, key.key, 404);
-    assert.equal(released.calls.length, 3);
+    assertWithinByteEnvelope(released, 'released', 3);
     assert.deepEqual(await usageState(database), {
       billable: 1,
       quotaUsed: 1,
@@ -337,8 +337,10 @@ test('quota migration preserves populated state and counts soft and pay-per-use 
         exerciseAccepted(database, key.key, 200),
       ]);
       for (const trace of accepted) {
-        assert.equal(trace.calls.length, 3);
-        assert.ok(trace.calls[0].responseBytes <= 4096);
+        // Was `calls[0].responseBytes <= 4096`, which checked the first statement of
+        // three and let the other two through unmeasured. The statement count now
+        // travels inside the envelope assertion rather than beside it.
+        assertWithinByteEnvelope(trace, 'accepted', 3);
       }
       await assertState(database, 3, 3);
       await exerciseAccepted(database, key.key, 404);
@@ -754,11 +756,11 @@ test('a GENUINELY SIGNED webhook projects into real D1, and the stored values ar
 
     // Signed the way Stripe signs, by Stripe's own helper, so the bytes the handler
     // verifies are bytes Stripe would have produced.
-    const deliver = async (event) => {
+    const deliver = async (event, signingSecret = environment.STRIPE_WEBHOOK_SECRET) => {
       const payload = JSON.stringify(event);
       const signature = stripeClient.webhooks.generateTestHeaderString({
         payload,
-        secret,
+        secret: signingSecret,
       });
       const response = await handleStripeWebhook(
         new Request('https://api.addressr.io/managed/stripe-webhook', {
@@ -838,6 +840,45 @@ test('a GENUINELY SIGNED webhook projects into real D1, and the stored values ar
         .n,
       2,
       'the replay stored a third event row',
+    );
+
+    // ROTATION. The ledger has carried "rotation remains untested" since this row was
+    // written, and it is the one item on it that never needed activation: a rotation is
+    // a change of the configured secret, and what must hold across one is that events
+    // signed with the RETIRED secret stop being accepted while events signed with the
+    // new one start. Both directions are checkable here, on the same real HMAC path.
+    //
+    // Scoped honestly: this proves the VERIFICATION BEHAVIOUR a rotation depends on. It
+    // does not rehearse the operational rotation itself, which is a Terraform change and
+    // an apply against the live destination, and which the ledger still records as owed.
+    const rotated = 'whsec_rotated_synthetic_not_a_real_secret';
+    const retired = environment.STRIPE_WEBHOOK_SECRET;
+    environment.STRIPE_WEBHOOK_SECRET = rotated;
+
+    const staleSignature = await deliver(event('evt_stale', 3000), retired);
+    assert.equal(staleSignature.status, 400);
+    assert.deepEqual(staleSignature.body, {
+      error: 'invalid_webhook_signature',
+    });
+    assert.equal(
+      (await database.prepare('SELECT COUNT(*) AS n FROM stripe_events').first())
+        .n,
+      2,
+      'an event signed with the retired secret was stored after rotation',
+    );
+
+    assert.deepEqual(await deliver(event('evt_rotated', 3000)), {
+      status: 200,
+      body: { received: true, duplicate: false },
+    });
+    assert.equal(
+      (
+        await database
+          .prepare("SELECT COUNT(*) AS n FROM stripe_events WHERE id='evt_rotated'")
+          .first()
+      ).n,
+      1,
+      'an event signed with the new secret was not accepted after rotation',
     );
   } finally {
     await miniflare.dispose();
@@ -1097,6 +1138,98 @@ function traceDatabase(database) {
   };
 }
 
+// ADR-080 caps an OUTCOME at three statements AND 4 KiB of D1 response data. The
+// statement half was asserted for every outcome; the byte half was asserted on ONE
+// call of ONE outcome, so four outcomes had their bytes measured and discarded and
+// the fifth was checked one statement deep. A number recorded and never read is the
+// shape this file exists to refuse, and it was doing it to itself.
+//
+// Summed across the outcome, because that is what the decision caps. Per statement it
+// would pass three 4 KiB reads.
+const D1_RESPONSE_BYTE_CAP = 4096;
+
+// A PROXY, AND NAMED ONE. ADR-080 criterion 1 says "D1 metadata reports statements,
+// rows read and written, and RESPONSE BYTES for the exercised path". Measured
+// 2026-09-19, D1 metadata reports `served_by`, `duration`, `changes`, `last_row_id`,
+// `changed_db`, `size_after`, `rows_read` and `rows_written` -- and NO response-byte
+// field. `size_after` is the database file size, not the response. So the provider does
+// not report the figure the criterion names, and this serialises the result instead.
+//
+// Two ways it is not the thing: `.first()` serialises the row alone while `.run()` and
+// `.all()` serialise the whole D1Result including its meta, so the six outcomes are not
+// on one basis; and Miniflare is a local emulator, so there is no wire to measure. The
+// direction is conservative -- it over-counts, so it cannot produce a false pass -- and
+// that is the only reason it is usable as a cap at all.
+function measureBytes(result) {
+  return new TextEncoder().encode(JSON.stringify(result ?? null)).byteLength;
+}
+
+// ADR-080 criterion 1 asks that D1 metadata REPORT statements, rows read and written,
+// and response bytes. Statements are the call count. Response bytes it does not report
+// at all, hence the proxy above. Rows read and written it DOES report, so this asserts
+// they arrive from the provider for every call that can carry them.
+//
+// It asserts REPORTING, not a ceiling: ADR-080 caps statements and bytes, and puts no
+// bound on rows. An invented row ceiling would be a rule nobody decided.
+//
+// An earlier version of this pass DEFINED this and never called it, while the ledger
+// and the comment above it both claimed criterion 1's other half "rests on the
+// provider". That is the recorded-and-never-read shape the comment fifteen lines up
+// declares this file exists to refuse, committed forty lines from the condemnation.
+// Caught by risk review.
+function assertProviderReported(trace, outcome) {
+  const unreported = trace.calls
+    .filter((call) => call.providerCounters !== 'unreachable-via-first')
+    .filter(
+      (call) =>
+        typeof call.providerCounters?.rowsRead !== 'number' ||
+        typeof call.providerCounters?.rowsWritten !== 'number',
+    );
+  assert.deepEqual(
+    unreported.map((call) => call.sql),
+    [],
+    `the ${outcome} outcome ran statements for which D1 reported no rows_read/rows_written, so criterion 1's provider half is unevidenced there`,
+  );
+}
+
+function assertWithinByteEnvelope(
+  trace,
+  outcome,
+  expectedStatements,
+  cap = D1_RESPONSE_BYTE_CAP,
+) {
+  // The call count travels WITH the envelope rather than beside it. Without this an
+  // outcome that made no D1 calls passes every assertion below trivially.
+  assert.equal(
+    trace.calls.length,
+    expectedStatements,
+    `the ${outcome} outcome ran ${trace.calls.length} D1 statements, not ${expectedStatements}`,
+  );
+  assert.ok(
+    expectedStatements <= 3,
+    `ADR-080 caps an outcome at three statements and ${outcome} expects ${expectedStatements}`,
+  );
+  // THE FLOOR. Every traced call must have been measured, or the sum below is a sum
+  // over silence. Without this the cap passes hardest on the outcomes it measured
+  // least, which is the failure this assertion was itself committing until the cap
+  // was mutated to zero.
+  const unmeasured = trace.calls.filter(
+    (call) => typeof call.responseBytes !== 'number',
+  );
+  assert.deepEqual(
+    unmeasured.map((call) => call.sql),
+    [],
+    `the ${outcome} outcome ran statements whose response bytes were never measured, so its envelope is a sum over silence`,
+  );
+  assertProviderReported(trace, outcome);
+  const total = trace.calls.reduce((sum, call) => sum + call.responseBytes, 0);
+  assert.ok(
+    total <= cap,
+    `the ${outcome} outcome received ${total} bytes of D1 response data, over ${cap}`,
+  );
+  return total;
+}
+
 function traceStatement(statement, call) {
   return {
     bind(...arguments_) {
@@ -1105,13 +1238,40 @@ function traceStatement(statement, call) {
     },
     async first(...arguments_) {
       const result = await statement.first(...arguments_);
-      call.responseBytes = new TextEncoder().encode(
-        JSON.stringify(result),
-      ).byteLength;
+      call.responseBytes = measureBytes(result);
+      // `first` returns the row, not the D1Result, so the provider metadata is not
+      // reachable here. Recorded as such rather than left undefined, so the assertion
+      // below can tell "the provider did not report it" from "nobody looked".
+      call.providerCounters = 'unreachable-via-first';
       return result;
     },
-    run(...arguments_) {
-      return statement.run(...arguments_);
+    async raw(...arguments_) {
+      const result = await statement.raw(...arguments_);
+      call.responseBytes = measureBytes(result);
+      return result;
+    },
+    // INSTRUMENTED 2026-09-19. `run` returned the result untouched, so four of the six
+    // outcomes recorded NO bytes at all and the envelope assertion summed zero over
+    // them and passed. Found by mutating the cap to 0 and seeing only two outcomes red
+    // -- the other four were being measured by nothing. A cap over an unmeasured
+    // quantity is not a weaker check, it is no check.
+    async run(...arguments_) {
+      const result = await statement.run(...arguments_);
+      call.responseBytes = measureBytes(result);
+      call.providerCounters = {
+        rowsRead: result?.meta?.rows_read,
+        rowsWritten: result?.meta?.rows_written,
+      };
+      return result;
+    },
+    async all(...arguments_) {
+      const result = await statement.all(...arguments_);
+      call.responseBytes = measureBytes(result);
+      call.providerCounters = {
+        rowsRead: result?.meta?.rows_read,
+        rowsWritten: result?.meta?.rows_written,
+      };
+      return result;
     },
   };
 }
