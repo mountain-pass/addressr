@@ -156,6 +156,28 @@ variable "stripe_meter_id" {
 }
 
 variable "managed_app_url" {
+  # Duplicated from the root variable deliberately. The guard belongs at the boundary
+  # that RENDERS the binding, not only at today's single caller: this module writes
+  # MANAGED_APP_ORIGINS, so a second caller, or direct consumption, would otherwise be
+  # unguarded. Costs nothing, and a mismatch is visible IN ONE DIRECTION ONLY, which is
+  # the honest form: if THIS block drifts stricter, the root accepts a value this one
+  # refuses and the plan fails loudly. If it drifts MORE PERMISSIVE the root refuses
+  # first, this block never sees a bad value, and the drift is invisible -- and that is
+  # the direction that matters, because this block exists for a second or direct caller
+  # the root does not stand in front of. An earlier version of this comment claimed
+  # drift simply could not be silent, which was true of one direction and asserted of
+  # both.
+  #
+  # This module renders BOTH bindings from the one variable: MANAGED_APP_ORIGINS, the
+  # browser-origin allowlist, and MANAGED_APP_URL, which the Stripe checkout and portal
+  # return links are built from. So the two validation sites differ by CALLER, not by
+  # consequence -- each guards the same two things, the root one catching the value as
+  # entered and this one catching any caller that renders the bindings.
+  validation {
+    condition     = can(regex("^https://", var.managed_app_url))
+    error_message = "managed_app_url must be an https origin. An http value would place an http origin in the deployed MANAGED_APP_ORIGINS allowlist and repoint Stripe return URLs."
+  }
+
   type     = string
   nullable = false
 }

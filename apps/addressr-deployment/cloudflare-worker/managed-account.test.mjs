@@ -169,6 +169,89 @@ describe('managed account boundary', () => {
     assert.equal(isAuthenticated, false);
   });
 
+  // LOOPBACK ORIGINS, added 2026-09-19. The managed channel has no local rehearsal
+  // because a page served from 127.0.0.1 cannot legitimately reach the gateway: the
+  // origin filter admits https hosts only, with no port. The maintainer chose to let the
+  // gateway admit loopback origins, with a Terraform validation refusing any non-https
+  // `managed_app_url` at the source so a production deployment carrying one fails to
+  // build rather than deploys.
+  //
+  // WHAT MAKES THIS SAFE IS NOT THAT CORS IS BROWSER-ENFORCED. That argument covers one
+  // of this list's FIVE consumers. It also gates the pre-authentication 403 on EVERY
+  // managed route except the Stripe webhook -- not only the mutating ones -- the
+  // config-availability report, a 503 identity_not_configured on a live authenticated
+  // request, and Clerk's `authorizedParties`. The webhook returns above the check, so it
+  // is the one managed route the filter does not gate. What holds the line
+  // is that a loopback origin is unreachable from any other machine AND that the
+  // Terraform source cannot express an http one. Not "cannot express a loopback one":
+  // https://localhost satisfies both the validation and the unchanged https rule, and
+  // did so before this change too.
+  //
+  // Every case below is a host a loose alternation would wrongly admit. The suffix cases
+  // are the ones that matter: `localhost.attacker.example` and `127.0.0.1.attacker.example`
+  // both CONTAIN a loopback literal and are ordinary remote hosts.
+  const originAdmitted = async (origin) => {
+    const response = await handleManagedRequest(
+      request('/managed/config', { origin }),
+      { ...environment(), MANAGED_APP_ORIGINS: JSON.stringify([origin]) },
+      {},
+    );
+    return response.headers.get('access-control-allow-origin') === origin;
+  };
+
+  for (const origin of [
+    'http://evil.example',
+    'https://evil.example:8443',
+    'http://localhost.attacker.example:3000',
+    'http://127.0.0.1.attacker.example:3000',
+    'http://127.0.0.2:3000',
+    'http://[::2]:3000',
+    // The third literal's contains-case, which the other two had and this one did not.
+    'http://[::1].attacker.example:3000',
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://127.0.0.1:9000/',
+  ]) {
+    it(`refuses ${origin} as an allowlist entry`, async () => {
+      assert.equal(
+        await originAdmitted(origin),
+        false,
+        `${origin} was admitted to the origin allowlist`,
+      );
+    });
+  }
+
+  for (const origin of [
+    'http://127.0.0.1:9000',
+    'http://localhost:9000',
+    'http://[::1]:9000',
+  ]) {
+    it(`admits ${origin} as a loopback allowlist entry`, async () => {
+      assert.equal(
+        await originAdmitted(origin),
+        true,
+        `${origin} was not admitted, so no local rehearsal can reach the gateway`,
+      );
+    });
+  }
+
+  it('admits a loopback origin only on an exact port match', async () => {
+    const response = await handleManagedRequest(
+      request('/managed/config', { origin: 'http://127.0.0.1:9001' }),
+      {
+        ...environment(),
+        MANAGED_APP_ORIGINS: JSON.stringify(['http://127.0.0.1:9000']),
+      },
+      {},
+    );
+    assert.equal(
+      response.headers.get('access-control-allow-origin'),
+      // eslint-disable-next-line unicorn/no-null -- absent header reads as null.
+      null,
+      'a different port on the same loopback host was treated as the same origin',
+    );
+  });
+
   it('requires an active organization in the verified Clerk session', async () => {
     const result = await authorizeSession(
       request('/managed/account'),

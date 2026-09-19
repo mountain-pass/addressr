@@ -355,11 +355,45 @@ function allowedOrigin(request, environment) {
   return !origin || allowedOrigins(environment).includes(origin);
 }
 
+// An https host with no port, as shipped. Unchanged.
+const HTTPS_ORIGIN = /^https:\/\/[a-z0-9.-]+$/;
+
+// A LOOPBACK origin, port REQUIRED, host exactly one of three literals. Added so a
+// local page can reach the gateway for a pre-activation rehearsal, which is otherwise
+// unreachable: the https rule admits no port and no local host.
+//
+// WHAT KEEPS THIS SAFE IS NOT "CORS IS BROWSER-ENFORCED". That reasoning covers one of
+// this list's FIVE consumers -- it also gates the pre-authentication 403 on EVERY managed
+// route except the Stripe webhook (not only the MUTATING ones, which an earlier version of
+// this comment said and which understated its reach), the configuration-availability
+// report, a 503 identity_not_configured on a live authenticated request, and Clerk's
+// `authorizedParties`. The webhook is the one managed route it does NOT gate, named
+// because an enumeration of what a thing gates is incomplete without it. Two
+// things hold the line instead. A loopback origin is unreachable from any other
+// machine, so admitting one grants nothing to a remote site. And the production list is
+// `jsonencode([var.managed_app_url])`, whose Terraform validation refuses any non-https
+// value, so no `http://` origin can reach a deployed allowlist: it FAILS TO PLAN.
+//
+// STATED AT THAT WIDTH DELIBERATELY. An earlier draft of this comment said a LOOPBACK
+// origin cannot enter a deployed allowlist, which is false: `https://localhost` and
+// `https://127.0.0.1` satisfy the validation AND the unchanged https rule above. That
+// admissibility predates this change and is untouched by it. What the validation
+// forecloses is exactly the class this change added, which is the `http://` one.
+// The second point is the structural half; without it this comment would be an argument.
+//
+// The alternation is anchored and the host literals are exact, because the hosts that
+// break a loose version are the ones that CONTAIN a loopback literal:
+// `localhost.attacker.example` and `127.0.0.1.attacker.example` are ordinary remote
+// hosts. Each is asserted refused.
+const LOOPBACK_ORIGIN = /^http:\/\/(?:127\.0\.0\.1|localhost|\[::1]):\d{1,5}$/;
+
 function allowedOrigins(environment) {
   try {
     const parsed = JSON.parse(environment?.MANAGED_APP_ORIGINS || '[]');
     return Array.isArray(parsed)
-      ? parsed.filter((origin) => /^https:\/\/[a-z0-9.-]+$/.test(origin))
+      ? parsed.filter(
+          (origin) => HTTPS_ORIGIN.test(origin) || LOOPBACK_ORIGIN.test(origin),
+        )
       : [];
   } catch {
     return [];

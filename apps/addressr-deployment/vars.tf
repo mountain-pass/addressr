@@ -244,6 +244,37 @@ variable "managed_app_url" {
   nullable    = false
   default     = "https://app.addressr.io"
   description = "ADR-061 stable account and billing origin used for Stripe return URLs."
+
+  # THIS VALIDATION IS THE STRUCTURAL HALF OF THE LOOPBACK-ORIGIN DECISION.
+  #
+  # The gateway's origin filter was widened to admit loopback http origins so a local
+  # page can reach it for a pre-activation rehearsal. That widening is only safe because
+  # no http origin can enter a DEPLOYED allowlist: MANAGED_APP_ORIGINS is
+  # jsonencode([var.managed_app_url]), so this variable is the sole source, and a
+  # non-https value now fails the plan rather than deploying.
+  #
+  # NOT "no loopback origin". https://localhost and https://127.0.0.1 satisfy this rule
+  # and the gateway's unchanged https rule, so they remain admissible -- as they were
+  # before the widening. This forecloses exactly the class the widening added.
+  #
+  # AND THIS PREDICATE IS LOOSER THAN THE FILTER IT BACKS. It is unanchored at the end,
+  # where the Worker's filter is anchored both ends, lowercase-only and port-free. So it
+  # accepts a SUPERSET: a port, a trailing slash, a path, userinfo, any uppercase host
+  # character. Each of those plans clean and then fails the Worker filter, producing an
+  # EMPTY effective allowlist and a 503 on every managed route. That fails closed, but it
+  # is a property of this guard as written and not a pre-existing condition -- this block
+  # is new, and before it the root validated nothing at all.
+  #
+  # It also guards a second blast radius that is easy to miss: this same variable feeds
+  # MANAGED_APP_URL, which builds the Stripe checkout and portal RETURN URLs. A loopback
+  # value here would repoint those too.
+  #
+  # Without this block the gateway change would rest on an argument that nobody would
+  # put a loopback origin in production. With it, nobody can.
+  validation {
+    condition     = can(regex("^https://", var.managed_app_url))
+    error_message = "managed_app_url must be an https origin. An http value would place an http origin in the deployed MANAGED_APP_ORIGINS allowlist and repoint Stripe return URLs."
+  }
 }
 
 variable "customer_rate_limit_namespace_id" {

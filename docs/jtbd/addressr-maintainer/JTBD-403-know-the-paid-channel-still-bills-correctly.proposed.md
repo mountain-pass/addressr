@@ -36,6 +36,33 @@ When customers are paying for metered API access, I want any fault that breaks t
 - **A fault that nobody is present for still escalates.** The existing reader is read by an agent when a session starts. Between sessions, a persistent billing fault currently accrues in silence, and the harm is continuous rather than discrete.
 - **The maintainer is reachable out of band for the faults that cannot wait.** No such path exists today: the one chosen on 2026-09-03 was withdrawn unapplied on 2026-09-04. See the limit recorded below.
 - **A notification says what happened without saying who it happened to.** Fixed codes, scope and observation time only. No customer identifier, no usage total, no provider message, no credential. A notification that discloses is worse than no notification, because this repository is public and the escalation path is not.
+- **A journey WHOSE FAILURE WOULD BE A BILLING FAULT, and which cannot be exercised in
+  production before activation, is exercised against a local surface first, and the
+  resulting evidence is CLASSED rather than assumed.** NARROWED on review: a first draft
+  said "a journey", unqualified, which reached past this job's own statement. Sign-in,
+  organisation selection and API-key management are on the same rehearsal path and are
+  NOT billing faults; they belong to the customer account job and are not claimed here.
+  What this job owns is the subset whose failure over-bills, under-bills or silently
+  denies. ADDED 2026-09-19. The maintainer accepted nine gates as blocked on activation
+  on the condition that a local dress rehearsal comes first, so the customer journeys are
+  proven before the flag is set rather than after. This outcome is what that condition
+  attaches to; without it the rehearsal serves no documented job, and the gateway change
+  that removes one of its two barriers — admitting loopback origins, shipped 2026-09-19 —
+  would be a customer-reachable behaviour in service of nothing this corpus names. ONE OF
+  TWO, stated precisely because the looser form is the claim the ledger had to withdraw:
+  the widening clears the ORIGIN barrier and leaves the FLAG barrier untouched, so it buys
+  the browser half of a local rehearsal rather than the whole of it. Setting the flag
+  locally was already possible before it.
+
+  **EVIDENCE PRODUCED AGAINST A STUBBED DEPENDENCY IS EVIDENCE ABOUT THE CONTRACT BETWEEN
+  THE TWO REAL PARTIES ONLY, and cannot discharge any outcome whose subject is the stubbed
+  party.** Stated here rather than only in the ledger, because a reader who sees a green
+  rehearsal will otherwise infer coverage from it. A rehearsal that stubs identity and
+  payments is evidence about the page-to-gateway contract and the gateway's own state
+  machine; it is not evidence about identity verification, about the payment provider's
+  behaviour, or about anything whose requirement names production. Such rows enter the
+  ledger as PARTIAL from the outset rather than being entered higher and corrected later.
+
 - **A change to production is read back before it is called verified.** ADDED 2026-09-06, confirmed by the maintainer when the question was put directly. A deployment tool reporting success proves the tool did not error; it does not prove the production state has the shape the code assumes, and a tool can exit cleanly having done part of the job. Where a release changes state this repository cannot see — a database schema, a provider setting — the resulting state must be observed and the observation recorded, and until it is, the evidence is the weaker claim and must be written as the weaker claim. The case that forced this: migration 0003 applied on 2026-09-06 and the applier reported five commands executed, and that was recorded as applied-not-read-back precisely because nothing had queried `sqlite_master` to confirm which triggers the schema now carries.
 - **A check that finds nothing says so, and a check with nothing to look at is louder than a clean one.** An empty corpus reporting green is the failure this project has already had once.
 
