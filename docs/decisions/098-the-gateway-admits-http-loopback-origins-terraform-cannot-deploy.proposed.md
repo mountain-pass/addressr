@@ -1,7 +1,8 @@
 ---
 status: 'proposed'
 date: 2026-09-19
-human-oversight: unconfirmed
+human-oversight: confirmed
+oversight-date: 2026-09-19
 decision-makers: [Tom Howard]
 consulted:
   [
@@ -17,17 +18,17 @@ reassessment-date: 2026-12-19
 
 # The gateway admits http loopback origins that Terraform cannot deploy
 
-## What this record asks of you
+## What this record asked of the maintainer
 
 This record covers one change, already shipped: the gateway now admits `http://` origins on
 loopback hosts. That lets a page served from your own machine exercise the customer journeys
 before the managed channel — the paid, authenticated API that customers would sign up for
 directly — is switched on. Terraform validation stops such an origin ever reaching production.
 
-Read the three things you were not shown when you chose, then confirm, amend or reject this
-record. They are:
+Three things were not shown to the maintainer when they chose. They were put to them on
+2026-09-19, read, and the record was confirmed on the strength of that reading. They are:
 
-1. **It retires one clause of a decision you already ratified.** This change made the
+1. **It retires one clause of a decision the maintainer had already ratified.** This change made the
    evidence under ADR-095's confirmation item 6 false. The conclusion survives on a
    narrower argument, set out under "The one clause this record supersedes" below.
 2. **The Terraform guard accepts more than the gateway accepts.** Some values pass the
@@ -39,15 +40,28 @@ Confirming this record switches nothing on. The gateway change has already shipp
 managed channel is still off — `managed_channel_enabled` is still false, and that switch
 remains yours alone.
 
-## What the maintainer chose, and why this record is still `unconfirmed`
+## What the maintainer chose, and why this record was withheld from confirmation until 2026-09-19
 
 Four options were put to the maintainer on 2026-09-19, and they chose this one: the gateway admits
 local addresses, made impossible in production by Terraform validation. That is a real
 direction-setting decision and the Decision Outcome below is theirs.
 
-The record is nonetheless `unconfirmed`, because the oversight marker attests to what a
-human **saw**, and this record carries substance they were not shown: the three items listed
-at the top. Marking it confirmed would attest to a reading that did not happen.
+The record was nonetheless withheld from confirmation, because the oversight marker attests
+to what a human **saw**, and this record carried substance they had not been shown: the three
+items listed at the top. Marking it confirmed before that reading would have attested to a
+reading that did not happen. The reading happened on 2026-09-19 and the marker followed it.
+
+**Corrected in place on 2026-09-19, after ratification and out of the intended order.** The
+marker was written before this passage was updated, so for a short window the record asserted
+its own unconfirmed state while carrying the confirmed marker. The superseded wording, quoted
+verbatim: "The record is nonetheless `unconfirmed`, because the oversight marker attests to
+what a human **saw**, and this record carries substance they were not shown: the three items
+listed at the top. Marking it confirmed would attest to a reading that did not happen." What
+replaced it is the paragraph above, in the past tense. No decision substance changed: the
+origin-filter rule, both Terraform validations and all seven confirmation items are untouched,
+and `status:` is unchanged, because ratification is the oversight marker and not the status
+field. Retained rather than silently rewritten, because this record is ratified and
+implemented.
 
 **The list of unshown substance above was one item longer until 2026-09-19, and the removal
 is the point.** The fourth item was option 5 below, the do-nothing path that needed no
