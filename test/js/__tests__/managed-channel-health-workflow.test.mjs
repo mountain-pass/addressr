@@ -25,13 +25,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {
+  healthCarrier,
+  HEALTH_SCRIPT,
+  WORKFLOW_DIR,
+} from '../health-carrier.mjs';
 import { load } from 'js-yaml';
 
-const PATH = '.github/workflows/managed-channel-health.yml';
+const PATH = `${WORKFLOW_DIR}/${healthCarrier()}`;
 const raw = readFileSync(PATH, 'utf8');
 const wf = load(raw);
 const steps = wf?.jobs?.observe?.steps ?? [];
-const HEALTH_SCRIPT = 'managed-channel-health.mjs';
 
 describe('managed-channel health workflow preserves the fault signal', () => {
   it('finds the job and its steps, so a zero-match pass is impossible', () => {

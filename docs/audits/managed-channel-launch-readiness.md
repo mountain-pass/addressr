@@ -385,7 +385,42 @@ Waiting on the maintainer:
    goes in the same change. Clerk's mail records sit on a subdomain and do not
    collide.
 
-   **Criterion 7's enumeration half is done; its watching half is not.** ADR-089
+   **THREE OBLIGATIONS, AND THIS LEDGER USED TO NAME ONE.** The paragraph below
+   said "criterion 7" and attributed it to ADR-089, which is two mistakes at
+   once. ADR-088's criterion 7 is "the health workflow is inside the
+   stale-schedule check's corpus, asserted by test rather than assumed", and
+   ADR-089 dispositions it "holds today unchanged, AND transfers if the carrier
+   moves". ADR-089's OWN liveness criterion is its number 6; its number 7 is the
+   observability and logpush readback. So:
+
+   1. **ADR-088 criterion 7, today-half — SATISFIED 2026-09-19, and it was live
+      and undischarged before that.** The corpus was floored only by KIND, so
+      removing the `schedule:` trigger from the health workflow while keeping the
+      file took the corpus from eleven carriers to ten, stayed above the floor of
+      five, and stayed green while the health check had no liveness watcher at
+      all. The script's own docstring asserted the membership in prose, which is
+      the "assumed" the criterion refuses. A case now derives the carrier from
+      the workflow that RUNS the health script and asserts it is in the set the
+      verdict COUNTS, not merely in the reported findings — the two are different,
+      because every carrier is reported unconditionally and the judged set is a
+      separate filter. Mutation-proved three ways: dropping the schedule trigger,
+      adding a second workflow that runs the script, and adding an exclusion that
+      drops the carrier from the judged set while leaving it reported.
+   2. **ADR-088 criterion 7, transfer-half — OPEN.** There is no replacement
+      carrier to transfer to.
+   3. **ADR-089 criterion 6 — OPEN**, on the enumeration-versus-watching split
+      described below.
+
+   WHAT THE TODAY-HALF DOES NOT BUY, because "liveness watched" reads stronger
+   than it is. The workflow fires every ten minutes, but the staleness classifier
+   reads its cron as daily and flags only after three days — on the order of four
+   hundred missed firings. It watches whether the schedule FIRED, not whether the
+   check PASSED: a workflow firing every ten minutes and failing every time is
+   green to it. And it is not an alert. **Alert coverage stays MISSING and this
+   moves no monitoring row** — a carrier that fires reliably and reports a fault
+   to nobody is still no alert coverage.
+
+   **Criterion 6's enumeration half is done; its watching half is not.** ADR-089
    requires the replacement's carrier to sit inside a liveness corpus, and the
    staleness check reads only `.github/workflows`, so a Worker cron declared in
    Terraform was invisible to it. `scheduledCarriers()` now enumerates both

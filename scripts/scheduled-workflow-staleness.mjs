@@ -259,8 +259,27 @@ export function scheduledCarriers({
 // One line per workflow, exit 1 if any is stale. The `gh` call is here rather
 // than in the exported functions above so the decision logic stays testable
 // without a network.
-export async function run({ dir = '.github/workflows', now = new Date() } = {}) {
-  const { execFileSync } = await import('node:child_process');
+//
+// `fetchRuns` EXISTS SO THE JUDGED ARITHMETIC BELOW IS TESTABLE, which the
+// paragraph above claimed of this whole file and was only ever true of `assess`,
+// `verdict` and `lastScheduledRunFrom`. The arithmetic at the end of this
+// function -- what lands in `judged`, what is excluded, what total the verdict
+// is given -- could previously be observed only by launching one `gh` per
+// carrier, so a test of it asserted one thing on an authenticated machine and
+// another on CI. Same seam as `readHealthRuns(run = execFileSync)` in the
+// sibling health script.
+//
+// RESOLVED INSIDE, not as a default parameter value, because a default of
+// `= execFileSync` would force a static top-level import of `node:child_process`
+// -- and this module is imported on the session-start path, which is kept free
+// of it deliberately.
+export async function run({
+  dir = '.github/workflows',
+  now = new Date(),
+  fetchRuns,
+} = {}) {
+  const execFileSync =
+    fetchRuns ?? (await import('node:child_process')).execFileSync;
   const carriers = scheduledCarriers({ workflowDir: dir });
   const findings = [];
   for (const w of carriers) {

@@ -28,11 +28,28 @@ import { fileURLToPath } from 'node:url';
 // Spelled cardinals appear in the ticket's prose, so they are read back and
 // required to agree rather than denylisted one at a time.
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen'];
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five',
+  'twenty-six', 'twenty-seven', 'twenty-eight', 'twenty-nine', 'thirty'];
 
 // The ticket wraps at 110 columns, so a cardinal and its noun routinely sit on
 // different lines. Every phrase check below runs against this, not the raw text.
-const wordOf = (n) => WORDS[n];
+// EXTENDED 2026-09-19, and made loud at the same time. The list stopped at
+// eighteen; the other-group read-only intersection reached nineteen, and this
+// helper returned `undefined`, which was then interpolated into an expected
+// phrase. The guard reported "expected exactly one \"The other undefined check
+// declarative artefacts\"" — a failure that says the ticket is stale when in
+// fact the INSTRUMENT had run out of vocabulary. A guard that misreports which
+// of the two is broken costs a reader the diagnosis, so overflow now names
+// itself.
+const wordOf = (n) => {
+  assert.ok(
+    WORDS[n],
+    `no word for ${n} — this list has run out, and returning undefined would put it into an ` +
+      'expected phrase and blame the ticket for the instrument being short. Extend WORDS.',
+  );
+  return WORDS[n];
+};
 const cap = (w) => w[0].toUpperCase() + w.slice(1);
 const inBoth = (a, b) => a.filter((f) => b.includes(f)).length;
 
