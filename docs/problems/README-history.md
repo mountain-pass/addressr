@@ -264,3 +264,5 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 ## 2026-09-19
 
 > Last reviewed: 2026-09-06 **P147 released to verification** — dissolved rather than fixed: the quota is now charged when a request is known billable rather than before it is attempted, so an abandoned reservation costs nothing and there is no residue to sweep. ADR-091 is ratified, the maintainer having chosen the concurrency overshoot over an exactly-hard limit. Earlier the same day P146 went to verification and the README was reconciled for four tickets from the managed-channel work.
+
+> Last reviewed: 2026-09-19 **P151 captured** — nothing sweeps a record's self-referential status prose before the oversight marker is written, so ratifying ADR-098 falsified passages in both the record and the compendium (lightweight aside via /wr-itil:capture-problem)
