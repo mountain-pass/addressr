@@ -1,5 +1,46 @@
 # @mountainpass/addressr-deployment
 
+## 1.0.24
+
+### Patch Changes
+
+- 03b6ca5: Stop the managed gateway refusing a page served from this machine, which was the first of two things blocking a local rehearsal of the customer journeys.
+
+  The gateway accepted browser requests only from https addresses. Managed calls from anywhere else were refused before reaching routing, identity or the database, with one exception: the Stripe webhook, which is answered before the check.
+
+  It now also accepts an address on this machine: the host must be exactly `127.0.0.1`, `localhost` or `[::1]`, and a port is required. Hosts that merely contain one of those names are refused, and each of the three has a test for that case.
+
+  The list of accepted addresses is built from a single deployment setting, and that setting now refuses any non-https value, so a deployment carrying an http address fails to plan rather than shipping. It forecloses http addresses, not local ones: `https://localhost` satisfied both the setting and the gateway's unchanged https rule before this change, and still does. The same setting builds the Stripe checkout and portal return links, so it guards both.
+
+  This corrects the sibling note in this release, which said this release changes no behaviour. That holds for the database columns it describes and no longer holds for the release, which now also changes the gateway.
+
+  This buys the browser half of a local rehearsal. The switch half was already reachable under the local emulator, so the two together make one possible. No rehearsal has run. In production nothing changes: the channel's own switch is untouched, and it is off.
+
+  No customer can reach the new path. An address on this machine is unreachable from any other, and the managed channel has never been activated.
+
+- 8d49f13: Add the columns that will let a request served past a hard cap go uncharged.
+
+  This release changes no behaviour. It adds two columns, and nothing writes to either
+  one yet: a marker on each usage record saying whether it may be metered, and a count
+  on each reconciliation window of how many records were deliberately left out of it.
+  Both default to nothing-excluded, so applying this on its own cannot stop anything
+  being billed.
+
+  They ship a release ahead of the code that uses them, because the gateway deploys
+  before its migrations apply. A gateway naming a column the database does not yet carry
+  would fail while settling requests the origin had already served, losing the record of
+  work that should have been charged. So the columns have to exist first.
+
+  What they are for: a customer who sets a hard cap is buying a ceiling, so requests
+  served past it should not be charged. Simultaneous requests can exceed a cap by roughly
+  the number in flight, and today every one of those is delivered to the usage meter like
+  any other. Whether it then reaches an invoice depends on how the plan's price is
+  configured, which is the wrong thing for the guarantee to rest on. The next release
+  makes it hold regardless.
+
+  No customer can have been affected. The managed channel has never been activated, and
+  with its flag off the gateway refuses managed requests before any account is authorised.
+
 ## 1.0.23
 
 ### Patch Changes
