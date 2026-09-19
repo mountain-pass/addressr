@@ -1,6 +1,6 @@
 # Problem Backlog
 
-> Last reviewed: 2026-09-06 **P147 released to verification** — dissolved rather than fixed: the quota is now charged when a request is known billable rather than before it is attempted, so an abandoned reservation costs nothing and there is no residue to sweep. ADR-091 is ratified, the maintainer having chosen the concurrency overshoot over an exactly-hard limit. Earlier the same day P146 went to verification and the README was reconciled for four tickets from the managed-channel work.
+> Last reviewed: 2026-09-19 **P151 captured** — nothing sweeps a record's self-referential status prose before the oversight marker is written, so ratifying ADR-098 falsified passages in both the record and the compendium (lightweight aside via /wr-itil:capture-problem)
 > Run `/wr-itil:review-problems` to refresh.
 
 ## WSJF Rankings
@@ -27,6 +27,7 @@ Dev-work queue only. Verification Pending (`.verifying.md`, WSJF multiplier 0) a
 | 8.0  | P086 | Text-matched gates: commands slip past, documentation trips them                     | High (16)    | Upstream #410 | S      | 2026-08-04 | internal   |
 | 8.0  | P087 | Architect gate binds to the Edit/Write tool; Bash edits bypass it                    | Medium (8)   | Open          | S      | 2026-08-05 | internal   |
 | 8.0  | P135 | `root.feature` pins a rel namespace the server stopped emitting                      | Medium (8)   | Open          | S      | 2026-08-24 | internal   |
+| 8.0  | P151 | Nothing sweeps a record's self-referential status prose before the marker            | Medium (8)   | Open          | S      | 2026-09-19 | internal   |
 | 8.0  | P107 | A verification vouches only for the state it ran against                             | High (16)    | Open          | M      | 2026-08-19 | internal   |
 | 8.0  | P109 | Gate-blocked invocation runs nothing; bundled `git add` commits a stale index        | High (16)    | Open          | M      | 2026-08-20 | internal   |
 | 6.0  | P066 | `wr-architect` edit gate blocks Write to untracked `scratchpad/`                     | Medium (6)   | Open          | S      | 2026-07-26 | internal   |

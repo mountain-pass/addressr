@@ -260,3 +260,7 @@ Last reviewed: 2026-07-15 **P047 + P048 captured** — session retro after the O
 > Last reviewed: 2026-08-26 **P138 closed after production verification** — source, built-output and Chromium enforcement is deployed at `01c9b802`, with focused live checks passing
 
 - Last reviewed: 2026-09-04 **README reconciled** — 2 drift entries corrected: P142, P143. Both tickets were created and committed today; their WSJF Rankings rows were absent.
+
+## 2026-09-19
+
+> Last reviewed: 2026-09-06 **P147 released to verification** — dissolved rather than fixed: the quota is now charged when a request is known billable rather than before it is attempted, so an abandoned reservation costs nothing and there is no residue to sweep. ADR-091 is ratified, the maintainer having chosen the concurrency overshoot over an exactly-hard limit. Earlier the same day P146 went to verification and the README was reconciled for four tickets from the managed-channel work.
