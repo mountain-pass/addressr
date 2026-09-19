@@ -880,6 +880,124 @@ test('a GENUINELY SIGNED webhook projects into real D1, and the stored values ar
       1,
       'an event signed with the new secret was not accepted after rotation',
     );
+
+    // RECOVERY EXHAUSTED, the third of the three event classes the launch goal names
+    // and the only one still resting on a fake. The existing case in
+    // `stripe-channel.test.mjs` stubs `constructEventAsync` and asserts against a
+    // fake exposing `batchStatements` that executes no SQL, so it pins what the
+    // handler INTENDED to write. This drives real HMAC into the real schema and reads
+    // the result back, the way the duplicate and reordering legs above already do.
+    //
+    // WHAT IT DOES NOT REACH, because the name invites the stronger reading:
+    // `subscriptions.retrieve` returns a literal whose status is set by hand here, so
+    // this proves that GIVEN Stripe reports a canceled subscription the projection and
+    // the request path behave. It proves NOTHING about whether the shared account's
+    // three custom retries actually terminate in `canceled`. That is ADR-087's Test
+    // Clock criterion and it is still owed. The retrieve-after-delete premise — that
+    // retrieving a just-deleted subscription succeeds rather than throwing into the
+    // 503 branch — is ASSUMED here exactly as the ledger records it assumed.
+    const customerKey = await createCustomerKey();
+    await database
+      .prepare(
+        `INSERT INTO api_keys (
+          id, organization_id, name, prefix, key_hash, key_salt,
+          key_iterations, hash_version, revoked_at, created_at
+        ) VALUES ('key', 'org', 'default', ?, ?, ?, ?, ?, NULL, 'now')`,
+      )
+      .bind(
+        customerKey.prefix,
+        customerKey.keyHash,
+        customerKey.keySalt,
+        customerKey.keyIterations,
+        customerKey.hashVersion,
+      )
+      .run();
+
+    // A SEPARATE ENVIRONMENT. The shared one above is a precise statement of what the
+    // WEBHOOK path needs; the request path needs the organisation allowlist, and
+    // adding it there would blur that.
+    const requestEnvironment = {
+      CUSTOMER_DB: database,
+      MANAGED_ORGANIZATION_ALLOWLIST: '["org_clerk_addressr"]',
+    };
+
+    // THE PRE-STATE IS ASSERTED, NOT INHERITED. It is `past_due` only because the
+    // reordering leg above set it and the rotation leg re-projected it. If someone
+    // changes that block, this must red rather than silently becoming a tautology --
+    // an allowed status here is what makes the deny below a DIFFERENTIAL across the
+    // projection rather than a state assertion that could be true by fixture accident.
+    const beforeStatus = await database
+      .prepare("SELECT subscription_status FROM entitlements WHERE organization_id='org'")
+      .first();
+    assert.equal(
+      beforeStatus.subscription_status,
+      'past_due',
+      'the pre-state is not an allowed status, so the deny below proves nothing',
+    );
+    const servedBefore = traceDatabase(database);
+    const beforeAuthorization = await authorizeCustomer(
+      requestWithKey(customerKey.key),
+      { ...requestEnvironment, CUSTOMER_DB: servedBefore.binding },
+    );
+    assert.equal(
+      beforeAuthorization.kind,
+      'customer',
+      'the customer was already refused before recovery was exhausted',
+    );
+
+    subscription.status = 'canceled';
+    assert.deepEqual(
+      await deliver(
+        event('evt_recovery_exhausted', 4000, 'customer.subscription.deleted'),
+      ),
+      { status: 200, body: { received: true, duplicate: false } },
+    );
+
+    // THE EVENT TYPE IS ASSERTED because nothing in the path depends on it:
+    // `subscriptionIdFrom` accepts any `customer.subscription.*` identically and the
+    // projection reads status from `retrieve`, never from the event. Without this read
+    // the leg would pass byte-identically with `customer.subscription.updated` and its
+    // name would be a lie.
+    const stored = await database
+      .prepare(
+        "SELECT event_type, event_created FROM stripe_events WHERE id='evt_recovery_exhausted'",
+      )
+      .first();
+    assert.equal(stored.event_type, 'customer.subscription.deleted');
+
+    const afterTerminal = await database
+      .prepare('SELECT * FROM entitlements')
+      .first();
+    assert.equal(
+      afterTerminal.subscription_status,
+      'canceled',
+      'the terminal event did not project the terminal state',
+    );
+    // The watermark ADVANCED on a newer real event, which is the complement of the
+    // did-not-regress assertion above and is the first time either is checked against
+    // a real store rather than against SQL text. NOT a recency guard: the upsert
+    // writes every other column from `excluded` unconditionally, so the status would
+    // read `canceled` whatever `created` carried.
+    assert.equal(afterTerminal.stripe_event_created, 4000);
+
+    // AND ACCESS ACTUALLY STOPS. Without this the leg proves a row changed value and
+    // nothing about whether a customer is still served. The REASON is asserted, not
+    // just the refusal: a bare deny also passes on `invalid_key`,
+    // `organization_not_enabled` and `invalid_entitlement`, and an earlier draft of
+    // this leg denied on `organization_not_enabled` for want of the allowlist above --
+    // green, and proving nothing.
+    const servedAfter = traceDatabase(database);
+    const afterAuthorization = await authorizeCustomer(
+      requestWithKey(customerKey.key),
+      { ...requestEnvironment, CUSTOMER_DB: servedAfter.binding },
+    );
+    assert.equal(afterAuthorization.kind, 'rejected');
+    assert.deepEqual(await afterAuthorization.response.json(), {
+      error: 'subscription_inactive',
+    });
+    // ADR-080's envelope, for an outcome that had none anywhere in the suite. This is
+    // the first place the `subscription_inactive` path executes.
+    assertWithinByteEnvelope(servedAfter, 'subscription-inactive', 1);
   } finally {
     await miniflare.dispose();
   }
