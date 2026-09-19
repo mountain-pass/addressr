@@ -68,11 +68,20 @@ preview and no staging Worker. There is no third state between off and activated
 apply that would set it true IS activation.
 
 **What this does NOT excuse, stated because it is the reading that would close these rows
-wrongly.** Flag-on evidence DOES exist under Miniflare — two test files set
-`MANAGED_CHANNEL_ENABLED: 'true'` — and it is already counted as the PARTIAL evidence in
-these very rows. It does not discharge a requirement whose subject is production: it runs a
-stubbed identity provider, not a tenant; a local database, not production D1; and no
+wrongly.** Flag-on evidence DOES exist under Miniflare — several test files set
+`MANAGED_CHANNEL_ENABLED: 'true'`, stated as the property rather than as a count because the
+count went stale the first time one was added — and it is already counted as the PARTIAL
+evidence in these very rows. It does not discharge a requirement whose subject is production:
+it runs a stubbed identity provider, not a tenant; a local database, not production D1; and no
 browser and no real principal. A row whose first word is "Production" is not closed by it.
+
+One of those files, added 2026-09-19, raises the RUNTIME fidelity without touching any of
+those four: `managed-channel-rehearsal.test.mjs` builds the Worker bundle through the shipped
+esbuild invocation and boots it in workerd at the compatibility date Terraform pins, where the
+others call modules directly in Node. So it closes the bundle-versus-module gap and leaves
+identity, the database, the browser and the principal exactly as stubbed as before. Said this
+way deliberately: the four-part bound above must still read true after any one of the four is
+independently strengthened, and a sentence about the rehearsal's overall fidelity would not.
 
 Rows citing this: Clerk identity and administrator boundary; organisation-scoped API keys;
 Stripe Checkout and Billing Portal; D1 commercial state and organisation ownership; launch
