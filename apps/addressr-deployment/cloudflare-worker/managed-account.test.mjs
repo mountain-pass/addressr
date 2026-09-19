@@ -210,6 +210,10 @@ describe('managed account boundary', () => {
     'http://[::1].attacker.example:3000',
     'http://localhost',
     'http://127.0.0.1',
+    // The third literal's bare case. Two of the three had one and this did not, found
+    // the same way the contains-case gap was: by someone enumerating the set rather
+    // than reading the list.
+    'http://[::1]',
     'http://127.0.0.1:9000/',
   ]) {
     it(`refuses ${origin} as an allowlist entry`, async () => {

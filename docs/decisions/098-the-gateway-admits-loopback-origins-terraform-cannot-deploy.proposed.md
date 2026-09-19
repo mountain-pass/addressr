@@ -25,11 +25,17 @@ direction-setting decision and the Decision Outcome below is theirs.
 
 The record is nonetheless `unconfirmed`, because the oversight marker attests to what a
 human SAW, and this record carries substance they were not shown: the clause supersession
-of ADR-095's confirmation criterion 6, the superset property of the guard, the one-sided
-visibility of drift between the two sites, and a do-nothing option that needed no widening
-at all. Marking it confirmed would attest to a reading that did not happen. Re-asking the
-question they already answered would be worse. The ratification drain is the surface that
-resolves this, and this section is what it should read first.
+of ADR-095's confirmation criterion 6, the superset property of the guard, and the
+one-sided visibility of drift between the two sites. Marking it confirmed would attest to
+a reading that did not happen.
+
+**ONE ITEM CAME OFF THAT LIST ON 2026-09-19 AND THE REMOVAL IS THE POINT.** The list also
+carried option 5 below, the do-nothing path that needed no widening at all. That was put to
+the maintainer explicitly, after the widening had already shipped and with the cost of
+backing it out named. They chose to KEEP the widening. So the option is no longer unshown,
+and the record no longer claims it is. Recorded here rather than quietly deleted, because
+"they were not shown the cheaper alternative" is the strongest objection this decision
+faces and it has now been answered rather than avoided.
 
 ## Context and Problem Statement
 
@@ -93,6 +99,13 @@ token, so this is the loss of a DEFENCE-IN-DEPTH LAYER and not a direct hole.
 The gateway admits an http origin when, and only when, its host is exactly `127.0.0.1`,
 `localhost` or `[::1]` AND a port is present. The https rule is unchanged.
 
+**CHOSEN OVER OPTION 5 TWICE, and the second time with full information.** The first choice
+was made from four options. On 2026-09-19, after the widening had shipped, the maintainer was
+told that option 5 existed, needed no widening at all, and that choosing it would mean backing
+out work already done. They kept the widening. Recorded because a decision that survives its
+cheaper alternative being named afterwards is a different and stronger thing than one made
+before.
+
 **The admission is made unreachable in production by validation at the source, not by
 intention.** `MANAGED_APP_ORIGINS` is `jsonencode([var.managed_app_url])`, so that one
 variable is the only way a value enters the deployed allowlist. It now carries a `^https://`
@@ -129,7 +142,26 @@ does not stand in front of.
 The hosts that defeat a loose alternation CONTAIN a loopback literal.
 `localhost.attacker.example` and `127.0.0.1.attacker.example` are ordinary remote hosts an
 unanchored match would admit. Each is asserted refused, along with `[::1].attacker.example`,
-`127.0.0.2`, `[::2]`, both bare literals with no port, and a trailing slash.
+`127.0.0.2` and `[::2]`.
+
+Each of these eleven origins is asserted refused. Enumerated rather than counted in prose,
+because the count has now gone stale twice as cases were added:
+
+1. `http://evil.example`
+2. `https://evil.example:8443`
+3. `http://localhost.attacker.example:3000`
+4. `http://127.0.0.1.attacker.example:3000`
+5. `http://[::1].attacker.example:3000`
+6. `http://127.0.0.2:3000`
+7. `http://[::2]:3000`
+8. `http://localhost`, with no port
+9. `http://127.0.0.1`, with no port
+10. `http://[::1]`, with no port
+11. `http://127.0.0.1:9000/`, with a trailing slash
+
+Cases 5 and 10 were each added during review, and for the same reason: two of the three host
+literals had that case and the third did not. Both gaps were found by enumerating the set
+rather than reading the list.
 
 `localhost` is kept rather than dropped for the numeric literals alone. It is a NAME, so
 resolver control could in principle make a remote page carry that Origin, but that needs
@@ -143,7 +175,9 @@ not valid ports. No consequence, because an entry no browser can send never matc
 
 1. The gateway admits the three loopback origins when present in the allowlist and echoes the
    CORS header. SATISFIED 2026-09-19, written red first.
-2. The gateway refuses the nine cases above. SATISFIED 2026-09-19.
+2. The gateway refuses EVERY origin in the enumerated list above. SATISFIED 2026-09-19, and
+   stated as the property rather than as a count, because a count restales the moment a case
+   is added — which has now happened twice.
 3. A loopback entry admits only its EXACT port. SATISFIED 2026-09-19.
 4. Terraform refuses a non-https `managed_app_url`. The predicate was EXECUTED: extracted into
    an isolated module and planned twice, the https default accepted and `http://127.0.0.1:9000`
@@ -154,8 +188,16 @@ not valid ports. No consequence, because an entry no browser can send never matc
    2026-09-19, mutation-proved by pointing the condition at a different variable, which reds. The
    subject is part of the pin because a pattern-only assertion survives that swap with the guard
    gone.
-6. NOT SATISFIED: nothing asserts the shipped website bundle carries the production API base.
-   Owed with the configurable-base change, before any local override exists to leak.
+6. SATISFIED 2026-09-19 by commit `4d84f472`, which landed with the configurable base as this
+   criterion required. A built-output test asserts the emitted account bundle carries the
+   production base and no loopback one. WHICH HALF DOES THE WORK WAS MEASURED, not assumed:
+   review raised that the positive assertion might be vacuous because `OVERRIDE || 'production'`
+   could leave both strings in the bundle. Two builds with overrides settled it -- the `||`
+   FOLDS, so the production literal is absent whenever an override is set, and the positive
+   assertion therefore catches ANY override rather than only a loopback one. Proved on a
+   loopback base and on `https://staging.example.com/managed`; the second reds the positive
+   assertion alone, which the loopback-only negative list would have missed. The negative half
+   is a belt, and its narrowness is recorded where it lives.
 7. NOT SATISFIED and NOT CREATED HERE: nothing asserts that a `screens:` path in a job record
    resolves. This record's own pin test is named by such a path.
 
